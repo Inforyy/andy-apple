@@ -20,7 +20,11 @@ Open `index.html` in een browser. Er is geen installatie, server of internetverb
 ## Features
 
 - **Lianen met physics**: elke liaan is een Verlet-touw van segmenten dat schuin naar linksonder hangt (zoals in Benji Bananas), zodat je hem makkelijk grijpt. Andy's gewicht, vaart, zwaaien en loslaten werken zoals je zou verwachten.
-- **Momentum blijft behouden**: bij het grijpen wordt Andy's vaart omgezet in een voorwaartse zwaai (met een minimale snelheid), dus grijpen remt je nooit af. Snelheid opbouwen gaat makkelijk: sterke zwaai, krachtige lancering en bijna geen luchtweerstand. Grijp je een liaan te hoog, dan glijdt hij vanzelf een stukje omlaag. In de lucht is de zwaartekracht lager, zodat Andy langer zweeft.
+- **Twee modi**: 🏁 **Carrière** met 30 levels (start → finish, steeds langer en moeilijker, elke 5 levels een nieuwe biome, tot 3 sterren per level) en ▶ **Eindeloos** (zo ver mogelijk komen).
+- **Vloeiend zwaaien**: Andy zwaait als een echte slinger zonder energieverlies. Bij het grijpen blijft al zijn vaart behouden als voorwaartse zwaai; alleen verkeerd loslaten kost snelheid. Zwaai je te hoog, dan wordt het touw even slap. Grijp je een liaan te hoog, dan glijdt hij vanzelf omlaag.
+- **Trucs**: blijf je lang in de lucht, dan doet Andy salto's, kurkentrekkers, sterrensprongen en superaap-poses voor bonusappels (achter elkaar = meer bonus).
+- **Lucht-trampolines** en grote **stuiterzwammen** lanceren je omhoog.
+- **De ruimte**: soms hangt er hoog boven het plafond een pad van gouden ballonnen. Pak ze perfect achter elkaar en laat los bij de laatste: dan word je de ruimte in gelanceerd (weinig zwaartekracht, sterappels, +25 🍎).
 - **Start op een rots**: Andy begint op een rots en springt met ingedrukte spatie naar de eerste liaan. Lianen spawnen nooit in of tegen elkaar.
 - **Lianen in een logisch patroon**: kolommen op regelmatige afstand met drie banen (hoog, midden, laag) die in een rustige golf op en neer lopen. De lianen zijn lang en hangen aan takjes. Hoe verder je komt, hoe groter de afstand en hoe vaker er een bovenste baan ontbreekt; de laagste baan is er altijd. Boven het plafond hangen geen lianen: daar vliegen alleen vogels langs en drijft af en toe een **luchtballon** met een liaan eronder (+5 🍎).
 - **Speciale lianen**: ✨ turbo (extra vaart), 🎀 elastiek (rekt en veert), 🍎 fruitliaan (vol appels), 🪵 rot (breekt na even hangen), 🧊 ijs (je glijdt omlaag).
@@ -38,7 +42,9 @@ Open `index.html` in een browser. Er is geen installatie, server of internetverb
   Bij elke nieuwe biome speelt een riedeltje en tellen appels voor meer: +0,5 / +1 / +1,5 / +2 / +3 per appel, bovenop de Appeloogst-upgrade.
 - **Levendige wereld**: meerdere parallaxlagen (bergen, heuvels, boomlijn, gedetailleerde bomen, reuzenstammen, voorgrond), een zon met stralen, wolken, noorderlicht en sterren, en daarnaast vogelzwermen, vlinders, papegaaien, giraffen, springende vissen en vallende sterren.
 - **Muziek en geluid**: een procedurele jungle-groove (marimba, conga's, shaker, bas) met een eigen toonsoort per biome. Muziek en geluid staan los van elkaar aan/uit.
-- **15 permanente upgrades**, betaald met 🍎 appels: Lange armen, Zwaaikracht, Lanceerkracht, Appelmagneet, Appeloogst, Gouden appels, Reddingsballon, Helm, Raketstart, en de nieuwere:
+- **XP en spelerslevels**: hoe verder je komt, hoe meer XP. Direct te koop zijn Wingsuit, Lange armen, Zwaaikracht, Lanceerkracht, Appelmagneet, Appeloogst en Reddingsballon; de rest ontgrendel je met spelerslevels.
+- **16 permanente upgrades**, betaald met 🍎 appels. Snelheid moet je verdienen: Zwaaikracht en Lanceerkracht verhogen ook je topsnelheid. Naast de basis-upgrades (en Gouden appels, Helm, Raketstart):
+  - 🦸 **Wingsuit**: Andy krijgt een cape en glijdt veel verder.
   - 🍃 **Bladzweef**: Andy houdt een groot blad vast en valt langzamer.
   - 🦜 **Papegaaimaatje**: een papegaai vliegt mee en plukt appels voor je.
   - 🌧️ **Appelregen**: bij elke 100 m regent het appels.

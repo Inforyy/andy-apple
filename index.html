@@ -102,6 +102,21 @@
   .biomes{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
   .biomes div{background:rgba(122,74,28,.1);border-radius:10px;padding:6px 8px;font-size:14px}
   .stack>*+*{margin-top:10px}
+  .xp{background:rgba(122,74,28,.1);border-radius:12px;padding:6px 10px;margin:4px 0 10px;text-align:left}
+  .xp-top{display:flex;justify-content:space-between;font-size:14px;font-weight:800;color:#6b4423}
+  .xp-bar{height:10px;border-radius:5px;background:#ecdcb8;margin-top:4px;overflow:hidden}
+  .xp-bar i{display:block;height:100%;background:linear-gradient(90deg,#60a5fa,#a855f7);border-radius:5px}
+  .card.locked{opacity:.6;background:#f4efe6;border-style:dashed}
+  .lvgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:10px;margin:8px 0 14px}
+  .lv{font:inherit;border:3px solid #7a4a1c;border-radius:16px;min-height:86px;color:#fff;cursor:pointer;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:2px;text-shadow:0 2px 0 rgba(0,0,0,.45);box-shadow:0 4px 0 #5a3410}
+  .lv b{font-size:28px;font-weight:900;line-height:1}
+  .lv span{font-size:15px;color:#ffe46b;letter-spacing:1px}
+  .lv small{font-size:16px}
+  .lv.locked{background:#bfae95;color:#6b5a45;cursor:not-allowed;text-shadow:none}
+  .lv:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 #5a3410}
+  .bigstars{font-size:52px;letter-spacing:6px;color:#e3d3b0;margin:2px 0 6px}
+  .bigstars .on{color:#f5b800;text-shadow:0 3px 0 #b8860b}
   kbd{background:#fff;border:2px solid #d6b77a;border-bottom-width:4px;border-radius:6px;padding:0 6px;font-weight:800;font-size:13px}
 </style>
 </head>
@@ -129,8 +144,12 @@
   <div class="panel">
     <div class="logo"><span class="logo-apple">🍎</span><h1>Andy <span>Apples</span></h1></div>
     <p class="tag">Zwaai als Andy de gorilla door de lianen, pluk appels en kom zo ver mogelijk!</p>
+    <div id="menuXp"></div>
     <div class="stats" id="menuStats"></div>
-    <button class="btn big green" id="btnPlay">▶ Spelen</button>
+    <div class="row" style="margin-top:0">
+      <button class="btn big green" id="btnPlay" style="flex:1 1 200px">▶ Eindeloos</button>
+      <button class="btn big" id="btnCareer" style="flex:1 1 200px">🏁 Carrière</button>
+    </div>
     <div class="row">
       <button class="btn" id="btnShop">🛒 Upgrades</button>
       <button class="btn" id="btnSaves">💾 Opslaan</button>
@@ -156,6 +175,10 @@
       <li>Pak 🍎 appels (gouden appels zijn 5 waard). Snel achter elkaar pakken geeft een <b>combo</b>!</li>
       <li>Wespen, eksters en vuurballen doen je niets, maar ze <b>stelen appels</b>. Een helm beschermt je.</li>
       <li>Met je appels koop je <b>permanente upgrades</b>.</li>
+      <li>Blijf je lang in de lucht, dan doet Andy vanzelf <b>trucs</b> (salto's, kurkentrekkers…) voor bonusappels.</li>
+      <li><b>Carrière</b>: levels met een start en finish, steeds moeilijker. <b>Eindeloos</b>: zo ver mogelijk komen.</li>
+      <li>Door ver te komen verdien je <b>XP</b>; met spelerslevels ontgrendel je nieuwe upgrades.</li>
+      <li>Vind je hoog boven het plafond een pad van gouden ballonnen? Pak ze perfect achter elkaar en je vliegt de ruimte in!</li>
       <li><kbd>P</kbd> of <kbd>Esc</kbd> pauzeert het spel.</li>
     </ul>
     <h3>Speciale lianen</h3>
@@ -176,7 +199,8 @@
 <div id="shop" class="screen">
   <div class="panel wide">
     <div class="panel-head"><h2>🛒 Upgrades</h2><div class="bank">🍎 <span id="shopBank">0</span></div></div>
-    <p class="sub" style="text-align:left">Upgrades zijn permanent en worden automatisch opgeslagen.</p>
+    <p class="sub" style="text-align:left">Upgrades zijn permanent. Verdien XP door ver te komen om nieuwe upgrades te ontgrendelen.</p>
+    <div id="shopXp"></div>
     <div id="shopGrid" class="grid"></div>
     <div class="row"><button class="btn" id="btnShopBack">← Terug</button><button class="btn green" id="btnShopPlay">▶ Spelen</button></div>
   </div>
@@ -216,18 +240,52 @@
     <p class="sub" id="overReason"></p>
     <div id="overRecord" class="record hidden">🏆 Nieuw record!</div>
     <div class="results">
-      <div><span>Afstand</span><b id="ovDist"></b></div>
+      <div><span id="ovDistLabel">Afstand</span><b id="ovDist"></b></div>
       <div><span>Appels geplukt</span><b id="ovPicked"></b></div>
       <div><span>Appels (met bonus)</span><b id="ovApples"></b></div>
       <div id="ovStolenRow"><span>Gestolen door vijanden</span><b id="ovStolen"></b></div>
       <div><span>Afstandsbonus</span><b id="ovBD"></b></div>
       <div class="total"><span>Verdiend</span><b id="ovTotal"></b></div>
     </div>
+    <div id="ovXp"></div>
     <div style="margin-bottom:12px"><span class="bank">🍎 <span id="ovBank"></span></span></div>
     <button class="btn big green" id="btnRetry">↻ Opnieuw</button>
     <div class="row">
       <button class="btn" id="btnOverShop">🛒 Upgrades</button>
+      <button class="btn" id="btnOverLevels">🏁 Levels</button>
       <button class="btn" id="btnOverMenu">🏠 Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- Carrière -->
+<div id="career" class="screen">
+  <div class="panel wide">
+    <div class="panel-head"><h2>🏁 Carrière</h2><div class="bank">⭐ <span id="carStars">0</span></div></div>
+    <p class="sub" style="text-align:left">Zwaai van de start naar de finish. Elk level is iets langer en moeilijker, en elke 5 levels kom je in een nieuwe biome. Pak appels voor extra sterren: ★ finish · ★★ 35% van de appels · ★★★ 65%.</p>
+    <div id="levelGrid" class="lvgrid"></div>
+    <div class="row"><button class="btn" id="btnCareerBack">← Terug</button></div>
+  </div>
+</div>
+
+<!-- Level gehaald -->
+<div id="done" class="screen">
+  <div class="panel">
+    <h2 id="doneTitle">Level gehaald!</h2>
+    <div class="bigstars" id="doneStars"></div>
+    <div class="results">
+      <div><span>Appels gepakt</span><b id="dnApples"></b></div>
+      <div><span>Appels (met bonus)</span><b id="dnEarned"></b></div>
+      <div><span>Finishbonus</span><b id="dnBonus"></b></div>
+      <div class="total"><span>Verdiend</span><b id="dnTotal"></b></div>
+    </div>
+    <div id="dnXp"></div>
+    <div style="margin-bottom:12px"><span class="bank">🍎 <span id="dnBank"></span></span></div>
+    <button class="btn big green" id="btnNextLevel">▶ Volgend level</button>
+    <div class="row">
+      <button class="btn" id="btnDoneRetry">↻ Opnieuw</button>
+      <button class="btn" id="btnDoneShop">🛒 Upgrades</button>
+      <button class="btn" id="btnDoneLevels">🏁 Levels</button>
     </div>
   </div>
 </div>
@@ -271,7 +329,7 @@ const ROCK = { x0: 40, x1: 300, top: 430 }; // startrots
 const FEET = 28;              // afstand van Andy's midden tot zijn voeten
 const FIRST_VINE = { x: 580, ay: 20, len: 440 };
 const WALL_X = 50;
-const SHROOM_TOP = HAZARD_Y - 64;
+const SHROOM_TOP = HAZARD_Y - 104;  // bovenkant van de (grote) stuiterzwam
 const CEIL_Y = -1150;         // hoogste ophangpunt van lianen: daarboven is alleen nog lucht
 const ANCHOR_LOW = 230;       // laagste ophangpunt van lianen
 const VINE_CLEAR = 120;       // minimale ruimte tussen onderkant liaan en de bodem
@@ -318,8 +376,8 @@ function features(bi) {
 //  Upgrades
 // =====================================================================
 const gripR      = l => 34 + 7 * l;
-const pumpA      = l => 620 * (1 + 0.25 * l);
-const launchM    = l => 1.18 + 0.06 * l;
+const pumpA      = l => 520 * (1 + 0.22 * l);
+const launchM    = l => 1.1 + 0.07 * l;
 const magnetR    = l => l ? 50 + 35 * l : 0;
 const appleVal   = l => 1 + 0.5 * l;
 const goldChance = l => 0.03 + 0.025 * l;
@@ -333,21 +391,32 @@ const fmtNum = n => (Math.round(n * 10) / 10).toString().replace('.', ',');
 
 const UPGRADES = [
   { id:'grip',    icon:'✋', name:'Lange armen',    info:'Grijp lianen van verder weg.',                          max:5, base:25,  growth:1.8,  fx:l => `${gripR(l)} bereik` },
-  { id:'swing',   icon:'🌀', name:'Zwaaikracht',    info:'Zwaai harder heen en weer aan een liaan.',              max:5, base:30,  growth:1.8,  fx:l => `+${l * 25}% zwaai` },
-  { id:'launch',  icon:'💨', name:'Lanceerkracht',  info:'Meer vaart wanneer je loslaat.',                        max:5, base:40,  growth:1.85, fx:l => `+${l * 6}% vaart` },
+  { id:'swing',   icon:'🌀', name:'Zwaaikracht',    info:'Zwaai harder en sneller aan een liaan.',              max:5, base:30,  growth:1.8,  fx:l => `+${l * 22}% zwaai, max ${1150 + 110 * l}` },
+  { id:'launch',  icon:'💨', name:'Lanceerkracht',  info:'Meer vaart bij het loslaten en een hogere topsnelheid.',                        max:5, base:40,  growth:1.85, fx:l => `+${l * 7}% vaart, top ${1450 + 110 * l}` },
   { id:'magnet',  icon:'🧲', name:'Appelmagneet',   info:'Trekt appels in de buurt naar je toe.',                 max:5, base:35,  growth:1.8,  fx:l => l ? `${magnetR(l)} bereik` : 'geen' },
   { id:'value',   icon:'🧺', name:'Appeloogst',     info:'Elke geplukte appel telt voor meer (bovenop de biomebonus).', max:5, base:50, growth:1.9, fx:l => `×${fmtNum(appleVal(l))} per appel` },
-  { id:'golden',  icon:'✨', name:'Gouden appels',  info:'Meer gouden appels (5 appels waard).',                  max:4, base:45,  growth:1.9,  fx:l => `${Math.round(goldChance(l) * 100)}% kans` },
+  { id:'golden',  icon:'✨', name:'Gouden appels',  info:'Meer gouden appels (5 appels waard).',                  unlock:2, max:4, base:45,  growth:1.9,  fx:l => `${Math.round(goldChance(l) * 100)}% kans` },
   { id:'balloon', icon:'🎈', name:'Reddingsballon', info:'Redt je als je naar beneden valt.',                     max:3, base:80,  growth:2.2,  fx:l => `${l}× per run` },
-  { id:'helmet',  icon:'⛑️', name:'Helm',           info:'Voorkomt dat een vijand appels van je steelt.',         max:3, base:70,  growth:2.2,  fx:l => `${l}× per run` },
-  { id:'rocket',  icon:'🚀', name:'Raketstart',     info:'Begin elke run met een raketvlucht.',                   max:4, base:120, growth:2.0,  fx:l => l ? `${rocketDist(l)} m` : 'geen' },
-  { id:'glide',   icon:'🍃', name:'Bladzweef',      info:'Andy houdt een groot blad vast en valt langzamer als je niet duikt.', max:4, base:45, growth:1.9, fx:l => l ? `-${l * 10}% vallen` : 'geen' },
-  { id:'parrot',  icon:'🦜', name:'Papegaaimaatje', info:'Een papegaai vliegt met je mee en plukt appels voor je.',  max:4, base:90,  growth:2.0,  fx:l => l ? `elke ${fmtNum(parrotCd(l))} s een appel` : 'geen' },
-  { id:'rain',    icon:'🌧️', name:'Appelregen',     info:'Bij elke 100 m regent het appels uit de lucht.',        max:3, base:60,  growth:2.0,  fx:l => l ? `${3 + l * 3} appels per 100 m` : 'geen' },
-  { id:'combo',   icon:'🔥', name:'Comboketting',   info:'Je combo blijft langer staan en levert meer bonus op.',  max:3, base:55,  growth:2.0,  fx:l => `${fmtNum(comboWin(l))} s · bonus ×${1 + l}` },
-  { id:'vinewise',icon:'🌿', name:'Liaankenner',    info:'Rotte lianen houden langer, ijs is minder glad en er zijn meer turbolianen.', max:3, base:50, growth:2.0, fx:l => l ? `+${l * 40}% grip` : 'geen' },
-  { id:'shroom',  icon:'🍄', name:'Stuiterzwam',    info:'Meer paddenstoelen, en ze lanceren je hoger en verder.',  max:3, base:40,  growth:1.9,  fx:l => l ? `+${l * 40}% paddenstoelen` : 'geen' },
+  { id:'helmet',  icon:'⛑️', name:'Helm',           info:'Voorkomt dat een vijand appels van je steelt.',         unlock:3, max:3, base:70,  growth:2.2,  fx:l => `${l}× per run` },
+  { id:'rocket',  icon:'🚀', name:'Raketstart',     info:'Begin elke run met een raketvlucht.',                   unlock:10, max:4, base:120, growth:2.0,  fx:l => l ? `${rocketDist(l)} m` : 'geen' },
+  { id:'glide',   icon:'🍃', name:'Bladzweef',      info:'Andy houdt een groot blad vast en valt langzamer als je niet duikt.', unlock:4, max:4, base:45, growth:1.9, fx:l => l ? `-${l * 10}% vallen` : 'geen' },
+  { id:'parrot',  icon:'🦜', name:'Papegaaimaatje', info:'Een papegaai vliegt met je mee en plukt appels voor je.',  unlock:8, max:4, base:90,  growth:2.0,  fx:l => l ? `elke ${fmtNum(parrotCd(l))} s een appel` : 'geen' },
+  { id:'rain',    icon:'🌧️', name:'Appelregen',     info:'Bij elke 100 m regent het appels uit de lucht.',        unlock:9, max:3, base:60,  growth:2.0,  fx:l => l ? `${3 + l * 3} appels per 100 m` : 'geen' },
+  { id:'combo',   icon:'🔥', name:'Comboketting',   info:'Je combo blijft langer staan en levert meer bonus op.',  unlock:5, max:3, base:55,  growth:2.0,  fx:l => `${fmtNum(comboWin(l))} s · bonus ×${1 + l}` },
+  { id:'vinewise',icon:'🌿', name:'Liaankenner',    info:'Rotte lianen houden langer, ijs is minder glad en er zijn meer turbolianen.', unlock:7, max:3, base:50, growth:2.0, fx:l => l ? `+${l * 40}% grip` : 'geen' },
+  { id:'wingsuit',icon:'🦸', name:'Wingsuit',       info:'Andy krijgt een cape en glijdt veel verder door de lucht.', max:4, base:110, growth:2.0, fx:l => l ? `+${l * 25}% glijvlucht` : 'geen' },
+  { id:'shroom',  icon:'🍄', name:'Stuiterzwam',    info:'Meer paddenstoelen en lucht-trampolines, en ze lanceren je verder.',  unlock:6, max:3, base:40,  growth:1.9,  fx:l => l ? `+${l * 40}% paddenstoelen` : 'geen' },
 ];
+// ---- XP: hoe verder je komt, hoe meer XP; met spelerslevels ontgrendel je nieuwe upgrades ----
+const xpNeed = L => Math.round(150 * Math.pow(L, 1.45)); // XP nodig om van level L naar L+1 te gaan
+function playerLevel(xp) { let L = 1; while (xp >= xpNeed(L)) { xp -= xpNeed(L); L++; } return { L, into: xp, need: xpNeed(L) }; }
+const unlocked = u => !u.unlock || playerLevel(save.xp).L >= u.unlock;
+// ---- Carrière: levels met een start en een finish; hoe hoger, hoe moeilijker ----
+const LEVELS = 30;
+function levelInfo(n) {
+  const bi = Math.min(BIOMES.length - 1, Math.floor((n - 1) / 5));
+  return { n, bi, L: 180 + n * 40, diff: clamp(0.04 + (n - 1) * 0.045, 0, 1.35) };
+}
 const upCost = (u, l) => Math.round(u.base * 1.5 * Math.pow(u.growth, l) / 5) * 5;
 
 // =====================================================================
@@ -356,7 +425,7 @@ const upCost = (u, l) => Math.round(u.base * 1.5 * Math.pow(u.growth, l) / 5) * 
 const SAVE_KEY = 'andyApples.save.v1';
 const GAME_ID = 'Andy Apples';
 function defaultSave() {
-  return { version:2, apples:0, upgrades:{}, best:0, totalApples:0, totalDistance:0, runs:0, maxBiome:0, sound:true, music:true };
+  return { version:3, apples:0, xp:0, upgrades:{}, best:0, totalApples:0, totalDistance:0, runs:0, maxBiome:0, sound:true, music:true, career:{ unlocked:1, stars:Array.from({ length: LEVELS }, () => 0) } };
 }
 function normalizeSave(o) {
   const s = defaultSave();
@@ -372,6 +441,10 @@ function normalizeSave(o) {
   s.maxBiome = Math.min(num(o.maxBiome), BIOMES.length - 1);
   s.sound = o.sound !== false;
   s.music = o.music !== false;
+  s.xp = num(o.xp);
+  const c = (o.career && typeof o.career === 'object') ? o.career : {};
+  s.career.unlocked = clamp(num(c.unlocked) || 1, 1, LEVELS);
+  s.career.stars = Array.from({ length: LEVELS }, (_, i) => clamp(num(Array.isArray(c.stars) ? c.stars[i] : 0), 0, 3));
   const up = (o.upgrades && typeof o.upgrades === 'object') ? o.upgrades : {};
   for (const u of UPGRADES) s.upgrades[u.id] = clamp(num(up[u.id]), 0, u.max);
   return s;
@@ -432,6 +505,9 @@ function importObject(obj) {
 //  Hulpfuncties
 // =====================================================================
 function rand(a, b) { return a + Math.random() * (b - a); }
+// de wereldgenerator heeft een eigen random-bron: in de carrière is elk level daardoor altijd hetzelfde
+let genRandom = Math.random;
+function grand(a, b) { return a + genRandom() * (b - a); }
 function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
 function lerp(a, b, t) { return a + (b - a) * t; }
 function hash(n) { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
@@ -443,10 +519,10 @@ function mixC(a, b, t) { return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(
 function shade(hex, f) { const c = hexToRgb(hex); return rgbStr(c.map(v => f < 0 ? v * (1 + f) : v + (255 - v) * f)); }
 const $ = id => document.getElementById(id);
 
-function biomeIndexAt(m) { let i = 0; for (let j = 0; j < BIOMES.length; j++) if (m >= BIOMES[j].start) i = j; return i; }
-function diffAt(m) { return Math.min(1.4, Math.max(0, m) / 3500); }
+function biomeIndexAt(m) { if (game.career) return game.career.bi; let i = 0; for (let j = 0; j < BIOMES.length; j++) if (m >= BIOMES[j].start) i = j; return i; }
+function diffAt(m) { if (game.career) return clamp(game.career.diff + Math.max(0, m) / game.career.L * 0.08, 0, 1.4); return Math.min(1.4, Math.max(0, m) / 3500); }
 function paletteAt(m) {
-  const i = biomeIndexAt(m), a = BIOMES[i], b = BIOMES[i + 1] || a;
+  const i = biomeIndexAt(m), a = BIOMES[i], b = game.career ? a : BIOMES[i + 1] || a;
   let t = 0;
   if (b !== a) { const zone = 90; t = clamp((m - (b.start - zone)) / zone, 0, 1); }
   const P = { a, b, t, ai: i, bi: b === a ? i : i + 1 };
@@ -508,7 +584,8 @@ const Sfx = {
   shield()  { this.tone(520, 0.2, 'triangle', 0.14, 260); this.noise(0.1, 0.1, 3000); },
   crack()   { this.noise(0.25, 0.25, 2500); this.tone(90, 0.2, 'square', 0.06, 50); },
   balloon() { this.tone(300, 0.5, 'sine', 0.14, 900); },
-  turbo()   { this.tone(220, 0.35, 'sawtooth', 0.06, 880); this.noise(0.35, 0.12, 3000); [0, 4, 7, 12].forEach((s, i) => this.tone(660 * Math.pow(2, s / 12), 0.1, 'triangle', 0.06, 0, 0.04 * i)); },
+  // turbo-liaan loslaten: een straalmotor-zoef
+  turbo()   { this.tone(110, 0.6, 'sawtooth', 0.08, 55); this.tone(220, 0.4, 'sawtooth', 0.06, 1100); this.noise(0.6, 0.22, 2500); this.noise(0.3, 0.1, 8000, 0.05); [0, 4, 7, 12, 16].forEach((s, i) => this.tone(660 * Math.pow(2, s / 12), 0.1, 'triangle', 0.06, 0, 0.04 * i)); },
   boingy()  { this.tone(140, 0.25, 'sine', 0.12, 420); },
   buy()     { [523, 659, 784, 1046].forEach((f, i) => this.tone(f, 0.14, 'triangle', 0.1, 0, i * 0.07)); },
   rocket()  { this.noise(1.2, 0.2, 500); this.tone(90, 1.0, 'sawtooth', 0.05, 200); },
@@ -586,6 +663,10 @@ const Sfx = {
     for (const node of [osc, am, jit, vib, nz]) { node.start(t0); node.stop(end); }
   },
   jump() { this.tone(220, 0.15, 'triangle', 0.14, 440); this.noise(0.1, 0.08, 1500); },
+  // turbo-liaan vastpakken: een oplaadgeluid
+  turboCharge() { this.tone(260, 0.45, 'sawtooth', 0.045, 1200); this.tone(520, 0.45, 'triangle', 0.06, 2000); this.noise(0.4, 0.05, 5000, 0.05); [0, 7, 12].forEach((s, i) => this.tone(880 * Math.pow(2, s / 12), 0.12, 'sine', 0.05, 0, 0.1 + i * 0.07)); },
+  tramp() { this.tone(160, 0.3, 'sine', 0.2, 620); this.tone(320, 0.2, 'triangle', 0.06, 900, 0.02); },
+  trick(chain) { const b = 660 * Math.pow(2, Math.min(chain - 1, 6) * 2 / 12); [0, 4, 7, 12].forEach((s, i) => this.tone(b * Math.pow(2, s / 12), 0.1, 'square', 0.035, 0, i * 0.045)); },
   slide() { this.tone(900, 0.12, 'sine', 0.05, 500); this.noise(0.1, 0.05, 4000); },
 };
 
@@ -709,7 +790,7 @@ const QUALITY = [
 ];
 const QKEY = 'andyApples.quality';
 let qLevel = 2, qMax = 3;
-try { const q = JSON.parse(localStorage.getItem(QKEY)); if (q && q.l >= 0 && q.l <= 3) { qLevel = q.l; qMax = Math.max(q.l, q.m ?? 3); } } catch (e) { /* geen voorkeur */ }
+try { const q = JSON.parse(localStorage.getItem(QKEY)); if (q && q.l >= 0 && q.l <= 3) qLevel = Math.max(1, q.l); } catch (e) { /* geen voorkeur */ }
 let Q = QUALITY[qLevel];
 let dpr = 1, pr = 1, cssW = 0, cssH = 0, scale = 1, viewW = 0, viewH = 0;
 let bgFrame = 0, bgStale = true;
@@ -730,7 +811,7 @@ function resize() {
 }
 function setQuality(l) {
   qLevel = clamp(l, 0, 3);
-  try { localStorage.setItem(QKEY, JSON.stringify({ l: qLevel, m: qMax })); } catch (e) { /* negeren */ }
+  try { localStorage.setItem(QKEY, JSON.stringify({ l: qLevel })); } catch (e) { /* negeren */ }
   resize();
 }
 const gradCache = new Map();
@@ -743,13 +824,13 @@ const baseTop = () => WORLD_H + 20 - viewH + Math.max(0, viewH - 760) * 0.4;
 // =====================================================================
 //  Wereldstatus
 // =====================================================================
-let vines = [], apples = [], shrooms = [], foes = [], parts = [], texts = [], fishes = [];
+let vines = [], apples = [], shrooms = [], foes = [], parts = [], texts = [], fishes = [], tramps = [];
 let gen = { x: 0, special: 0 };
 let run = null;
 let camX = 0, camY = 0, lastCamX = 0, shakeT = 0, shakeAmp = 0, flashT = 0;
 let time = 0;
 let G = null;
-const game = { mode: 'menu', paused: false, holdLock: false };
+const game = { mode: 'menu', paused: false, holdLock: false, career: null };
 const input = { down: false, presses: 0 };
 
 const VINE_LOOK = {
@@ -774,32 +855,36 @@ function makeVine(x, ay, len, type, bi) {
   const look = VINE_LOOK[type] || { col: BIOMES[bi].c.vine, leaf: BIOMES[bi].c.leaf };
   const flowers = ['#ff7eb6', '#7ec8ff', '#ffd23f', '#ffffff'];
   return { x, ay, pts, type, bi, col: look.col, dark: shade(look.col, -0.38), light: shade(look.col, 0.3), leaf: look.leaf,
-    phase: Math.random() * 6.28, anchored: true, snapAt: type === 'rotten' ? rand(0.8, 1.2) * (1 + 0.4 * lvl('vinewise')) : 0,
+    phase: genRandom() * 6.28, anchored: true, snapAt: type === 'rotten' ? grand(0.8, 1.2) * (1 + 0.4 * lvl('vinewise')) : 0,
     rest: restSeg(x, ay, n * SEG_LEN, type),
     // tak waaraan de liaan hangt
-    bl: rand(30, 46), tilt: rand(-0.12, 0.12),
-    flower: Math.random() < 0.45 ? flowers[(Math.random() * flowers.length) | 0] : null };
+    bl: grand(30, 46), tilt: grand(-0.12, 0.12),
+    flower: genRandom() < 0.45 ? flowers[(genRandom() * flowers.length) | 0] : null };
 }
 
 function resetWorld() {
-  vines = []; apples = []; shrooms = []; foes = []; parts = []; texts = []; fishes = [];
+  vines = []; apples = []; shrooms = []; foes = []; parts = []; texts = []; fishes = []; tramps = [];
   time = 0;
+  const C = game.career;
+  genRandom = C ? mulberry32(1000 + C.n * 7919) : Math.random;
   // Andy staat op de startrots; de eerste liaan hangt binnen springbereik
   const v0 = makeVine(FIRST_VINE.x, FIRST_VINE.ay, FIRST_VINE.len, 'normal', 0);
   vines.push(v0);
   const sx = 250, sy = ROCK.top - FEET;
   G = { x: sx, y: sy, px: sx, py: sy, vx: 0, vy: 0, im: 0.012,
-    state: 'stand', vine: null, k: 0, slideTo: 0, slideT: 0, armLen: ARM_LEN, hangT: 0, iceT: 0, angle: 0, diveT: 0, dive: 0, noDive: false,
+    state: 'stand', vine: null, k: 0, slideTo: 0, slideT: 0, th: 0, om: 0, R: 100, R0: 100, vr: 0, slack: false, hx: 0, hy: 0,
+    trick: null, trickT: 0, trickRot: 0, chain: 0, standT: 0, hangT: 0, iceT: 0, angle: 0, diveT: 0, dive: 0, noDive: false,
     lastVine: null, releaseT: 0, invuln: 0, balloonT: 0, turboT: 0, deadT: 0, spin: 0, splashed: false, diving: false,
     airT: 0, airX: 0, standPress: -1, helmets: lvl('helmet'), balloons: lvl('balloon'), rocketEnd: 0,
     parrot: lvl('parrot') ? { x: sx - 40, y: sy - 60, cd: 1, target: null, t: 0 } : null };
-  gen = { x: FIRST_VINE.x, special: 0, col: 0, low: FIRST_VINE.ay + FIRST_VINE.len, tips: [null, null, FIRST_VINE.ay + FIRST_VINE.len * TIP_F] };
+  gen = { x: FIRST_VINE.x, lastPath: 0, special: 0, col: 0, low: FIRST_VINE.ay + FIRST_VINE.len, tips: [null, null, FIRST_VINE.ay + FIRST_VINE.len * TIP_F] };
   run = { picked: 0, earned: 0, stolen: 0, golden: 0, dist: 0, biome: 0, reason: '', lastWoo: 0,
-    combo: 0, lastPick: -9, firstJump: true, nextMile: 100 };
+    combo: 0, lastPick: -9, firstJump: true, nextMile: 100, tricks: 0, space: false, spaceVisits: 0, appleTotal: 0 };
+  if (C) { run.biome = C.bi; C.finishX = START_X + C.L * PX_PER_M; }
   camX = Math.max(-100, G.x - viewW * 0.32); camY = baseTop(); lastCamX = camX;
   genUntil(camX + viewW + 900);
   game.holdLock = false;
-  Music.biome = 0;
+  Music.biome = C ? C.bi : 0;
 }
 
 // =====================================================================
@@ -818,7 +903,7 @@ function fitVine(ay, len, stretch) {
 function pickType(F, d) {
   const hazardous = { rotten: F.rotten * (1 + 0.3 * d), icy: F.icy * (1 + 0.3 * d) };
   const opts = [['rotten', hazardous.rotten], ['icy', hazardous.icy], ['turbo', F.turbo * (1 + 0.35 * lvl('vinewise'))], ['elastic', F.elastic], ['fruit', F.fruit]];
-  let r = Math.random(), type = 'normal';
+  let r = genRandom(), type = 'normal';
   for (const [t, p] of opts) { if (r < p) { type = t; break; } r -= p; }
   // nooit drie lastige lianen achter elkaar
   if ((type === 'rotten' || type === 'icy') && gen.special >= 2) type = 'normal';
@@ -849,7 +934,7 @@ function addVine(x, ay, len, type, bi, force) {
   if (force) for (const dx of [-60, -20, 30, 80, 130, 180]) for (const dy of [-150, -60, 30, 110]) tries.push([dx, dy, 0.85]);
   let ok = false;
   for (const [dx, dy, lf] of tries) {
-    const ty = clamp(ay + dy, CEIL_Y, ANCHOR_LOW), tl = Math.max(150, len * lf);
+    const ty = type === 'balloon' ? ay + dy : clamp(ay + dy, CEIL_Y, ANCHOR_LOW), tl = Math.max(150, len * lf);
     const [fy, fl] = fitVine(ty, tl, type === 'elastic' ? ELASTIC_STRETCH : 1);
     if (vineFits(x + dx, fy, fl, type)) { x += dx; ay = fy; len = fl; ok = true; break; }
   }
@@ -859,7 +944,7 @@ function addVine(x, ay, len, type, bi, force) {
   vines.push(v);
   if (type === 'fruit') {
     const n = v.pts.length, gc = goldChance(lvl('golden'));
-    for (let i = Math.floor(n * 0.35); i < n; i += 4) apples.push({ x: v.pts[i].x, y: v.pts[i].y, vine: v, idx: i, gold: Math.random() < gc, t: Math.random() * 6 });
+    for (let i = Math.floor(n * 0.35); i < n; i += 4) { const a = { x: v.pts[i].x, y: v.pts[i].y, vine: v, idx: i, gold: genRandom() < gc, t: genRandom() * 6 }; apples.push(a); countApple(a); }
   }
   return v;
 }
@@ -872,7 +957,9 @@ function genNext() {
   const m = (gen.x - START_X) / PX_PER_M;
   const d = diffAt(m), dc = Math.min(1, d);
   const bi = biomeIndexAt(m), F = features(bi);
-  const x = gen.x + rand(470, 520) + d * rand(40, 140);
+  // eindeloze modus: hoe sneller Andy gaat, hoe ruimer de lianen staan (anders wordt het te druk)
+  const fast = !game.career && G ? clamp((Math.abs(G.vx) - 700) / 900, 0, 1) : 0;
+  const x = gen.x + grand(470, 520) + d * grand(40, 140) + fast * grand(140, 260);
   const vbi = biomeIndexAt((x - START_X) / PX_PER_M);
   gen.col++;
 
@@ -880,58 +967,81 @@ function genNext() {
   const tip = v => v.ay + v.pts.length * SEG_LEN * TIP_F;
   for (let li = LANES.length - 1; li >= 0; li--) {
     const lowest = li === LANES.length - 1;
-    if (!lowest && m > 12 && Math.random() < 0.08 + 0.3 * dc) { laneTips[li] = null; continue; }
-    let ay = LANES[li] + Math.sin(gen.col * 0.55 + li * 2.1) * 70 + rand(-15, 15);
-    let len = rand(470, 540);
+    if (!lowest && m > 12 && genRandom() < 0.08 + 0.3 * dc + 0.25 * fast) { laneTips[li] = null; continue; }
+    let ay = LANES[li] + Math.sin(gen.col * 0.55 + li * 2.1) * 70 + grand(-15, 15);
+    let len = grand(470, 540);
     if (lowest) { // haalbaarheid: het uiteinde moet bereikbaar zijn vanaf de laagste liaan ervoor
       const minTip = gen.low - 170;
       if (ay + len * TIP_F < minTip) ay = minTip - len * TIP_F;
     }
     const type = m < 8 ? 'normal' : pickType(F, d);
-    const v = addVine(x + rand(-12, 12), clamp(ay, CEIL_Y, ANCHOR_LOW), len, type, vbi, lowest);
+    const v = addVine(x + grand(-12, 12), clamp(ay, CEIL_Y, ANCHOR_LOW), len, type, vbi, lowest);
     laneTips[li] = v ? tip(v) : null;
     if (v) col.push(v);
   }
   let low = -Infinity;
   for (const v of col) low = Math.max(low, v.ay + v.pts.length * SEG_LEN * (v.type === 'elastic' ? 1.2 : 1));
 
+  // Af en toe een ballonpad naar de ruimte: een trap van ballonlianen die steeds hoger hangen.
+  // Alleen wie ze PERFECT achter elkaar pakt en van de laatste loslaat, wordt de ruimte in gelanceerd.
+  if (!game.career && m > 250 && m - gen.lastPath > 800 && genRandom() < 0.25) {
+    gen.lastPath = m;
+    const pid = genRandom();
+    for (let i = 0; i < SPACE_PATH; i++) {
+      const bv = addVine(x + 330 + i * 400, CEIL_Y - 120 - i * 440, 300, 'balloon', vbi, true);
+      bv.balloon = { vx: 0, hue: 45, bob: grand(0, 6), path: pid, step: i };
+    }
+      }
   // Heel af en toe: een luchtballon boven het plafond met een liaan eronder
-  if (m > 40 && Math.random() < 0.07 && !vines.some(v => v.balloon && v.x > x - 1500)) {
-    const bv = addVine(x + rand(0, 100), CEIL_Y - 190, 300, 'balloon', vbi);
-    if (bv) bv.balloon = { vx: rand(60, 90), hue: (Math.random() * 360) | 0, bob: rand(0, 6) };
+  else if (m > 40 && genRandom() < 0.07 && !vines.some(v => v.balloon && v.x > x - 1500)) {
+    const bv = addVine(x + grand(0, 100), CEIL_Y - 190, 300, 'balloon', vbi);
+    if (bv) bv.balloon = { vx: grand(60, 90), hue: (genRandom() * 360) | 0, bob: grand(0, 6) };
   }
 
   const x0 = gen.x, x1 = x - 250 * Math.sin(VINE_SLANT);
-  if (m > 20 && Math.random() < 0.16 * (1 - 0.6 * dc) * (1 + 0.4 * lvl('shroom'))) shrooms.push({ x: (gen.x + x) / 2 + rand(-40, 40), w: 100, bi: vbi, sq: 0 });
+  // lucht-trampolines tussen de kolommen, op een plek waar geen liaan hangt
+  if (m > 25 && genRandom() < 0.2 + 0.1 * lvl('shroom')) {
+    for (let t = 0; t < 6; t++) {
+      const tx = (gen.x + x) / 2 + grand(-60, 60), ty = grand(CEIL_Y + 250, HAZARD_Y - 230), seg = [tx - 75, ty - 40, tx + 75, ty + 40];
+      if (vines.every(v => Math.abs(v.x - tx) > 700 || segDist(seg, v.rest) > 70)) { tramps.push({ x: tx, y: ty, w: 120, sq: 0, bi: vbi, ph: grand(0, 6) }); break; }
+    }
+  }
+  if (m > 20 && genRandom() < 0.16 * (1 - 0.6 * dc) * (1 + 0.4 * lvl('shroom'))) shrooms.push({ x: (gen.x + x) / 2 + grand(-40, 40), w: 180, bi: vbi, sq: 0 });
+  if (game.career && gen.x > game.career.finishX) { gen.x = x; gen.low = low; gen.tips = laneTips; return; } // voorbij de finish: alleen lianen
   // appels langs de banen: een boog van de ene liaan naar de volgende in dezelfde baan
   const lanes = [0, 1, 2].filter(li => laneTips[li] != null && gen.tips[li] != null);
-  for (let g = Math.random() < 0.5 ? 2 : 1; g > 0 && lanes.length; g--) {
-    const li = lanes.splice((Math.random() * lanes.length) | 0, 1)[0];
+  for (let g = genRandom() < 0.5 ? 2 : 1; g > 0 && lanes.length; g--) {
+    const li = lanes.splice((genRandom() * lanes.length) | 0, 1)[0];
     placeApples(x0, Math.max(x0 + 120, x1), d, gen.tips[li] - 40, laneTips[li] - 40);
   }
 
-  const mid = (x0 + x1) / 2, ym = LANES[(Math.random() * 3) | 0] + rand(250, 420);
+  const mid = (x0 + x1) / 2, ym = LANES[(genRandom() * 3) | 0] + grand(250, 420);
   const fk = 1 + 0.6 * d;
   const fy = y => clamp(y, CEIL_Y, HAZARD_Y - 160);
-  if (Math.random() < F.wasps * fk) foes.push({ type: 'wasp', x0: mid + rand(-40, 40), y0: fy(ym), x: mid, y: ym, t: rand(0, 6), ax: rand(20, 60), ay: rand(30, 80), r: 15, bi: vbi });
-  if (Math.random() < F.fire * fk) foes.push({ type: 'fire', x: (gen.x + x) / 2 + rand(-50, 50), y: HAZARD_Y + 40, vy: 0, wait: rand(0.2, 1.6), r: 16, bi: vbi });
-  if (Math.random() < F.birds * fk) { const y = fy(rand(CEIL_Y, HAZARD_Y - 200)); foes.push({ type: 'bird', x: x + rand(300, 700), y0: y, y, t: rand(0, 3), vx: -rand(170, 260), r: 16, bi: vbi, active: false }); }
+  if (genRandom() < F.wasps * fk) foes.push({ type: 'wasp', x0: mid + grand(-40, 40), y0: fy(ym), x: mid, y: ym, t: grand(0, 6), ax: grand(20, 60), ay: grand(30, 80), r: 15, bi: vbi });
+  if (genRandom() < F.fire * fk) foes.push({ type: 'fire', x: (gen.x + x) / 2 + grand(-50, 50), y: HAZARD_Y + 40, vy: 0, wait: grand(0.2, 1.6), r: 16, bi: vbi });
+  if (genRandom() < F.birds * fk) { const y = fy(grand(CEIL_Y, HAZARD_Y - 200)); foes.push({ type: 'bird', x: x + grand(300, 700), y0: y, y, t: grand(0, 3), vx: -grand(170, 260), r: 16, bi: vbi, active: false }); }
   gen.x = x; gen.low = low; gen.tips = laneTips;
 }
+// telt de appels vóór de finish, voor de sterren in de carrière
+function countApple(a) { if (game.career && run && a.x < game.career.finishX) run.appleTotal += a.gold ? 5 : 1; }
 function placeApples(x0, x1, d, y0, y1) {
   const gc = goldChance(lvl('golden'));
-  const add = (x, y) => apples.push({ x, y: clamp(y, CEIL_Y - 120, HAZARD_Y - 90), gold: Math.random() < gc, t: Math.random() * 6 });
-  const r = Math.random();
+  const add = (x, y) => {
+    const a = { x, y: clamp(y, CEIL_Y - 120, HAZARD_Y - 90), gold: genRandom() < gc, t: genRandom() * 6 };
+    apples.push(a); countApple(a);
+  };
+  const r = genRandom();
   if (r < 0.6) {
     // boog tussen twee lianen
-    const n = Math.max(3, Math.round(rand(4, 7) - d * 1.5)), h = rand(60, 200), dy = rand(-40, 80);
+    const n = Math.max(3, Math.round(grand(4, 7) - d * 1.5)), h = grand(60, 200), dy = grand(-40, 80);
     for (let i = 0; i < n; i++) { const t = (i + 1) / (n + 1); add(lerp(x0, x1, t), lerp(y0, y1, t) + dy - Math.sin(Math.PI * t) * h); }
   } else if (r < 0.85) {
-    const n = Math.max(2, Math.round(rand(3, 5) - d)), y = (y0 + y1) / 2 + rand(-120, 120);
+    const n = Math.max(2, Math.round(grand(3, 5) - d)), y = (y0 + y1) / 2 + grand(-120, 120);
     for (let i = 0; i < n; i++) add(lerp(x0 + 30, x1 - 30, i / (n - 1)), y);
   } else if (r < 0.95) {
     // diagonale rij
-    const n = 4, up = Math.random() < 0.5 ? -1 : 1;
+    const n = 4, up = genRandom() < 0.5 ? -1 : 1;
     for (let i = 0; i < n; i++) add(lerp(x0 + 20, x1 - 20, i / (n - 1)), (y0 + y1) / 2 + up * (i - 1.5) * 45);
   }
 }
@@ -969,17 +1079,17 @@ function simVine(v, dt) {
     q.px = q.x; q.py = q.y;
     q.x += vx + wind * dt2; q.y += vy + GRAVITY * dt2;
   }
-  if (hang) integrateHanging(v, dt);
   const k = G.k, elastic = v.type === 'elastic';
-  const stiff = elastic ? 0.2 : 1, reach = elastic ? ELASTIC_STRETCH : 1;
-  const iters = hang ? ROPE_ITERS : 6;
+  if (hang) { // Andy's hand is een vast punt op het touw; het touw volgt hem
+    const h = p[k]; h.im = 0; h.x = G.hx; h.y = G.hy; h.px = h.x; h.py = h.y;
+  }
+  const stiff = elastic ? 0.25 : 1, reach = elastic ? ELASTIC_STRETCH : 1;
+  const iters = hang ? 10 : 6;
   for (let it = 0; it < iters; it++) {
     for (let i = 0; i < n - 1; i++) solve(p[i], p[i + 1], SEG_LEN, stiff);
-    if (hang) solve(p[k], G, G.armLen, 1);
     if (v.anchored) {
       const a = p[0];
-      for (let i = 2; i < n; i++) limitDist(a, p[i], i * SEG_LEN * reach);
-      if (hang) limitDist(a, G, k * SEG_LEN * reach + G.armLen);
+      for (let i = 2; i < n; i++) if (!(hang && i === k)) limitDist(a, p[i], i * SEG_LEN * reach);
     }
   }
   // Andy duwt lianen opzij waar hij doorheen vliegt
@@ -995,22 +1105,58 @@ function simVine(v, dt) {
     }
   }
 }
-function integrateHanging(v, dt) {
-  const vx = G.x - G.px, vy = G.y - G.py;
-  let ax = 0, ay = GRAVITY;
-  if (game.mode !== 'dying') {
-    // "pompen": Andy zwaait zelf mee, zodat de schommel groter wordt
-    const a = v.pts[0], rx = G.x - a.x, ry = G.y - a.y, rl = Math.hypot(rx, ry) || 1;
-    const tx = -ry / rl, ty = rx / rl;
-    const vt = (vx * tx + vy * ty) / dt;
-    if (ry / rl > 0.25 && Math.abs(vt) > 15 && Math.abs(vt) < 1500) {
-      const s = Math.sign(vt), f = pumpA(lvl('swing')) * (s * tx > 0 ? 1 : 0.55);
-      ax += tx * s * f; ay += ty * s * f;
+// ---- Zwaaien als echte slinger: hoek en hoeksnelheid rond het ophangpunt ----
+// x = anker + R·sin(θ), y = anker + R·cos(θ). De energie blijft behouden, dus zwaaien voelt vloeiend.
+const swingCap = () => 1150 + 110 * lvl('swing');
+function setHand() { G.hx = G.x - Math.sin(G.th) * ARM_LEN; G.hy = G.y - Math.cos(G.th) * ARM_LEN; }
+function freeHand(v, k) { // hand los: het touwpunt wordt weer gewoon touw en krijgt Andy's vaart mee
+  if (!v || !v.pts[k]) return;
+  const q = v.pts[k]; q.im = 1; q.px = q.x - G.vx * DT * 0.5; q.py = q.y - G.vy * DT * 0.5;
+}
+function swingStep(v, dt) {
+  const a = v.pts[0], bvx = v.balloon ? v.balloon.vx : 0;
+  if (G.slack) { // te hoog gezwaaid: het touw is even slap en Andy vliegt vrij, tot het weer strak staat
+    G.vy += GRAVITY * dt; G.x += G.vx * dt; G.y += G.vy * dt;
+    const rx = G.x - a.x, ry = G.y - a.y, d = Math.hypot(rx, ry);
+    G.th = Math.atan2(rx, ry);
+    if (d >= G.R0) {
+      G.R = G.R0; G.slack = false;
+      const c = Math.cos(G.th), sn = Math.sin(G.th);
+      G.om = ((G.vx - bvx) * c - G.vy * sn) / G.R;
+      G.x = a.x + G.R * sn; G.y = a.y + G.R * c;
+    }
+    setHand();
+    return;
+  }
+  const g = GRAVITY, elastic = v.type === 'elastic';
+  if (elastic) { // bungee: het touw rekt uit en veert terug
+    const acc = g * Math.cos(G.th) + G.R * G.om * G.om - 38 * (G.R - G.R0);
+    G.vr = (G.vr + acc * dt) * 0.995;
+    const Rold = G.R;
+    G.R = clamp(G.R + G.vr * dt, G.R0 * 0.92, G.R0 * ELASTIC_STRETCH);
+    if (G.R === G.R0 * ELASTIC_STRETCH && G.vr > 0) G.vr = -G.vr * 0.3;
+    G.om *= Rold / G.R;
+  } else if (G.R !== G.R0) { // omlaag glijden of het touw trekt strak: de snelheid blijft gelijk
+    const Rold = G.R;
+    G.R = G.R < G.R0 ? Math.min(G.R0, G.R + 520 * dt) : Math.max(G.R0, G.R - 520 * dt);
+    G.om *= Rold / G.R;
+  }
+  let alpha = -(g / G.R) * Math.sin(G.th);
+  if (game.mode !== 'dying') { // "pompen": Andy zwaait zelf mee
+    const vt = G.om * G.R, c = Math.cos(G.th);
+    if (c > 0.25 && Math.abs(vt) > 15 && Math.abs(vt) < swingCap()) {
+      const s = Math.sign(G.om), fwd = s * c > 0;
+      alpha += s * pumpA(lvl('swing')) * (fwd ? 1 : 0.55) / G.R;
     }
   }
-  G.px = G.x; G.py = G.y;
-  G.x += vx * 0.9999 + ax * dt * dt;
-  G.y += vy * 0.9999 + ay * dt * dt;
+  G.om = (G.om + alpha * dt) * 0.99998;
+  G.th += G.om * dt;
+  const sn = Math.sin(G.th), c = Math.cos(G.th);
+  G.x = a.x + G.R * sn; G.y = a.y + G.R * c;
+  G.vx = G.R * G.om * c + G.vr * sn + bvx; G.vy = -G.R * G.om * sn + G.vr * c;
+  // spanning negatief (boven het anker en te langzaam)? dan wordt het touw slap
+  if (!elastic && G.R * G.om * G.om + g * c < 0) G.slack = true;
+  setHand();
 }
 
 function tryGrab() {
@@ -1030,28 +1176,34 @@ function tryGrab() {
 function attach(v, k) {
   const airT = G.airT, dx = G.x - G.airX;
   const p = v.pts, n = p.length;
-  G.state = 'hang'; G.vine = v; G.k = k; G.hangT = 0; G.iceT = 0; G.im = 0.012; G.diveT = 0; G.dive = 0; G.noDive = false;
+  if (G.trick) { G.trick = null; G.trickRot = 0; } // truc onderbroken
+  G.state = 'hang'; G.vine = v; G.k = k; G.hangT = 0; G.iceT = 0; G.diveT = 0; G.dive = 0; G.noDive = false; G.chain = 0;
   // Nooit helemaal bovenin: Andy glijdt een stukje omlaag (anders is al zijn vaart weg)
   G.slideTo = Math.max(k, Math.max(6, Math.round(n * 0.45))); G.slideT = 0;
+  if (v.type === 'icy') G.slideTo = Math.max(G.slideTo, Math.round(n * 0.6));
   if (G.slideTo > k && game.mode === 'playing') Sfx.slide();
-  // Momentum behouden: de vaart wordt omgezet in de zwaairichting in plaats van weggegooid
-  const a = p[0], rx = G.x - a.x, ry = G.y - a.y, rl = Math.hypot(rx, ry) || 1;
-  const tx = -ry / rl, ty = rx / rl, speed = Math.hypot(G.vx, G.vy), vt = G.vx * tx + G.vy * ty;
-  // Andy zwaait na het grijpen altijd vooruit (tenzij je bewust hard terug vliegt) en verliest geen vaart:
-  // er is zelfs een minimale zwaaisnelheid, zodat grijpen je nooit volledig afremt.
-  let dir = Math.abs(tx) > 0.2 ? (tx > 0 ? 1 : -1) : (ty > 0 ? 1 : -1);
+  // Slinger opzetten. Alle vaart blijft behouden en wordt een voorwaartse zwaai
+  // (tenzij je bewust hard terug vliegt), met een minimale zwaaisnelheid.
+  const a = p[0], rx = G.x - a.x, ry = G.y - a.y;
+  G.R = Math.max(40, Math.hypot(rx, ry)); G.R0 = k * SEG_LEN + ARM_LEN; G.th = Math.atan2(rx, ry); G.vr = 0; G.slack = false;
+  const c = Math.cos(G.th), sn = Math.sin(G.th), speed = Math.hypot(G.vx, G.vy);
+  const vt = (G.vx - (v.balloon ? v.balloon.vx : 0)) * c - G.vy * sn;
+  let dir = Math.abs(c) > 0.2 ? Math.sign(c) : -Math.sign(sn) || 1;
   if (G.vx < -250 && Math.sign(vt) === -dir) dir = -dir;
-  const keep = Math.max(speed, 480);
-  G.vx = tx * dir * keep; G.vy = ty * dir * keep;
-  G.px = G.x - G.vx * DT; G.py = G.y - G.vy * DT;
-  G.armLen = Math.max(12, Math.hypot(p[k].x - G.x, p[k].y - G.y));
-  for (let j = Math.max(1, k - 3); j <= Math.min(n - 1, k + 3); j++) {
-    p[j].px = p[j].x - G.vx * DT * 0.6; p[j].py = p[j].y - G.vy * DT * 0.6;
-  }
+  G.om = dir * Math.max(speed, 420) / G.R;
+  setHand();
   Sfx.grab();
+  if (v.type === 'turbo' && game.mode === 'playing') Sfx.turboCharge();
   for (let i = 0; i < 7; i++) addPart({ type: 'leaf', x: p[k].x, y: p[k].y, vx: rand(-160, 160), vy: rand(-200, 40), life: rand(0.6, 1.1), max: 1.1, col: v.leaf, r: rand(3, 5), rot: rand(0, 6), vr: rand(-8, 8), g: 500 });
   addPart({ type: 'ring', x: p[k].x, y: p[k].y, vx: 0, vy: 0, life: 0.35, max: 0.35, col: 'rgba(255,255,255,.8)', r: 6, grow: 30, g: 0 });
-  if (v.balloon && !v.balloon.visited && game.mode === 'playing') { v.balloon.visited = true; reward(G.x, G.y - 60, 'Luchtballon!', 5, '#ffe46b'); }
+  if (v.balloon && !v.balloon.visited && game.mode === 'playing') {
+    v.balloon.visited = true;
+    if (v.balloon.path) {
+      const prev = vines.find(w => w.balloon && w.balloon.path === v.balloon.path && w.balloon.step === v.balloon.step - 1);
+      if (v.balloon.step > 0 && !(prev && prev.balloon.visited)) v.balloon.visited = false; // niet op volgorde: telt niet
+      else reward(G.x, G.y - 60, v.balloon.step === SPACE_PATH - 1 ? 'Laatste ballon! Laat los!' : `Ballonpad ${v.balloon.step + 1}/${SPACE_PATH}`, 3, '#ffe46b');
+    } else reward(G.x, G.y - 60, 'Luchtballon!', 5, '#ffe46b');
+  }
   // beloning voor een mooie sprong
   else if (game.mode === 'playing' && v !== G.lastVine) {
     if (airT > 1.5 && dx > 900) reward(G.x, G.y - 60, 'ENORME SPRONG!', 5, '#ffe46b');
@@ -1069,8 +1221,9 @@ function release(voluntary = true) {
   if (G.state !== 'hang') return;
   const v = G.vine;
   const m = launchM(lvl('launch'));
-  let vx = (G.x - G.px) / DT * m, vy = (G.y - G.py) / DT * m;
-  if (vx > 0) vx += 90;
+  freeHand(v, G.k);
+  let vx = G.vx * m, vy = G.vy * m;
+  if (vx > 0) vx += 60 + 20 * lvl('launch');
   vy -= 50;
   const playing = game.mode === 'playing';
   if (playing && voluntary && v.type === 'turbo') {
@@ -1091,7 +1244,8 @@ function release(voluntary = true) {
     shake(4, 0.2);
   }
   G.vx = vx; G.vy = vy;
-  G.lastVine = v; G.releaseT = 0.3; G.vine = null; G.state = 'air'; G.airT = 0; G.airX = G.x;
+  G.lastVine = v; G.releaseT = 0.3; G.vine = null; G.state = 'air'; G.airT = 0; G.airX = G.x; G.slack = false;
+  if (playing && voluntary && v.balloon && v.balloon.path) checkSpaceLaunch(v);
   if (playing) {
     Sfx.release();
     for (let i = 0; i < 5; i++) addPart({ x: G.x, y: G.y + 10, vx: -vx * rand(0.05, 0.2) + rand(-40, 40), vy: rand(-40, 40), life: 0.4, max: 0.4, col: 'rgba(255,255,255,.6)', r: rand(3, 6), g: 0 });
@@ -1116,7 +1270,7 @@ function snapVine(v) {
 }
 function startRocket() {
   run.firstJump = false;
-  if (G.state === 'hang') { G.lastVine = G.vine; G.releaseT = 1; G.vine = null; }
+  if (G.state === 'hang') { freeHand(G.vine, G.k); G.lastVine = G.vine; G.releaseT = 1; G.vine = null; }
   G.state = 'rocket';
   G.rocketEnd = START_X + rocketDist(lvl('rocket')) * PX_PER_M;
   G.y = ROCK.top - FEET - 30;
@@ -1160,7 +1314,11 @@ function hitFoe(f) {
 }
 function die() {
   if (G.state === 'dead') return;
-  if (G.state === 'hang') { G.vx = (G.x - G.px) / DT; G.vy = (G.y - G.py) / DT; G.vine = null; }
+  if (game.mode === 'done') { // al gefinisht: gewoon een plons, geen game over
+    if (G.state === 'hang') { freeHand(G.vine, G.k); G.vine = null; }
+    G.state = 'dead'; G.deadT = 0; splash(G.x, 20); return;
+  }
+  if (G.state === 'hang') { freeHand(G.vine, G.k); G.vine = null; }
   G.state = 'dead'; game.mode = 'dying'; run.reason = 'fall'; G.deadT = 0;
   G.vx *= 0.25; G.vy = Math.min(G.vy, 200);
   G.splashed = true; splash(G.x, 30); Sfx.splash(); shake(7, 0.35);
@@ -1171,10 +1329,11 @@ function die() {
 // =====================================================================
 function step(dt) {
   time += dt;
-  const forced = game.mode === 'menu' || game.mode === 'ready' || game.holdLock;
+  const forced = game.mode === 'menu' || game.mode === 'ready' || game.mode === 'done' || game.holdLock;
   const holdHang = forced || (game.mode === 'playing' && input.down);
   const holdAir = game.mode === 'playing' && input.down;
 
+  if (G.state === 'hang') swingStep(G.vine, dt);
   // alleen lianen in (de buurt van) beeld worden gesimuleerd
   const x0 = camX - 500, x1 = camX + viewW + 500, y0 = camY - 450, y1 = camY + viewH + 450;
   for (const v of vines) {
@@ -1186,6 +1345,9 @@ function step(dt) {
   updateFoes(dt);
   updateApples(dt);
   for (const s of shrooms) s.sq *= Math.pow(0.02, dt);
+  for (const t of tramps) t.sq *= Math.pow(0.03, dt);
+  if (tramps.length && tramps[0].x < camX - 400) tramps.shift();
+  updateSpace(dt);
 }
 
 function updateGorilla(dt, holdHang, holdAir) {
@@ -1197,22 +1359,18 @@ function updateGorilla(dt, holdHang, holdAir) {
 
   if (G.state === 'hang') {
     const v = G.vine, p = v.pts;
-    G.vx = (G.x - G.px) / dt; G.vy = (G.y - G.py) / dt;
     G.diving = false;
     // omlaag glijden na een grijp te hoog aan de liaan
+    const moveHand = nk => { freeHand(v, G.k); G.k = nk; G.R0 = G.k * SEG_LEN + ARM_LEN; };
     if (G.k < G.slideTo) {
       G.slideT += dt;
       while (G.slideT > 0.016 && G.k < G.slideTo) {
-        G.slideT -= 0.016; G.k++;
-        G.armLen = Math.hypot(p[G.k].x - G.x, p[G.k].y - G.y);
-        if (Math.random() < 0.5) addPart({ type: 'leaf', x: p[G.k].x, y: p[G.k].y, vx: rand(-60, 60), vy: rand(-60, 10), life: 0.5, max: 0.5, col: v.leaf, r: 3, rot: rand(0, 6), vr: 6, g: 300 });
+        G.slideT -= 0.016; moveHand(G.k + 1);
+        if (Math.random() < 0.5) addPart({ type: 'leaf', x: G.hx, y: G.hy, vx: rand(-60, 60), vy: rand(-60, 10), life: 0.5, max: 0.5, col: v.leaf, r: 3, rot: rand(0, 6), vr: 6, g: 300 });
       }
     }
-    const shrink = G.k < G.slideTo ? 520 : 160;
-    if (G.armLen > ARM_LEN) G.armLen = Math.max(ARM_LEN, G.armLen - shrink * dt);
-    else if (G.armLen < ARM_LEN) G.armLen = Math.min(ARM_LEN, G.armLen + 160 * dt);
-    const q = p[G.k];
-    G.angle = Math.atan2(q.x - G.x, -(q.y - G.y));
+    G.angle = Math.atan2(G.hx - G.x, -(G.hy - G.y));
+    G.moveHand = moveHand;
     if (!holdHang) release();
     else if (playing) {
       G.hangT += dt;
@@ -1220,12 +1378,13 @@ function updateGorilla(dt, holdHang, holdAir) {
         if (G.hangT > v.snapAt) snapVine(v);
         else if (G.hangT > v.snapAt - 0.45 && Math.random() < 0.3) addPart({ x: p[1].x, y: p[1].y, vx: rand(-40, 40), vy: 0, life: 0.6, max: 0.6, col: '#7b5b36', r: 2.5 });
       } else if (v.type === 'icy') {
+        // ijs is spiegelglad: Andy glijdt continu omlaag
         G.iceT += dt;
-        if (G.iceT > 0.26 * (1 + 0.4 * lvl('vinewise'))) {
+        if (G.iceT > 0.1 * (1 + 0.5 * lvl('vinewise'))) {
           G.iceT = 0;
           if (G.k < p.length - 1) {
-            G.k++; G.armLen = Math.hypot(p[G.k].x - G.x, p[G.k].y - G.y);
-            addPart({ type: 'star', x: p[G.k].x, y: p[G.k].y, vx: rand(-60, 60), vy: rand(-60, 0), life: 0.4, max: 0.4, col: '#ffffff', r: 3, rot: 0, vr: 5 });
+            G.moveHand(G.k + 1);
+            addPart({ type: 'star', x: G.hx, y: G.hy, vx: rand(-60, 60), vy: rand(-60, 0), life: 0.4, max: 0.4, col: '#ffffff', r: 3, rot: 0, vr: 5 });
           } else {
             release(false);
             floatText(G.x, G.y - 50, 'Weggegleden!', '#d8f3ff');
@@ -1236,7 +1395,7 @@ function updateGorilla(dt, holdHang, holdAir) {
       }
     }
   } else if (G.state === 'stand') {
-    G.vx = 0; G.vy = 0; G.angle *= 0.85; G.diving = false;
+    G.vx = 0; G.vy = 0; G.angle *= 0.85; G.diving = false; G.standT += dt;
     // opnieuw springen vanaf de rots (met een nieuwe druk op de knop)
     if (playing && input.down && input.presses !== G.standPress) jump();
   } else if (G.state === 'air') {
@@ -1248,12 +1407,16 @@ function updateGorilla(dt, holdHang, holdAir) {
     const e = clamp((G.diveT - 0.04) / 0.5, 0, 1);
     G.dive += (e * e - G.dive) * Math.min(1, dt * (diveHold ? 30 : 12));
     G.diving = G.dive > 0.25;
-    const glide = G.vy > 0 && G.dive < 0.1 ? 1 - 0.1 * lvl('glide') : 1;
-    G.vy += AIR_G * glide * (1 + 1.6 * G.dive) * dt;
+    const falling = G.vy > 0 && G.dive < 0.1, wing = lvl('wingsuit');
+    const glide = falling ? 1 - 0.1 * lvl('glide') - 0.07 * wing : 1;
+    const space = run.space && G.y < SPACE_Y;
+    G.vy += AIR_G * glide * (space ? 0.45 : 1) * (1 + 1.6 * G.dive) * dt;
+    // wingsuit: een deel van de valsnelheid wordt voorwaartse vaart
+    if (wing && falling && G.vx > 0) { const dv = Math.min(G.vy, 700) * 0.32 * wing * dt; G.vy -= dv; G.vx += dv * 0.85; }
     const maxFall = MAX_FALL * glide * (1 + 0.8 * G.dive);
     if (G.vy > maxFall) G.vy += (maxFall - G.vy) * Math.min(1, dt * 6);
-    G.vx -= G.vx * 0.012 * dt;
-    const sp = Math.hypot(G.vx, G.vy), maxS = 1900;
+    G.vx -= G.vx * 0.015 * dt;
+    const sp = Math.hypot(G.vx, G.vy), maxS = maxSpeed() * (G.turboT > 0 ? 1.15 : 1) * (space ? 1.3 : 1);
     if (sp > maxS) { G.vx *= maxS / sp; G.vy *= maxS / sp; }
     const prevFeet = G.y + FEET;
     G.x += G.vx * dt; G.y += G.vy * dt;
@@ -1267,15 +1430,27 @@ function updateGorilla(dt, holdHang, holdAir) {
     }
     const target = clamp(G.vx * 0.0004 + G.dive * 0.6 + clamp(G.vy * 0.0003, -0.2, 0.3), -0.7, 1.1);
     G.angle += (target - G.angle) * Math.min(1, dt * 8);
+    updateTrick(dt, holdAir);
+    // lucht-trampolines
+    for (const t of tramps) {
+      const ty = t.y + Math.sin(time * 1.5 + t.ph) * 6;
+      if (G.vy > 0 && Math.abs(G.x - t.x) < t.w / 2 + 6 && prevFeet <= ty + 4 && G.y + FEET >= ty) {
+        G.y = ty - FEET; G.vy = -Math.max(1150, G.vy * 1.05) * (1 + 0.05 * lvl('shroom')); G.vx = Math.max(G.vx, 520); t.sq = 1;
+        G.airT = 0.35; G.airX = G.x; G.noDive = false;
+        floatText(t.x, ty - 40, 'Boing!', '#ffffff', 24);
+        starBurst(t.x, ty, 10, '#7fd3ff');
+        Sfx.tramp(); shake(3, 0.12);
+      }
+    }
     // snelheidsspoor
     if (sp > 850 && Math.random() < 0.5) addPart({ type: 'streak', x: G.x + rand(-12, 12), y: G.y + rand(-14, 14), vx: G.vx * 0.2, vy: G.vy * 0.2, life: 0.25, max: 0.25, col: 'rgba(255,255,255,.7)', r: 2, g: 0 });
     if (G.turboT > 0) addPart({ x: G.x - G.vx * 0.02, y: G.y - G.vy * 0.02, vx: rand(-40, 40), vy: rand(-40, 40), life: 0.35, max: 0.35, col: Math.random() < 0.5 ? '#ffd23f' : '#ff8a1a', r: rand(3, 6), g: 0 });
     if (holdAir) tryGrab();
     if (G.state === 'air') {
       for (const s of shrooms) {
-        if (G.vy > 0 && Math.abs(G.x - s.x) < s.w / 2 + 8 && G.y + G_R > SHROOM_TOP && G.y < SHROOM_TOP + 16) {
+        if (G.vy > 0 && Math.abs(G.x - s.x) < s.w / 2 + 14 && prevFeet <= SHROOM_TOP + 10 && G.y + FEET >= SHROOM_TOP) {
           const sl = lvl('shroom');
-          G.y = SHROOM_TOP - G_R; G.vy = -rand(1250, 1350) * (1 + 0.07 * sl); G.vx = Math.max(G.vx, 380 + 70 * sl); s.sq = 1;
+          G.y = SHROOM_TOP - FEET; G.vy = -rand(1250, 1350) * (1 + 0.07 * sl); G.vx = Math.max(G.vx, 380 + 70 * sl); s.sq = 1;
           floatText(s.x, SHROOM_TOP - 40, 'Boing!', '#ffffff', 24);
           starBurst(s.x, SHROOM_TOP, 10, BIOMES[s.bi].shroom);
           Sfx.boing(); shake(3, 0.15);
@@ -1303,6 +1478,7 @@ function updateGorilla(dt, holdHang, holdAir) {
     if (G.deadT > 1.3 && game.mode === 'dying') gameOver();
   }
 
+  if (playing && G.state !== 'dead' && game.career && G.x >= game.career.finishX) levelComplete();
   if (playing && G.state !== 'dead') {
     run.dist = Math.max(run.dist, (G.x - START_X) / PX_PER_M);
     if (run.dist >= run.nextMile) {
@@ -1313,12 +1489,12 @@ function updateGorilla(dt, holdHang, holdAir) {
       const rain = lvl('rain');
       if (rain) { // appelregen
         const gc = goldChance(lvl('golden'));
-        for (let i = 0; i < 3 + rain * 3; i++) apples.push({ x: G.x + rand(80, 560), y: camY - rand(20, 260), vx: rand(-20, 20), vy: rand(40, 140), rain: true, gold: Math.random() < gc, t: 0 });
+        for (let i = 0; i < 3 + rain * 3; i++) apples.push({ x: G.x + rand(120, 620), y: camY - rand(20, 260), rel: rand(120, 620), vy: rand(40, 140), rain: true, gold: Math.random() < gc, t: 0 });
         floatText(G.x + 200, G.y - 110, 'Appelregen! 🌧️', '#bfe6ff', 24);
       }
     }
     const bi = biomeIndexAt(run.dist);
-    if (bi > run.biome) {
+    if (bi > run.biome && !game.career) {
       run.biome = bi; Music.biome = bi;
       const b = BIOMES[bi];
       showBanner(`${b.icon} ${b.name}`, `${b.tip}\nElke appel telt nu ×${fmtNum(applesPerPick(bi))}!`);
@@ -1375,7 +1551,8 @@ function updateApples(dt) {
     a.t += dt;
     if (a.x < camX - 250) { apples.splice(i, 1); continue; }
     if (a.vine) { const q = a.vine.pts[a.idx]; a.x = q.x + 9; a.y = q.y + 4; }
-    if (a.rain) { a.vy = Math.min(a.vy + 220 * dt, 260); a.x += a.vx * dt; a.y += a.vy * dt; if (a.y > HAZARD_Y + 20) { apples.splice(i, 1); continue; } }
+    if (a.rain) { // de regen vliegt met Andy mee (ook op topsnelheid) en komt langzaam naar hem toe
+      a.rel = Math.max(0, a.rel - 170 * dt); a.x += (G.x + a.rel - a.x) * Math.min(1, dt * 4); a.vy = Math.min(a.vy + 220 * dt, 260); a.y += a.vy * dt; if (a.y > HAZARD_Y + 20) { apples.splice(i, 1); continue; } }
     if (a.loose) { // weggeslagen appels vallen naar beneden
       a.grace -= dt; a.vy += GRAVITY * 0.7 * dt; a.x += a.vx * dt; a.y += a.vy * dt;
       if (a.y > HAZARD_Y + 20) { apples.splice(i, 1); continue; }
@@ -1412,6 +1589,67 @@ function collect(a) {
   }
 }
 
+const maxSpeed = () => 1450 + 110 * lvl('launch');
+// ---- Trucs: bij een lange luchtvlucht doet Andy vanzelf salto's en andere kunstjes ----
+const TRICKS = [
+  { id: 'salto', name: 'Salto!', dur: 0.62, rot: -Math.PI * 2 },
+  { id: 'back', name: 'Achterwaartse salto!', dur: 0.7, rot: Math.PI * 2 },
+  { id: 'screw', name: 'Kurkentrekker!', dur: 0.7, rot: 0 },
+  { id: 'star', name: 'Sterrensprong!', dur: 0.55, rot: 0 },
+  { id: 'super', name: 'Superaap!', dur: 0.65, rot: 0 },
+];
+function updateTrick(dt, holdAir) {
+  if (game.mode !== 'playing') return;
+  if (G.trick) {
+    if (G.dive > 0.3) { G.trick = null; G.trickRot = 0; return; } // duiken breekt de truc af
+    G.trickT += dt;
+    const k = Math.min(1, G.trickT / G.trick.dur), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+    G.trickRot = G.trick.rot * e;
+    if (k >= 1) {
+      G.chain++; run.tricks++;
+      const bonus = 2 * G.chain;
+      run.earned += bonus;
+      floatText(G.x, G.y - 60, `${G.chain > 1 ? G.chain + '× ' : ''}${G.trick.name} +${bonus}🍎`, '#ffe46b', 22 + Math.min(8, G.chain * 2));
+      starBurst(G.x, G.y, 10 + G.chain * 3, '#ffe46b');
+      Sfx.trick(G.chain);
+      G.trick = null; G.trickRot = 0; G.trickCool = 0.12;
+    }
+    return;
+  }
+  G.trickCool = (G.trickCool || 0) - dt;
+  const needT = G.chain ? 0 : 0.5;
+  if (G.airT > needT && G.trickCool <= 0 && !holdAir && G.dive < 0.1 && !G.noDive && Math.hypot(G.vx, G.vy) > 300) {
+    // is er genoeg tijd voordat Andy een liaan raakt? (grof: niet te dicht boven de bodem)
+    if (G.y < HAZARD_Y - 220) { G.trick = TRICKS[(Math.random() * TRICKS.length) | 0]; G.trickT = 0; }
+  }
+}
+// ---- Ruimte ----
+const SPACE_PATH = 5, SPACE_Y = -3000;
+function checkSpaceLaunch(v) {
+  const b = v.balloon;
+  // alleen als alle ballonnen van dit pad op volgorde zijn gepakt
+  const path = vines.filter(w => w.balloon && w.balloon.path === b.path).sort((p, q) => p.balloon.step - q.balloon.step);
+  if (b.step !== SPACE_PATH - 1 || !path.every(w => w.balloon.visited)) return;
+  G.vx = Math.max(G.vx, 700); G.vy = -1550; G.turboT = 1.5; G.noDive = true; G.airT = 0; run.launchT = 6;
+  floatText(G.x, G.y - 70, 'LANCERING! 🚀', '#ffe46b', 30);
+  confetti(G.x, G.y, 60); shake(8, 0.4); Sfx.rocket(); Sfx.turbo();
+}
+function updateSpace(dt) {
+  if (game.mode !== 'playing') return;
+  run.launchT = (run.launchT || 0) - dt;
+  const inSpace = G.y < SPACE_Y - 200;
+  if (inSpace && !run.space && run.launchT > 0) {
+    run.space = true; run.spaceVisits++;
+    run.earned += 25;
+    showBanner('🚀 In de ruimte!', 'Bijna geen zwaartekracht… pak de sterappels! +25 🍎');
+    confetti(G.x + 150, G.y - 100, 80); flashT = 0.4; Sfx.jingle(5);
+    // sterappels (goud) in een grote boog vooruit
+    for (let i = 0; i < 24; i++) { const t = i / 23; apples.push({ x: G.x + 250 + t * 2000, y: G.y - 250 - Math.sin(t * Math.PI) * 900 + t * 900, gold: true, t: Math.random() * 6 }); }
+  } else if (run.space && G.y > SPACE_Y + 400) {
+    run.space = false;
+    floatText(G.x, G.y - 60, 'Terug naar de jungle!', '#ffffff', 24);
+  }
+}
 // Papegaaimaatje: vliegt mee en plukt af en toe een appel in de buurt
 function updateParrot(dt) {
   const B = G.parrot;
@@ -1614,8 +1852,8 @@ function blob(g, x, y, r) { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fil
 function crossfade(P, fn) {
   if (P.a === P.b || P.t <= 0.001) { fn(P.a, P.ai, 1); return; }
   if (P.t >= 0.999) { fn(P.b, P.bi, 1); return; }
-  ctx.save(); ctx.globalAlpha = 1 - P.t; fn(P.a, P.ai, 1 - P.t); ctx.restore();
-  ctx.save(); ctx.globalAlpha = P.t; fn(P.b, P.bi, P.t); ctx.restore();
+  ctx.save(); ctx.globalAlpha *= 1 - P.t; fn(P.a, P.ai, 1 - P.t); ctx.restore();
+  ctx.save(); ctx.globalAlpha *= P.t; fn(P.b, P.bi, P.t); ctx.restore();
 }
 
 // Langzaam bewegende achtergrondlagen worden in een buffer (op lagere resolutie) getekend
@@ -2179,6 +2417,23 @@ function drawRock() {
   for (let k = -3; k <= 3; k++) { const a = -Math.PI / 2 + k * 0.3 + Math.sin(time * 1.5) * 0.03; ell(x0 + 40 + Math.cos(a) * 26, top - 8 + Math.sin(a) * 26, 26, 6, a); }
   const ap = appleSprite(false); ctx.drawImage(ap.c, x1 - 70, top - 30, 22, 24);
 }
+// Finish in de carrière: een geblokte vlaggenlijn over de hele hoogte
+function drawFinish() {
+  const C = game.career;
+  if (!C || !C.finishX) return;
+  const x = C.finishX;
+  if (x < camX - 80 || x > camX + viewW + 80) return;
+  const y0 = Math.max(camY - 20, CEIL_Y - 400), y1 = Math.min(camY + viewH + 20, HAZARD_Y + 40);
+  for (let y = Math.floor(y0 / 24) * 24, r = 0; y < y1; y += 24, r++) {
+    ctx.fillStyle = r % 2 ? '#ffffff' : '#111111'; ctx.fillRect(x - 12, y, 12, 24);
+    ctx.fillStyle = r % 2 ? '#111111' : '#ffffff'; ctx.fillRect(x, y, 12, 24);
+  }
+  ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fillRect(x + 12, y0, 60, y1 - y0);
+  const by = clamp(G.y - 140, y0 + 40, y1 - 120);
+  ctx.fillStyle = '#e8322b'; ctx.fillRect(x + 14, by, 120, 44);
+  ctx.fillStyle = '#fff'; ctx.font = '900 24px Trebuchet MS, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText('FINISH', x + 26, by + 23);
+}
 function drawMarkers() {
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const m0 = Math.max(100, Math.floor(((camX - START_X) / PX_PER_M) / 100) * 100);
@@ -2190,7 +2445,7 @@ function drawMarkers() {
     ctx.strokeStyle = '#4a2e16'; ctx.lineWidth = 2; ctx.strokeRect(x - 28, HAZARD_Y - 72, 56, 24);
     ctx.fillStyle = '#fff'; ctx.font = 'bold 14px Trebuchet MS, sans-serif'; ctx.fillText(m + ' m', x, HAZARD_Y - 60);
   }
-  if (save.best >= 20) {
+  if (save.best >= 20 && !game.career) {
     const x = START_X + save.best * PX_PER_M;
     if (x > camX - 80 && x < camX + viewW + 80) {
       ctx.fillStyle = '#ddd'; ctx.fillRect(x - 3, HAZARD_Y - 200, 6, 240);
@@ -2205,10 +2460,10 @@ function drawMarkers() {
 }
 function drawShrooms() {
   for (const s of shrooms) {
-    if (s.x < camX - 100 || s.x > camX + viewW + 100) continue;
+    if (s.x < camX - 140 || s.x > camX + viewW + 140) continue;
     const col = BIOMES[s.bi].shroom;
     ctx.save(); ctx.translate(s.x, HAZARD_Y + 10);
-    ctx.scale(1 + s.sq * 0.25, 1 - s.sq * 0.3);
+    ctx.scale((1 + s.sq * 0.25) * 1.8, (1 - s.sq * 0.3) * 1.45); // grote stuiterzwam
     ctx.fillStyle = '#f3e6cc'; ctx.fillRect(-11, -56, 22, 70);
     ctx.fillStyle = '#d8c7a4'; ctx.fillRect(-11, -56, 6, 70);
     ctx.fillStyle = shade(col, -0.3); ctx.beginPath(); ctx.ellipse(0, -52, 52, 30, 0, Math.PI, 0); ctx.fill();
@@ -2217,6 +2472,55 @@ function drawShrooms() {
     ctx.fillStyle = 'rgba(255,255,255,.88)'; circ(-24, -66, 6); circ(4, -76, 7); circ(26, -64, 5); circ(-6, -60, 4);
     ctx.restore();
   }
+}
+// Zwevende lucht-trampolines, gedragen door twee ballonnetjes
+function drawTramps() {
+  for (const t of tramps) {
+    if (t.x < camX - 150 || t.x > camX + viewW + 150) continue;
+    const y = t.y + Math.sin(time * 1.5 + t.ph) * 6;
+    if (y < camY - 150 || y > camY + viewH + 60) continue;
+    const w = t.w, sq = t.sq;
+    ctx.save(); ctx.translate(t.x, y);
+    ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 1.2;
+    const cols = ['#ff5a7a', '#ffd23f'];
+    [-1, 1].forEach((sd, i) => {
+      const bx = sd * w * 0.42 + Math.sin(time * 2 + i) * 3;
+      line(sd * w * 0.36, -2, bx, -70);
+      ctx.fillStyle = cols[i]; ell(bx, -86, 13, 16);
+      ctx.fillStyle = 'rgba(255,255,255,.5)'; ell(bx - 4, -91, 3.5, 5);
+      ctx.fillStyle = cols[i]; ctx.beginPath(); ctx.moveTo(bx - 3, -70); ctx.lineTo(bx + 3, -70); ctx.lineTo(bx, -73); ctx.fill();
+    });
+    ctx.fillStyle = '#1f2a44'; ell(0, 0, w / 2 + 2, 13);
+    ctx.fillStyle = '#3aa0e8'; ell(0, 1 + sq * 9, w / 2 - 8, 7 + sq * 7);
+    ctx.fillStyle = 'rgba(255,255,255,.35)'; ell(-w * 0.12, -1 + sq * 7, w * 0.18, 2.5);
+    ctx.strokeStyle = '#ffcc33'; ctx.lineWidth = 4.5; ctx.beginPath(); ctx.ellipse(0, 0, w / 2, 12, 0, 0, Math.PI); ctx.stroke();
+    ctx.strokeStyle = '#b8860b'; ctx.lineWidth = 1.5;
+    for (let k = -3; k <= 3; k++) { const x = k * w / 8; line(x, 10 * Math.sqrt(1 - (x / (w / 2)) ** 2), x, 16); }
+    ctx.restore();
+  }
+}
+// De ruimte: hoe hoger de camera, hoe meer de lucht overgaat in sterren en een planeet
+const spaceWeight = () => clamp((-(camY + viewH / 2) - 1900) / 1300, 0, 1);
+function drawSpace(w) {
+  ctx.fillStyle = `rgba(3,4,18,${w})`; ctx.fillRect(0, 0, viewW, viewH);
+  for (let i = 0; i < 160; i++) {
+    const x = hash(i * 3.17) * viewW, y = ((hash(i * 7.3) * viewH * 1.5 - camY * 0.05) % viewH + viewH) % viewH;
+    ctx.fillStyle = `rgba(255,255,255,${w * (0.3 + 0.7 * Math.abs(Math.sin(time * 1.1 + i)))})`;
+    ctx.fillRect(x, y, hash(i) < 0.12 ? 2.4 : 1.3, hash(i) < 0.12 ? 2.4 : 1.3);
+  }
+  ctx.save(); ctx.globalAlpha = w;
+  const px = viewW * 0.22, py = viewH * 0.3;
+  ctx.strokeStyle = 'rgba(230,200,150,.55)'; ctx.lineWidth = 6; ctx.beginPath(); ctx.ellipse(px, py, 120, 26, -0.3, Math.PI * 0.95, Math.PI * 2.05); ctx.stroke();
+  const pg = ctx.createRadialGradient(px - 25, py - 25, 10, px, py, 70); pg.addColorStop(0, '#ffd9a0'); pg.addColorStop(1, '#b8603a');
+  ctx.fillStyle = pg; circ(px, py, 70);
+  ctx.fillStyle = 'rgba(120,50,30,.35)'; ell(px, py - 15, 66, 7, -0.3); ell(px + 5, py + 18, 62, 6, -0.3);
+  ctx.beginPath(); ctx.ellipse(px, py, 120, 26, -0.3, -Math.PI * 0.05, Math.PI * 0.95); ctx.stroke();
+  // de gloed van de aarde onder je
+  const hy = viewH + 2300 - clamp((-(camY + viewH / 2) - 1900) / 1300, 0, 1) * 150;
+  const eg = ctx.createRadialGradient(viewW / 2, hy, 2300, viewW / 2, hy, 2520);
+  eg.addColorStop(0, 'rgba(80,170,255,.9)'); eg.addColorStop(0.3, 'rgba(80,170,255,.35)'); eg.addColorStop(1, 'rgba(80,170,255,0)');
+  ctx.fillStyle = eg; ctx.fillRect(0, viewH * 0.4, viewW, viewH * 0.6);
+  ctx.restore();
 }
 function drawBalloon(v) {
   const b = v.balloon, a = v.pts[0], x = a.x, y = a.y;
@@ -2415,79 +2719,151 @@ function drawWarnings() {
     }
   }
 }
+// Andy: een cartoongorilla met contourlijnen, kuif, zware wenkbrauwboog, bandana met appelspeldje
+const GC = { fur: '#3b3344', furD: '#261f2d', furL: '#6a5b76', skin: '#dcab90', skinD: '#b3836b', ink: '#140f18', band: '#e8322b', bandD: '#a8141c', cape: '#c81e3a', capeD: '#8e1127', gold: '#ffcc33' };
+function limb(x1, y1, x2, y2, w) {
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = GC.ink; ctx.lineWidth = w + 3; line(x1, y1, x2, y2);
+  ctx.strokeStyle = GC.fur; ctx.lineWidth = w; line(x1, y1, x2, y2);
+  ctx.strokeStyle = GC.furL; ctx.lineWidth = w * 0.3; line(x1 - 1, y1 - 1, (x1 + x2) / 2 - 1, (y1 + y2) / 2 - 1);
+}
+function hand(x, y, r) {
+  ctx.fillStyle = GC.ink; circ(x, y, r + 1.5);
+  ctx.fillStyle = GC.skin; circ(x, y, r);
+  ctx.strokeStyle = GC.skinD; ctx.lineWidth = 0.9; ctx.beginPath(); ctx.arc(x, y + 0.5, r * 0.55, 0.3, Math.PI - 0.3); ctx.stroke();
+}
+function drawCape(len, spread) {
+  // cape hangt aan de schouders en wappert tegen de bewegingsrichting in (lokale coördinaten)
+  const ca = Math.cos(-G.angle - (G.trickRot || 0)), sa = Math.sin(-G.angle - (G.trickRot || 0));
+  let wx = -G.vx, wy = -G.vy + 300; const wl = Math.hypot(wx, wy) || 1; wx /= wl; wy /= wl;
+  const lx = wx * ca - wy * sa, ly = wx * sa + wy * ca; // wereld-richting -> lokaal
+  const ex = lx * len, ey = ly * len, nx = -ly * spread, ny = lx * spread, wv = Math.sin(time * 14) * 4;
+  ctx.fillStyle = GC.ink;
+  ctx.beginPath(); ctx.moveTo(-11, -7); ctx.quadraticCurveTo(ex * 0.5 - nx - 2, ey * 0.5 - ny, ex - nx + wv, ey - ny + wv); ctx.lineTo(ex + nx - wv, ey + ny - wv); ctx.quadraticCurveTo(ex * 0.5 + nx + 2, ey * 0.5 + ny, 11, -7); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = GC.cape;
+  ctx.beginPath(); ctx.moveTo(-9.5, -6); ctx.quadraticCurveTo(ex * 0.5 - nx, ey * 0.5 - ny, ex * 0.96 - nx * 0.9 + wv, ey * 0.96 - ny * 0.9 + wv); ctx.lineTo(ex * 0.96 + nx * 0.9 - wv, ey * 0.96 + ny * 0.9 - wv); ctx.quadraticCurveTo(ex * 0.5 + nx, ey * 0.5 + ny, 9.5, -6); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = GC.gold; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(ex * 0.96 - nx * 0.9 + wv, ey * 0.96 - ny * 0.9 + wv); ctx.lineTo(ex * 0.96 + nx * 0.9 - wv, ey * 0.96 + ny * 0.9 - wv); ctx.stroke();
+  ctx.fillStyle = GC.capeD; ctx.beginPath(); ctx.moveTo(-4, -6); ctx.lineTo(ex * 0.7, ey * 0.7); ctx.lineTo(4, -6); ctx.fill();
+}
 function drawGorilla() {
   if (G.state === 'dead' && G.y > HAZARD_Y + 60) return;
-  const dark = '#2d2833', face = '#d2a98f', belly = '#7d6674', band = '#e8322b';
   ctx.save(); ctx.translate(G.x, G.y);
   // zachte gloed zodat Andy goed opvalt tegen de achtergrond
   ctx.globalAlpha = G.turboT > 0 ? 0.7 : 0.35;
   ctx.drawImage(glowSprite(G.turboT > 0 ? '255,220,90' : '255,255,255').c, -52, -52, 104, 104);
   ctx.globalAlpha = 1;
-  // blad-parachute (upgrade Bladzweef) als Andy valt zonder te duiken
-  if (lvl('glide') && G.state === 'air' && G.vy > 0 && G.dive < 0.1) {
+  if (lvl('glide') && G.state === 'air' && G.vy > 0 && G.dive < 0.1 && !G.trick) { // blad-parachute
     const sw = Math.sin(time * 5) * 0.08;
     ctx.save(); ctx.rotate(sw);
-    ctx.strokeStyle = '#5a3a1a'; ctx.lineWidth = 2; line(0, -30, 0, -62);
-    ctx.fillStyle = '#3f9a45'; ctx.beginPath(); ctx.ellipse(0, -66, 38, 12, 0, Math.PI, 0); ctx.fill();
-    ctx.fillStyle = '#6fc04a'; ctx.beginPath(); ctx.ellipse(0, -68, 34, 9, 0, Math.PI, 0); ctx.fill();
+    ctx.strokeStyle = '#5a3a1a'; ctx.lineWidth = 2; line(0, -34, 0, -64);
+    ctx.fillStyle = '#2e7d32'; ctx.beginPath(); ctx.ellipse(0, -66, 40, 13, 0, Math.PI, 0); ctx.fill();
+    ctx.fillStyle = '#6fc04a'; ctx.beginPath(); ctx.ellipse(0, -68, 35, 9, 0, Math.PI, 0); ctx.fill();
     ctx.strokeStyle = '#2e7d32'; ctx.lineWidth = 1.2; line(-34, -66, 34, -66);
     ctx.restore();
   }
   if (G.balloonT > 0) {
     ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; line(0, -28, Math.sin(time * 3) * 4, -82);
-    ctx.fillStyle = band; ell(Math.sin(time * 3) * 4, -106, 20, 25);
+    ctx.fillStyle = GC.band; ell(Math.sin(time * 3) * 4, -106, 20, 25);
     ctx.fillStyle = 'rgba(255,255,255,.5)'; ell(Math.sin(time * 3) * 4 - 7, -114, 5, 8);
   }
   if (G.state === 'rocket') {
-    ctx.fillStyle = '#d9d9e3'; ell(0, 24, 34, 10);
-    ctx.fillStyle = band; ctx.beginPath(); ctx.moveTo(30, 16); ctx.lineTo(48, 24); ctx.lineTo(30, 32); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(-26, 16); ctx.lineTo(-38, 6); ctx.lineTo(-34, 22); ctx.fill();
-    ctx.fillStyle = '#6ec6ff'; circ(12, 24, 4.5);
-    ctx.fillStyle = Math.random() < 0.5 ? '#ffb020' : '#fff3a0'; ell(-42, 24, 12 + Math.random() * 8, 6);
+    ctx.fillStyle = '#d9d9e3'; ell(0, 26, 34, 10);
+    ctx.fillStyle = GC.band; ctx.beginPath(); ctx.moveTo(30, 18); ctx.lineTo(48, 26); ctx.lineTo(30, 34); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-26, 18); ctx.lineTo(-38, 8); ctx.lineTo(-34, 24); ctx.fill();
+    ctx.fillStyle = '#6ec6ff'; circ(12, 26, 4.5);
+    ctx.fillStyle = Math.random() < 0.5 ? '#ffb020' : '#fff3a0'; ell(-42, 26, 12 + Math.random() * 8, 6);
   }
-  ctx.rotate(G.angle);
+  const tr = G.trick, tk = tr ? Math.min(1, G.trickT / tr.dur) : 0;
+  ctx.rotate(G.angle + (G.trickRot || 0));
   ctx.scale(G_DRAW, G_DRAW);
+  if (tr && tr.id === 'screw') ctx.scale(Math.cos(tk * Math.PI * 4) || 0.05, 1);
   if (G.invuln > 0 && ((time * 16) | 0) % 2) ctx.globalAlpha = 0.5;
 
-  let h1, h2;
+  // ---- houding bepalen: handen (h1, h2) en voeten (f1, f2) ----
+  let h1, h2, f1 = [-8, 25], f2 = [8, 25], mouth = 'smile';
+  const sw = Math.sin(time * 10);
   if (G.state === 'hang') {
-    const q = G.vine.pts[G.k], d = Math.hypot(q.x - G.x, q.y - G.y) / G_DRAW;
-    h1 = [-4, -d]; h2 = [4, -d + 3];
-  } else if (G.state === 'rocket') { h1 = [14, 6]; h2 = [20, 8]; }
-  else if (G.state === 'dead') { const w = Math.sin(time * 20) * 6; h1 = [-24, -12 + w]; h2 = [24, -12 - w]; }
-  else if (G.diving) { h1 = [-10, 20]; h2 = [-2, 22]; }
-  else { const w = Math.sin(time * 10) * 4; h1 = [-22, -22 + w]; h2 = [22, -24 - w]; }
+    const d = Math.hypot(G.hx - G.x, G.hy - G.y) / G_DRAW;
+    h1 = [-3, -d]; h2 = [3, -d + 3];
+    f1 = [-7 + sw * 2, 26]; f2 = [8 - sw * 2, 25]; mouth = Math.abs(G.om * G.R) > 700 ? 'open' : 'smile';
+  } else if (G.state === 'stand') {
+    const beat = (G.standT % 3.5) > 2.8; // af en toe op de borst trommelen
+    if (beat) { const b = Math.sin(G.standT * 30); h1 = [-5, -3 + b * 3]; h2 = [5, -3 - b * 3]; mouth = 'open'; }
+    else { h1 = [-15, 12 + Math.sin(G.standT * 2) * 1]; h2 = [15, 12 - Math.sin(G.standT * 2) * 1]; }
+    f1 = [-9, 26]; f2 = [9, 26];
+  } else if (G.state === 'rocket') { h1 = [14, 6]; h2 = [20, 8]; mouth = 'open'; }
+  else if (G.state === 'dead') { const w = Math.sin(time * 20) * 6; h1 = [-24, -12 + w]; h2 = [24, -12 - w]; mouth = 'o'; }
+  else if (tr && tr.id === 'star') { const e = Math.sin(tk * Math.PI); h1 = [-12 - 16 * e, -10 - 14 * e]; h2 = [12 + 16 * e, -10 - 14 * e]; f1 = [-8 - 10 * e, 25]; f2 = [8 + 10 * e, 25]; mouth = 'grin'; }
+  else if (tr && tr.id === 'super') { h1 = [-3, -36]; h2 = [3, -36]; f1 = [-4, 27]; f2 = [4, 27]; mouth = 'grin'; }
+  else if (tr) { h1 = [-9, 4]; h2 = [9, 4]; f1 = [-6, 18]; f2 = [6, 18]; mouth = 'grin'; } // ingedoken voor een salto
+  else if (G.diving) { h1 = [-10, 20]; h2 = [-2, 22]; f1 = [-5, 27]; f2 = [5, 27]; mouth = 'o'; }
+  else { h1 = [-22, -22 + sw * 4]; h2 = [22, -24 - sw * 4]; f1 = [-10, 24]; f2 = [10, 24]; mouth = G.vy < -200 ? 'open' : 'smile'; }
 
-  const wave = Math.sin(time * 14) * 3;
-  ctx.fillStyle = band;
-  ctx.beginPath(); ctx.moveTo(-10, -22); ctx.lineTo(-25, -26 + wave); ctx.lineTo(-23, -18 + wave); ctx.closePath(); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(-10, -21); ctx.lineTo(-22, -16 - wave); ctx.lineTo(-18, -12 - wave); ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = dark; ctx.lineWidth = 7.5; ctx.lineCap = 'round';
-  line(-11, -4, h1[0], h1[1]); line(11, -4, h2[0], h2[1]);
-  ctx.fillStyle = dark; circ(h1[0], h1[1], 5); circ(h2[0], h2[1], 5);
-  ell(-8, 17, 6.5, 7.5); ell(8, 17, 6.5, 7.5);
-  ctx.fillStyle = face; ell(-8, 22, 5, 2.6); ell(8, 22, 5, 2.6);
-  ctx.fillStyle = dark; ell(0, 3, 16, 17);
-  ctx.fillStyle = belly; ell(0, 7, 9.5, 10);
-  ctx.fillStyle = 'rgba(255,255,255,.12)'; ell(-6, -2, 5, 8, 0.4);
-  ctx.fillStyle = dark; circ(0, -15, 12.5); circ(-12, -14, 4.2); circ(12, -14, 4.2);
-  ctx.fillStyle = face; circ(-12, -14, 2.2); circ(12, -14, 2.2);
-  ell(0, -11.5, 9.5, 7.8);
-  ctx.fillStyle = dark; ell(0, -18.5, 10.5, 3.2);
-  ctx.strokeStyle = band; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(0, -15, 12.5, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke();
-  ctx.fillStyle = band; circ(-11, -21, 3);
-  const look = clamp(G.vx / 900, -1, 1) * 1.1;
+  // cape (wingsuit)
+  const wing = lvl('wingsuit');
+  if (wing) drawCape(G.state === 'air' && G.vy > 0 && !G.diving ? 30 + wing * 5 : 24, G.state === 'air' && !G.diving ? 9 + wing : 7);
+  // bandana-slierten
+  const vw = Math.sin(time * 16) * 3, tl = 12 + Math.min(10, Math.hypot(G.vx, G.vy) / 150);
+  ctx.fillStyle = GC.bandD;
+  ctx.beginPath(); ctx.moveTo(-11, -25); ctx.lineTo(-11 - tl, -29 + vw); ctx.lineTo(-10 - tl * 0.9, -21 + vw); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = GC.band;
+  ctx.beginPath(); ctx.moveTo(-11, -24); ctx.lineTo(-11 - tl * 0.8, -19 - vw); ctx.lineTo(-8 - tl * 0.6, -14 - vw); ctx.closePath(); ctx.fill();
+  // armen en benen (achter het lijf)
+  limb(-11, -5, h1[0], h1[1], 7.5); limb(11, -5, h2[0], h2[1], 7.5);
+  limb(-7, 12, f1[0], f1[1] - 3, 7); limb(7, 12, f2[0], f2[1] - 3, 7);
+  for (const f of [f1, f2]) { ctx.fillStyle = GC.ink; ell(f[0], f[1], 6.8, 4.2); ctx.fillStyle = GC.skin; ell(f[0], f[1] - 0.3, 5.4, 3); }
+  hand(h1[0], h1[1], 4.8); hand(h2[0], h2[1], 4.8);
+  // lijf: contour, vacht, borstplaten
+  const torso = () => { ctx.beginPath(); ctx.moveTo(-15, -6); ctx.quadraticCurveTo(-18, 8, -11, 16); ctx.quadraticCurveTo(0, 21, 11, 16); ctx.quadraticCurveTo(18, 8, 15, -6); ctx.quadraticCurveTo(0, -13, -15, -6); ctx.closePath(); };
+  ctx.fillStyle = GC.ink; ctx.save(); ctx.lineWidth = 3.2; ctx.strokeStyle = GC.ink; torso(); ctx.stroke(); ctx.restore();
+  ctx.fillStyle = GC.fur; torso(); ctx.fill();
+  ctx.fillStyle = GC.furD; ctx.beginPath(); ctx.moveTo(15, -6); ctx.quadraticCurveTo(18, 8, 11, 16); ctx.quadraticCurveTo(6, 18, 4, 17); ctx.quadraticCurveTo(12, 6, 15, -6); ctx.fill();
+  ctx.fillStyle = GC.skinD; ell(-4.6, 0, 5.8, 4.8, -0.2); ell(4.6, 0, 5.8, 4.8, 0.2);
+  ctx.fillStyle = GC.skin; ell(-4.8, -0.6, 4.8, 3.8, -0.2); ell(4.8, -0.6, 4.8, 3.8, 0.2);
+  ctx.fillStyle = GC.skinD; ell(0, 9, 6, 5.5); ctx.fillStyle = GC.skin; ell(0, 8.4, 5, 4.4);
+  ctx.strokeStyle = GC.furL; ctx.lineWidth = 1.3; ctx.lineCap = 'round'; // vachtplukjes op de schouders
+  line(-14, -6, -17, -9); line(-12, -8, -14, -12); line(14, -6, 17, -9); line(12, -8, 14, -12);
+  // hoofd met kuif en oren (eerst de contour, dan de vulling)
+  const headShapes = (grow) => { circ(0, -17, 13 + grow); ell(0, -28, 6.5 + grow, 5 + grow); circ(-13, -16, 4.3 + grow); circ(13, -16, 4.3 + grow); };
+  ctx.fillStyle = GC.ink; headShapes(1.6);
+  ctx.fillStyle = GC.fur; headShapes(0);
+  ctx.fillStyle = GC.skinD; circ(-13, -16, 2.3); circ(13, -16, 2.3);
+  ctx.fillStyle = GC.furD; ctx.beginPath(); ctx.arc(0, -17, 13, -0.4, 1.2); ctx.lineTo(0, -17); ctx.fill();
+  // gezichtsmasker
+  ctx.fillStyle = GC.skin; ell(0, -11.5, 10, 7.8); circ(-4.4, -17, 4.6); circ(4.4, -17, 4.6);
+  ctx.fillStyle = GC.skinD; ell(0, -7.5, 7, 3.2);
+  // zware wenkbrauwboog
+  ctx.fillStyle = GC.ink; ell(0, -21.2, 11.4, 3.6);
+  ctx.fillStyle = GC.furD; ell(0, -21.6, 10.6, 2.8);
+  // ogen
+  const look = clamp(G.vx / 900, -1, 1) * 1.2, lookY = clamp(G.vy / 1200, -1, 1) * 0.8;
   if (G.state === 'dead') {
-    ctx.strokeStyle = dark; ctx.lineWidth = 1.6;
-    for (const ex of [-4, 4]) { line(ex - 2, -17, ex + 2, -13); line(ex + 2, -17, ex - 2, -13); }
+    ctx.strokeStyle = GC.ink; ctx.lineWidth = 1.7;
+    for (const ex of [-4.2, 4.2]) { line(ex - 2, -19, ex + 2, -15); line(ex + 2, -19, ex - 2, -15); }
   } else {
-    ctx.fillStyle = '#fff'; circ(-4, -15, 3.3); circ(4, -15, 3.3);
-    ctx.fillStyle = '#111'; circ(-4 + look, -15, 1.8); circ(4 + look, -15, 1.8);
-    ctx.fillStyle = '#fff'; circ(-3.3 + look, -15.8, 0.6); circ(4.7 + look, -15.8, 0.6);
+    ctx.fillStyle = GC.ink; ell(-4.2, -17, 3.6, 4); ell(4.2, -17, 3.6, 4);
+    ctx.fillStyle = '#ffffff'; ell(-4.2, -17, 2.9, 3.3); ell(4.2, -17, 2.9, 3.3);
+    ctx.fillStyle = '#3a2416'; circ(-4.2 + look, -16.6 + lookY, 2); circ(4.2 + look, -16.6 + lookY, 2);
+    ctx.fillStyle = '#000'; circ(-4.2 + look, -16.6 + lookY, 1.1); circ(4.2 + look, -16.6 + lookY, 1.1);
+    ctx.fillStyle = '#fff'; circ(-3.4 + look, -17.6 + lookY, 0.8); circ(5 + look, -17.6 + lookY, 0.8);
   }
-  ctx.fillStyle = '#5a3e33'; circ(-1.7, -10.5, 1.1); circ(1.7, -10.5, 1.1);
-  if (G.diving || G.state === 'dead' || G.state === 'rocket') { ctx.fillStyle = '#5a2020'; ell(0, -6.5, 2.4, 2.8); }
-  else { ctx.strokeStyle = '#5a3e33'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(0, -8.5, 3.5, 0.25, Math.PI - 0.25); ctx.stroke(); }
+  // neus
+  ctx.fillStyle = GC.skinD; ell(0, -11.6, 4.8, 2.9);
+  ctx.fillStyle = GC.ink; ell(-1.8, -11.3, 1.3, 1); ell(1.8, -11.3, 1.3, 1);
+  // mond
+  if (mouth === 'o') { ctx.fillStyle = GC.ink; ell(0, -6.2, 2.4, 2.8); ctx.fillStyle = '#c0394b'; ell(0, -5.6, 1.4, 1.4); }
+  else if (mouth === 'open' || mouth === 'grin') {
+    ctx.fillStyle = GC.ink; ctx.beginPath(); ctx.moveTo(-5.5, -8); ctx.quadraticCurveTo(0, mouth === 'grin' ? -1.5 : -2, 5.5, -8); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(-4, -8, 8, 1.6);
+    if (mouth === 'open') { ctx.fillStyle = '#c0394b'; ell(0, -4.8, 2.5, 1.2); }
+  } else { ctx.strokeStyle = GC.ink; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(0, -9.5, 4, 0.3, Math.PI - 0.3); ctx.stroke(); }
+  // bandana met appelspeldje
+  ctx.strokeStyle = GC.ink; ctx.lineWidth = 6.4; ctx.beginPath(); ctx.arc(0, -17, 12.6, Math.PI * 1.12, Math.PI * 1.88); ctx.stroke();
+  ctx.strokeStyle = GC.band; ctx.lineWidth = 4.4; ctx.beginPath(); ctx.arc(0, -17, 12.6, Math.PI * 1.12, Math.PI * 1.88); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.85)'; for (const a of [1.25, 1.45, 1.62, 1.78]) circ(Math.cos(Math.PI * a) * 12.6, -17 + Math.sin(Math.PI * a) * 12.6, 0.9);
+  ctx.fillStyle = GC.ink; circ(-11.4, -23.5, 3.6); ctx.fillStyle = GC.band; circ(-11.4, -23.5, 2.6);
+  ctx.fillStyle = GC.ink; circ(0, -29.6, 3.3); ctx.fillStyle = '#e8322b'; circ(-0.9, -29.4, 2); circ(0.9, -29.4, 2);
+  ctx.fillStyle = '#4caf50'; ell(1.6, -32, 1.6, 0.8, -0.5);
   ctx.restore();
 }
 function drawParrot() {
@@ -2645,6 +3021,8 @@ function render() {
     drawFlocks(P);
     drawForestLine(P);
     drawMidTrees(P);
+    const sw = spaceWeight();
+    if (sw > 0) drawSpace(sw);
     ctx = mainCtx;
   }
   ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -2652,16 +3030,23 @@ function render() {
   ctx.drawImage(bgCanvas, 0, 0, canvas.width, canvas.height);
   // 2) nabije achtergrond op volle resolutie
   ctx.setTransform(S, 0, 0, S, 0, 0);
-  drawFlyers();
-  drawGiantTrunks(P);
-  drawLightRays(P);
+  const spW = spaceWeight();
+  if (spW < 1) {
+    ctx.globalAlpha = 1 - spW;
+    drawFlyers();
+    drawGiantTrunks(P);
+    drawLightRays(P);
+    ctx.globalAlpha = 1;
+  }
   // 3) de speelwereld
   const sx = shakeT > 0 ? (Math.random() - 0.5) * shakeAmp * 2 : 0, sy = shakeT > 0 ? (Math.random() - 0.5) * shakeAmp * 2 : 0;
   ctx.setTransform(S, 0, 0, S, -(camX + sx) * S, -(camY + sy) * S);
   drawRock();
   drawSkyBirds();
   drawMarkers();
+  drawFinish();
   drawShrooms();
+  drawTramps();
   const vx0 = camX - 300, vx1 = camX + viewW + 420, vy0 = camY - 60, vy1 = camY + viewH + 60;
   for (const v of vines) if (v.x > vx0 && v.rest[2] - 200 < vx1 && v.ay < vy1 && v.rest[3] + 150 > vy0) drawVine(v);
   for (const v of vines) if (v.x > camX - 80 && v.x < camX + viewW + 80 && v.ay > camY - 220 && v.ay < camY + viewH + 60) drawBranch(v);
@@ -2674,7 +3059,7 @@ function render() {
   drawTexts();
   ctx.setTransform(S, 0, 0, S, 0, 0);
   drawForeground(P);
-  drawAmbient(P);
+  if (spW < 0.6) drawAmbient(P);
   drawWarnings();
   drawFlash();
 }
@@ -2686,7 +3071,7 @@ let curScreen = null, shopReturn = 'menu', bannerTimer = 0;
 function showScreen(id) {
   curScreen = id;
   for (const s of document.querySelectorAll('.screen')) s.classList.toggle('show', s.id === id);
-  $('hud').classList.toggle('hidden', !(game.mode === 'ready' || game.mode === 'playing' || game.mode === 'dying'));
+  $('hud').classList.toggle('hidden', !(game.mode === 'ready' || game.mode === 'playing' || game.mode === 'dying' || game.mode === 'done'));
 }
 function showBanner(big, small) {
   const b = $('banner');
@@ -2698,22 +3083,69 @@ function showBanner(big, small) {
 }
 function toMenu() {
   game.paused = false; Music.duck();
+  game.career = null;
   resetWorld();
   game.mode = 'menu';
   refreshMenu();
   showScreen('menu');
 }
-function startReady() {
+// level = null: eindeloze modus; anders een carrière-level
+function startReady(level) {
   game.paused = false; Music.duck();
+  game.career = typeof level === 'number' ? levelInfo(level) : null;
   resetWorld();
   game.mode = 'ready';
   input.down = false;
   showScreen(null);
-  showBanner('🌿 Jungle', 'Houd ingedrukt om te springen en een liaan te grijpen!');
+  const C = game.career;
+  if (C) showBanner(`🏁 Level ${C.n}`, `${BIOMES[C.bi].icon} ${BIOMES[C.bi].name} · ${C.L} m tot de finish`);
+  else showBanner('🌿 Jungle', 'Houd ingedrukt om te springen en een liaan te grijpen!');
 }
+function retry() { startReady(game.career ? game.career.n : null); }
 function begin() {
   game.mode = 'playing';
-  if (lvl('rocket') > 0) startRocket(); else jump();
+  if (lvl('rocket') > 0 && !game.career) startRocket(); else jump();
+}
+// XP: vooral afstand, plus wat voor trucs en appels
+function awardXp(extra) {
+  const before = playerLevel(save.xp).L;
+  const gain = Math.floor(run.dist) + run.tricks * 5 + Math.floor(run.picked / 2) + (extra || 0);
+  save.xp += gain;
+  const after = playerLevel(save.xp).L;
+  const fresh = UPGRADES.filter(u => u.unlock && u.unlock > before && u.unlock <= after);
+  return { gain, levelUp: after > before, level: after, fresh };
+}
+function xpHtml(res) {
+  const P = playerLevel(save.xp);
+  let h = `<div class="xp"><div class="xp-top"><b>Level ${P.L}</b><span>+${res.gain} XP</span></div><div class="xp-bar"><i style="width:${Math.round(P.into / P.need * 100)}%"></i></div></div>`;
+  if (res.levelUp) h += `<div class="record">⬆️ Level ${res.level}!${res.fresh.length ? ' Nieuw: ' + res.fresh.map(u => u.icon + ' ' + u.name).join(', ') : ''}</div>`;
+  return h;
+}
+function levelComplete() {
+  const C = game.career;
+  game.mode = 'done';
+  const fromApples = Math.max(0, Math.floor(run.earned + 1e-6));
+  const ratio = run.appleTotal ? run.picked / run.appleTotal : 1;
+  const stars = 1 + (ratio >= 0.35 ? 1 : 0) + (ratio >= 0.65 ? 1 : 0);
+  const prev = save.career.stars[C.n - 1];
+  const bonus = prev ? 5 : 15 + C.n * 5;
+  const earned = fromApples + bonus;
+  save.apples += earned; save.totalApples += run.picked; save.runs++;
+  save.career.stars[C.n - 1] = Math.max(prev, stars);
+  if (C.n < LEVELS) save.career.unlocked = Math.max(save.career.unlocked, C.n + 1);
+  const xp = awardXp(20 + C.n * 4);
+  persist();
+  confetti(G.x + 100, G.y - 150, 120); flashT = 0.3; Sfx.jingle(C.bi);
+  $('doneTitle').textContent = `Level ${C.n} gehaald!`;
+  $('doneStars').innerHTML = [1, 2, 3].map(i => `<span class="${i <= stars ? 'on' : ''}">★</span>`).join('');
+  $('dnApples').textContent = `🍎 ${run.picked} / ${run.appleTotal}`;
+  $('dnEarned').textContent = '🍎 ' + fromApples;
+  $('dnBonus').textContent = '🍎 ' + bonus + (prev ? ' (herhaling)' : '');
+  $('dnTotal').textContent = '+ 🍎 ' + earned;
+  $('dnBank').textContent = save.apples;
+  $('dnXp').innerHTML = xpHtml(xp);
+  $('btnNextLevel').style.display = C.n < LEVELS ? '' : 'none';
+  setTimeout(() => { if (game.mode === 'done') { showScreen('done'); $('hint').textContent = ''; } }, 900);
 }
 function gameOver(quit) {
   game.mode = 'over';
@@ -2721,14 +3153,18 @@ function gameOver(quit) {
   const dist = Math.floor(run.dist);
   const fromDist = Math.floor(dist / 20);
   const earned = fromApples + fromDist;
-  const record = dist > save.best;
+  const record = !game.career && dist > save.best;
   save.apples += earned;
-  save.best = Math.max(save.best, dist);
+  if (!game.career) save.best = Math.max(save.best, dist);
   save.totalApples += run.picked;
   save.totalDistance += dist;
   save.runs++;
-  save.maxBiome = Math.max(save.maxBiome, biomeIndexAt(dist));
+  if (!game.career) save.maxBiome = Math.max(save.maxBiome, biomeIndexAt(dist));
+  const xp = awardXp();
   persist();
+  $('ovXp').innerHTML = xpHtml(xp);
+  $('btnOverLevels').style.display = game.career ? '' : 'none';
+  $('ovDistLabel').textContent = game.career ? `Afstand (finish ${game.career.L} m)` : 'Afstand';
 
   const hz = BIOMES[biomeIndexAt(run.dist)].hazardName;
   const [title, reason] = quit ? ['Run gestopt', 'Je appels zijn bewaard.'] : ['Plons!', `Andy viel in ${hz}.`];
@@ -2768,7 +3204,7 @@ function resumeGame() {
 // =====================================================================
 function affordableCount() {
   let n = 0;
-  for (const u of UPGRADES) { const l = lvl(u.id); if (l < u.max && save.apples >= upCost(u, l)) n++; }
+  for (const u of UPGRADES) { const l = lvl(u.id); if (unlocked(u) && l < u.max && save.apples >= upCost(u, l)) n++; }
   return n;
 }
 function setBadge(btn, n) {
@@ -2783,6 +3219,8 @@ function statsHtml() {
     `<div class="stat">🔁 ${save.runs} runs</div>`;
 }
 function refreshMenu() {
+  const PL = playerLevel(save.xp);
+  $('menuXp').innerHTML = `<div class="xp"><div class="xp-top"><b>Spelerslevel ${PL.L}</b><span>${PL.into} / ${PL.need} XP</span></div><div class="xp-bar"><i style="width:${Math.round(PL.into / PL.need * 100)}%"></i></div></div>`;
   $('menuStats').innerHTML = statsHtml();
   $('saveStats').innerHTML = statsHtml();
   setBadge($('btnShop'), affordableCount());
@@ -2793,11 +3231,18 @@ function refreshMenu() {
 }
 function renderShop() {
   $('shopBank').textContent = save.apples;
+  const PL = playerLevel(save.xp);
+  $('shopXp').innerHTML = `<div class="xp"><div class="xp-top"><b>Spelerslevel ${PL.L}</b><span>${PL.into} / ${PL.need} XP</span></div><div class="xp-bar"><i style="width:${Math.round(PL.into / PL.need * 100)}%"></i></div></div>`;
   const grid = $('shopGrid');
   grid.innerHTML = '';
   for (const u of UPGRADES) {
     const l = lvl(u.id), maxed = l >= u.max, cost = maxed ? 0 : upCost(u, l);
     const card = document.createElement('div');
+    if (!unlocked(u)) {
+      card.className = 'card locked';
+      card.innerHTML = `<div class="card-top"><span class="ic">🔒</span><div><b>${u.name}</b><small>${u.info}</small></div></div><div class="fx">Ontgrendelt op spelerslevel ${u.unlock}</div>`;
+      grid.appendChild(card); continue;
+    }
     card.className = 'card' + (maxed ? ' maxed' : '');
     let pips = '';
     for (let i = 0; i < u.max; i++) pips += `<i class="${i < l ? 'on' : ''}"></i>`;
@@ -2816,7 +3261,7 @@ function renderShop() {
 }
 function buy(u) {
   const l = lvl(u.id);
-  if (l >= u.max) return;
+  if (l >= u.max || !unlocked(u)) return;
   const c = upCost(u, l);
   if (save.apples < c) return;
   save.apples -= c;
@@ -2827,6 +3272,21 @@ function buy(u) {
   refreshMenu();
   if (game.mode === 'over') { $('ovBank').textContent = save.apples; setBadge($('btnOverShop'), affordableCount()); }
 }
+function renderCareer() {
+  const st = save.career.stars;
+  $('carStars').textContent = st.reduce((a, b) => a + b, 0) + ' / ' + LEVELS * 3;
+  const grid = $('levelGrid'); grid.innerHTML = '';
+  for (let n = 1; n <= LEVELS; n++) {
+    const I = levelInfo(n), open = n <= save.career.unlocked, b = document.createElement('button');
+    b.className = 'lv' + (open ? '' : ' locked');
+    b.style.background = open ? `linear-gradient(${BIOMES[I.bi].c.skyTop}, ${BIOMES[I.bi].c.mid})` : '';
+    b.innerHTML = open ? `<small>${BIOMES[I.bi].icon}</small><b>${n}</b><span>${[0, 1, 2].map(i => i < st[n - 1] ? '★' : '☆').join('')}</span>` : `<b>🔒</b><small>${n}</small>`;
+    b.disabled = !open;
+    b.addEventListener('click', () => { Sfx.init(); startReady(n); });
+    grid.appendChild(b);
+  }
+}
+function openCareer() { renderCareer(); showScreen('career'); }
 function openShop(from) { shopReturn = from; renderShop(); showScreen('shop'); }
 function saveMsg(text, ok) { const m = $('saveMsg'); m.textContent = text; m.className = 'msg ' + (ok ? 'ok' : 'err'); }
 function afterImport() {
@@ -2839,7 +3299,14 @@ function on(id, fn) {
   $(id).addEventListener('click', e => { Sfx.init(); e.currentTarget.blur(); fn(e); });
 }
 
-on('btnPlay', startReady);
+on('btnPlay', () => startReady(null));
+on('btnCareer', openCareer);
+on('btnCareerBack', toMenu);
+on('btnNextLevel', () => startReady(game.career.n + 1));
+on('btnDoneRetry', retry);
+on('btnDoneLevels', () => { toMenu(); openCareer(); });
+on('btnDoneShop', () => openShop('done'));
+on('btnOverLevels', () => { toMenu(); openCareer(); });
 on('btnShop', () => openShop('menu'));
 on('btnSaves', () => { $('saveMsg').textContent = ''; refreshMenu(); showScreen('saves'); });
 on('btnHelp', () => showScreen('help'));
@@ -2850,10 +3317,10 @@ on('btnSound', toggleSound);
 on('btnPauseSound', toggleSound);
 on('btnMusic', toggleMusic);
 on('btnPauseMusic', toggleMusic);
-on('btnShopBack', () => { if (shopReturn === 'over') { $('ovBank').textContent = save.apples; setBadge($('btnOverShop'), affordableCount()); } refreshMenu(); showScreen(shopReturn); });
-on('btnShopPlay', startReady);
+on('btnShopBack', () => { if (shopReturn === 'done') $('dnBank').textContent = save.apples; if (shopReturn === 'over') { $('ovBank').textContent = save.apples; setBadge($('btnOverShop'), affordableCount()); } refreshMenu(); showScreen(shopReturn); });
+on('btnShopPlay', () => (shopReturn === 'done' || shopReturn === 'over') ? retry() : startReady(null));
 on('btnSavesBack', () => showScreen('menu'));
-on('btnRetry', startReady);
+on('btnRetry', retry);
 on('btnOverShop', () => openShop('over'));
 on('btnOverMenu', toMenu);
 on('btnResume', resumeGame);
@@ -2941,17 +3408,19 @@ window.addEventListener('keydown', e => {
     e.preventDefault();
     if (e.repeat) return;
     Sfx.init();
-    if (curScreen === 'menu' || curScreen === 'over') { if (e.code === 'Space') startReady(); return; }
+    if (curScreen === 'menu') { if (e.code === 'Space') startReady(null); return; }
+    if (curScreen === 'over') { if (e.code === 'Space') retry(); return; }
+    if (curScreen === 'done') { if (e.code === 'Space') { if (game.career.n < LEVELS) startReady(game.career.n + 1); else retry(); } return; }
     if (curScreen === 'pause') { if (e.code === 'Space') resumeGame(); return; }
     if (!curScreen) press();
   } else if (e.code === 'KeyP' || e.code === 'Escape') {
     if (curScreen === 'pause') resumeGame();
     else if (!curScreen) pauseGame();
-    else if (curScreen === 'shop' || curScreen === 'saves' || curScreen === 'help') {
+    else if (curScreen === 'shop' || curScreen === 'saves' || curScreen === 'help' || curScreen === 'career') {
       if (curScreen === 'shop') $('btnShopBack').click(); else showScreen('menu');
     }
   } else if (e.code === 'Enter' && (curScreen === 'menu' || curScreen === 'over')) {
-    e.preventDefault(); Sfx.init(); startReady();
+    e.preventDefault(); Sfx.init(); curScreen === 'over' ? retry() : startReady(null);
   }
 });
 window.addEventListener('keyup', e => { if (e.code === 'Space' || e.code === 'ArrowDown' || e.code === 'ArrowUp') unpress(); });
@@ -2969,9 +3438,9 @@ const hudCache = {};
 function setText(id, txt) { if (hudCache[id] !== txt) { hudCache[id] = txt; $(id).textContent = txt; } }
 function updateHud() {
   if (!run) return;
-  setText('hudDist', Math.floor(run.dist) + ' m');
+  setText('hudDist', game.career ? `${Math.min(game.career.L, Math.floor(run.dist))} / ${game.career.L} m` : Math.floor(run.dist) + ' m');
   setText('hudApples', '🍎 ' + Math.max(0, Math.floor(run.earned + 1e-6)));
-  setText('hudValue', `elke appel ×${fmtNum(applesPerPick(run.biome))}`);
+  setText('hudValue', (game.career ? `Level ${game.career.n} · ` : '') + `elke appel ×${fmtNum(applesPerPick(run.biome))}`);
   let items = '';
   if (G.helmets > 0) items += '⛑️×' + G.helmets + ' ';
   if (G.balloons > 0) items += '🎈×' + G.balloons;
@@ -2993,15 +3462,22 @@ function updateHud() {
 // =====================================================================
 let last = performance.now(), acc = 0;
 // automatische kwaliteit: te traag -> resolutie en effecten omlaag (en onthouden voor de volgende keer)
-const perf = { ema: 16.7, t: 0, cool: 3 };
+const perf = { ema: 16.7, t: 0, cool: 3, good: 0 };
+// na een tabwissel, focuswissel of pauze haperen de eerste beelden: die tellen niet mee
+function perfSettle() { perf.cool = Math.max(perf.cool, 2.5); perf.ema = 16.7; }
 function adaptQuality(dtMs) {
-  if (dtMs > 120 || document.hidden) return; // tabwissel e.d. niet meetellen
-  perf.ema += (dtMs - perf.ema) * 0.06;
+  if (document.hidden || game.paused || curScreen) { perf.cool = Math.max(perf.cool, 1); return; }
+  if (dtMs > 60) return;
+  perf.ema += (dtMs - perf.ema) * 0.05;
   perf.t += dtMs / 1000; perf.cool -= dtMs / 1000;
+  perf.good = perf.ema < 17.6 ? perf.good + dtMs / 1000 : 0;
   if (perf.cool > 0) return;
-  if (perf.ema > 20.5 && qLevel > 0) { qMax = qLevel - 1; setQuality(qLevel - 1); perf.t = 0; perf.cool = 2.5; perf.ema = 16.7; }
-  else if (perf.ema < 17.4 && perf.t > 6 && qLevel < qMax) { setQuality(qLevel + 1); perf.t = 0; perf.cool = 3; }
+  if (perf.ema > 21 && qLevel > 0) { qMax = qLevel; setQuality(qLevel - 1); perf.t = 0; perf.cool = 3; perf.ema = 16.7; perf.good = 0; }
+  // omhoog als het een tijd soepel loopt; na een eerdere terugval pas na langere tijd opnieuw proberen
+  else if (qLevel < 3 && perf.good > (qLevel + 1 >= qMax ? 25 : 6)) { if (qLevel + 1 >= qMax) qMax = 3; setQuality(qLevel + 1); perf.good = 0; perf.cool = 3; }
 }
+window.addEventListener('focus', perfSettle);
+document.addEventListener('visibilitychange', perfSettle);
 function frame(now) {
   let dt = (now - last) / 1000;
   last = now;
@@ -3030,7 +3506,7 @@ function frame(now) {
 
 // Debug-/testhaak (handig voor automatische tests)
 window.__andy = { get G() { return G; }, get run() { return run; }, get game() { return game; }, get save() { return save; },
-  get vines() { return vines; }, get apples() { return apples; }, get foes() { return foes; }, get quality() { return qLevel; }, AIR_G, MAX_FALL, DT, Sfx, Music, press, unpress, startReady };
+  get vines() { return vines; }, get apples() { return apples; }, get foes() { return foes; }, get quality() { return qLevel; }, get tramps() { return tramps; }, attach, release, AIR_G, MAX_FALL, DT, Sfx, Music, press, unpress, startReady };
 
 resetWorld();
 refreshMenu();
