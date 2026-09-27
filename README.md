@@ -8,14 +8,20 @@ Open `index.html` in een browser. Er is geen installatie, server of internetverb
 
 ## Multiplayer
 
-Speel tegen een vriend op een ander apparaat, zonder account of server: de twee browsers verbinden direct met elkaar (WebRTC). Je wisselt alleen twee codes uit.
+Speel met z'n tweeën, op twee manieren:
+
+- 📺 **Op één scherm**: twee spelers op hetzelfde apparaat met een gedeeld scherm (naast elkaar op een breed scherm, boven elkaar op een staand scherm). **Speler 1** speelt met `Spatie` (of tikt op de linker/bovenste helft), **Speler 2** met `↑` of `Enter` (of tikt op de rechter/onderste helft). Geen codes of internet nodig, en pauzeren kan gewoon.
+- 🌐 **Online op twee apparaten**, zonder account of server: de twee browsers verbinden direct met elkaar (WebRTC). Je wisselt alleen twee codes uit (zie *Instellen*).
+
+Beide manieren hebben dezelfde spelmodi:
+
 
 - 🏁 **Race**: wie het eerst bij de finish is (500, 1000 of 2000 m), wint. Val je, dan kom je na een tel terug op een liaan; dat kost tijd.
 - ⏱️ **Endurance**: wie het langst volhoudt, wint. Val je, dan ben je af. Een storm jaagt je van achteren op en gaat steeds sneller.
 - **Upgrades staan uit** tijdens multiplayer, zodat iedereen gelijk is. Appels en XP uit multiplayer tellen niet mee voor je save.
 - Jullie spelen in precies dezelfde wereld (dezelfde seed) en zien elkaar als tweede gorilla met een blauwe bandana. Buiten beeld wijst een pijl naar je tegenstander.
 
-### Instellen
+### Instellen (online)
 
 De uitleg staat ook in het spel: **👥 Multiplayer → ❓ Set-up**.
 
@@ -24,7 +30,7 @@ De uitleg staat ook in het spel: **👥 Multiplayer → ❓ Set-up**.
 3. Speler 2 stuurt de **antwoordcode** terug; de host plakt die en klikt op **🔌 Verbinden**.
 4. Staat er **Verbonden**, dan kiest de host Race of Endurance en klikt op **▶ Start!**. Na afloop kun je met **🔁 Revanche** meteen opnieuw.
 
-Tips: codes zijn eenmalig (mislukt het, klik dan op **✖ Opnieuw**). Het werkt het best als beide apparaten op hetzelfde wifi-netwerk zitten; sommige school-, werk- of mobiele netwerken blokkeren directe verbindingen. Wie tijdens een potje een paar seconden wegklikt, geeft op. Zelf testen kan met twee browservensters naast elkaar.
+Tips: codes zijn eenmalig (mislukt het, klik dan op **✖ Opnieuw**). Het werkt het best als beide apparaten op hetzelfde wifi-netwerk zitten; sommige school-, werk- of mobiele netwerken blokkeren directe verbindingen. Wie tijdens een potje een paar seconden wegklikt, geeft op. Twee tabbladen in hetzelfde venster werkt niet voor online spelen (de browser zet het verborgen tabblad stil); gebruik twee aparte vensters naast elkaar, of speel gewoon met 📺 Op één scherm.
 
 ## Besturing
 
