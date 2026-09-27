@@ -47,7 +47,8 @@ Tips: codes zijn eenmalig (mislukt het, klik dan op **✖ Opnieuw**). Het werkt 
 
 - **Lianen met physics**: elke liaan is een Verlet-touw van segmenten dat schuin naar linksonder hangt (zoals in Benji Bananas), zodat je hem makkelijk grijpt. Andy's gewicht, vaart, zwaaien en loslaten werken zoals je zou verwachten.
 - **Drie modi**: 🏁 **Carrière** met 35 levels (start → finish, steeds langer en moeilijker, elke 5 levels een nieuwe biome, tot 3 sterren per level), ♾️ **Eindeloos** (zo ver mogelijk komen) en 👥 **Multiplayer** (zie hierboven).
-- **Vloeiend zwaaien**: Andy zwaait als een echte slinger zonder energieverlies. Bij het grijpen blijft al zijn vaart behouden als voorwaartse zwaai; alleen verkeerd loslaten kost snelheid. Zwaai je te hoog, dan wordt het touw even slap. Grijp je een liaan te hoog, dan glijdt hij vanzelf omlaag.
+- **Vloeiend zwaaien**: Andy zwaait als een echte slinger zonder energieverlies. Bij het grijpen blijft al zijn vaart behouden als voorwaartse zwaai; alleen verkeerd loslaten kost snelheid. Zwaai je te hoog, dan wordt het touw even slap. Grijp je een liaan te hoog, dan glijdt hij vanzelf omlaag. Bij verkeerde timing wordt een lancering die bijna kaarsrecht omhoog of pal achteruit zou gaan automatisch teruggebogen naar een bruikbare, voorwaartse sprong: zo verspil je nooit een hele zwaai.
+- **Uitzoomen**: het beeld staat standaard zo'n 50% verder uitgezoomd voor meer overzicht, en zoomt bovendien vloeiend verder uit naarmate Andy sneller gaat (en weer in bij lage snelheid). Op tragere machines wordt dit automatisch getemperd, om de framerate te beschermen.
 - **Trucs**: blijf je lang in de lucht, dan doet Andy salto's, kurkentrekkers, sterrensprongen en superaap-poses voor bonusappels (achter elkaar = meer bonus).
 - **Lucht-trampolines** en grote **stuiterzwammen** lanceren je omhoog.
 - **De ruimte**: soms hangt er hoog boven het plafond een pad van gouden ballonnen. Pak ze perfect achter elkaar en laat los bij de laatste: dan word je de ruimte in gelanceerd (weinig zwaartekracht, sterappels, +25 🍎).
@@ -77,7 +78,7 @@ Tips: codes zijn eenmalig (mislukt het, klik dan op **✖ Opnieuw**). Het werkt 
   - 🔥 **Comboketting**: langere combo's met grotere bonussen.
   - 🌿 **Liaankenner**: rotte lianen houden langer, ijs is minder glad en er zijn meer turbolianen.
   - 🍄 **Stuiterzwam**: meer paddenstoelen die je verder lanceren.
-- **Draaiknop voor telefoons**: met 🔄 **Liggend** in het hoofdmenu speel je op een staande telefoon toch liggend (breder zicht). Waar het kan wordt het scherm echt gedraaid (volledig scherm, Android); anders draait het spel het beeld zelf een kwartslag, zodat je de telefoon gewoon kantelt. Met 🔄 **Staand** zet je het terug. De keuze wordt onthouden.
+- **Volledig scherm en draaiknop**: in **⚙️ Instellingen** staan twee losse knoppen: ⛶ **Volledig scherm** en 🔄 **Liggend spelen**. Met de draaiknop speel je op een staande telefoon toch liggend (breder zicht) — waar het kan wordt de oriëntatie van het scherm echt vastgezet (via volledig scherm, meestal op Android); lukt dat niet, dan draait het spel het beeld zelf een kwartslag, zodat je de telefoon gewoon kantelt. Met 🔄 **Staand spelen** zet je het terug. Beide keuzes staan los van elkaar en worden onthouden.
 - **Soepel op elk apparaat**: het spel meet zelf de framerate en past resolutie en effecten automatisch aan (en onthoudt dat). Op trage machines schakelt het snel terug, tot een extra lichte stand. Op telefoons en tablets is het beeld iets verder uitgezoomd voor meer overzicht. De verre achtergrond wordt in een aparte buffer op lage resolutie getekend.
 - **Save-systeem**:
   - De voortgang wordt automatisch opgeslagen in de `localStorage` van de browser.

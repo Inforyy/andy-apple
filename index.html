@@ -179,8 +179,6 @@
   html.short .panel{padding:14px 18px}html.short h2{font-size:26px}
   /* gedraaid beeld: de hele pagina een kwartslag gedraaid, zodat je een staande telefoon liggend kunt gebruiken */
   html.rot body{position:fixed;top:0;left:0;transform-origin:0 0}
-  .ib.rotbtn{display:none}
-  html.touch.portrait .ib.rotbtn,html.touch.rotpref .ib.rotbtn{display:flex}
   html.rot .panel{touch-action:auto}
 
   /* ---------- Multiplayer ---------- */
@@ -284,7 +282,6 @@
       <button class="ib" id="btnSaves"><span class="ib-ic">💾</span><small>Opslaan</small></button>
       <button class="ib" id="btnHelp"><span class="ib-ic">❓</span><small>Uitleg</small></button>
       <button class="ib" id="btnSettings"><span class="ib-ic">⚙️</span><small>Instellingen</small></button>
-      <button class="ib rotbtn" id="btnRotate"><span class="ib-ic">🔄</span><small id="rotTxt">Liggend</small></button>
     </nav>
   </div>
 </div>
@@ -425,6 +422,8 @@
     <div class="stack">
       <button class="btn big" id="btnSound">🔊 Geluid aan</button>
       <button class="btn big" id="btnMusic">🎵 Muziek aan</button>
+      <button class="btn big" id="btnFullscreen">⛶ Volledig scherm</button>
+      <button class="btn big" id="btnRotate">🔄 Liggend spelen</button>
     </div>
     <div class="stats" id="menuStats" style="margin-top:16px"></div>
     <div class="row"><button class="btn" id="btnSettingsBack">← Terug</button></div>
@@ -665,8 +664,8 @@ const fmtNum = n => (Math.round(n * 10) / 10).toString().replace('.', ',');
 
 const UPGRADES = [
   { id:'grip',    icon:'✋', name:'Lange armen',    info:'Grijp lianen van verder weg.',                          max:5, base:25,  growth:1.8,  fx:l => `${gripR(l)} bereik` },
-  { id:'swing',   icon:'🌀', name:'Zwaaikracht',    info:'Zwaai harder en sneller aan een liaan.',              max:5, base:30,  growth:1.8,  fx:l => `+${l * 22}% zwaai, max ${1150 + 110 * l}` },
-  { id:'launch',  icon:'💨', name:'Lanceerkracht',  info:'Meer vaart bij het loslaten en een hogere topsnelheid.',                        max:5, base:40,  growth:1.85, fx:l => `+${l * 7}% vaart, top ${1450 + 110 * l}` },
+  { id:'swing',   icon:'🌀', name:'Zwaaikracht',    info:'Zwaai harder en sneller aan een liaan.',              max:5, base:30,  growth:1.8,  fx:l => `+${l * 22}% zwaai, max ${1030 + 110 * l}` },
+  { id:'launch',  icon:'💨', name:'Lanceerkracht',  info:'Meer vaart bij het loslaten en een hogere topsnelheid.',                        max:5, base:40,  growth:1.85, fx:l => `+${l * 7}% vaart, top ${1300 + 110 * l}` },
   { id:'magnet',  icon:'🧲', name:'Appelmagneet',   info:'Trekt appels in de buurt naar je toe.',                 max:5, base:35,  growth:1.8,  fx:l => l ? `${magnetR(l)} bereik` : 'geen' },
   { id:'value',   icon:'🧺', name:'Appeloogst',     info:'Elke geplukte appel telt voor meer (bovenop de biomebonus).', max:5, base:50, growth:1.9, fx:l => `×${fmtNum(appleVal(l))} per appel` },
   { id:'golden',  icon:'✨', name:'Gouden appels',  info:'Meer gouden appels (5 appels waard).',                  unlock:4, max:4, base:45,  growth:1.9,  fx:l => `${Math.round(goldChance(l) * 100)}% kans` },
@@ -1062,18 +1061,21 @@ let VOX = 0, VOY = 0, RW = 0, RH = 0;
 const LOCAL = { on: false, split: 'v', vw: 0, vh: 0, worlds: null, base: null, cfg: null, result: null, count: 0, lastCount: 99, score: [0, 0] };
 // Kwaliteitsniveaus: het spel meet zelf de framerate en schakelt terug als het te traag gaat.
 // px = maximaal aantal pixels voor het beeld, bg = resolutie van de (vage) achtergrond
+// viewMul: hoeveel van de extra uitzoom (basis + snelheid) een niveau krijgt. Verder uitzoomen laat meer
+// van de wereld zien, en dus ook meer lianen/appels om te simuleren en te tekenen: op trage machines
+// (lage kwaliteit) temperen we dat automatisch mee, net als de andere effecten.
 const QUALITY = [
-  { px: 0.24e6, bg: 0.38, bgEvery: 3, rays: false, clouds: false, parts: 110, amb: 0, lite: true }, // noodstand voor trage machines
-  { px: 0.42e6, bg: 0.45, bgEvery: 2, rays: false, clouds: false, parts: 220, amb: 25 },
-  { px: 0.75e6, bg: 0.5,  bgEvery: 2, rays: false, clouds: true,  parts: 400, amb: 45 },
-  { px: 1.25e6, bg: 0.55, bgEvery: 1, rays: true,  clouds: true,  parts: 650, amb: 70 },
-  { px: 2.1e6,  bg: 0.6,  bgEvery: 1, rays: true,  clouds: true,  parts: 900, amb: 70 },
+  { px: 0.24e6, bg: 0.38, bgEvery: 3, rays: false, clouds: false, parts: 110, amb: 0, lite: true, viewMul: 0.3 }, // noodstand voor trage machines
+  { px: 0.42e6, bg: 0.45, bgEvery: 2, rays: false, clouds: false, parts: 220, amb: 25, viewMul: 0.55 },
+  { px: 0.75e6, bg: 0.5,  bgEvery: 2, rays: false, clouds: true,  parts: 400, amb: 45, viewMul: 0.8 },
+  { px: 1.25e6, bg: 0.55, bgEvery: 1, rays: true,  clouds: true,  parts: 650, amb: 70, viewMul: 1 },
+  { px: 2.1e6,  bg: 0.6,  bgEvery: 1, rays: true,  clouds: true,  parts: 900, amb: 70, viewMul: 1 },
 ];
 const QKEY = 'andyApples.quality2';
 let qLevel = 2, qMax = 4;
 try { const q = JSON.parse(localStorage.getItem(QKEY)); if (q && q.l >= 0 && q.l <= 4) qLevel = Math.min(3, q.l); } catch (e) { /* geen voorkeur */ }
 let Q = QUALITY[qLevel];
-let dpr = 1, pr = 1, cssW = 0, cssH = 0, scale = 1, viewW = 0, viewH = 0;
+let dpr = 1, pr = 1, cssW = 0, cssH = 0, baseScale = 1, scale = 1, viewW = 0, viewH = 0, zoomK = 0;
 let bgFrame = 0, bgStale = true;
 let bgCanvas = document.createElement('canvas');
 let bgCtx = bgCanvas.getContext('2d', { alpha: false });
@@ -1093,18 +1095,31 @@ function applyRot() {
 }
 // schermcoördinaten -> coördinaten in het (eventueel gedraaide) spel
 const toGame = (x, y) => rotOn ? [y, window.innerWidth - x] : [x, y];
+const canFullscreen = !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
+function isFullscreen() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+// ---- Volledig scherm: eigen, losse knop ----
+async function toggleFullscreen() {
+  try {
+    const el = document.documentElement;
+    if (isFullscreen()) { if (document.exitFullscreen) await document.exitFullscreen(); else if (document.webkitExitFullscreen) await document.webkitExitFullscreen(); }
+    else if (el.requestFullscreen) await el.requestFullscreen({ navigationUI: 'hide' });
+    else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
+  } catch (e) { /* niet ondersteund of geweigerd */ }
+  resize();
+  setTimeout(resize, 350);
+}
+// ---- Draaien: eigen, losse knop. Voor het echt vastzetten van de oriëntatie is op de meeste
+// browsers volledig scherm nodig, dus die proberen we hier zelf ook (zonder de fullscreen-knop te wijzigen) ----
 async function toggleRotate() {
   rotPref = !rotPref;
   try { localStorage.setItem(ROT_KEY, rotPref ? '1' : '0'); } catch (e) { /* negeren */ }
   if (rotPref) {
     try {
-      const el = document.documentElement;
-      if (!document.fullscreenElement && el.requestFullscreen) await el.requestFullscreen({ navigationUI: 'hide' });
+      if (!isFullscreen()) await toggleFullscreen();
       if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape');
-    } catch (e) { /* niet ondersteund: dan draaien we de pagina zelf */ }
+    } catch (e) { /* niet ondersteund: dan draaien we de pagina zelf (CSS-fallback) */ }
   } else {
     try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) { /* */ }
-    try { if (document.fullscreenElement && document.exitFullscreen) await document.exitFullscreen(); } catch (e) { /* */ }
   }
   resize();
   setTimeout(resize, 350); // sommige telefoons melden de nieuwe maten iets later
@@ -1114,7 +1129,6 @@ function resize() {
   applyRot();
   cssW = rotOn ? window.innerHeight : window.innerWidth; cssH = rotOn ? window.innerWidth : window.innerHeight;
   const hc = document.documentElement.classList;
-  hc.toggle('portrait', window.innerHeight > window.innerWidth); hc.toggle('rotpref', rotPref);
   hc.toggle('narrow', cssW <= 720 || cssW <= cssH); hc.toggle('slim', cssW <= 720); hc.toggle('short', cssH < 520);
   Q = QUALITY[qLevel];
   pr = Math.min(dpr, Math.sqrt(Q.px / (cssW * cssH)));
@@ -1126,14 +1140,38 @@ function resize() {
     if (LOCAL.split === 'v') vw = (cssW - 4) / 2; else vh = (cssH - 4) / 2;
   }
   LOCAL.vw = vw; LOCAL.vh = vh;
-  scale = Math.min(vh / 740, vw / 500);
+  baseScale = Math.min(vh / 740, vw / 500);
+  // standaard 50% verder uitgezoomd (los van de snelheidsafhankelijke zoom hieronder). Op lagere
+  // kwaliteitsniveaus (tragere machines) temperen we dit, want meer overzicht = meer te simuleren.
+  baseScale /= 1 + (BASE_ZOOM_OUT - 1) * Q.viewMul;
   // telefoons/tablets: iets verder uitgezoomd voor meer overzicht
-  if (IS_MOBILE) scale *= vw < vh ? 0.76 : 0.86;
-  viewW = vw / scale; viewH = vh / scale;
+  if (IS_MOBILE) baseScale *= vw < vh ? 0.76 : 0.86;
   RW = Math.round(vw * pr); RH = Math.round(vh * pr);
   bgCanvas.width = Math.max(2, Math.round(vw * pr * Q.bg)); bgCanvas.height = Math.max(2, Math.round(vh * pr * Q.bg));
   gradCache.clear();
   bgStale = true;
+  applyZoom();
+}
+const BASE_ZOOM_OUT = 1.5; // standaard-zoomniveau: 50% verder uitgezoomd dan het oorspronkelijke beeld
+// Hoe sneller Andy gaat, hoe verder uitgezoomd (meer overzicht bij hoge snelheid). zoomK (0..1) volgt
+// de snelheid met wat vertraging, zodat het zoomen vloeiend gaat i.p.v. te schokken.
+const ZOOM_LO = 550, ZOOM_HI = 1750, ZOOM_OUT = 0.32; // bij zoomK=1 is er ~32% meer wereld te zien
+function zoomTarget() {
+  if (!G || G.state === 'dead') return 0;
+  const sp = Math.hypot(G.vx, G.vy);
+  return clamp((sp - ZOOM_LO) / (ZOOM_HI - ZOOM_LO), 0, 1);
+}
+function updateZoom(dt) {
+  const target = zoomTarget();
+  // sneller uitzoomen dan weer inzoomen: zo ben je meteen voorbereid als het tempo omhoog schiet
+  const rate = target > zoomK ? 3 : 1.4;
+  zoomK += (target - zoomK) * Math.min(1, dt * rate);
+  applyZoom();
+}
+function applyZoom() {
+  scale = baseScale / (1 + zoomK * ZOOM_OUT * Q.viewMul);
+  const vw = LOCAL.vw || cssW, vh = LOCAL.vh || cssH;
+  viewW = vw / scale; viewH = vh / scale;
 }
 function setQuality(l) {
   qLevel = clamp(l, 0, 4);
@@ -1213,6 +1251,7 @@ function resetWorld() {
     combo: 0, lastPick: -9, firstJump: true, nextMile: 100, tricks: 0, space: false, spaceVisits: 0, appleTotal: 0 };
   if (C) { run.biome = C.bi; C.finishX = START_X + C.L * PX_PER_M; }
   if (game.mp) game.mp.finishX = game.mp.len ? START_X + game.mp.len * PX_PER_M : 0;
+  zoomK = 0; applyZoom(); // elke run begint volledig ingezoomd
   camX = Math.max(-100, G.x - viewW * 0.32); camY = baseTop(); lastCamX = camX;
   genUntil(camX + viewW + 900);
   game.holdLock = false;
@@ -1456,7 +1495,7 @@ function simVine(v, dt) {
 }
 // ---- Zwaaien als echte slinger: hoek en hoeksnelheid rond het ophangpunt ----
 // x = anker + R·sin(θ), y = anker + R·cos(θ). De energie blijft behouden, dus zwaaien voelt vloeiend.
-const swingCap = () => 1150 + 110 * lvl('swing');
+const swingCap = () => 1030 + 110 * lvl('swing'); // iets lager zonder upgrade: de standaardsnelheid ligt wat rustiger
 function setHand() { G.hx = G.x - Math.sin(G.th) * ARM_LEN; G.hy = G.y - Math.cos(G.th) * ARM_LEN; }
 function freeHand(v, k) { // hand los: het touwpunt wordt weer gewoon touw en krijgt Andy's vaart mee
   if (!v || !v.pts[k]) return;
@@ -1571,6 +1610,21 @@ function release(voluntary = true) {
   const v = G.vine;
   const m = launchM(lvl('launch'));
   freeHand(v, G.k);
+  // Bij verkeerde timing (te lang vastgehouden, verkeerde kant van de zwaai) zou je hier kaarsrecht
+  // omhoog of pal achteruit gelanceerd worden. Dat verspilt de hele zwaai en voelt onterecht, dus zo'n
+  // uitschieter wordt teruggebogen naar een bruikbare, voorwaartse sprong. Een normale (ook steile)
+  // sprong blijft ongemoeid.
+  const sp0 = Math.hypot(G.vx, G.vy);
+  if (sp0 > 70) {
+    if (G.vx < 0) G.vx *= 0.4; // vol achteruit: fors afgezwakt
+    const sp1 = Math.hypot(G.vx, G.vy);
+    const vert = sp1 > 1 ? Math.abs(G.vy) / sp1 : 0; // 0 = helemaal horizontaal, 1 = kaarsrecht op/neer
+    if (vert > 0.82) { // pas voorbij zo'n 55° buigen we bij; een stevige, steile sprong blijft mogelijk
+      const t = (vert - 0.82) / 0.18, steer = Math.abs(G.vy) * t * 0.55;
+      G.vx += steer;
+      G.vy -= Math.sign(G.vy) * steer * 0.75;
+    }
+  }
   let vx = G.vx * m, vy = G.vy * m;
   if (vx > 0) vx += 60 + 20 * lvl('launch');
   vy -= 50;
@@ -1794,6 +1848,9 @@ function updateGorilla(dt, holdHang, holdAir) {
     const glide = falling ? 1 - 0.07 * wing : 1;
     const space = run.space && G.y < SPACE_Y;
     G.vy += AIR_G * glide * (space ? 0.45 : 1) * (1 + 1.6 * G.dive) * dt;
+    // ook zonder wingsuit-upgrade drijft Andy een klein beetje naar voren: zo kom je nooit hulpeloos
+    // recht naar beneden vast te zitten tussen twee lianen in
+    G.vx += 55 * dt;
     // wingsuit: een deel van de valsnelheid wordt voorwaartse vaart
     if (wing && falling && G.vx > 0) { const dv = Math.min(G.vy, 700) * 0.32 * wing * dt; G.vy -= dv; G.vx += dv * 0.85; }
     const maxFall = MAX_FALL * glide * (1 + 0.8 * G.dive);
@@ -1976,7 +2033,7 @@ function collect(a) {
   }
 }
 
-const maxSpeed = () => 1450 + 110 * lvl('launch');
+const maxSpeed = () => 1300 + 110 * lvl('launch'); // iets lager zonder upgrade: de standaardsnelheid ligt wat rustiger
 // ---- Trucs: bij een lange luchtvlucht doet Andy vanzelf salto's en andere kunstjes ----
 const TRICKS = [
   { id: 'salto', name: 'Salto!', dur: 0.62, rot: -Math.PI * 2 },
@@ -2089,7 +2146,9 @@ function splash(x, n, lava) {
   }
   addPart({ type: 'ring', x, y: HAZARD_Y + 2, vx: 0, vy: 0, life: 0.6, max: 0.6, col: 'rgba(255,255,255,.7)', r: 10, grow: 60, g: 0, flat: true });
 }
-function floatText(x, y, txt, col, size) { texts.push({ x, y, txt, col, t: 0, max: 1.2, size: size || 20 }); }
+// De tekst beweegt een beetje mee in de richting waarin Andy vliegt: bij hoge snelheid schiet hij
+// dan minder snel uit beeld voorbij (de camera beweegt immers ook mee), en blijft hij leesbaar.
+function floatText(x, y, txt, col, size) { texts.push({ x, y, txt, col, t: 0, max: 1.2, size: size || 20, dvx: G ? G.vx * 0.62 : 0 }); }
 function shake(amp, dur) { shakeAmp = Math.max(shakeAmp, amp); shakeT = Math.max(shakeT, dur); }
 
 function updateEffects(dt) {
@@ -2104,7 +2163,7 @@ function updateEffects(dt) {
   }
   for (let i = texts.length - 1; i >= 0; i--) {
     const t = texts[i];
-    t.t += dt; t.y -= 45 * dt;
+    t.t += dt; t.y -= 45 * dt; t.x += t.dvx * dt;
     if (t.t > t.max) texts.splice(i, 1);
   }
   // opruimen van wat achter de camera ligt
@@ -4074,13 +4133,14 @@ function drawMpOverlay() {
 // =====================================================================
 let curW = -1;
 function grabWorld() {
-  return { vines, apples, shrooms, foes, parts, texts, fishes, tramps, portals, gen, run, camX, camY, lastCamX, shakeT, shakeAmp, flashT, time, G,
+  return { vines, apples, shrooms, foes, parts, texts, fishes, tramps, portals, gen, run, camX, camY, lastCamX, shakeT, shakeAmp, flashT, zoomK, time, G,
     vineSeq, genRandom, input, holdLock: game.holdLock, mp: game.mp, amb, life, layerCaches, ghostPin };
 }
 function putWorld(w) {
-  ({ vines, apples, shrooms, foes, parts, texts, fishes, tramps, portals, gen, run, camX, camY, lastCamX, shakeT, shakeAmp, flashT, time, G,
+  ({ vines, apples, shrooms, foes, parts, texts, fishes, tramps, portals, gen, run, camX, camY, lastCamX, shakeT, shakeAmp, flashT, zoomK, time, G,
     vineSeq, genRandom, input, amb, life, layerCaches, ghostPin } = w);
   game.holdLock = w.holdLock; game.mp = w.mp;
+  applyZoom();
 }
 function useWorld(i) {
   if (curW === i) return;
@@ -4090,7 +4150,7 @@ function useWorld(i) {
 }
 function freshWorld(i, cfg, seed) {
   return { vines: [], apples: [], shrooms: [], foes: [], parts: [], texts: [], fishes: [], tramps: [], portals: [], gen: { x: 0, special: 0 }, run: null,
-    camX: 0, camY: 0, lastCamX: 0, shakeT: 0, shakeAmp: 0, flashT: 0, time: 0, G: null, vineSeq: 0, genRandom: Math.random,
+    camX: 0, camY: 0, lastCamX: 0, shakeT: 0, shakeAmp: 0, flashT: 0, zoomK: 0, time: 0, G: null, vineSeq: 0, genRandom: Math.random,
     input: { down: false, presses: 0 }, holdLock: false, amb: makeAmb(), life: makeLife(), layerCaches: {}, ghostPin: { v: null, k: 0, x: 0, y: 0 },
     mp: { local: true, idx: i, mode: cfg.mode, len: cfg.mode === 'race' ? cfg.len : 0, seed, t: 0, myEv: null, falls: 0, result: null,
       stormX: START_X - 1100, bolt: 0, boltX: 0, oppEv: null, oppT: 0 } };
@@ -4157,6 +4217,7 @@ function localLoop(dt) {
       updateEffects(gdt);
       const oy = camY;
       updateCamera(gdt);
+      updateZoom(gdt);
       genUntil(camX + viewW + 900);
       const P = paletteAt((camX + viewW * 0.5 - START_X) / PX_PER_M);
       updateAmbient(gdt, P.t < 0.5 ? P.a.particle : P.b.particle, camX - lastCamX, camY - oy);
@@ -4462,7 +4523,9 @@ function refreshMenu() {
   $('mmEndless').textContent = save.best ? `Record: ${save.best} m` : 'Kom zo ver mogelijk!';
   $('mmMulti').textContent = save.mpGames ? `Race of Endurance · ${save.mpWins} van ${save.mpGames} gewonnen` : 'Race of Endurance tegen een vriend';
   $('menuStats').innerHTML = statsHtml();
-  $('rotTxt').textContent = rotPref ? 'Staand' : 'Liggend';
+  $('btnRotate').textContent = rotPref ? '🔄 Staand spelen' : '🔄 Liggend spelen';
+  $('btnFullscreen').textContent = isFullscreen() ? '⛶ Volledig scherm uit' : '⛶ Volledig scherm';
+  $('btnFullscreen').classList.toggle('hidden', !canFullscreen);
   $('saveStats').innerHTML = statsHtml();
   setBadge($('btnShop'), affordableCount());
   const snd = save.sound ? '🔊 Geluid aan' : '🔇 Geluid uit';
@@ -4578,7 +4641,10 @@ on('btnSaves', () => { $('saveMsg').textContent = ''; refreshMenu(); showScreen(
 on('btnHelp', () => showScreen('help'));
 on('btnSettings', () => { refreshMenu(); showScreen('settings'); });
 on('btnSettingsBack', () => showScreen('menu'));
+on('btnFullscreen', () => { toggleFullscreen().then(refreshMenu); refreshMenu(); });
 on('btnRotate', () => { toggleRotate().then(refreshMenu); refreshMenu(); });
+document.addEventListener('fullscreenchange', refreshMenu);
+document.addEventListener('webkitfullscreenchange', refreshMenu);
 on('btnHelpBack', () => showScreen('menu'));
 const toggleSound = () => { save.sound = !save.sound; persist(); refreshMenu(); };
 const toggleMusic = () => { save.music = !save.music; persist(); refreshMenu(); if (save.music) Music.start(); else Music.stop(); };
@@ -4809,6 +4875,7 @@ function frame(now) {
     updateEffects(gdt);
     const oy = camY;
     updateCamera(gdt);
+    updateZoom(gdt);
     genUntil(camX + viewW + 900);
     const P = paletteAt((camX + viewW * 0.5 - START_X) / PX_PER_M);
     updateAmbient(gdt, P.t < 0.5 ? P.a.particle : P.b.particle, camX - lastCamX, camY - oy);
@@ -4823,7 +4890,8 @@ function frame(now) {
 // Debug-/testhaak (handig voor automatische tests)
 window.__andy = { get G() { return G; }, get run() { return run; }, get game() { return game; }, get save() { return save; },
   get vines() { return vines; }, get apples() { return apples; }, get foes() { return foes; }, get quality() { return qLevel; }, get tramps() { return tramps; }, get portalsList() { return portals; }, attach, release, AIR_G, MAX_FALL, DT, Sfx, Music, press, unpress, startReady,
-  MP, get ghostPin() { return ghostPin; }, mpStartMatch, localStart, get LOCAL() { return LOCAL; }, localPress, localUnpress, useWorld, mpHost, mpConnect, mpMakeAnswer, mpJoinStart, mpHostStart, mpSelect, mpAgain, mpForfeit, openMp, mpRender, get curScreen() { return curScreen; } };
+  MP, get ghostPin() { return ghostPin; }, mpStartMatch, localStart, get LOCAL() { return LOCAL; }, localPress, localUnpress, useWorld, mpHost, mpConnect, mpMakeAnswer, mpJoinStart, mpHostStart, mpSelect, mpAgain, mpForfeit, openMp, mpRender, get curScreen() { return curScreen; },
+  get scale() { return scale; }, get viewW() { return viewW; }, get viewH() { return viewH; }, get zoomK() { return zoomK; }, get rotPref() { return rotPref; }, get texts() { return texts; }, resize, toggleFullscreen, toggleRotate };
 
 resetWorld();
 refreshMenu();
