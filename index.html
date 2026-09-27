@@ -465,20 +465,19 @@ const UPGRADES = [
   { id:'launch',  icon:'💨', name:'Lanceerkracht',  info:'Meer vaart bij het loslaten en een hogere topsnelheid.',                        max:5, base:40,  growth:1.85, fx:l => `+${l * 7}% vaart, top ${1450 + 110 * l}` },
   { id:'magnet',  icon:'🧲', name:'Appelmagneet',   info:'Trekt appels in de buurt naar je toe.',                 max:5, base:35,  growth:1.8,  fx:l => l ? `${magnetR(l)} bereik` : 'geen' },
   { id:'value',   icon:'🧺', name:'Appeloogst',     info:'Elke geplukte appel telt voor meer (bovenop de biomebonus).', max:5, base:50, growth:1.9, fx:l => `×${fmtNum(appleVal(l))} per appel` },
-  { id:'golden',  icon:'✨', name:'Gouden appels',  info:'Meer gouden appels (5 appels waard).',                  unlock:2, max:4, base:45,  growth:1.9,  fx:l => `${Math.round(goldChance(l) * 100)}% kans` },
+  { id:'golden',  icon:'✨', name:'Gouden appels',  info:'Meer gouden appels (5 appels waard).',                  unlock:4, max:4, base:45,  growth:1.9,  fx:l => `${Math.round(goldChance(l) * 100)}% kans` },
   { id:'balloon', icon:'🎈', name:'Reddingsballon', info:'Redt je als je naar beneden valt.',                     max:3, base:80,  growth:2.2,  fx:l => `${l}× per run` },
-  { id:'helmet',  icon:'⛑️', name:'Helm',           info:'Voorkomt dat een vijand appels van je steelt.',         unlock:3, max:3, base:70,  growth:2.2,  fx:l => `${l}× per run` },
-  { id:'rocket',  icon:'🚀', name:'Raketstart',     info:'Begin elke run met een raketvlucht.',                   unlock:10, max:4, base:120, growth:2.0,  fx:l => l ? `${rocketDist(l)} m` : 'geen' },
-  { id:'glide',   icon:'🍃', name:'Bladzweef',      info:'Andy houdt een groot blad vast en valt langzamer als je niet duikt.', unlock:4, max:4, base:45, growth:1.9, fx:l => l ? `-${l * 10}% vallen` : 'geen' },
-  { id:'parrot',  icon:'🦜', name:'Papegaaimaatje', info:'Een papegaai vliegt met je mee en plukt appels voor je.',  unlock:8, max:4, base:90,  growth:2.0,  fx:l => l ? `elke ${fmtNum(parrotCd(l))} s een appel` : 'geen' },
-  { id:'rain',    icon:'🌧️', name:'Appelregen',     info:'Bij elke 100 m regent het appels uit de lucht.',        unlock:9, max:3, base:60,  growth:2.0,  fx:l => l ? `${3 + l * 3} appels per 100 m` : 'geen' },
-  { id:'combo',   icon:'🔥', name:'Comboketting',   info:'Je combo blijft langer staan en levert meer bonus op.',  unlock:5, max:3, base:55,  growth:2.0,  fx:l => `${fmtNum(comboWin(l))} s · bonus ×${1 + l}` },
-  { id:'vinewise',icon:'🌿', name:'Liaankenner',    info:'Rotte lianen houden langer, ijs is minder glad en er zijn meer turbolianen.', unlock:7, max:3, base:50, growth:2.0, fx:l => l ? `+${l * 40}% grip` : 'geen' },
+  { id:'helmet',  icon:'⛑️', name:'Helm',           info:'Voorkomt dat een vijand appels van je steelt.',         unlock:6, max:3, base:70,  growth:2.2,  fx:l => `${l}× per run` },
+  { id:'rocket',  icon:'🚀', name:'Raketstart',     info:'Begin elke run met een raketvlucht.',                   unlock:20, max:4, base:120, growth:2.0,  fx:l => l ? `${rocketDist(l)} m` : 'geen' },
+  { id:'parrot',  icon:'🦜', name:'Papegaaimaatje', info:'Een papegaai vliegt met je mee en plukt appels voor je.',  unlock:14, max:4, base:90,  growth:2.0,  fx:l => l ? `elke ${fmtNum(parrotCd(l))} s een appel` : 'geen' },
+  { id:'rain',    icon:'🌧️', name:'Appelregen',     info:'Bij elke 100 m regent het appels uit de lucht.',        unlock:16, max:3, base:60,  growth:2.0,  fx:l => l ? `${3 + l * 3} appels per 100 m` : 'geen' },
+  { id:'combo',   icon:'🔥', name:'Comboketting',   info:'Je combo blijft langer staan en levert meer bonus op.',  unlock:8, max:3, base:55,  growth:2.0,  fx:l => `${fmtNum(comboWin(l))} s · bonus ×${1 + l}` },
+  { id:'vinewise',icon:'🌿', name:'Liaankenner',    info:'Rotte lianen houden langer, ijs is minder glad en er zijn meer turbolianen.', unlock:12, max:3, base:50, growth:2.0, fx:l => l ? `+${l * 40}% grip` : 'geen' },
   { id:'wingsuit',icon:'🦸', name:'Wingsuit',       info:'Andy krijgt een cape en glijdt veel verder door de lucht.', max:4, base:110, growth:2.0, fx:l => l ? `+${l * 25}% glijvlucht` : 'geen' },
-  { id:'shroom',  icon:'🍄', name:'Stuiterzwam',    info:'Meer paddenstoelen en lucht-trampolines, en ze lanceren je verder.',  unlock:6, max:3, base:40,  growth:1.9,  fx:l => l ? `+${l * 40}% paddenstoelen` : 'geen' },
+  { id:'shroom',  icon:'🍄', name:'Stuiterzwam',    info:'Meer paddenstoelen en lucht-trampolines, en ze lanceren je verder.',  unlock:10, max:3, base:40,  growth:1.9,  fx:l => l ? `+${l * 40}% paddenstoelen` : 'geen' },
 ];
 // ---- XP: hoe verder je komt, hoe meer XP; met spelerslevels ontgrendel je nieuwe upgrades ----
-const xpNeed = L => Math.round(150 * Math.pow(L, 1.45)); // XP nodig om van level L naar L+1 te gaan
+const xpNeed = L => Math.round(260 * Math.pow(L, 1.6)); // XP nodig om van level L naar L+1 te gaan
 function playerLevel(xp) { let L = 1; while (xp >= xpNeed(L)) { xp -= xpNeed(L); L++; } return { L, into: xp, need: xpNeed(L) }; }
 const unlocked = u => !u.unlock || playerLevel(save.xp).L >= u.unlock;
 // ---- Carrière: levels met een start en een finish; hoe hoger, hoe moeilijker ----
@@ -1478,7 +1477,7 @@ function updateGorilla(dt, holdHang, holdAir) {
     G.dive += (e * e - G.dive) * Math.min(1, dt * (diveHold ? 30 : 12));
     G.diving = G.dive > 0.25;
     const falling = G.vy > 0 && G.dive < 0.1, wing = lvl('wingsuit');
-    const glide = falling ? 1 - 0.1 * lvl('glide') - 0.07 * wing : 1;
+    const glide = falling ? 1 - 0.07 * wing : 1;
     const space = run.space && G.y < SPACE_Y;
     G.vy += AIR_G * glide * (space ? 0.45 : 1) * (1 + 1.6 * G.dive) * dt;
     // wingsuit: een deel van de valsnelheid wordt voorwaartse vaart
@@ -2822,15 +2821,6 @@ function drawGorilla() {
   ctx.globalAlpha = G.turboT > 0 ? 0.7 : 0.35;
   ctx.drawImage(glowSprite(G.turboT > 0 ? '255,220,90' : '255,255,255').c, -52, -52, 104, 104);
   ctx.globalAlpha = 1;
-  if (lvl('glide') && G.state === 'air' && G.vy > 0 && G.dive < 0.1 && !G.trick) { // blad-parachute
-    const sw = Math.sin(time * 5) * 0.08;
-    ctx.save(); ctx.rotate(sw);
-    ctx.strokeStyle = '#5a3a1a'; ctx.lineWidth = 2; line(0, -34, 0, -64);
-    ctx.fillStyle = '#2e7d32'; ctx.beginPath(); ctx.ellipse(0, -66, 40, 13, 0, Math.PI, 0); ctx.fill();
-    ctx.fillStyle = '#6fc04a'; ctx.beginPath(); ctx.ellipse(0, -68, 35, 9, 0, Math.PI, 0); ctx.fill();
-    ctx.strokeStyle = '#2e7d32'; ctx.lineWidth = 1.2; line(-34, -66, 34, -66);
-    ctx.restore();
-  }
   if (G.balloonT > 0) {
     ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; line(0, -28, Math.sin(time * 3) * 4, -82);
     ctx.fillStyle = GC.band; ell(Math.sin(time * 3) * 4, -106, 20, 25);
