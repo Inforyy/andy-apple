@@ -165,6 +165,49 @@
     .mm-bar{justify-content:space-around}
     .mode{padding:14px 16px}.mode-t{font-size:25px}.mode-ic{font-size:36px}
   }
+
+  /* ---------- Multiplayer ---------- */
+  .mode.multi{background:linear-gradient(135deg,#60a5fa,#7c3aed)}
+  .mp-status{display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;font-size:15px;margin:2px 0 12px}
+  .mp-status i{width:12px;height:12px;border-radius:50%;background:#dc2626;box-shadow:0 0 0 3px rgba(220,38,38,.2)}
+  .mp-status.on i{background:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.25)}
+  .mp-status.wait i{background:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.25);animation:pulse2 1s infinite}
+  .mp-step{background:rgba(122,74,28,.1);border-radius:16px;padding:12px 14px;margin:10px 0;text-align:left}
+  .mp-step h3{font-size:17px;color:#c2410c;margin-bottom:4px}
+  .mp-step p{font-size:14px;margin:2px 0 4px}
+  .mp-step textarea{min-height:64px;font-size:12px}
+  .mp-name{display:flex;align-items:center;gap:8px;justify-content:center;font-weight:800;margin-bottom:6px}
+  .mp-name input{font:inherit;font-weight:800;border:3px solid #e8c98a;border-radius:12px;padding:6px 10px;width:170px;color:#4a2c12;background:#fff;text-align:center}
+  .mp-modes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0}
+  .mp-mode{font:inherit;border:3px solid #e8c98a;background:#fff;border-radius:18px;padding:12px;cursor:pointer;color:#4a2c12;text-align:left}
+  .mp-mode b{display:block;font-size:20px;font-weight:900}
+  .mp-mode small{display:block;font-size:13px;line-height:1.3;color:#7a5a3a;margin-top:3px}
+  .mp-mode.sel{border-color:#7c3aed;background:#f3ecff;box-shadow:0 0 0 3px rgba(124,58,237,.25)}
+  .mp-mode:disabled{cursor:default;opacity:1}
+  .mp-lens{display:flex;gap:8px;justify-content:center;margin:6px 0 4px;flex-wrap:wrap}
+  .mp-len{font:inherit;font-weight:800;border:3px solid #e8c98a;background:#fff;border-radius:999px;padding:6px 14px;cursor:pointer;color:#4a2c12}
+  .mp-len.sel{border-color:#7c3aed;background:#7c3aed;color:#fff}
+  .mp-len:disabled{cursor:default}
+  .mp-vs{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center;margin:8px 0}
+  .mp-vs .pl{background:#fff;border:3px solid #e8c98a;border-radius:16px;padding:8px;font-weight:900;font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mp-vs .pl.me{border-color:#e8322b}.mp-vs .pl.opp{border-color:#2f7fe0}
+  .mp-vs span{font-weight:900;color:#c2410c}
+  .setup ol{margin:6px 0 6px 22px}
+  .setup li{margin-bottom:8px}
+  .setup .tip{background:#fff3c4;border:2px solid #e0a82e;border-radius:12px;padding:8px 12px;margin:8px 0;font-size:14px}
+  #mpHud{position:absolute;top:max(12px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:min(46vw,420px);text-align:center}
+  #mpHud .track{position:relative;height:14px;border-radius:7px;background:rgba(0,0,0,.38);border:2px solid rgba(255,255,255,.5);margin-top:22px;margin-bottom:22px}
+  #mpHud .track .flag{position:absolute;right:-14px;top:-12px;font-size:22px}
+  #mpHud .dot{position:absolute;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;border:3px solid #fff;display:grid;place-items:center;font-size:13px;transition:left .1s linear}
+  #mpHud .dot.me{background:#e8322b;z-index:2}
+  #mpHud .dot.me .tag{top:26px}#mpHud .dot.opp{background:#2f7fe0}
+  #mpHud .tag{position:absolute;top:-22px;transform:translateX(-50%);font-size:12px;font-weight:900;white-space:nowrap;text-shadow:0 2px 0 rgba(0,0,0,.5);margin:0;color:#fff}
+  #mpHud .info{font-weight:900;font-size:17px;text-shadow:0 2px 0 rgba(0,0,0,.45);margin-top:6px}
+  #mpCount{position:absolute;top:30%;left:50%;transform:translate(-50%,-50%);font-size:clamp(70px,16vw,150px);font-weight:900;
+    text-shadow:0 6px 0 rgba(0,0,0,.35),0 0 30px rgba(0,0,0,.3)}
+  #mpCount.pop{animation:cpop .9s ease-out}
+  @keyframes cpop{0%{transform:translate(-50%,-50%) scale(1.8);opacity:0}25%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{opacity:.9}}
+  @media (max-width: 720px){ #mpHud{top:auto;bottom:max(10px,env(safe-area-inset-bottom));width:80vw} #mpHud:not(.hidden) ~ #hint{bottom:120px} .mp-modes{grid-template-columns:1fr} }
   kbd{background:#fff;border:2px solid #d6b77a;border-bottom-width:4px;border-radius:6px;padding:0 6px;font-weight:800;font-size:13px}
 </style>
 </head>
@@ -183,6 +226,8 @@
       <div class="pill small" id="hudItems"></div>
     </div>
   </div>
+  <div id="mpHud" class="hidden"><div class="track"><span class="flag" id="mpFlag">🏁</span><div class="dot opp" id="mpDotOpp"><span class="tag" id="mpTagOpp"></span></div><div class="dot me" id="mpDotMe"><span class="tag">Jij</span></div></div><div class="info" id="mpInfo"></div></div>
+  <div id="mpCount"></div>
   <div id="banner"><div class="big"></div><div class="small"></div></div>
   <div id="hint"></div>
 </div>
@@ -208,6 +253,11 @@
         <span class="mode-txt"><span class="mode-t">Eindeloos</span><span class="mode-s" id="mmEndless">Record: 0 m</span></span>
         <span class="mode-go">▶</span>
       </button>
+      <button class="mode multi" id="btnMulti">
+        <span class="mode-ic">👥</span>
+        <span class="mode-txt"><span class="mode-t">Multiplayer</span><span class="mode-s" id="mmMulti">Race of Endurance tegen een vriend</span></span>
+        <span class="mode-go">▶</span>
+      </button>
     </div>
     <nav class="mm-bar">
       <button class="ib" id="btnShop"><span class="ib-ic">🛒</span><small>Upgrades</small></button>
@@ -215,6 +265,131 @@
       <button class="ib" id="btnHelp"><span class="ib-ic">❓</span><small>Uitleg</small></button>
       <button class="ib" id="btnSettings"><span class="ib-ic">⚙️</span><small>Instellingen</small></button>
     </nav>
+  </div>
+</div>
+
+
+<!-- Multiplayer -->
+<div id="mp" class="screen">
+  <div class="panel">
+    <h2>👥 Multiplayer</h2>
+    <div class="mp-status" id="mpStatus"><i></i><span id="mpStatusTxt">Niet verbonden</span></div>
+    <div class="mp-name"><label for="mpName">Jouw naam:</label><input id="mpName" maxlength="12" spellcheck="false" autocomplete="off"></div>
+
+    <!-- stap 0: kiezen -->
+    <div id="mpPick">
+      <p class="sub">Speel tegen een vriend op een ander apparaat. Upgrades staan uit, dus iedereen is gelijk!</p>
+      <div class="row">
+        <button class="btn green" id="btnMpHost">🏠 Spel hosten</button>
+        <button class="btn" id="btnMpJoin">🔗 Meedoen</button>
+      </div>
+    </div>
+
+    <!-- host -->
+    <div id="mpHostBox" class="hidden">
+      <div class="mp-step">
+        <h3>1. Stuur deze uitnodigingscode naar je vriend</h3>
+        <textarea id="mpOffer" readonly spellcheck="false" placeholder="Code wordt gemaakt…"></textarea>
+        <div class="row"><button class="btn" id="btnMpCopyOffer" disabled>📋 Kopieer uitnodigingscode</button></div>
+      </div>
+      <div class="mp-step">
+        <h3>2. Plak hier de antwoordcode van je vriend</h3>
+        <textarea id="mpAnswerIn" spellcheck="false" placeholder="Plak de antwoordcode…"></textarea>
+        <div class="row"><button class="btn green" id="btnMpConnect">🔌 Verbinden</button></div>
+      </div>
+    </div>
+
+    <!-- meedoen -->
+    <div id="mpJoinBox" class="hidden">
+      <div class="mp-step">
+        <h3>1. Plak de uitnodigingscode van de host</h3>
+        <textarea id="mpOfferIn" spellcheck="false" placeholder="Plak de uitnodigingscode…"></textarea>
+        <div class="row"><button class="btn green" id="btnMpMakeAnswer">✍️ Maak antwoordcode</button></div>
+      </div>
+      <div class="mp-step hidden" id="mpAnswerStep">
+        <h3>2. Stuur deze antwoordcode terug naar de host</h3>
+        <textarea id="mpAnswer" readonly spellcheck="false" placeholder="Code wordt gemaakt…"></textarea>
+        <div class="row"><button class="btn" id="btnMpCopyAnswer" disabled>📋 Kopieer antwoordcode</button></div>
+        <p class="sub" style="margin:8px 0 0">Zodra de host hem plakt, zijn jullie verbonden.</p>
+      </div>
+    </div>
+
+    <!-- verbonden: lobby -->
+    <div id="mpLobby" class="hidden">
+      <div class="mp-vs"><div class="pl me" id="mpMeName">Jij</div><span>VS</span><div class="pl opp" id="mpOppName">Tegenstander</div></div>
+      <div class="mp-modes">
+        <button class="mp-mode" id="mpModeRace" data-mode="race"><b>🏁 Race</b><small>Wie het eerst bij de finish is, wint. Val je, dan kom je terug op een liaan (en verlies je tijd).</small></button>
+        <button class="mp-mode" id="mpModeEnd" data-mode="endurance"><b>⏱️ Endurance</b><small>Wie het langst volhoudt, wint. Val je, dan ben je af. Een storm jaagt je steeds sneller op!</small></button>
+      </div>
+      <div class="mp-lens" id="mpLens">
+        <button class="mp-len" data-len="500">Kort · 500 m</button>
+        <button class="mp-len" data-len="1000">Normaal · 1000 m</button>
+        <button class="mp-len" data-len="2000">Lang · 2000 m</button>
+      </div>
+      <div class="row"><button class="btn big green" id="btnMpStart">▶ Start!</button></div>
+      <p class="sub hidden" id="mpGuestWait" style="margin-top:10px">⏳ Wachten tot de host het spel start…</p>
+    </div>
+
+    <div id="mpMsg" class="msg"></div>
+    <div class="row">
+      <button class="btn ghost" id="btnMpSetup">❓ Set-up</button>
+      <button class="btn ghost red hidden" id="btnMpCancel">✖ Opnieuw</button>
+      <button class="btn" id="btnMpBack">← Terug</button>
+    </div>
+  </div>
+</div>
+
+<!-- Multiplayer: instructies -->
+<div id="mpSetup" class="screen">
+  <div class="panel help setup">
+    <h2 style="text-align:center">❓ Multiplayer instellen</h2>
+    <p class="sub" style="text-align:center">Je hebt geen account of server nodig: de twee apparaten verbinden direct met elkaar. Je wisselt alleen twee codes uit.</p>
+    <h3>Wat heb je nodig?</h3>
+    <ul>
+      <li>Twee apparaten (computer, laptop, tablet of telefoon), elk met dit spel open. Stuur je vriend dus ook dit spel (hetzelfde <b>index.html</b>-bestand of dezelfde link).</li>
+      <li>Internet op allebei, of allebei op <b>hetzelfde wifi-netwerk</b> (dat werkt het best).</li>
+      <li>Een manier om een stukje tekst naar elkaar te sturen: WhatsApp, Discord, e-mail, sms…</li>
+    </ul>
+    <h3>Stap voor stap</h3>
+    <ol>
+      <li><b>Speler 1 (host)</b> klikt op <b>👥 Multiplayer</b> en dan op <b>🏠 Spel hosten</b>. Er verschijnt een <b>uitnodigingscode</b>. Klik op <b>📋 Kopieer</b> en stuur hem naar je vriend.</li>
+      <li><b>Speler 2</b> klikt op <b>👥 Multiplayer</b> en dan op <b>🔗 Meedoen</b>. Plak de uitnodigingscode in het vak en klik op <b>✍️ Maak antwoordcode</b>.</li>
+      <li>Speler 2 kopieert de <b>antwoordcode</b> en stuurt die terug naar de host.</li>
+      <li>De host plakt de antwoordcode in stap 2 en klikt op <b>🔌 Verbinden</b>. Na een paar seconden staat bovenin <b>🟢 Verbonden</b>.</li>
+      <li>De host kiest <b>🏁 Race</b> (met een afstand) of <b>⏱️ Endurance</b> en klikt op <b>▶ Start!</b> Na het aftellen (3, 2, 1) mag je springen.</li>
+    </ol>
+    <h3>De spelmodi</h3>
+    <ul>
+      <li><b>🏁 Race</b>: wie het eerst bij de finish is, wint. Val je, dan kom je na een tel terug op een liaan (dat kost tijd).</li>
+      <li><b>⏱️ Endurance</b>: wie het langst volhoudt, wint. Val je, dan ben je af. Een donkere storm jaagt je van achteren op en gaat steeds sneller: blijf hem voor!</li>
+      <li>Jullie spelen in <b>precies dezelfde wereld</b> en zien elkaar als tweede gorilla (met blauwe bandana).</li>
+      <li><b>Upgrades staan uit</b> tijdens multiplayer: iedereen speelt met een gewone Andy. Appels en XP tellen niet mee voor je save.</li>
+      <li>Na afloop klikken jullie allebei op <b>🔁 Revanche</b> voor nog een potje.</li>
+    </ul>
+    <h3>Lukt het niet?</h3>
+    <div class="tip">💡 <b>Codes zijn eenmalig.</b> Mislukt het verbinden, klik dan op <b>✖ Opnieuw</b> en begin weer bij stap 1 met nieuwe codes.</div>
+    <div class="tip">📶 Blijft het op <b>Verbinden…</b> hangen? Sommige school-, werk- en mobiele netwerken blokkeren directe verbindingen. Zet allebei de apparaten op hetzelfde wifi-netwerk (of op de hotspot van één van de telefoons) en probeer het opnieuw.</div>
+    <div class="tip">🪟 <b>Laat het spel in beeld.</b> Wissel je tijdens een potje van tabblad of app, dan stopt jouw Andy en na een paar seconden telt het als opgeven.</div>
+    <div class="tip">🧪 <b>Zelf testen?</b> Open het spel in twee browservensters naast elkaar: host in het ene, meedoen in het andere.</div>
+    <div class="row"><button class="btn" id="btnMpSetupBack">← Terug</button></div>
+  </div>
+</div>
+
+<!-- Multiplayer: uitslag -->
+<div id="mpRes" class="screen">
+  <div class="panel">
+    <h2 id="mpResTitle">Gewonnen!</h2>
+    <p class="sub" id="mpResSub"></p>
+    <div class="mp-vs"><div class="pl me" id="mpResMe">Jij</div><span>VS</span><div class="pl opp" id="mpResOpp">Tegenstander</div></div>
+    <div class="results" id="mpResTable"></div>
+    <div id="mpResScore" class="sub"></div>
+    <div class="row">
+      <button class="btn big green" id="btnMpAgain">🔁 Revanche</button>
+    </div>
+    <div class="row">
+      <button class="btn" id="btnMpLobby">👥 Lobby</button>
+      <button class="btn ghost" id="btnMpLeave">🚪 Stoppen</button>
+    </div>
   </div>
 </div>
 
@@ -247,6 +422,7 @@
       <li>Met je appels koop je <b>permanente upgrades</b>.</li>
       <li>Blijf je lang in de lucht, dan doet Andy vanzelf <b>trucs</b> (salto's, kurkentrekkers…) voor bonusappels.</li>
       <li><b>Carrière</b>: levels met een start en finish, steeds moeilijker. <b>Eindeloos</b>: zo ver mogelijk komen.</li>
+      <li><b>Multiplayer</b>: speel tegen een vriend op een ander apparaat. <b>Race</b>: eerste bij de finish wint. <b>Endurance</b>: wie het langst volhoudt, wint. Upgrades staan dan uit. Hoe je het instelt, staat onder <b>❓ Set-up</b> in het multiplayermenu.</li>
       <li>Door ver te komen verdien je <b>XP</b>; met spelerslevels ontgrendel je nieuwe upgrades.</li>
       <li>Vind je hoog boven het plafond een pad van gouden ballonnen? Pak ze perfect achter elkaar en je vliegt de ruimte in!</li>
       <li><kbd>P</kbd> of <kbd>Esc</kbd> pauzeert het spel.</li>
@@ -363,8 +539,8 @@
 <!-- Pauze -->
 <div id="pause" class="screen">
   <div class="panel">
-    <h2>⏸ Pauze</h2>
-    <p class="sub">Neem even een banaan.</p>
+    <h2 id="pauseTitle">⏸ Pauze</h2>
+    <p class="sub" id="pauseSub">Neem even een banaan.</p>
     <button class="btn big green" id="btnResume">▶ Doorgaan</button>
     <div class="row">
       <button class="btn" id="btnQuit">🏁 Stoppen &amp; innen</button>
@@ -494,7 +670,7 @@ const upCost = (u, l) => Math.round(u.base * 1.5 * Math.pow(u.growth, l) / 5) * 
 const SAVE_KEY = 'andyApples.save.v1';
 const GAME_ID = 'Andy Apples';
 function defaultSave() {
-  return { version:3, apples:0, xp:0, upgrades:{}, best:0, totalApples:0, totalDistance:0, runs:0, maxBiome:0, sound:true, music:true, career:{ unlocked:1, stars:Array.from({ length: LEVELS }, () => 0) } };
+  return { version:3, apples:0, xp:0, upgrades:{}, best:0, totalApples:0, totalDistance:0, runs:0, maxBiome:0, sound:true, music:true, mpGames:0, mpWins:0, career:{ unlocked:1, stars:Array.from({ length: LEVELS }, () => 0) } };
 }
 function normalizeSave(o) {
   const s = defaultSave();
@@ -511,6 +687,8 @@ function normalizeSave(o) {
   s.sound = o.sound !== false;
   s.music = o.music !== false;
   s.xp = num(o.xp);
+  s.mpGames = num(o.mpGames);
+  s.mpWins = Math.min(num(o.mpWins), s.mpGames);
   const c = (o.career && typeof o.career === 'object') ? o.career : {};
   s.career.unlocked = clamp(num(c.unlocked) || 1, 1, LEVELS);
   s.career.stars = Array.from({ length: LEVELS }, (_, i) => clamp(num(Array.isArray(c.stars) ? c.stars[i] : 0), 0, 3));
@@ -529,7 +707,8 @@ function persist() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); return true; } catch (e) { return false; }
 }
 let save = loadSave();
-const lvl = id => save.upgrades[id] || 0;
+// tijdens multiplayer staan alle upgrades uit: iedereen speelt met een gewone Andy
+const lvl = id => game.mp ? 0 : (save.upgrades[id] || 0);
 
 function checksum(str) { // FNV-1a
   let h = 0x811c9dc5;
@@ -899,7 +1078,8 @@ let run = null;
 let camX = 0, camY = 0, lastCamX = 0, shakeT = 0, shakeAmp = 0, flashT = 0;
 let time = 0;
 let G = null;
-const game = { mode: 'menu', paused: false, holdLock: false, career: null };
+const game = { mode: 'menu', paused: false, holdLock: false, career: null, mp: null };
+let vineSeq = 0; // volgnummer van lianen: in multiplayer bij beide spelers hetzelfde
 const input = { down: false, presses: 0 };
 
 const VINE_LOOK = {
@@ -923,7 +1103,7 @@ function makeVine(x, ay, len, type, bi) {
   }
   const look = VINE_LOOK[type] || { col: BIOMES[bi].c.vine, leaf: BIOMES[bi].c.leaf };
   const flowers = ['#ff7eb6', '#7ec8ff', '#ffd23f', '#ffffff'];
-  return { x, ay, pts, type, bi, col: look.col, dark: shade(look.col, -0.38), light: shade(look.col, 0.3), leaf: look.leaf,
+  return { id: vineSeq++, x, ay, pts, type, bi, col: look.col, dark: shade(look.col, -0.38), light: shade(look.col, 0.3), leaf: look.leaf,
     phase: genRandom() * 6.28, anchored: true, snapAt: type === 'rotten' ? grand(0.8, 1.2) * (1 + 0.4 * lvl('vinewise')) : 0,
     rest: restSeg(x, ay, n * SEG_LEN, type),
     // tak waaraan de liaan hangt
@@ -935,7 +1115,9 @@ function resetWorld() {
   vines = []; apples = []; shrooms = []; foes = []; parts = []; texts = []; fishes = []; tramps = [];
   time = 0;
   const C = game.career;
-  genRandom = C ? mulberry32(1000 + C.n * 7919) : Math.random;
+  // carrière en multiplayer: vaste seed, zodat de wereld elke keer (en bij beide spelers) hetzelfde is
+  genRandom = C ? mulberry32(1000 + C.n * 7919) : game.mp ? mulberry32(game.mp.seed) : Math.random;
+  vineSeq = 0;
   // Andy staat op de startrots; de eerste liaan hangt binnen springbereik
   const v0 = makeVine(FIRST_VINE.x, FIRST_VINE.ay, FIRST_VINE.len, 'normal', 0);
   vines.push(v0);
@@ -950,6 +1132,7 @@ function resetWorld() {
   run = { picked: 0, earned: 0, stolen: 0, golden: 0, dist: 0, biome: 0, reason: '', lastWoo: 0,
     combo: 0, lastPick: -9, firstJump: true, nextMile: 100, tricks: 0, space: false, spaceVisits: 0, appleTotal: 0 };
   if (C) { run.biome = C.bi; C.finishX = START_X + C.L * PX_PER_M; }
+  if (game.mp) game.mp.finishX = game.mp.len ? START_X + game.mp.len * PX_PER_M : 0;
   camX = Math.max(-100, G.x - viewW * 0.32); camY = baseTop(); lastCamX = camX;
   genUntil(camX + viewW + 900);
   game.holdLock = false;
@@ -991,7 +1174,7 @@ function segDist(a, b) {
 function vineFits(x, ay, len, type) {
   const seg = restSeg(x, ay, Math.max(6, Math.round(len / SEG_LEN)) * SEG_LEN, type);
   for (const v of vines) {
-    if (Math.abs(v.x - x) > 700) continue;
+    if (Math.abs(v.rest[0] - x) > 700) continue; // rest[0]: vaste plek (luchtballonnen drijven weg)
     if (segDist(seg, v.rest) < 75 || Math.hypot(v.x - x, v.ay - ay) < 130) return false;
   }
   return true;
@@ -1027,7 +1210,7 @@ function genNext() {
   const d = diffAt(m), dc = Math.min(1, d);
   const bi = biomeIndexAt(m), F = features(bi);
   // eindeloze modus: hoe sneller Andy gaat, hoe ruimer de lianen staan (anders wordt het te druk)
-  const fast = !game.career && G ? clamp((Math.abs(G.vx) - 700) / 900, 0, 1) : 0;
+  const fast = !game.career && !game.mp && G ? clamp((Math.abs(G.vx) - 700) / 900, 0, 1) : 0;
   const x = gen.x + grand(470, 520) + d * grand(40, 140) + fast * grand(140, 260);
   const vbi = biomeIndexAt((x - START_X) / PX_PER_M);
   gen.col++;
@@ -1072,7 +1255,7 @@ function genNext() {
   if (m > 25 && genRandom() < 0.2 + 0.1 * lvl('shroom')) {
     for (let t = 0; t < 6; t++) {
       const tx = (gen.x + x) / 2 + grand(-60, 60), ty = grand(CEIL_Y + 250, HAZARD_Y - 230), seg = [tx - 75, ty - 40, tx + 75, ty + 40];
-      if (vines.every(v => Math.abs(v.x - tx) > 700 || segDist(seg, v.rest) > 70)) { tramps.push({ x: tx, y: ty, w: 120, sq: 0, bi: vbi, ph: grand(0, 6) }); break; }
+      if (vines.every(v => Math.abs(v.rest[0] - tx) > 700 || segDist(seg, v.rest) > 70)) { tramps.push({ x: tx, y: ty, w: 120, sq: 0, bi: vbi, ph: grand(0, 6) }); break; }
     }
   }
   if (m > 20 && genRandom() < 0.16 * (1 - 0.6 * dc) * (1 + 0.4 * lvl('shroom'))) shrooms.push({ x: (gen.x + x) / 2 + grand(-40, 40), w: 180, bi: vbi, sq: 0 });
@@ -1152,15 +1335,19 @@ function simVine(v, dt) {
   if (hang) { // Andy's hand is een vast punt op het touw; het touw volgt hem
     const h = p[k]; h.im = 0; h.x = G.hx; h.y = G.hy; h.px = h.x; h.py = h.y;
   }
+  // multiplayer: hangt de tegenstander aan deze liaan, dan buigt hij ook bij jou mee
+  let gq = null;
+  if (!hang && ghostPin.v === v && ghostPin.k < n) { gq = p[ghostPin.k]; gq.im = 0; gq.x = ghostPin.x; gq.y = ghostPin.y; gq.px = gq.x; gq.py = gq.y; }
   const stiff = elastic ? 0.25 : 1, reach = elastic ? ELASTIC_STRETCH : 1;
   const iters = hang ? 10 : 6;
   for (let it = 0; it < iters; it++) {
     for (let i = 0; i < n - 1; i++) solve(p[i], p[i + 1], SEG_LEN, stiff);
     if (v.anchored) {
       const a = p[0];
-      for (let i = 2; i < n; i++) if (!(hang && i === k)) limitDist(a, p[i], i * SEG_LEN * reach);
+      for (let i = 2; i < n; i++) if (!(hang && i === k) && p[i] !== gq) limitDist(a, p[i], i * SEG_LEN * reach);
     }
   }
+  if (gq) gq.im = 1;
   // Andy duwt lianen opzij waar hij doorheen vliegt
   if (!hang && (G.state === 'air' || G.state === 'hang' || G.state === 'rocket') && Math.abs(v.x - G.x) < 520) {
     const rr = G_R + 5;
@@ -1383,6 +1570,14 @@ function hitFoe(f) {
 }
 function die() {
   if (G.state === 'dead') return;
+  if (game.mp) { // multiplayer: geen game over; race = terug op een liaan, endurance = af
+    if (G.state === 'hang') { freeHand(G.vine, G.k); G.vine = null; }
+    G.state = 'dead'; G.deadT = 0; G.trick = null; G.trickRot = 0;
+    G.vx *= 0.25; G.vy = Math.min(G.vy, 200);
+    splash(G.x, 30); Sfx.splash(); shake(7, 0.35);
+    if (game.mode === 'playing') mpDied();
+    return;
+  }
   if (game.mode === 'done') { // al gefinisht: gewoon een plons, geen game over
     if (G.state === 'hang') { freeHand(G.vine, G.k); G.vine = null; }
     G.state = 'dead'; G.deadT = 0; splash(G.x, 20); return;
@@ -1398,7 +1593,7 @@ function die() {
 // =====================================================================
 function step(dt) {
   time += dt;
-  const forced = game.mode === 'menu' || game.mode === 'ready' || game.mode === 'done' || game.holdLock;
+  const forced = game.mode === 'menu' || game.mode === 'ready' || game.mode === 'done' || game.mode === 'mpcount' || game.mode === 'mpend' || game.holdLock;
   const holdHang = forced || (game.mode === 'playing' && input.down);
   const holdAir = game.mode === 'playing' && input.down;
 
@@ -1417,6 +1612,7 @@ function step(dt) {
   for (const t of tramps) t.sq *= Math.pow(0.03, dt);
   if (tramps.length && tramps[0].x < camX - 400) tramps.shift();
   updateSpace(dt);
+  if (game.mp) mpStep(dt);
 }
 
 function updateGorilla(dt, holdHang, holdAir) {
@@ -1548,6 +1744,7 @@ function updateGorilla(dt, holdHang, holdAir) {
   }
 
   if (playing && G.state !== 'dead' && game.career && G.x >= game.career.finishX) levelComplete();
+  if (playing && G.state !== 'dead' && game.mp && game.mp.finishX && G.x >= game.mp.finishX) mpFinished();
   if (playing && G.state !== 'dead') {
     run.dist = Math.max(run.dist, (G.x - START_X) / PX_PER_M);
     if (run.dist >= run.nextMile) {
@@ -2488,7 +2685,7 @@ function drawRock() {
 }
 // Finish in de carrière: een geblokte vlaggenlijn over de hele hoogte
 function drawFinish() {
-  const C = game.career;
+  const C = game.career || game.mp;
   if (!C || !C.finishX) return;
   const x = C.finishX;
   if (x < camX - 80 || x > camX + viewW + 80) return;
@@ -2514,7 +2711,7 @@ function drawMarkers() {
     ctx.strokeStyle = '#4a2e16'; ctx.lineWidth = 2; ctx.strokeRect(x - 28, HAZARD_Y - 72, 56, 24);
     ctx.fillStyle = '#fff'; ctx.font = 'bold 14px Trebuchet MS, sans-serif'; ctx.fillText(m + ' m', x, HAZARD_Y - 60);
   }
-  if (save.best >= 20 && !game.career) {
+  if (save.best >= 20 && !game.career && !game.mp) {
     const x = START_X + save.best * PX_PER_M;
     if (x > camX - 80 && x < camX + viewW + 80) {
       ctx.fillStyle = '#ddd'; ctx.fillRect(x - 3, HAZARD_Y - 200, 6, 240);
@@ -2789,7 +2986,7 @@ function drawWarnings() {
   }
 }
 // Andy: een cartoongorilla met contourlijnen, kuif, zware wenkbrauwboog, bandana met appelspeldje
-const GC = { fur: '#3b3344', furD: '#261f2d', furL: '#6a5b76', skin: '#dcab90', skinD: '#b3836b', ink: '#140f18', band: '#e8322b', bandD: '#a8141c', cape: '#c81e3a', capeD: '#8e1127', gold: '#ffcc33' };
+let GC = { fur: '#3b3344', furD: '#261f2d', furL: '#6a5b76', skin: '#dcab90', skinD: '#b3836b', ink: '#140f18', band: '#e8322b', bandD: '#a8141c', cape: '#c81e3a', capeD: '#8e1127', gold: '#ffcc33' };
 function limb(x1, y1, x2, y2, w) {
   ctx.lineCap = 'round';
   ctx.strokeStyle = GC.ink; ctx.lineWidth = w + 3; line(x1, y1, x2, y2);
@@ -3113,15 +3310,580 @@ function render() {
   for (const a of apples) if (a.x > camX - 30 && a.x < camX + viewW + 30 && a.y > camY - 30 && a.y < camY + viewH + 30) drawApple(a);
   drawFoes();
   drawFish();
+  if (game.mp) drawGhost();
   if (G) { drawGorilla(); drawParrot(); }
   drawParts();
+  if (game.mp) drawStorm();
   drawHazard(P);
   drawTexts();
   ctx.setTransform(S, 0, 0, S, 0, 0);
   drawForeground(P);
   if (spW < 0.6) drawAmbient(P);
   drawWarnings();
+  if (game.mp) drawMpOverlay();
   drawFlash();
+}
+// =====================================================================
+//  Multiplayer
+//  Twee spelers verbinden direct met elkaar (WebRTC). Er is geen server nodig: de host maakt een
+//  uitnodigingscode, de ander een antwoordcode, en die wisselen ze via bijv. WhatsApp uit.
+//  Beide spelers krijgen dezelfde seed en dus precies dezelfde wereld. Iedereen simuleert zijn
+//  eigen Andy en stuurt 20× per seconde zijn positie; de tegenstander wordt als tweede gorilla getekend.
+// =====================================================================
+const MP_NAME_KEY = 'andyApples.name';
+const MP_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
+const MP = { pc: null, dc: null, role: null, connected: false, busy: false, oppName: 'Tegenstander',
+  sel: { mode: 'race', len: 1000 }, cfg: null, match: null, snaps: [], rt: null, ghost: null,
+  lastMsg: 0, sendAcc: 0, again: false, oppAgain: false, score: { me: 0, opp: 0 }, hideTimer: 0 };
+let ghostPin = { v: null, k: 0, x: 0, y: 0 };
+const GC2 = Object.assign({}, GC, { band: '#2f7fe0', bandD: '#17498f', fur: '#4a3a30', furD: '#30251d', furL: '#7a6452' });
+const cleanName = n => String(n || '').replace(/[<>&"]/g, '').trim().slice(0, 12);
+function myName() { let n = ''; try { n = localStorage.getItem(MP_NAME_KEY) || ''; } catch (e) { /* geen opslag */ } return cleanName(n) || 'Andy'; }
+const escHtml = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// ---- codes: sessiebeschrijving -> (gecomprimeerde) tekst om te kopiëren ----
+const b64u = bytes => { let s = ''; for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+const unb64u = str => { const s = atob(str.replace(/-/g, '+').replace(/_/g, '/')); const b = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; };
+async function packCode(desc) {
+  // overbodige regels weg: korter = makkelijker kopiëren
+  const sdp = desc.sdp.split('\r\n').filter(l => l && !/^a=(extmap-allow-mixed|msid-semantic)/.test(l)).join('\r\n') + '\r\n';
+  const bytes = new TextEncoder().encode(JSON.stringify({ t: desc.type, s: sdp }));
+  if (typeof CompressionStream === 'function') {
+    try {
+      const buf = await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer();
+      return 'AAMP1z' + b64u(new Uint8Array(buf));
+    } catch (e) { /* dan maar ongecomprimeerd */ }
+  }
+  return 'AAMP1j' + b64u(bytes);
+}
+async function unpackCode(code) {
+  const m = /^AAMP1([zj])([A-Za-z0-9_-]+)$/.exec(String(code || '').replace(/\s+/g, ''));
+  if (!m) throw new Error('Dit is geen geldige code. Kopieer de hele code en probeer het opnieuw.');
+  let bytes;
+  try { bytes = unb64u(m[2]); } catch (e) { throw new Error('De code is beschadigd. Kopieer hem opnieuw.'); }
+  if (m[1] === 'z') {
+    if (typeof DecompressionStream !== 'function') throw new Error('Deze browser is te oud voor multiplayer. Probeer een recente Chrome, Edge, Firefox of Safari.');
+    try { bytes = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer()); }
+    catch (e) { throw new Error('De code is onvolledig. Kopieer de hele code opnieuw.'); }
+  }
+  const o = JSON.parse(new TextDecoder().decode(bytes));
+  if (!o || (o.t !== 'offer' && o.t !== 'answer') || typeof o.s !== 'string') throw new Error('Dit is geen geldige code.');
+  return { type: o.t, sdp: o.s };
+}
+function waitIce(pc) {
+  return new Promise(res => {
+    if (pc.iceGatheringState === 'complete') return res();
+    const t = setTimeout(res, 3500);
+    pc.addEventListener('icegatheringstatechange', () => { if (pc.iceGatheringState === 'complete') { clearTimeout(t); res(); } });
+  });
+}
+
+// ---- verbinding ----
+function mpNewPc() {
+  if (typeof RTCPeerConnection !== 'function') throw new Error('Deze browser ondersteunt geen multiplayer (WebRTC).');
+  const pc = new RTCPeerConnection({ iceServers: MP_ICE });
+  MP.pc = pc;
+  pc.addEventListener('connectionstatechange', () => {
+    if (MP.pc !== pc) return;
+    if (pc.connectionState === 'failed') mpLost(MP.connected ? 'De verbinding is weggevallen.' : 'Verbinden is mislukt. Tip: zet beide apparaten op hetzelfde wifi-netwerk en probeer het opnieuw.');
+    else if (pc.connectionState === 'connecting') mpRender();
+  });
+  return pc;
+}
+function mpSetupDc(dc) {
+  MP.dc = dc;
+  dc.onopen = () => {
+    if (MP.dc !== dc) return;
+    MP.connected = true; MP.lastMsg = performance.now(); MP.score = { me: 0, opp: 0 };
+    mpSend({ type: 'hello', name: myName() });
+    if (MP.role === 'host') mpSend({ type: 'lobby', mode: MP.sel.mode, len: MP.sel.len });
+    mpMsg('');
+    Sfx.buy();
+    mpRender();
+  };
+  dc.onclose = () => { if (MP.dc === dc) mpLost('De verbinding is verbroken.'); };
+  dc.onmessage = e => { if (MP.dc !== dc) return; let m; try { m = JSON.parse(e.data); } catch (err) { return; } mpOnMsg(m); };
+}
+function mpSend(m) { const dc = MP.dc; if (dc && dc.readyState === 'open') { try { dc.send(JSON.stringify(m)); } catch (e) { /* negeren */ } } }
+function mpClose(sayBye) {
+  if (sayBye) mpSend({ type: 'bye' });
+  const pc = MP.pc, dc = MP.dc;
+  MP.pc = null; MP.dc = null; MP.connected = false; MP.role = null; MP.busy = false;
+  MP.again = MP.oppAgain = false;
+  // het afsluiten iets uitstellen, zodat het "bye"-bericht nog weg kan
+  setTimeout(() => { try { if (dc) dc.close(); } catch (e) { /* */ } try { if (pc) pc.close(); } catch (e) { /* */ } }, sayBye ? 300 : 0);
+}
+// verbinding kwijt: tijdens een potje eindigt dat zonder winnaar
+function mpLost(reason) {
+  const wasConnected = MP.connected || MP.role;
+  mpClose(false);
+  const M = MP.match;
+  if (M && !M.result && game.mp === M) mpEnd('conn', reason);
+  else if (curScreen === 'mpRes') { $('btnMpAgain').disabled = true; $('btnMpAgain').textContent = '🔌 Verbinding verbroken'; }
+  if (wasConnected) mpMsg(reason, false);
+  mpRender();
+}
+async function mpHost() {
+  if (MP.busy) return;
+  mpClose(false);
+  MP.role = 'host'; MP.busy = true;
+  $('mpOffer').value = ''; $('mpAnswerIn').value = ''; $('btnMpCopyOffer').disabled = true;
+  mpMsg(''); mpRender();
+  try {
+    const pc = mpNewPc();
+    mpSetupDc(pc.createDataChannel('andy', { ordered: true }));
+    await pc.setLocalDescription(await pc.createOffer());
+    await waitIce(pc);
+    if (MP.pc !== pc) return;
+    $('mpOffer').value = await packCode(pc.localDescription);
+    $('btnMpCopyOffer').disabled = false;
+  } catch (e) { mpClose(false); mpMsg('Hosten mislukt: ' + e.message, false); }
+  MP.busy = false; mpRender();
+}
+async function mpConnect() {
+  const pc = MP.pc;
+  if (!pc || MP.role !== 'host') return;
+  try {
+    const d = await unpackCode($('mpAnswerIn').value);
+    if (d.type !== 'answer') throw new Error('Dit is een uitnodigingscode. Je hebt de ANTWOORDcode van je vriend nodig.');
+    if (pc.signalingState !== 'have-local-offer') throw new Error('Deze uitnodiging is al gebruikt. Klik op ✖ Opnieuw.');
+    await pc.setRemoteDescription(d);
+    mpMsg('Verbinden…', true);
+    mpRender();
+  } catch (e) { mpMsg(e.message, false); }
+}
+function mpJoinStart() { mpClose(false); MP.role = 'guest'; $('mpOfferIn').value = ''; $('mpAnswer').value = ''; mpMsg(''); mpRender(); }
+async function mpMakeAnswer() {
+  if (MP.busy) return;
+  let d;
+  try {
+    d = await unpackCode($('mpOfferIn').value);
+    if (d.type !== 'offer') throw new Error('Dit is een antwoordcode. Je hebt de UITNODIGINGScode van de host nodig.');
+  } catch (e) { mpMsg(e.message, false); return; }
+  mpClose(false);
+  MP.role = 'guest'; MP.busy = true;
+  $('mpAnswer').value = ''; $('btnMpCopyAnswer').disabled = true;
+  mpMsg(''); mpRender();
+  try {
+    const pc = mpNewPc();
+    pc.ondatachannel = e => mpSetupDc(e.channel);
+    await pc.setRemoteDescription(d);
+    await pc.setLocalDescription(await pc.createAnswer());
+    await waitIce(pc);
+    if (MP.pc !== pc) return;
+    $('mpAnswer').value = await packCode(pc.localDescription);
+    $('btnMpCopyAnswer').disabled = false;
+  } catch (e) { mpClose(false); MP.role = 'guest'; mpMsg('Antwoordcode maken mislukt: ' + e.message, false); }
+  MP.busy = false; mpRender();
+}
+function mpCopy(id) {
+  const ta = $(id), code = ta.value;
+  if (!code) return;
+  ta.focus(); ta.select();
+  const done = () => mpMsg('✔ Gekopieerd! Plak de code in een bericht aan je vriend.', true);
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, () => { try { document.execCommand('copy'); done(); } catch (e) { mpMsg('Selecteer en kopieer de code handmatig.', true); } });
+  else { try { document.execCommand('copy'); done(); } catch (e) { mpMsg('Selecteer en kopieer de code handmatig.', true); } }
+}
+
+// ---- berichten ----
+function mpOnMsg(m) {
+  MP.lastMsg = performance.now();
+  const M = MP.match, cur = M && m.id === M.seed;
+  switch (m.type) {
+    case 'hello': MP.oppName = cleanName(m.name) || 'Tegenstander'; mpRender(); break;
+    case 'lobby': if (MP.role === 'guest') { MP.sel = { mode: m.mode === 'endurance' ? 'endurance' : 'race', len: [500, 1000, 2000].includes(m.len) ? m.len : 1000 }; mpRender(); } break;
+    case 'start': if (MP.role === 'guest') mpStartMatch(m); break;
+    case 's':
+      if (!cur) break;
+      MP.snaps.push(m); if (MP.snaps.length > 40) MP.snaps.shift();
+      M.oppT = Math.max(M.oppT, m.t || 0); M.oppDist = m.d || 0; M.oppApples = m.ap || 0; M.oppFalls = m.f || 0;
+      mpCheck();
+      break;
+    case 'ev':
+      if (!cur || M.oppEv) break;
+      M.oppEv = { t: m.t, d: m.d };
+      if (!M.result && game.mode === 'playing') {
+        if (M.mode === 'race') showBanner(`🏁 ${MP.oppName} is bij de finish!`, 'Snel!');
+        else showBanner(`💦 ${MP.oppName} is af!`, 'Houd nog heel even vol…');
+      }
+      mpCheck();
+      break;
+    case 'quit': if (cur && !M.result) mpEnd('win', `${MP.oppName} heeft opgegeven.`); break;
+    case 'again': MP.oppAgain = true; mpAgainCheck(); break;
+    case 'bye': mpLost(`${MP.oppName} heeft de verbinding verbroken.`); break;
+  }
+}
+
+// ---- lobby ----
+function mpMsg(text, ok) { const el = $('mpMsg'); el.textContent = text || ''; el.className = 'msg ' + (ok ? 'ok' : 'err'); }
+function mpRender() {
+  const st = $('mpStatus'), host = MP.role === 'host', guest = MP.role === 'guest', con = MP.connected;
+  const connecting = MP.pc && (MP.pc.connectionState === 'connecting' || (host && MP.pc.signalingState === 'stable'));
+  st.className = 'mp-status' + (con ? ' on' : MP.role ? ' wait' : '');
+  $('mpStatusTxt').textContent = con ? `Verbonden met ${MP.oppName}` : connecting ? 'Verbinden…' : host ? 'Wachten op je vriend…' : guest ? 'Meedoen…' : 'Niet verbonden';
+  $('mpPick').classList.toggle('hidden', !!MP.role || con);
+  $('mpHostBox').classList.toggle('hidden', !host || con);
+  $('mpJoinBox').classList.toggle('hidden', !guest || con);
+  $('mpAnswerStep').classList.toggle('hidden', !guest || (!MP.busy && !$('mpAnswer').value));
+  $('mpLobby').classList.toggle('hidden', !con);
+  $('btnMpCancel').classList.toggle('hidden', !MP.role && !con);
+  $('btnMpCancel').textContent = con ? '🔌 Verbreken' : '✖ Opnieuw';
+  if (con) {
+    $('mpMeName').textContent = '🦍 ' + myName() + (host ? ' (host)' : '');
+    $('mpOppName').textContent = '🦍 ' + MP.oppName + (host ? '' : ' (host)');
+    $('mpModeRace').classList.toggle('sel', MP.sel.mode === 'race');
+    $('mpModeEnd').classList.toggle('sel', MP.sel.mode === 'endurance');
+    $('mpModeRace').disabled = $('mpModeEnd').disabled = !host;
+    $('mpLens').classList.toggle('hidden', MP.sel.mode !== 'race');
+    for (const b of document.querySelectorAll('.mp-len')) { b.classList.toggle('sel', +b.dataset.len === MP.sel.len); b.disabled = !host; }
+    $('btnMpStart').classList.toggle('hidden', !host);
+    $('mpGuestWait').classList.toggle('hidden', host);
+  }
+}
+function openMp() {
+  game.mp = null; MP.match = null;
+  if (game.mode !== 'menu') { game.career = null; resetWorld(); game.mode = 'menu'; }
+  MP.again = MP.oppAgain = false;
+  $('mpName').value = myName();
+  mpRender();
+  showScreen('mp');
+}
+function mpSelect(mode, len) {
+  if (MP.role !== 'host') return;
+  if (mode) MP.sel.mode = mode;
+  if (len) MP.sel.len = len;
+  mpSend({ type: 'lobby', mode: MP.sel.mode, len: MP.sel.len });
+  mpRender();
+}
+function mpHostStart(cfg) {
+  if (MP.role !== 'host' || !MP.connected) return;
+  const c = { type: 'start', mode: cfg.mode, len: cfg.len, seed: 1 + ((Math.random() * 2147483000) | 0) };
+  mpSend(c);
+  mpStartMatch(c);
+}
+
+// ---- een potje ----
+function mpStartMatch(c) {
+  const mode = c.mode === 'endurance' ? 'endurance' : 'race';
+  MP.cfg = { mode, len: [500, 1000, 2000].includes(c.len) ? c.len : 1000 };
+  const M = { mode, len: mode === 'race' ? MP.cfg.len : 0, seed: c.seed | 0, t: 0, count: 3.5, lastCount: 99,
+    myEv: null, oppEv: null, oppT: 0, oppDist: 0, oppApples: 0, oppFalls: 0, falls: 0, result: null, reason: '',
+    stormX: START_X - 1100, bolt: 0, boltX: 0 };
+  MP.match = M; MP.snaps = []; MP.rt = null; MP.ghost = null; MP.again = MP.oppAgain = false; MP.sendAcc = 0;
+  MP.lastMsg = performance.now();
+  ghostPin.v = null;
+  game.paused = false; game.career = null; game.mp = M;
+  resetWorld();
+  game.mode = 'mpcount';
+  input.down = false;
+  Music.duck();
+  showScreen(null);
+  $('mpHud').classList.remove('hidden');
+  $('mpTagOpp').textContent = MP.oppName;
+  $('mpHud').querySelector('.track').classList.toggle('hidden', mode !== 'race');
+  showBanner(mode === 'race' ? `🏁 Race · ${M.len} m` : '⏱️ Endurance', mode === 'race' ? 'Wie het eerst bij de finish is, wint!' : 'Wie het langst volhoudt, wint! Blijf de storm voor.');
+}
+// eigen gebeurtenis: finish (race) of af (endurance)
+function mpFinished() {
+  const M = game.mp;
+  if (!M || M.myEv || M.result) return;
+  M.myEv = { t: M.t, d: run.dist };
+  mpSend({ type: 'ev', id: M.seed, t: M.t, d: run.dist });
+  confetti(G.x + 100, G.y - 150, 100); flashT = 0.3;
+  mpCheck();
+}
+function mpDied() {
+  const M = game.mp;
+  if (M.mode === 'race') {
+    M.falls++;
+    floatText(G.x, G.y - 70, 'Plons! Even terug…', '#ffffff', 24);
+    return;
+  }
+  if (M.myEv) return;
+  M.myEv = { t: M.t, d: run.dist };
+  mpSend({ type: 'ev', id: M.seed, t: M.t, d: run.dist });
+  showBanner('💦 Je bent af!', 'Even kijken wie het langst volhield…');
+  mpCheck();
+}
+// Wie wint? Beide spelers meten hun eigen tijd vanaf hun eigen GO. Omdat de berichten op volgorde
+// aankomen, komen beide kanten altijd tot dezelfde uitslag.
+function mpCheck() {
+  const M = game.mp;
+  if (!M || M.result || game.mode !== 'playing') return;
+  const me = M.myEv, op = M.oppEv, host = MP.role === 'host', on = MP.oppName;
+  if (M.mode === 'race') {
+    if (me && op) return mpEnd(me.t < op.t || (me.t === op.t && host) ? 'win' : 'lose', me.t < op.t ? 'Jij was als eerste bij de finish!' : `${on} was net iets sneller.`);
+    if (op && M.t > op.t) return mpEnd('lose', `${on} was als eerste bij de finish.`);
+    if (me && M.oppT > me.t) return mpEnd('win', 'Jij was als eerste bij de finish!');
+  } else {
+    if (me && op) return mpEnd(me.t > op.t || (me.t === op.t && host) ? 'win' : 'lose', me.t > op.t ? 'Jij hield het langst vol!' : `${on} hield het langer vol.`);
+    if (op && M.t > op.t) return mpEnd('win', `Jij hield het langst vol! ${on} viel eerder.`);
+    if (me && M.oppT > me.t) return mpEnd('lose', `${on} hield het langer vol.`);
+  }
+}
+function mpEnd(result, reason) {
+  const M = MP.match;
+  if (!M || M.result) return;
+  M.result = result; M.reason = reason; M.endT = M.t;
+  if (game.mp === M) game.mode = 'mpend';
+  mpSendState(); // laatste stand meteen versturen, zodat de ander ook direct de uitslag weet
+  if (result === 'win' || result === 'lose') {
+    save.mpGames++; if (result === 'win') save.mpWins++;
+    persist();
+    MP.score[result === 'win' ? 'me' : 'opp']++;
+  }
+  if (result === 'win') { showBanner('🏆 Gewonnen!', reason); confetti(G.x + 60, G.y - 160, 140); Sfx.jingle(2); flashT = 0.3; }
+  else if (result === 'lose') { showBanner('😢 Verloren', reason); Sfx.tone(392, 0.25, 'triangle', 0.1); Sfx.tone(330, 0.25, 'triangle', 0.1, 0, 0.22); Sfx.tone(262, 0.5, 'triangle', 0.1, 0, 0.44); }
+  else showBanner('🔌 Verbinding verbroken', reason);
+  setTimeout(() => { if (MP.match === M && game.mp === M) mpShowResult(); }, result === 'conn' ? 1200 : 2200);
+}
+function mpShowResult() {
+  const M = MP.match;
+  $('mpHud').classList.add('hidden');
+  $('mpCount').textContent = '';
+  const title = { win: '🏆 Gewonnen!', lose: '😢 Verloren', conn: '🔌 Verbinding verbroken' }[M.result];
+  $('mpResTitle').textContent = title;
+  $('mpResSub').textContent = M.reason;
+  $('mpResMe').textContent = '🦍 ' + myName();
+  $('mpResOpp').textContent = '🦍 ' + MP.oppName;
+  const fmt = t => t == null ? '—' : fmtTime(t);
+  const row = (label, a, b) => `<div><span style="flex:1">${label}</span><b style="color:#e8322b;min-width:80px;text-align:right">${a}</b><b style="color:#2f7fe0;min-width:90px;text-align:right">${b}</b></div>`;
+  let h = row('', 'Jij', escHtml(MP.oppName));
+  const oppD = Math.floor(M.oppEv ? Math.max(M.oppEv.d, M.oppDist) : M.oppDist);
+  if (M.mode === 'race') {
+    h += row('🏁 Finishtijd', fmt(M.myEv && M.myEv.t), fmt(M.oppEv && M.oppEv.t));
+    h += row('📏 Afstand', Math.min(M.len, Math.floor(run.dist)) + ' m', Math.min(M.len, oppD) + ' m');
+    h += row('💦 Gevallen', M.falls + '×', M.oppFalls + '×');
+  } else {
+    h += row('⏱️ Volgehouden', fmt(M.myEv ? M.myEv.t : M.endT), fmt(M.oppEv ? M.oppEv.t : Math.max(M.oppT, M.endT)));
+    h += row('📏 Afstand', Math.floor(run.dist) + ' m', oppD + ' m');
+  }
+  h += row('🍎 Appels', Math.max(0, Math.floor(run.earned)), M.oppApples);
+  $('mpResTable').innerHTML = h;
+  $('mpResScore').textContent = MP.connected || M.result !== 'conn' ? `Stand: ${myName()} ${MP.score.me} – ${MP.score.opp} ${MP.oppName}` : '';
+  mpAgainRender();
+  showScreen('mpRes');
+}
+function mpAgainRender() {
+  const b = $('btnMpAgain');
+  if (!MP.connected) { b.disabled = true; b.textContent = '🔌 Verbinding verbroken'; return; }
+  b.disabled = MP.again;
+  b.textContent = MP.again ? '⏳ Wachten op ' + MP.oppName + '…' : MP.oppAgain ? `🔁 Revanche! (${MP.oppName} wil ook)` : '🔁 Revanche';
+}
+function mpAgain() {
+  if (!MP.connected || MP.again) return;
+  MP.again = true;
+  mpSend({ type: 'again' });
+  mpAgainCheck();
+}
+function mpAgainCheck() {
+  if (curScreen === 'mpRes') mpAgainRender();
+  if (MP.again && MP.oppAgain && MP.role === 'host' && MP.cfg) mpHostStart(MP.cfg);
+}
+function mpForfeit(reason) {
+  const M = game.mp;
+  if (!M || M.result) return;
+  mpSend({ type: 'quit', id: M.seed });
+  mpEnd('lose', reason || 'Je hebt opgegeven.');
+}
+function fmtTime(t) {
+  const m = Math.floor(t / 60), s = t - m * 60;
+  return m + ':' + (s < 10 ? '0' : '') + s.toFixed(2).replace('.', ',');
+}
+
+// race: na een val kom je terug op een (veilige) liaan vlak achter de plek waar je viel
+function mpRespawn() {
+  const fx = G.x;
+  let best = null, bd = Infinity;
+  for (const v of vines) {
+    if (!v.anchored || v.balloon || v.type === 'rotten' || v.type === 'icy' || v.type === 'elastic') continue;
+    if (v.x > fx + 60 || v.ay < CEIL_Y + 50) continue;
+    const d = Math.abs(v.x - (fx - 150)) + Math.abs(v.ay - LANES[1]) * 0.3;
+    if (d < bd) { bd = d; best = v; }
+  }
+  if (!best) best = vines.find(v => v.anchored && !v.balloon) || vines[0];
+  const p = best.pts, k = Math.round(p.length * 0.55);
+  Object.assign(G, { x: p[k].x, y: p[k].y + ARM_LEN, px: p[k].x, py: p[k].y + ARM_LEN, vx: 0, vy: 0, angle: 0, trick: null, trickRot: 0,
+    dive: 0, diveT: 0, airT: 0, airX: p[k].x, splashed: false, invuln: 1, lastVine: null, releaseT: 0 });
+  G.state = 'air';
+  attach(best, k);
+  game.holdLock = true; // blijft hangen tot je opnieuw drukt
+  floatText(G.x, G.y - 70, 'Terug in de race!', '#ffffff', 24);
+  starBurst(G.x, G.y, 14, '#ffffff');
+}
+
+// wordt elke physics-stap aangeroepen
+function mpStep(dt) {
+  const M = game.mp;
+  if (game.mode !== 'playing') return;
+  M.t += dt;
+  if (M.mode === 'race') {
+    if (G.state === 'dead' && G.deadT > 1.2 && !M.myEv) mpRespawn();
+  } else {
+    // de storm komt na een paar tellen op gang en gaat steeds sneller; hij blijft nooit te ver achter
+    const sp = M.t < 4 ? 0 : Math.min(1500, 250 + 8 * (M.t - 4));
+    M.stormX = Math.max(M.stormX + sp * dt, M.t > 4 && G.state !== 'dead' ? G.x - 2700 : -1e9);
+    for (const v of vines) if (v.anchored && v.x < M.stormX - 30) { // lianen in de storm breken af
+      v.anchored = false; v.pts[0].im = 1;
+      if (G.vine === v) release(false);
+    }
+    if (G.state !== 'dead' && G.x < M.stormX) {
+      floatText(G.x, G.y - 70, 'De storm heeft je!', '#e0d0ff', 26);
+      die();
+    }
+    M.bolt = Math.max(0, M.bolt - dt);
+    if (M.bolt === 0 && M.stormX > camX - 200 && Math.random() < dt * 0.6) {
+      M.bolt = 0.14; M.boltX = M.stormX - rand(40, 260); M.boltSeed = Math.random() * 1000;
+      if (G.x - M.stormX < 1400) { Sfx.noise(0.5, 0.18, 300); shake(2, 0.15); }
+    }
+  }
+  mpCheck();
+}
+// wordt elk beeld aangeroepen
+function mpFrame(realDt, gdt) {
+  const M = game.mp;
+  if (!M) { ghostPin.v = null; return; }
+  if (game.mode === 'mpcount') {
+    M.count -= realDt;
+    const c = Math.ceil(M.count - 0.5);
+    if (c !== M.lastCount) {
+      M.lastCount = c;
+      const el = $('mpCount');
+      el.textContent = c > 0 ? c : 'GO!';
+      el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+      if (c > 0) Sfx.tone(520, 0.15, 'square', 0.07); else Sfx.tone(1040, 0.35, 'square', 0.08);
+      if (c <= 0) { game.mode = 'playing'; setTimeout(() => { if ($('mpCount').textContent === 'GO!') $('mpCount').textContent = ''; }, 800); }
+    }
+  }
+  // positie versturen (20× per seconde)
+  MP.sendAcc += realDt;
+  if (MP.sendAcc >= 0.05) { MP.sendAcc = 0; mpSendState(); }
+  // tegenstander te lang stil tijdens een potje: verbinding weg
+  if (!M.result && performance.now() - MP.lastMsg > 8000) mpLost(`${MP.oppName} reageert niet meer.`);
+  mpGhost(gdt);
+  mpHud();
+}
+function mpSendState() {
+  const M = MP.match;
+  if (!M || !G || !MP.connected) return;
+  const tr = G.trick;
+  mpSend({ type: 's', id: M.seed, t: +M.t.toFixed(3), x: Math.round(G.x), y: Math.round(G.y), vx: Math.round(G.vx), vy: Math.round(G.vy),
+    st: G.state, a: +(G.angle + (G.trickRot || 0)).toFixed(3), tr: tr ? tr.id : 0, tk: tr ? +Math.min(1, G.trickT / tr.dur).toFixed(3) : 0,
+    hx: Math.round(G.hx), hy: Math.round(G.hy), dv: G.diving ? 1 : 0, sp: G.state === 'hang' ? Math.round(G.om * G.R) : 0, tu: G.turboT > 0 ? 1 : 0,
+    vid: G.state === 'hang' && G.vine ? G.vine.id : -1, k: G.k, d: +run.dist.toFixed(1), ap: Math.max(0, Math.floor(run.earned)), f: M.falls });
+}
+const lerpAng = (a, b, f) => { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return a + d * f; };
+// De tegenstander wordt iets (~0,1 s) in het verleden getekend, tussen twee ontvangen standen in: zo beweegt hij vloeiend
+function mpGhost(dt) {
+  const S = MP.snaps;
+  ghostPin.v = null;
+  if (!S.length) return;
+  const newest = S[S.length - 1], target = newest.t - 0.12;
+  if (MP.rt === null || Math.abs(MP.rt - target) > 0.6) MP.rt = target;
+  else MP.rt += dt + (target - MP.rt) * 0.08;
+  while (S.length > 2 && S[1].t <= MP.rt) S.shift();
+  const a = S[0], b = S[1] || a;
+  let f = b.t > a.t ? clamp((MP.rt - a.t) / (b.t - a.t), 0, 1) : 1;
+  if (Math.hypot(b.x - a.x, b.y - a.y) > 500) f = f < 0.5 ? 0 : 1; // teruggezet na een val: niet schuiven
+  const s = f < 0.5 ? a : b, L = (p, q) => p + (q - p) * f;
+  const g = MP.ghost || (MP.ghost = { balloonT: 0, invuln: 0, standT: 0, deadT: 0, trickRot: 0, R: 1, om: 0, turboT: 0, trick: null, trickT: 0 });
+  g.x = L(a.x, b.x); g.y = L(a.y, b.y); g.vx = L(a.vx, b.vx); g.vy = L(a.vy, b.vy);
+  g.hx = L(a.hx, b.hx); g.hy = L(a.hy, b.hy); g.angle = lerpAng(a.a, b.a, f);
+  if (g.state !== s.st) { g.standT = 0; g.deadT = 0; }
+  g.state = s.st; g.standT += dt; g.deadT += dt;
+  g.diving = !!s.dv; g.turboT = s.tu ? 1 : 0; g.om = s.sp; g.R = 1;
+  g.trick = s.tr ? { id: s.tr, dur: 1 } : null; g.trickT = L(a.tk, b.tk);
+  // hangt hij aan een liaan? dan buigt die liaan bij jou ook mee
+  if (g.state === 'hang' && s.vid >= 0) {
+    const v = vines.find(w => w.id === s.vid);
+    if (v && v !== G.vine && v.anchored && s.k < v.pts.length) {
+      const an = v.pts[0], reach = s.k * SEG_LEN * (v.type === 'elastic' ? ELASTIC_STRETCH : 1) + 60;
+      if (Math.hypot(g.hx - an.x, g.hy - an.y) < reach) { ghostPin.v = v; ghostPin.k = s.k; ghostPin.x = g.hx; ghostPin.y = g.hy; }
+    }
+  }
+}
+function mpHud() {
+  const M = game.mp;
+  if (!M) return;
+  let info;
+  if (M.mode === 'race') {
+    const me = clamp(run.dist / M.len, 0, 1), op = clamp(M.oppDist / M.len, 0, 1);
+    $('mpDotMe').style.left = (me * 100).toFixed(1) + '%';
+    $('mpDotOpp').style.left = (op * 100).toFixed(1) + '%';
+    info = '⏱ ' + fmtTime(M.result ? M.endT : M.t).slice(0, -1);
+  } else {
+    const gap = Math.max(0, Math.floor((G.x - M.stormX) / PX_PER_M));
+    const opp = M.oppEv ? `${MP.oppName}: af` : `${MP.oppName}: ${Math.floor(M.oppDist)} m`;
+    info = `⏱ ${fmtTime(M.result ? M.endT : M.t).slice(0, -1)} · 🌩️ ${G.state === 'dead' ? '—' : gap + ' m'} · ${opp}`;
+  }
+  setText('mpInfo', info);
+}
+
+// ---- tekenen ----
+function drawGhost() {
+  const g = MP.ghost;
+  if (!g || g.x < camX - 200 || g.x > camX + viewW + 200) return;
+  const me = G, pal = GC;
+  G = g; GC = GC2;
+  try { drawGorilla(); } finally { G = me; GC = pal; }
+  if (g.state === 'dead' && g.y > HAZARD_Y + 60) return;
+  // naamkaartje
+  const name = MP.oppName;
+  ctx.font = '900 17px Trebuchet MS, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const w = ctx.measureText(name).width + 18, y = g.y - 72;
+  ctx.fillStyle = 'rgba(23,73,143,.85)';
+  ctx.beginPath(); ctx.moveTo(g.x - w / 2 + 10, y - 12); ctx.arcTo(g.x + w / 2, y - 12, g.x + w / 2, y + 12, 10); ctx.arcTo(g.x + w / 2, y + 12, g.x - w / 2, y + 12, 10);
+  ctx.arcTo(g.x - w / 2, y + 12, g.x - w / 2, y - 12, 10); ctx.arcTo(g.x - w / 2, y - 12, g.x + w / 2, y - 12, 10); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.fillText(name, g.x, y + 1);
+}
+function drawStorm() {
+  const M = game.mp;
+  if (M.mode !== 'endurance') return;
+  const sx = M.stormX;
+  if (sx < camX - 120) return;
+  const y0 = camY - 30, y1 = camY + viewH + 30, x0 = camX - 30, x1 = Math.min(sx + 90, camX + viewW + 30);
+  const gr = ctx.createLinearGradient(sx - 520, 0, sx + 90, 0);
+  gr.addColorStop(0, 'rgba(18,10,34,.96)'); gr.addColorStop(0.7, 'rgba(38,22,66,.86)'); gr.addColorStop(1, 'rgba(38,22,66,0)');
+  ctx.fillStyle = gr; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+  // kolkende wolken langs de rand
+  for (let i = 0; i < 9; i++) {
+    const yy = camY + (i + 0.5) / 9 * viewH + Math.sin(time * 1.1 + i) * 24, r = 64 + 22 * Math.sin(time * 1.7 + i * 1.9);
+    ctx.fillStyle = i % 2 ? 'rgba(60,38,98,.8)' : 'rgba(44,28,76,.85)';
+    circ(sx - 40 + Math.sin(time * 1.5 + i * 2.3) * 22, yy, r);
+  }
+  // bliksem
+  if (M.bolt > 0) {
+    let x = M.boltX, y = camY - 20, s = M.boltSeed;
+    ctx.strokeStyle = 'rgba(255,250,210,.95)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x, y);
+    while (y < camY + viewH) { s = (s * 9301 + 49297) % 233280; x += (s / 233280 - 0.5) * 90; y += 50; ctx.lineTo(x, y); }
+    ctx.stroke();
+    ctx.fillStyle = `rgba(220,210,255,${M.bolt})`; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+  }
+}
+// in beeldcoördinaten: pijl naar de tegenstander als die buiten beeld is, stormwaarschuwing
+function drawMpOverlay() {
+  const M = game.mp, g = MP.ghost;
+  if (g && !(g.state === 'dead' && g.y > HAZARD_Y + 60)) {
+    const sx = g.x - camX, left = sx < -20, right = sx > viewW + 20;
+    if (left || right) {
+      const y = clamp(g.y - camY, 70, viewH - 70), x = left ? 34 : viewW - 34, dir = left ? -1 : 1;
+      const dm = Math.round((g.x - G.x) / PX_PER_M);
+      ctx.fillStyle = 'rgba(23,73,143,.88)';
+      ctx.beginPath(); ctx.moveTo(x + dir * 22, y); ctx.lineTo(x - dir * 8, y - 18); ctx.lineTo(x - dir * 8, y + 18); ctx.closePath(); ctx.fill();
+      ctx.font = '900 14px Trebuchet MS, sans-serif'; ctx.textBaseline = 'middle'; ctx.textAlign = left ? 'left' : 'right';
+      ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.lineWidth = 3;
+      const txt = `${MP.oppName} ${dm > 0 ? '+' : ''}${dm} m`, tx = x - dir * 14;
+      ctx.strokeText(txt, tx, y - 28); ctx.fillText(txt, tx, y - 28);
+    }
+  }
+  if (M.mode === 'endurance' && G.state !== 'dead' && game.mode === 'playing') {
+    const gap = G.x - M.stormX;
+    if (gap < 900) {
+      const a = (1 - gap / 900) * (0.55 + 0.45 * Math.sin(time * 10));
+      const gr = cachedGrad('stormwarn' + Math.round(viewH), () => { const q = ctx.createLinearGradient(0, 0, 140, 0); q.addColorStop(0, 'rgba(150,60,255,.75)'); q.addColorStop(1, 'rgba(150,60,255,0)'); return q; });
+      ctx.globalAlpha = clamp(a, 0, 1); ctx.fillStyle = gr; ctx.fillRect(0, 0, 140, viewH); ctx.globalAlpha = 1;
+    }
+  }
 }
 
 // =====================================================================
@@ -3131,7 +3893,7 @@ let curScreen = null, shopReturn = 'menu', bannerTimer = 0;
 function showScreen(id) {
   curScreen = id;
   for (const s of document.querySelectorAll('.screen')) s.classList.toggle('show', s.id === id);
-  $('hud').classList.toggle('hidden', !(game.mode === 'ready' || game.mode === 'playing' || game.mode === 'dying' || game.mode === 'done'));
+  $('hud').classList.toggle('hidden', !(game.mode === 'ready' || game.mode === 'playing' || game.mode === 'dying' || game.mode === 'done' || game.mode === 'mpcount' || game.mode === 'mpend'));
 }
 function showBanner(big, small) {
   const b = $('banner');
@@ -3141,9 +3903,15 @@ function showBanner(big, small) {
   clearTimeout(bannerTimer);
   bannerTimer = setTimeout(() => b.classList.remove('show'), 2800);
 }
+function mpLeaveMatch() {
+  game.mp = null; MP.match = null; ghostPin.v = null;
+  $('mpHud').classList.add('hidden'); $('mpCount').textContent = '';
+}
 function toMenu() {
   game.paused = false; Music.duck();
   game.career = null;
+  mpLeaveMatch();
+  if (MP.pc) mpClose(true);
   resetWorld();
   game.mode = 'menu';
   refreshMenu();
@@ -3153,6 +3921,8 @@ function toMenu() {
 function startReady(level) {
   game.paused = false; Music.duck();
   game.career = typeof level === 'number' ? levelInfo(level) : null;
+  if (MP.pc) mpClose(true);
+  mpLeaveMatch();
   resetWorld();
   game.mode = 'ready';
   input.down = false;
@@ -3244,6 +4014,17 @@ function gameOver(quit) {
   showScreen('over');
 }
 function pauseGame() {
+  const multi = !!game.mp;
+  $('pauseTitle').textContent = multi ? '⚙️ Menu' : '⏸ Pauze';
+  $('pauseSub').textContent = multi ? 'Let op: het potje loopt gewoon door!' : 'Neem even een banaan.';
+  $('btnResume').textContent = multi ? '▶ Verder spelen' : '▶ Doorgaan';
+  $('btnQuit').textContent = multi ? '🏳️ Opgeven' : '🏁 Stoppen & innen';
+  if (multi) { // in multiplayer kun je niet pauzeren
+    if (game.mode !== 'playing' || game.mp.result) return;
+    input.down = false;
+    showScreen('pause');
+    return;
+  }
   if (game.mode !== 'playing' && game.mode !== 'ready') return;
   if (game.paused) return;
   game.paused = true;
@@ -3254,7 +4035,7 @@ function pauseGame() {
 function resumeGame() {
   game.paused = false;
   Music.duck();
-  if (G.state === 'hang' && game.mode === 'playing') game.holdLock = true;
+  if (G.state === 'hang' && game.mode === 'playing' && !game.mp) game.holdLock = true;
   input.down = false;
   showScreen(null);
 }
@@ -3276,7 +4057,7 @@ function statsHtml() {
   const b = BIOMES[save.maxBiome];
   return `<div class="stat">🍎 ${save.apples}</div><div class="stat">🏆 ${save.best} m</div>` +
     `<div class="stat">🧺 ${save.totalApples} geplukt</div><div class="stat">${b.icon} ${b.name}</div>` +
-    `<div class="stat">🔁 ${save.runs} runs</div>`;
+    `<div class="stat">🔁 ${save.runs} runs</div>` + (save.mpGames ? `<div class="stat">👥 ${save.mpWins} / ${save.mpGames} gewonnen</div>` : '');
 }
 function refreshMenu() {
   const PL = playerLevel(save.xp);
@@ -3288,6 +4069,7 @@ function refreshMenu() {
   const next = Math.min(save.career.unlocked, LEVELS);
   $('mmCareer').textContent = `Level ${next} · ⭐ ${stars} / ${LEVELS * 3}`;
   $('mmEndless').textContent = save.best ? `Record: ${save.best} m` : 'Kom zo ver mogelijk!';
+  $('mmMulti').textContent = save.mpGames ? `Race of Endurance · ${save.mpWins} van ${save.mpGames} gewonnen` : 'Race of Endurance tegen een vriend';
   $('menuStats').innerHTML = statsHtml();
   $('saveStats').innerHTML = statsHtml();
   setBadge($('btnShop'), affordableCount());
@@ -3363,10 +4145,34 @@ function afterImport() {
   Sfx.buy();
 }
 function on(id, fn) {
-  $(id).addEventListener('click', e => { Sfx.init(); e.currentTarget.blur(); fn(e); });
+  (typeof id === 'string' ? $(id) : id).addEventListener('click', e => { Sfx.init(); e.currentTarget.blur(); fn(e); });
 }
 
 on('btnPlay', () => startReady(null));
+on('btnMulti', openMp);
+on('btnMpBack', toMenu);
+on('btnMpSetup', () => showScreen('mpSetup'));
+on('btnMpSetupBack', () => { mpRender(); showScreen('mp'); });
+on('btnMpHost', mpHost);
+on('btnMpJoin', mpJoinStart);
+on('btnMpConnect', mpConnect);
+on('btnMpMakeAnswer', mpMakeAnswer);
+on('btnMpCopyOffer', () => mpCopy('mpOffer'));
+on('btnMpCopyAnswer', () => mpCopy('mpAnswer'));
+on('btnMpCancel', () => { mpClose(MP.connected); mpMsg(''); mpRender(); });
+on('mpModeRace', () => mpSelect('race'));
+on('mpModeEnd', () => mpSelect('endurance'));
+for (const b of document.querySelectorAll('.mp-len')) on(b, () => mpSelect(null, +b.dataset.len));
+on('btnMpStart', () => mpHostStart(MP.sel));
+on('btnMpAgain', mpAgain);
+on('btnMpLobby', () => { mpLeaveMatch(); openMp(); });
+on('btnMpLeave', toMenu);
+$('mpName').addEventListener('input', e => {
+  const n = cleanName(e.target.value);
+  try { localStorage.setItem(MP_NAME_KEY, n); } catch (err) { /* negeren */ }
+  mpSend({ type: 'hello', name: n || 'Andy' });
+  if (MP.connected) mpRender();
+});
 on('btnCareer', openCareer);
 on('btnCareerBack', toMenu);
 on('btnNextLevel', () => startReady(game.career.n + 1));
@@ -3393,7 +4199,7 @@ on('btnRetry', retry);
 on('btnOverShop', () => openShop('over'));
 on('btnOverMenu', toMenu);
 on('btnResume', resumeGame);
-on('btnQuit', () => { game.paused = false; Music.duck(); if (game.mode === 'ready') toMenu(); else gameOver(true); });
+on('btnQuit', () => { if (game.mp) { showScreen(null); mpForfeit('Je hebt opgegeven.'); return; } game.paused = false; Music.duck(); if (game.mode === 'ready') toMenu(); else gameOver(true); });
 $('btnPause').addEventListener('click', e => { e.currentTarget.blur(); pauseGame(); });
 $('btnPause').addEventListener('pointerdown', e => e.stopPropagation());
 
@@ -3481,10 +4287,13 @@ window.addEventListener('keydown', e => {
     if (curScreen === 'over') { if (e.code === 'Space') retry(); return; }
     if (curScreen === 'done') { if (e.code === 'Space') { if (game.career.n < LEVELS) startReady(game.career.n + 1); else retry(); } return; }
     if (curScreen === 'pause') { if (e.code === 'Space') resumeGame(); return; }
+    if (curScreen === 'mpRes') { if (e.code === 'Space') mpAgain(); return; }
     if (!curScreen) press();
   } else if (e.code === 'KeyP' || e.code === 'Escape') {
     if (curScreen === 'pause') resumeGame();
     else if (!curScreen) pauseGame();
+    else if (curScreen === 'mpSetup') { mpRender(); showScreen('mp'); }
+    else if (curScreen === 'mp') toMenu();
     else if (curScreen === 'shop' || curScreen === 'saves' || curScreen === 'help' || curScreen === 'career' || curScreen === 'settings') {
       if (curScreen === 'shop') $('btnShopBack').click(); else showScreen('menu');
     }
@@ -3493,9 +4302,15 @@ window.addEventListener('keydown', e => {
   }
 });
 window.addEventListener('keyup', e => { if (e.code === 'Space' || e.code === 'ArrowDown' || e.code === 'ArrowUp') unpress(); });
-window.addEventListener('blur', () => { pointers.clear(); unpress(); if (game.mode === 'playing') pauseGame(); });
+window.addEventListener('blur', () => { pointers.clear(); unpress(); if (game.mode === 'playing' && !game.mp) pauseGame(); });
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) { if (game.mode === 'playing') pauseGame(); if (Sfx.ac) Sfx.ac.suspend(); }
+  clearTimeout(MP.hideTimer);
+  if (document.hidden) {
+    if (game.mode === 'playing' && !game.mp) pauseGame();
+    // multiplayer: wie te lang wegklikt, geeft op
+    if (game.mp && !game.mp.result) MP.hideTimer = setTimeout(() => { if (document.hidden) mpForfeit('Je klikte het spel weg.'); }, 4000);
+    if (Sfx.ac) Sfx.ac.suspend();
+  }
   else if (Sfx.ac && (save.sound || save.music)) Sfx.ac.resume();
 });
 window.addEventListener('pagehide', persist);
@@ -3507,6 +4322,16 @@ const hudCache = {};
 function setText(id, txt) { if (hudCache[id] !== txt) { hudCache[id] = txt; $(id).textContent = txt; } }
 function updateHud() {
   if (!run) return;
+  const M = game.mp;
+  if (M) {
+    setText('hudDist', M.mode === 'race' ? `${Math.min(M.len, Math.floor(run.dist))} / ${M.len} m` : Math.floor(run.dist) + ' m');
+    setText('hudApples', '🍎 ' + Math.max(0, Math.floor(run.earned + 1e-6)));
+    setText('hudValue', M.mode === 'race' ? '🏁 Race · upgrades uit' : '⏱️ Endurance · upgrades uit');
+    setText('hudItems', ''); $('hudItems').style.display = 'none';
+    setText('hint', game.mode === 'mpcount' ? 'Houd bij GO! ingedrukt om meteen te springen' : game.mode === 'playing' && G.state === 'stand' ? 'Druk om te springen!' : game.holdLock && G.state === 'hang' ? 'Druk opnieuw en laat los om verder te gaan' : '');
+    $('hint').classList.toggle('pulse', game.mode === 'mpcount');
+    return;
+  }
   setText('hudDist', game.career ? `${Math.min(game.career.L, Math.floor(run.dist))} / ${game.career.L} m` : Math.floor(run.dist) + ' m');
   setText('hudApples', '🍎 ' + Math.max(0, Math.floor(run.earned + 1e-6)));
   setText('hudValue', (game.career ? `Level ${game.career.n} · ` : '') + `elke appel ×${fmtNum(applesPerPick(run.biome))}`);
@@ -3559,6 +4384,7 @@ function frame(now) {
     while (acc >= STEP && steps < 4) { step(DT); acc -= STEP; steps++; }
     if (acc > STEP) acc = 0;
     const gdt = dt * GAME_SPEED;
+    mpFrame(dt, gdt);
     updateEffects(gdt);
     const oy = camY;
     updateCamera(gdt);
@@ -3575,7 +4401,8 @@ function frame(now) {
 
 // Debug-/testhaak (handig voor automatische tests)
 window.__andy = { get G() { return G; }, get run() { return run; }, get game() { return game; }, get save() { return save; },
-  get vines() { return vines; }, get apples() { return apples; }, get foes() { return foes; }, get quality() { return qLevel; }, get tramps() { return tramps; }, attach, release, AIR_G, MAX_FALL, DT, Sfx, Music, press, unpress, startReady };
+  get vines() { return vines; }, get apples() { return apples; }, get foes() { return foes; }, get quality() { return qLevel; }, get tramps() { return tramps; }, attach, release, AIR_G, MAX_FALL, DT, Sfx, Music, press, unpress, startReady,
+  MP, get ghostPin() { return ghostPin; }, mpStartMatch, mpHost, mpConnect, mpMakeAnswer, mpJoinStart, mpHostStart, mpSelect, mpAgain, mpForfeit, openMp, mpRender, get curScreen() { return curScreen; } };
 
 resetWorld();
 refreshMenu();

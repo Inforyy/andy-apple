@@ -4,7 +4,27 @@ Een 2D-slingerspel in puur HTML. Andy de gorilla zwaait door de jungle aan liane
 
 ## Spelen
 
-Open `index.html` in een browser. Er is geen installatie, server of internetverbinding nodig: alles (graphics, geluid en physics) zit in dit ene bestand.
+Open `index.html` in een browser. Er is geen installatie, server of internetverbinding nodig: alles (graphics, geluid en physics) zit in dit ene bestand. Alleen voor multiplayer heb je een netwerkverbinding nodig.
+
+## Multiplayer
+
+Speel tegen een vriend op een ander apparaat, zonder account of server: de twee browsers verbinden direct met elkaar (WebRTC). Je wisselt alleen twee codes uit.
+
+- 🏁 **Race**: wie het eerst bij de finish is (500, 1000 of 2000 m), wint. Val je, dan kom je na een tel terug op een liaan; dat kost tijd.
+- ⏱️ **Endurance**: wie het langst volhoudt, wint. Val je, dan ben je af. Een storm jaagt je van achteren op en gaat steeds sneller.
+- **Upgrades staan uit** tijdens multiplayer, zodat iedereen gelijk is. Appels en XP uit multiplayer tellen niet mee voor je save.
+- Jullie spelen in precies dezelfde wereld (dezelfde seed) en zien elkaar als tweede gorilla met een blauwe bandana. Buiten beeld wijst een pijl naar je tegenstander.
+
+### Instellen
+
+De uitleg staat ook in het spel: **👥 Multiplayer → ❓ Set-up**.
+
+1. **Speler 1 (host)** klikt op **👥 Multiplayer → 🏠 Spel hosten**, kopieert de **uitnodigingscode** en stuurt die naar speler 2 (WhatsApp, Discord, e-mail…).
+2. **Speler 2** klikt op **👥 Multiplayer → 🔗 Meedoen**, plakt de code en klikt op **✍️ Maak antwoordcode**.
+3. Speler 2 stuurt de **antwoordcode** terug; de host plakt die en klikt op **🔌 Verbinden**.
+4. Staat er **Verbonden**, dan kiest de host Race of Endurance en klikt op **▶ Start!**. Na afloop kun je met **🔁 Revanche** meteen opnieuw.
+
+Tips: codes zijn eenmalig (mislukt het, klik dan op **✖ Opnieuw**). Het werkt het best als beide apparaten op hetzelfde wifi-netwerk zitten; sommige school-, werk- of mobiele netwerken blokkeren directe verbindingen. Wie tijdens een potje een paar seconden wegklikt, geeft op. Zelf testen kan met twee browservensters naast elkaar.
 
 ## Besturing
 
@@ -20,7 +40,7 @@ Open `index.html` in een browser. Er is geen installatie, server of internetverb
 ## Features
 
 - **Lianen met physics**: elke liaan is een Verlet-touw van segmenten dat schuin naar linksonder hangt (zoals in Benji Bananas), zodat je hem makkelijk grijpt. Andy's gewicht, vaart, zwaaien en loslaten werken zoals je zou verwachten.
-- **Twee modi**: 🏁 **Carrière** met 30 levels (start → finish, steeds langer en moeilijker, elke 5 levels een nieuwe biome, tot 3 sterren per level) en ▶ **Eindeloos** (zo ver mogelijk komen).
+- **Drie modi**: 🏁 **Carrière** met 30 levels (start → finish, steeds langer en moeilijker, elke 5 levels een nieuwe biome, tot 3 sterren per level), ♾️ **Eindeloos** (zo ver mogelijk komen) en 👥 **Multiplayer** (zie hierboven).
 - **Vloeiend zwaaien**: Andy zwaait als een echte slinger zonder energieverlies. Bij het grijpen blijft al zijn vaart behouden als voorwaartse zwaai; alleen verkeerd loslaten kost snelheid. Zwaai je te hoog, dan wordt het touw even slap. Grijp je een liaan te hoog, dan glijdt hij vanzelf omlaag.
 - **Trucs**: blijf je lang in de lucht, dan doet Andy salto's, kurkentrekkers, sterrensprongen en superaap-poses voor bonusappels (achter elkaar = meer bonus).
 - **Lucht-trampolines** en grote **stuiterzwammen** lanceren je omhoog.
