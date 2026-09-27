@@ -20,9 +20,9 @@ Open `index.html` in een browser. Er is geen installatie, server of internetverb
 ## Features
 
 - **Lianen met physics**: elke liaan is een Verlet-touw van segmenten dat schuin naar linksonder hangt (zoals in Benji Bananas), zodat je hem makkelijk grijpt. Andy's gewicht, vaart, zwaaien en loslaten werken zoals je zou verwachten.
-- **Momentum blijft behouden**: bij het grijpen wordt Andy's vaart omgezet in de zwaairichting, dus je zwaait soepel door. Grijp je een liaan te hoog, dan glijdt hij vanzelf een stukje omlaag. In de lucht is de zwaartekracht lager, zodat Andy langer zweeft.
+- **Momentum blijft behouden**: bij het grijpen wordt Andy's vaart omgezet in een voorwaartse zwaai (met een minimale snelheid), dus grijpen remt je nooit af. Snelheid opbouwen gaat makkelijk: sterke zwaai, krachtige lancering en bijna geen luchtweerstand. Grijp je een liaan te hoog, dan glijdt hij vanzelf een stukje omlaag. In de lucht is de zwaartekracht lager, zodat Andy langer zweeft.
 - **Start op een rots**: Andy begint op een rots en springt met ingedrukte spatie naar de eerste liaan. Lianen spawnen nooit in of tegen elkaar.
-- **Lianen overal**: in elke kolom hangen lianen over de hele hoogte van de wereld, aan takjes. Boven het plafond hangen geen lianen meer: daar vliegen alleen vogels langs en drijft af en toe een **luchtballon** met een liaan eronder (+5 🍎).
+- **Lianen in een logisch patroon**: kolommen op regelmatige afstand met drie banen (hoog, midden, laag) die in een rustige golf op en neer lopen. De lianen zijn lang en hangen aan takjes. Hoe verder je komt, hoe groter de afstand en hoe vaker er een bovenste baan ontbreekt; de laagste baan is er altijd. Boven het plafond hangen geen lianen: daar vliegen alleen vogels langs en drijft af en toe een **luchtballon** met een liaan eronder (+5 🍎).
 - **Speciale lianen**: ✨ turbo (extra vaart), 🎀 elastiek (rekt en veert), 🍎 fruitliaan (vol appels), 🪵 rot (breekt na even hangen), 🧊 ijs (je glijdt omlaag).
 - **Snel en belonend**: een extra krachtige eerste sprong, combo's als je snel appels pakt, bonussen voor mooie sprongen, mijlpalen elke 100 m met confetti, en een **WOOHOO!** als je van een liaan zwaait.
 - **Alleen vallen is game over**: wespen, eksters en vuurballen stelen appels (die je terug kunt pakken), maar laten Andy nooit vallen. Een helm beschermt je appels.
