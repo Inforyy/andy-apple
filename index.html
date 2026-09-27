@@ -269,7 +269,7 @@ const ROPE_ITERS = 12;
 const START_X = 320;          // 0 m
 const ROCK = { x0: 40, x1: 300, top: 430 }; // startrots
 const FEET = 28;              // afstand van Andy's midden tot zijn voeten
-const FIRST_VINE = { x: 580, ay: 30, len: 320 };
+const FIRST_VINE = { x: 580, ay: 20, len: 440 };
 const WALL_X = 50;
 const SHROOM_TOP = HAZARD_Y - 64;
 const CEIL_Y = -1150;         // hoogste ophangpunt van lianen: daarboven is alleen nog lucht
@@ -318,8 +318,8 @@ function features(bi) {
 //  Upgrades
 // =====================================================================
 const gripR      = l => 34 + 7 * l;
-const pumpA      = l => 480 * (1 + 0.25 * l);
-const launchM    = l => 1.1 + 0.06 * l;
+const pumpA      = l => 620 * (1 + 0.25 * l);
+const launchM    = l => 1.18 + 0.06 * l;
 const magnetR    = l => l ? 50 + 35 * l : 0;
 const appleVal   = l => 1 + 0.5 * l;
 const goldChance = l => 0.03 + 0.025 * l;
@@ -348,7 +348,7 @@ const UPGRADES = [
   { id:'vinewise',icon:'🌿', name:'Liaankenner',    info:'Rotte lianen houden langer, ijs is minder glad en er zijn meer turbolianen.', max:3, base:50, growth:2.0, fx:l => l ? `+${l * 40}% grip` : 'geen' },
   { id:'shroom',  icon:'🍄', name:'Stuiterzwam',    info:'Meer paddenstoelen, en ze lanceren je hoger en verder.',  max:3, base:40,  growth:1.9,  fx:l => l ? `+${l * 40}% paddenstoelen` : 'geen' },
 ];
-const upCost = (u, l) => Math.round(u.base * Math.pow(u.growth, l) / 5) * 5;
+const upCost = (u, l) => Math.round(u.base * 1.5 * Math.pow(u.growth, l) / 5) * 5;
 
 // =====================================================================
 //  Opslag (localStorage + export/import)
@@ -444,7 +444,7 @@ function shade(hex, f) { const c = hexToRgb(hex); return rgbStr(c.map(v => f < 0
 const $ = id => document.getElementById(id);
 
 function biomeIndexAt(m) { let i = 0; for (let j = 0; j < BIOMES.length; j++) if (m >= BIOMES[j].start) i = j; return i; }
-function diffAt(m) { return Math.min(1.4, Math.max(0, m) / 6000); }
+function diffAt(m) { return Math.min(1.4, Math.max(0, m) / 3500); }
 function paletteAt(m) {
   const i = biomeIndexAt(m), a = BIOMES[i], b = BIOMES[i + 1] || a;
   let t = 0;
@@ -793,7 +793,7 @@ function resetWorld() {
     lastVine: null, releaseT: 0, invuln: 0, balloonT: 0, turboT: 0, deadT: 0, spin: 0, splashed: false, diving: false,
     airT: 0, airX: 0, standPress: -1, helmets: lvl('helmet'), balloons: lvl('balloon'), rocketEnd: 0,
     parrot: lvl('parrot') ? { x: sx - 40, y: sy - 60, cd: 1, target: null, t: 0 } : null };
-  gen = { x: FIRST_VINE.x, special: 0, col: 0, low: FIRST_VINE.ay + FIRST_VINE.len, tips: [FIRST_VINE.ay + FIRST_VINE.len * TIP_F] };
+  gen = { x: FIRST_VINE.x, special: 0, col: 0, low: FIRST_VINE.ay + FIRST_VINE.len, tips: [null, null, FIRST_VINE.ay + FIRST_VINE.len * TIP_F] };
   run = { picked: 0, earned: 0, stolen: 0, golden: 0, dist: 0, biome: 0, reason: '', lastWoo: 0,
     combo: 0, lastPick: -9, firstJump: true, nextMile: 100 };
   camX = Math.max(-100, G.x - viewW * 0.32); camY = baseTop(); lastCamX = camX;
@@ -863,60 +863,60 @@ function addVine(x, ay, len, type, bi, force) {
   }
   return v;
 }
-// Lianen worden per kolom over de hele hoogte onder het plafond verspreid (zoals in Benji Bananas).
-// Om en om verspringen de kolommen een halve rij, zodat het een gelijkmatig "veld" van lianen wordt.
-const ROW = 400;
+// Lianen hangen in een vast patroon: kolommen op regelmatige afstand, met in elke kolom drie
+// "banen" (hoog, midden, laag) die in een rustige golf op en neer lopen. Zo liggen de lianen altijd
+// op logische sprongafstand van elkaar. Hoe verder je komt, hoe groter de afstand en hoe vaker er
+// een bovenste baan ontbreekt; de laagste baan is er altijd, zodat je nooit vastloopt.
+const LANES = [-1000, -540, -80];
 function genNext() {
   const m = (gen.x - START_X) / PX_PER_M;
   const d = diffAt(m), dc = Math.min(1, d);
   const bi = biomeIndexAt(m), F = features(bi);
-  let gap = rand(230, 300) + d * rand(40, 150);
-  let shroom = false;
-  if (m > 20 && Math.random() < 0.13 * (1 - 0.6 * dc) * (1 + 0.4 * lvl('shroom'))) { shroom = true; gap += rand(120, 200); }
-  const x = gen.x + gap;
+  const x = gen.x + rand(470, 520) + d * rand(40, 140);
   const vbi = biomeIndexAt((x - START_X) / PX_PER_M);
   gen.col++;
 
-  const col = [];
+  const col = [], laneTips = [];
   const tip = v => v.ay + v.pts.length * SEG_LEN * TIP_F;
-  // Haalbaarheid: vanaf de laagste liaan van de vorige kolom kun je hooguit ~170 px hoger komen,
-  // dus eerst komt er een liaan waarvan het uiteinde zeker laag genoeg hangt; de rest wijkt daarvoor uit.
-  const gLen = rand(290, 350), gAy = clamp(gen.low - 110 - gLen * TIP_F + rand(-70, 20), CEIL_Y, ANCHOR_LOW);
-  col.push(addVine(x + rand(-30, 30), gAy, gLen, m < 8 ? 'normal' : pickType(F, d), vbi, true));
-  const skip = m < 12 ? 0 : 0.12 + 0.3 * dc; // hoe verder, hoe meer gaten
-  for (let ay = CEIL_Y + (gen.col % 2 ? ROW / 2 : 0) + rand(0, 60); ay <= ANCHOR_LOW; ay += ROW + rand(-50, 50)) {
-    if (Math.random() < skip) continue;
+  for (let li = LANES.length - 1; li >= 0; li--) {
+    const lowest = li === LANES.length - 1;
+    if (!lowest && m > 12 && Math.random() < 0.08 + 0.3 * dc) { laneTips[li] = null; continue; }
+    let ay = LANES[li] + Math.sin(gen.col * 0.55 + li * 2.1) * 70 + rand(-15, 15);
+    let len = rand(470, 540);
+    if (lowest) { // haalbaarheid: het uiteinde moet bereikbaar zijn vanaf de laagste liaan ervoor
+      const minTip = gen.low - 170;
+      if (ay + len * TIP_F < minTip) ay = minTip - len * TIP_F;
+    }
     const type = m < 8 ? 'normal' : pickType(F, d);
-    const v = addVine(x + rand(-50, 50), ay + rand(-40, 40), rand(230 - 60 * dc, 410), type, vbi);
+    const v = addVine(x + rand(-12, 12), clamp(ay, CEIL_Y, ANCHOR_LOW), len, type, vbi, lowest);
+    laneTips[li] = v ? tip(v) : null;
     if (v) col.push(v);
   }
   let low = -Infinity;
   for (const v of col) low = Math.max(low, v.ay + v.pts.length * SEG_LEN * (v.type === 'elastic' ? 1.2 : 1));
 
   // Heel af en toe: een luchtballon boven het plafond met een liaan eronder
-  if (m > 40 && Math.random() < 0.05 && !vines.some(v => v.balloon && v.x > x - 1500)) {
+  if (m > 40 && Math.random() < 0.07 && !vines.some(v => v.balloon && v.x > x - 1500)) {
     const bv = addVine(x + rand(0, 100), CEIL_Y - 190, 300, 'balloon', vbi);
     if (bv) bv.balloon = { vx: rand(60, 90), hue: (Math.random() * 360) | 0, bob: rand(0, 6) };
   }
 
-  const x0 = gen.x, x1 = x - 200 * Math.sin(VINE_SLANT);
-  if (shroom) shrooms.push({ x: (gen.x + x) / 2 + rand(-30, 30), w: 100, bi: vbi, sq: 0 });
-  // appels: een of twee groepjes tussen willekeurige lianen van de vorige en deze kolom
-  const tips = col.map(tip);
-  const groups = Math.random() < 0.45 ? 2 : 1;
-  for (let g = 0; g < groups; g++) {
-    const y1 = tips[(Math.random() * tips.length) | 0];
-    const y0 = gen.tips.length ? gen.tips[(Math.random() * gen.tips.length) | 0] : y1;
-    placeApples(x0, Math.max(x0 + 120, x1), d, y0 * 0.6 + y1 * 0.4, y1);
+  const x0 = gen.x, x1 = x - 250 * Math.sin(VINE_SLANT);
+  if (m > 20 && Math.random() < 0.16 * (1 - 0.6 * dc) * (1 + 0.4 * lvl('shroom'))) shrooms.push({ x: (gen.x + x) / 2 + rand(-40, 40), w: 100, bi: vbi, sq: 0 });
+  // appels langs de banen: een boog van de ene liaan naar de volgende in dezelfde baan
+  const lanes = [0, 1, 2].filter(li => laneTips[li] != null && gen.tips[li] != null);
+  for (let g = Math.random() < 0.5 ? 2 : 1; g > 0 && lanes.length; g--) {
+    const li = lanes.splice((Math.random() * lanes.length) | 0, 1)[0];
+    placeApples(x0, Math.max(x0 + 120, x1), d, gen.tips[li] - 40, laneTips[li] - 40);
   }
 
-  const mid = (x0 + x1) / 2, ym = rand(CEIL_Y + 100, HAZARD_Y - 180);
+  const mid = (x0 + x1) / 2, ym = LANES[(Math.random() * 3) | 0] + rand(250, 420);
   const fk = 1 + 0.6 * d;
   const fy = y => clamp(y, CEIL_Y, HAZARD_Y - 160);
   if (Math.random() < F.wasps * fk) foes.push({ type: 'wasp', x0: mid + rand(-40, 40), y0: fy(ym), x: mid, y: ym, t: rand(0, 6), ax: rand(20, 60), ay: rand(30, 80), r: 15, bi: vbi });
   if (Math.random() < F.fire * fk) foes.push({ type: 'fire', x: (gen.x + x) / 2 + rand(-50, 50), y: HAZARD_Y + 40, vy: 0, wait: rand(0.2, 1.6), r: 16, bi: vbi });
   if (Math.random() < F.birds * fk) { const y = fy(rand(CEIL_Y, HAZARD_Y - 200)); foes.push({ type: 'bird', x: x + rand(300, 700), y0: y, y, t: rand(0, 3), vx: -rand(170, 260), r: 16, bi: vbi, active: false }); }
-  gen.x = x; gen.low = low; gen.tips = tips;
+  gen.x = x; gen.low = low; gen.tips = laneTips;
 }
 function placeApples(x0, x1, d, y0, y1) {
   const gc = goldChance(lvl('golden'));
@@ -1003,7 +1003,7 @@ function integrateHanging(v, dt) {
     const a = v.pts[0], rx = G.x - a.x, ry = G.y - a.y, rl = Math.hypot(rx, ry) || 1;
     const tx = -ry / rl, ty = rx / rl;
     const vt = (vx * tx + vy * ty) / dt;
-    if (ry / rl > 0.25 && Math.abs(vt) > 15 && Math.abs(vt) < 1200) {
+    if (ry / rl > 0.25 && Math.abs(vt) > 15 && Math.abs(vt) < 1500) {
       const s = Math.sign(vt), f = pumpA(lvl('swing')) * (s * tx > 0 ? 1 : 0.55);
       ax += tx * s * f; ay += ty * s * f;
     }
@@ -1037,9 +1037,11 @@ function attach(v, k) {
   // Momentum behouden: de vaart wordt omgezet in de zwaairichting in plaats van weggegooid
   const a = p[0], rx = G.x - a.x, ry = G.y - a.y, rl = Math.hypot(rx, ry) || 1;
   const tx = -ry / rl, ty = rx / rl, speed = Math.hypot(G.vx, G.vy), vt = G.vx * tx + G.vy * ty;
-  let dir = Math.sign(vt) || 1;
-  if (Math.abs(vt) < speed * 0.35 && tx * dir < 0) dir = -dir; // twijfel: kies de richting die vooruit gaat
-  const keep = speed * 0.96;
+  // Andy zwaait na het grijpen altijd vooruit (tenzij je bewust hard terug vliegt) en verliest geen vaart:
+  // er is zelfs een minimale zwaaisnelheid, zodat grijpen je nooit volledig afremt.
+  let dir = Math.abs(tx) > 0.2 ? (tx > 0 ? 1 : -1) : (ty > 0 ? 1 : -1);
+  if (G.vx < -250 && Math.sign(vt) === -dir) dir = -dir;
+  const keep = Math.max(speed, 480);
   G.vx = tx * dir * keep; G.vy = ty * dir * keep;
   G.px = G.x - G.vx * DT; G.py = G.y - G.vy * DT;
   G.armLen = Math.max(12, Math.hypot(p[k].x - G.x, p[k].y - G.y));
@@ -1068,7 +1070,7 @@ function release(voluntary = true) {
   const v = G.vine;
   const m = launchM(lvl('launch'));
   let vx = (G.x - G.px) / DT * m, vy = (G.y - G.py) / DT * m;
-  if (vx > 0) vx += 40;
+  if (vx > 0) vx += 90;
   vy -= 50;
   const playing = game.mode === 'playing';
   if (playing && voluntary && v.type === 'turbo') {
@@ -1250,8 +1252,8 @@ function updateGorilla(dt, holdHang, holdAir) {
     G.vy += AIR_G * glide * (1 + 1.6 * G.dive) * dt;
     const maxFall = MAX_FALL * glide * (1 + 0.8 * G.dive);
     if (G.vy > maxFall) G.vy += (maxFall - G.vy) * Math.min(1, dt * 6);
-    G.vx -= G.vx * 0.04 * dt;
-    const sp = Math.hypot(G.vx, G.vy), maxS = 1850;
+    G.vx -= G.vx * 0.012 * dt;
+    const sp = Math.hypot(G.vx, G.vy), maxS = 1900;
     if (sp > maxS) { G.vx *= maxS / sp; G.vy *= maxS / sp; }
     const prevFeet = G.y + FEET;
     G.x += G.vx * dt; G.y += G.vy * dt;
@@ -1492,7 +1494,8 @@ function updateEffects(dt) {
 }
 
 function updateCamera(dt) {
-  const tx = Math.max(-100, G.x - viewW * (G.state === 'rocket' ? 0.25 : 0.32));
+  // bij hoge snelheid kijkt de camera verder vooruit
+  const tx = Math.max(-100, G.x - viewW * (G.state === 'rocket' ? 0.25 : 0.33 - clamp(G.vx / 1800, 0, 1) * 0.1));
   camX += (tx - camX) * Math.min(1, dt * 4.5);
   // verticaal meebewegen (de wereld is veel hoger dan het scherm), maar nooit onder de bodem kijken
   const bt = baseTop();
