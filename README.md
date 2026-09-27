@@ -76,6 +76,7 @@ Tips: codes zijn eenmalig (mislukt het, klik dan op **✖ Opnieuw**). Het werkt 
   - 🔥 **Comboketting**: langere combo's met grotere bonussen.
   - 🌿 **Liaankenner**: rotte lianen houden langer, ijs is minder glad en er zijn meer turbolianen.
   - 🍄 **Stuiterzwam**: meer paddenstoelen die je verder lanceren.
+- **Draaiknop voor telefoons**: met 🔄 **Liggend** in het hoofdmenu speel je op een staande telefoon toch liggend (breder zicht). Waar het kan wordt het scherm echt gedraaid (volledig scherm, Android); anders draait het spel het beeld zelf een kwartslag, zodat je de telefoon gewoon kantelt. Met 🔄 **Staand** zet je het terug. De keuze wordt onthouden.
 - **Soepel op elk apparaat**: het spel meet zelf de framerate en past resolutie en effecten automatisch aan (en onthoudt dat). De verre achtergrond wordt in een aparte buffer op lage resolutie getekend.
 - **Save-systeem**:
   - De voortgang wordt automatisch opgeslagen in de `localStorage` van de browser.

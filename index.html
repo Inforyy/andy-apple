@@ -159,12 +159,29 @@
   .ib:active .ib-ic{transform:translateY(3px)}
   .ib small{font-size:13px}
   .ib .badge{top:-4px;right:2px}
-  @media (max-width: 720px), (max-aspect-ratio: 1/1){
-    #menu{background:linear-gradient(0deg,rgba(5,22,12,.65),rgba(5,22,12,0) 60%)}
-    .mm{grid-template-columns:1fr;grid-template-areas:"top" "free" "modes" "bar";grid-template-rows:auto 1fr auto auto}
-    .mm-bar{justify-content:space-around}
-    .mode{padding:14px 16px}.mode-t{font-size:25px}.mode-ic{font-size:36px}
+  /* smal of staand scherm (klassen worden door het spel gezet, zodat ze ook kloppen als het beeld gedraaid is) */
+  html.narrow{--narrow:1}
+  @supports (display:grid){
+    html.narrow #menu{background:linear-gradient(0deg,rgba(5,22,12,.65),rgba(5,22,12,0) 60%)}
+    html.narrow .mm{grid-template-columns:1fr;grid-template-areas:"top" "free" "modes" "bar";grid-template-rows:auto 1fr auto auto}
+    html.narrow .mm-bar{justify-content:space-around;flex-wrap:nowrap;gap:2px}
+    html.touch.narrow .ib-ic{width:54px;height:54px;font-size:24px}html.touch.narrow .ib small{font-size:11.5px}
+    html.narrow .mode{padding:14px 16px}html.narrow .mode-t{font-size:25px}html.narrow .mode-ic{font-size:36px}
   }
+  /* laag scherm (telefoon liggend) */
+  html.short .mm{gap:8px;padding:10px 16px}
+  html.short .mm-logo h1{font-size:40px}html.short .logo-apple{font-size:36px}
+  html.short .mm-modes{gap:9px}
+  html.short .mode{padding:9px 14px;border-radius:18px}html.short .mode-t{font-size:22px}html.short .mode-ic{font-size:30px}html.short .mode-s{font-size:13px}
+  html.short .mode-go{width:38px;height:38px;font-size:18px}
+  html.short .ib-ic{width:48px;height:48px;font-size:22px}html.short .ib small{font-size:12px}
+  html.short .chip{font-size:17px;padding:4px 12px 4px 10px}html.short .ring{width:36px;height:36px}html.short .ring b{width:28px;height:28px;font-size:14px}
+  html.short .panel{padding:14px 18px}html.short h2{font-size:26px}
+  /* gedraaid beeld: de hele pagina een kwartslag gedraaid, zodat je een staande telefoon liggend kunt gebruiken */
+  html.rot body{position:fixed;top:0;left:0;transform-origin:0 0}
+  .ib.rotbtn{display:none}
+  html.touch.portrait .ib.rotbtn,html.touch.rotpref .ib.rotbtn{display:flex}
+  html.rot .panel{touch-action:auto}
 
   /* ---------- Multiplayer ---------- */
   .btn.local{background:linear-gradient(#60a5fa,#7c3aed);box-shadow:0 5px 0 #4c1d95}
@@ -210,7 +227,7 @@
     text-shadow:0 6px 0 rgba(0,0,0,.35),0 0 30px rgba(0,0,0,.3)}
   #mpCount.pop{animation:cpop .9s ease-out}
   @keyframes cpop{0%{transform:translate(-50%,-50%) scale(1.8);opacity:0}25%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{opacity:.9}}
-  @media (max-width: 720px){ #mpHud{top:auto;bottom:max(10px,env(safe-area-inset-bottom));width:80vw} #mpHud:not(.hidden) ~ #hint{bottom:120px} .mp-modes{grid-template-columns:1fr} }
+  html.slim #mpHud{top:auto;bottom:max(10px,env(safe-area-inset-bottom));width:80vw} html.slim #mpHud:not(.hidden) ~ #hint{bottom:120px} html.slim .mp-modes{grid-template-columns:1fr}
   kbd{background:#fff;border:2px solid #d6b77a;border-bottom-width:4px;border-radius:6px;padding:0 6px;font-weight:800;font-size:13px}
 </style>
 </head>
@@ -267,6 +284,7 @@
       <button class="ib" id="btnSaves"><span class="ib-ic">💾</span><small>Opslaan</small></button>
       <button class="ib" id="btnHelp"><span class="ib-ic">❓</span><small>Uitleg</small></button>
       <button class="ib" id="btnSettings"><span class="ib-ic">⚙️</span><small>Instellingen</small></button>
+      <button class="ib rotbtn" id="btnRotate"><span class="ib-ic">🔄</span><small id="rotTxt">Liggend</small></button>
     </nav>
   </div>
 </div>
@@ -1053,9 +1071,44 @@ let dpr = 1, pr = 1, cssW = 0, cssH = 0, scale = 1, viewW = 0, viewH = 0;
 let bgFrame = 0, bgStale = true;
 let bgCanvas = document.createElement('canvas');
 let bgCtx = bgCanvas.getContext('2d', { alpha: false });
+// ---- Draaiknop: een staande telefoon liggend gebruiken ----
+// Eerst proberen we het echte scherm te draaien (volledig scherm + oriëntatie vastzetten, werkt op Android).
+// Lukt dat niet (bijv. iPhone), dan draaien we de hele pagina zelf een kwartslag.
+const ROT_KEY = 'andyApples.rotate';
+let rotPref = false, rotOn = false;
+try { rotPref = localStorage.getItem(ROT_KEY) === '1'; } catch (e) { /* geen voorkeur */ }
+function applyRot() {
+  rotOn = rotPref && window.innerHeight > window.innerWidth;
+  const b = document.body;
+  document.documentElement.classList.toggle('rot', rotOn);
+  if (rotOn) { b.style.width = window.innerHeight + 'px'; b.style.height = window.innerWidth + 'px'; b.style.transform = `translateX(${window.innerWidth}px) rotate(90deg)`; }
+  else { b.style.width = ''; b.style.height = ''; b.style.transform = ''; }
+}
+// schermcoördinaten -> coördinaten in het (eventueel gedraaide) spel
+const toGame = (x, y) => rotOn ? [y, window.innerWidth - x] : [x, y];
+async function toggleRotate() {
+  rotPref = !rotPref;
+  try { localStorage.setItem(ROT_KEY, rotPref ? '1' : '0'); } catch (e) { /* negeren */ }
+  if (rotPref) {
+    try {
+      const el = document.documentElement;
+      if (!document.fullscreenElement && el.requestFullscreen) await el.requestFullscreen({ navigationUI: 'hide' });
+      if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape');
+    } catch (e) { /* niet ondersteund: dan draaien we de pagina zelf */ }
+  } else {
+    try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) { /* */ }
+    try { if (document.fullscreenElement && document.exitFullscreen) await document.exitFullscreen(); } catch (e) { /* */ }
+  }
+  resize();
+  setTimeout(resize, 350); // sommige telefoons melden de nieuwe maten iets later
+}
 function resize() {
   dpr = Math.min(2, window.devicePixelRatio || 1);
-  cssW = window.innerWidth; cssH = window.innerHeight;
+  applyRot();
+  cssW = rotOn ? window.innerHeight : window.innerWidth; cssH = rotOn ? window.innerWidth : window.innerHeight;
+  const hc = document.documentElement.classList;
+  hc.toggle('portrait', window.innerHeight > window.innerWidth); hc.toggle('rotpref', rotPref);
+  hc.toggle('narrow', cssW <= 720 || cssW <= cssH); hc.toggle('slim', cssW <= 720); hc.toggle('short', cssH < 520);
   Q = QUALITY[qLevel];
   pr = Math.min(dpr, Math.sqrt(Q.px / (cssW * cssH)));
   canvas.width = Math.round(cssW * pr); canvas.height = Math.round(cssH * pr);
@@ -1081,6 +1134,8 @@ function setQuality(l) {
 const gradCache = new Map();
 function cachedGrad(key, make) { let g = gradCache.get(key); if (!g) { g = make(); gradCache.set(key, g); if (gradCache.size > 300) gradCache.clear(); } return g; }
 window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 200));
+document.documentElement.classList.toggle('touch', navigator.maxTouchPoints > 0 || (window.matchMedia && matchMedia('(pointer: coarse)').matches));
 resize();
 // bovenkant van het beeld in rust; op hoge (staande) schermen gaat een deel van de extra ruimte naar het water
 const baseTop = () => WORLD_H + 20 - viewH + Math.max(0, viewH - 760) * 0.4;
@@ -4317,6 +4372,7 @@ function refreshMenu() {
   $('mmEndless').textContent = save.best ? `Record: ${save.best} m` : 'Kom zo ver mogelijk!';
   $('mmMulti').textContent = save.mpGames ? `Race of Endurance · ${save.mpWins} van ${save.mpGames} gewonnen` : 'Race of Endurance tegen een vriend';
   $('menuStats').innerHTML = statsHtml();
+  $('rotTxt').textContent = rotPref ? 'Staand' : 'Liggend';
   $('saveStats').innerHTML = statsHtml();
   setBadge($('btnShop'), affordableCount());
   const snd = save.sound ? '🔊 Geluid aan' : '🔇 Geluid uit';
@@ -4432,6 +4488,7 @@ on('btnSaves', () => { $('saveMsg').textContent = ''; refreshMenu(); showScreen(
 on('btnHelp', () => showScreen('help'));
 on('btnSettings', () => { refreshMenu(); showScreen('settings'); });
 on('btnSettingsBack', () => showScreen('menu'));
+on('btnRotate', () => { toggleRotate().then(refreshMenu); refreshMenu(); });
 on('btnHelpBack', () => showScreen('menu'));
 const toggleSound = () => { save.sound = !save.sound; persist(); refreshMenu(); };
 const toggleMusic = () => { save.music = !save.music; persist(); refreshMenu(); if (save.music) Music.start(); else Music.stop(); };
@@ -4517,7 +4574,7 @@ canvas.addEventListener('pointerdown', e => {
   if (curScreen) return;
   try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* negeren */ }
   if (LOCAL.on) { // op één scherm: elke speler tikt op zijn eigen helft
-    const p = localSide(e.clientX, e.clientY);
+    const p = localSide(...toGame(e.clientX, e.clientY));
     localPointers.set(e.pointerId, p);
     localPress(p);
     return;
