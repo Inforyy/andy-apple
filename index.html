@@ -66,7 +66,7 @@
   .btn.ghost.red{color:#b91c1c}
   .btn.big{font-size:26px;padding:14px 20px;width:100%}
   .btn:disabled{filter:grayscale(.8);opacity:.6;cursor:not-allowed}
-  .btn .badge{position:absolute;top:-8px;right:-6px;background:#e8322b;color:#fff;border-radius:999px;font-size:13px;padding:2px 8px;
+  .badge{position:absolute;top:-8px;right:-6px;background:#e8322b;color:#fff;border-radius:999px;font-size:13px;padding:2px 8px;
     box-shadow:0 2px 0 #7a1a12;animation:pulse2 1s ease-in-out infinite}
   @keyframes pulse2{50%{transform:scale(1.15)}}
   .panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
@@ -117,6 +117,54 @@
   .lv:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 #5a3410}
   .bigstars{font-size:52px;letter-spacing:6px;color:#e3d3b0;margin:2px 0 6px}
   .bigstars .on{color:#f5b800;text-shadow:0 3px 0 #b8860b}
+
+  /* ---------- Hoofdmenu ---------- */
+  #menu{background:linear-gradient(90deg,rgba(5,22,12,0) 35%,rgba(5,22,12,.55)),linear-gradient(0deg,rgba(5,22,12,.45),rgba(5,22,12,0) 30%);padding:0}
+  .mm{position:absolute;inset:0;display:grid;grid-template-columns:1fr minmax(300px,440px);grid-template-rows:auto 1fr auto;
+    grid-template-areas:"top top" "free modes" "bar modes";gap:14px;
+    padding:max(16px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}
+  .mm-top{grid-area:top;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .mm-logo{display:flex;align-items:center;gap:6px}
+  .mm-logo h1{font-size:clamp(38px,6.5vw,70px);font-weight:900;color:#fff;line-height:.95;letter-spacing:1px;
+    text-shadow:0 4px 0 #7a3d10,0 7px 0 rgba(0,0,0,.25),0 0 24px rgba(0,0,0,.25)}
+  .mm-logo h1 span{color:#ff5a4a;text-shadow:0 4px 0 #7a1a12,0 7px 0 rgba(0,0,0,.25)}
+  .mm-status{display:flex;gap:10px;align-items:center}
+  .chip{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.42);border:2px solid rgba(255,255,255,.18);border-radius:999px;
+    padding:6px 16px 6px 12px;font-size:20px;font-weight:900;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+  .chip.lvl{padding:4px 16px 4px 4px}
+  .ring{--p:0;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;
+    background:conic-gradient(#a855f7 calc(var(--p)*1%),rgba(255,255,255,.18) 0)}
+  .ring b{width:34px;height:34px;border-radius:50%;background:#2a1f3d;display:grid;place-items:center;font-size:17px}
+  .lvl-txt{display:flex;flex-direction:column;line-height:1.1}
+  .lvl-txt b{font-size:16px}.lvl-txt small{font-size:12px;font-weight:700;opacity:.85}
+  .mm-modes{grid-area:modes;display:flex;flex-direction:column;justify-content:center;gap:16px}
+  .mode{font:inherit;display:flex;align-items:center;gap:14px;width:100%;border:none;border-radius:24px;padding:18px 20px;cursor:pointer;
+    color:#fff;text-align:left;box-shadow:0 7px 0 rgba(0,0,0,.28),0 16px 30px rgba(0,0,0,.25);transition:transform .12s,box-shadow .12s;
+    border:3px solid rgba(255,255,255,.35)}
+  .mode:hover{transform:translateY(-3px)}
+  .mode:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.28)}
+  .mode.career{background:linear-gradient(135deg,#ffb020,#e8532b)}
+  .mode.endless{background:linear-gradient(135deg,#4ade80,#0f9d58)}
+  .mode-ic{font-size:44px;line-height:1;filter:drop-shadow(0 3px 0 rgba(0,0,0,.25))}
+  .mode-txt{flex:1;display:flex;flex-direction:column;gap:3px}
+  .mode-t{font-size:30px;font-weight:900;text-shadow:0 3px 0 rgba(0,0,0,.25);line-height:1}
+  .mode-s{font-size:15px;font-weight:800;opacity:.95}
+  .mode-go{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.25);display:grid;place-items:center;font-size:22px}
+  .mm-bar{grid-area:bar;display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+  .ib{font:inherit;position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;color:#fff;cursor:pointer;
+    font-weight:800;text-shadow:0 2px 0 rgba(0,0,0,.5)}
+  .ib-ic{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;font-size:28px;background:rgba(0,0,0,.42);
+    border:3px solid rgba(255,255,255,.3);box-shadow:0 5px 0 rgba(0,0,0,.25);transition:transform .12s}
+  .ib:hover .ib-ic{transform:translateY(-3px)}
+  .ib:active .ib-ic{transform:translateY(3px)}
+  .ib small{font-size:13px}
+  .ib .badge{top:-4px;right:2px}
+  @media (max-width: 720px), (max-aspect-ratio: 1/1){
+    #menu{background:linear-gradient(0deg,rgba(5,22,12,.65),rgba(5,22,12,0) 60%)}
+    .mm{grid-template-columns:1fr;grid-template-areas:"top" "free" "modes" "bar";grid-template-rows:auto 1fr auto auto}
+    .mm-bar{justify-content:space-around}
+    .mode{padding:14px 16px}.mode-t{font-size:25px}.mode-ic{font-size:36px}
+  }
   kbd{background:#fff;border:2px solid #d6b77a;border-bottom-width:4px;border-radius:6px;padding:0 6px;font-weight:800;font-size:13px}
 </style>
 </head>
@@ -141,24 +189,46 @@
 
 <!-- Hoofdmenu -->
 <div id="menu" class="screen">
-  <div class="panel">
-    <div class="logo"><span class="logo-apple">🍎</span><h1>Andy <span>Apples</span></h1></div>
-    <p class="tag">Zwaai als Andy de gorilla door de lianen, pluk appels en kom zo ver mogelijk!</p>
-    <div id="menuXp"></div>
-    <div class="stats" id="menuStats"></div>
-    <div class="row" style="margin-top:0">
-      <button class="btn big green" id="btnPlay" style="flex:1 1 200px">▶ Eindeloos</button>
-      <button class="btn big" id="btnCareer" style="flex:1 1 200px">🏁 Carrière</button>
+  <div class="mm">
+    <header class="mm-top">
+      <div class="mm-logo"><span class="logo-apple">🍎</span><h1>Andy <span>Apples</span></h1></div>
+      <div class="mm-status">
+        <div class="chip">🍎 <b id="mmApples">0</b></div>
+        <div class="chip lvl" title="Spelerslevel"><span class="ring" id="mmRing"><b id="mmLevel">1</b></span><span class="lvl-txt"><b>Level</b><small id="mmXp">0 / 150 XP</small></span></div>
+      </div>
+    </header>
+    <div class="mm-modes">
+      <button class="mode career" id="btnCareer">
+        <span class="mode-ic">🏁</span>
+        <span class="mode-txt"><span class="mode-t">Carrière</span><span class="mode-s" id="mmCareer">Level 1 · ⭐ 0 / 90</span></span>
+        <span class="mode-go">▶</span>
+      </button>
+      <button class="mode endless" id="btnPlay">
+        <span class="mode-ic">♾️</span>
+        <span class="mode-txt"><span class="mode-t">Eindeloos</span><span class="mode-s" id="mmEndless">Record: 0 m</span></span>
+        <span class="mode-go">▶</span>
+      </button>
     </div>
-    <div class="row">
-      <button class="btn" id="btnShop">🛒 Upgrades</button>
-      <button class="btn" id="btnSaves">💾 Opslaan</button>
+    <nav class="mm-bar">
+      <button class="ib" id="btnShop"><span class="ib-ic">🛒</span><small>Upgrades</small></button>
+      <button class="ib" id="btnSaves"><span class="ib-ic">💾</span><small>Opslaan</small></button>
+      <button class="ib" id="btnHelp"><span class="ib-ic">❓</span><small>Uitleg</small></button>
+      <button class="ib" id="btnSettings"><span class="ib-ic">⚙️</span><small>Instellingen</small></button>
+    </nav>
+  </div>
+</div>
+
+<!-- Instellingen -->
+<div id="settings" class="screen">
+  <div class="panel" style="max-width:420px">
+    <h2>⚙️ Instellingen</h2>
+    <p class="sub">Geluid en muziek staan los van elkaar aan of uit.</p>
+    <div class="stack">
+      <button class="btn big" id="btnSound">🔊 Geluid aan</button>
+      <button class="btn big" id="btnMusic">🎵 Muziek aan</button>
     </div>
-    <div class="row">
-      <button class="btn ghost" id="btnHelp">❓ Uitleg</button>
-      <button class="btn ghost" id="btnSound">🔊 Geluid aan</button>
-      <button class="btn ghost" id="btnMusic">🎵 Muziek aan</button>
-    </div>
+    <div class="stats" id="menuStats" style="margin-top:16px"></div>
+    <div class="row"><button class="btn" id="btnSettingsBack">← Terug</button></div>
   </div>
 </div>
 
@@ -395,20 +465,19 @@ const UPGRADES = [
   { id:'launch',  icon:'💨', name:'Lanceerkracht',  info:'Meer vaart bij het loslaten en een hogere topsnelheid.',                        max:5, base:40,  growth:1.85, fx:l => `+${l * 7}% vaart, top ${1450 + 110 * l}` },
   { id:'magnet',  icon:'🧲', name:'Appelmagneet',   info:'Trekt appels in de buurt naar je toe.',                 max:5, base:35,  growth:1.8,  fx:l => l ? `${magnetR(l)} bereik` : 'geen' },
   { id:'value',   icon:'🧺', name:'Appeloogst',     info:'Elke geplukte appel telt voor meer (bovenop de biomebonus).', max:5, base:50, growth:1.9, fx:l => `×${fmtNum(appleVal(l))} per appel` },
-  { id:'golden',  icon:'✨', name:'Gouden appels',  info:'Meer gouden appels (5 appels waard).',                  unlock:2, max:4, base:45,  growth:1.9,  fx:l => `${Math.round(goldChance(l) * 100)}% kans` },
+  { id:'golden',  icon:'✨', name:'Gouden appels',  info:'Meer gouden appels (5 appels waard).',                  unlock:4, max:4, base:45,  growth:1.9,  fx:l => `${Math.round(goldChance(l) * 100)}% kans` },
   { id:'balloon', icon:'🎈', name:'Reddingsballon', info:'Redt je als je naar beneden valt.',                     max:3, base:80,  growth:2.2,  fx:l => `${l}× per run` },
-  { id:'helmet',  icon:'⛑️', name:'Helm',           info:'Voorkomt dat een vijand appels van je steelt.',         unlock:3, max:3, base:70,  growth:2.2,  fx:l => `${l}× per run` },
-  { id:'rocket',  icon:'🚀', name:'Raketstart',     info:'Begin elke run met een raketvlucht.',                   unlock:10, max:4, base:120, growth:2.0,  fx:l => l ? `${rocketDist(l)} m` : 'geen' },
-  { id:'glide',   icon:'🍃', name:'Bladzweef',      info:'Andy houdt een groot blad vast en valt langzamer als je niet duikt.', unlock:4, max:4, base:45, growth:1.9, fx:l => l ? `-${l * 10}% vallen` : 'geen' },
-  { id:'parrot',  icon:'🦜', name:'Papegaaimaatje', info:'Een papegaai vliegt met je mee en plukt appels voor je.',  unlock:8, max:4, base:90,  growth:2.0,  fx:l => l ? `elke ${fmtNum(parrotCd(l))} s een appel` : 'geen' },
-  { id:'rain',    icon:'🌧️', name:'Appelregen',     info:'Bij elke 100 m regent het appels uit de lucht.',        unlock:9, max:3, base:60,  growth:2.0,  fx:l => l ? `${3 + l * 3} appels per 100 m` : 'geen' },
-  { id:'combo',   icon:'🔥', name:'Comboketting',   info:'Je combo blijft langer staan en levert meer bonus op.',  unlock:5, max:3, base:55,  growth:2.0,  fx:l => `${fmtNum(comboWin(l))} s · bonus ×${1 + l}` },
-  { id:'vinewise',icon:'🌿', name:'Liaankenner',    info:'Rotte lianen houden langer, ijs is minder glad en er zijn meer turbolianen.', unlock:7, max:3, base:50, growth:2.0, fx:l => l ? `+${l * 40}% grip` : 'geen' },
+  { id:'helmet',  icon:'⛑️', name:'Helm',           info:'Voorkomt dat een vijand appels van je steelt.',         unlock:6, max:3, base:70,  growth:2.2,  fx:l => `${l}× per run` },
+  { id:'rocket',  icon:'🚀', name:'Raketstart',     info:'Begin elke run met een raketvlucht.',                   unlock:20, max:4, base:120, growth:2.0,  fx:l => l ? `${rocketDist(l)} m` : 'geen' },
+  { id:'parrot',  icon:'🦜', name:'Papegaaimaatje', info:'Een papegaai vliegt met je mee en plukt appels voor je.',  unlock:14, max:4, base:90,  growth:2.0,  fx:l => l ? `elke ${fmtNum(parrotCd(l))} s een appel` : 'geen' },
+  { id:'rain',    icon:'🌧️', name:'Appelregen',     info:'Bij elke 100 m regent het appels uit de lucht.',        unlock:16, max:3, base:60,  growth:2.0,  fx:l => l ? `${3 + l * 3} appels per 100 m` : 'geen' },
+  { id:'combo',   icon:'🔥', name:'Comboketting',   info:'Je combo blijft langer staan en levert meer bonus op.',  unlock:8, max:3, base:55,  growth:2.0,  fx:l => `${fmtNum(comboWin(l))} s · bonus ×${1 + l}` },
+  { id:'vinewise',icon:'🌿', name:'Liaankenner',    info:'Rotte lianen houden langer, ijs is minder glad en er zijn meer turbolianen.', unlock:12, max:3, base:50, growth:2.0, fx:l => l ? `+${l * 40}% grip` : 'geen' },
   { id:'wingsuit',icon:'🦸', name:'Wingsuit',       info:'Andy krijgt een cape en glijdt veel verder door de lucht.', max:4, base:110, growth:2.0, fx:l => l ? `+${l * 25}% glijvlucht` : 'geen' },
-  { id:'shroom',  icon:'🍄', name:'Stuiterzwam',    info:'Meer paddenstoelen en lucht-trampolines, en ze lanceren je verder.',  unlock:6, max:3, base:40,  growth:1.9,  fx:l => l ? `+${l * 40}% paddenstoelen` : 'geen' },
+  { id:'shroom',  icon:'🍄', name:'Stuiterzwam',    info:'Meer paddenstoelen en lucht-trampolines, en ze lanceren je verder.',  unlock:10, max:3, base:40,  growth:1.9,  fx:l => l ? `+${l * 40}% paddenstoelen` : 'geen' },
 ];
 // ---- XP: hoe verder je komt, hoe meer XP; met spelerslevels ontgrendel je nieuwe upgrades ----
-const xpNeed = L => Math.round(150 * Math.pow(L, 1.45)); // XP nodig om van level L naar L+1 te gaan
+const xpNeed = L => Math.round(260 * Math.pow(L, 1.6)); // XP nodig om van level L naar L+1 te gaan
 function playerLevel(xp) { let L = 1; while (xp >= xpNeed(L)) { xp -= xpNeed(L); L++; } return { L, into: xp, need: xpNeed(L) }; }
 const unlocked = u => !u.unlock || playerLevel(save.xp).L >= u.unlock;
 // ---- Carrière: levels met een start en een finish; hoe hoger, hoe moeilijker ----
@@ -1408,7 +1477,7 @@ function updateGorilla(dt, holdHang, holdAir) {
     G.dive += (e * e - G.dive) * Math.min(1, dt * (diveHold ? 30 : 12));
     G.diving = G.dive > 0.25;
     const falling = G.vy > 0 && G.dive < 0.1, wing = lvl('wingsuit');
-    const glide = falling ? 1 - 0.1 * lvl('glide') - 0.07 * wing : 1;
+    const glide = falling ? 1 - 0.07 * wing : 1;
     const space = run.space && G.y < SPACE_Y;
     G.vy += AIR_G * glide * (space ? 0.45 : 1) * (1 + 1.6 * G.dive) * dt;
     // wingsuit: een deel van de valsnelheid wordt voorwaartse vaart
@@ -2752,15 +2821,6 @@ function drawGorilla() {
   ctx.globalAlpha = G.turboT > 0 ? 0.7 : 0.35;
   ctx.drawImage(glowSprite(G.turboT > 0 ? '255,220,90' : '255,255,255').c, -52, -52, 104, 104);
   ctx.globalAlpha = 1;
-  if (lvl('glide') && G.state === 'air' && G.vy > 0 && G.dive < 0.1 && !G.trick) { // blad-parachute
-    const sw = Math.sin(time * 5) * 0.08;
-    ctx.save(); ctx.rotate(sw);
-    ctx.strokeStyle = '#5a3a1a'; ctx.lineWidth = 2; line(0, -34, 0, -64);
-    ctx.fillStyle = '#2e7d32'; ctx.beginPath(); ctx.ellipse(0, -66, 40, 13, 0, Math.PI, 0); ctx.fill();
-    ctx.fillStyle = '#6fc04a'; ctx.beginPath(); ctx.ellipse(0, -68, 35, 9, 0, Math.PI, 0); ctx.fill();
-    ctx.strokeStyle = '#2e7d32'; ctx.lineWidth = 1.2; line(-34, -66, 34, -66);
-    ctx.restore();
-  }
   if (G.balloonT > 0) {
     ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; line(0, -28, Math.sin(time * 3) * 4, -82);
     ctx.fillStyle = GC.band; ell(Math.sin(time * 3) * 4, -106, 20, 25);
@@ -3220,7 +3280,14 @@ function statsHtml() {
 }
 function refreshMenu() {
   const PL = playerLevel(save.xp);
-  $('menuXp').innerHTML = `<div class="xp"><div class="xp-top"><b>Spelerslevel ${PL.L}</b><span>${PL.into} / ${PL.need} XP</span></div><div class="xp-bar"><i style="width:${Math.round(PL.into / PL.need * 100)}%"></i></div></div>`;
+  $('mmApples').textContent = save.apples;
+  $('mmLevel').textContent = PL.L;
+  $('mmXp').textContent = `${PL.into} / ${PL.need} XP`;
+  $('mmRing').style.setProperty('--p', Math.round(PL.into / PL.need * 100));
+  const stars = save.career.stars.reduce((a, b) => a + b, 0);
+  const next = Math.min(save.career.unlocked, LEVELS);
+  $('mmCareer').textContent = `Level ${next} · ⭐ ${stars} / ${LEVELS * 3}`;
+  $('mmEndless').textContent = save.best ? `Record: ${save.best} m` : 'Kom zo ver mogelijk!';
   $('menuStats').innerHTML = statsHtml();
   $('saveStats').innerHTML = statsHtml();
   setBadge($('btnShop'), affordableCount());
@@ -3310,6 +3377,8 @@ on('btnOverLevels', () => { toMenu(); openCareer(); });
 on('btnShop', () => openShop('menu'));
 on('btnSaves', () => { $('saveMsg').textContent = ''; refreshMenu(); showScreen('saves'); });
 on('btnHelp', () => showScreen('help'));
+on('btnSettings', () => { refreshMenu(); showScreen('settings'); });
+on('btnSettingsBack', () => showScreen('menu'));
 on('btnHelpBack', () => showScreen('menu'));
 const toggleSound = () => { save.sound = !save.sound; persist(); refreshMenu(); };
 const toggleMusic = () => { save.music = !save.music; persist(); refreshMenu(); if (save.music) Music.start(); else Music.stop(); };
@@ -3408,7 +3477,7 @@ window.addEventListener('keydown', e => {
     e.preventDefault();
     if (e.repeat) return;
     Sfx.init();
-    if (curScreen === 'menu') { if (e.code === 'Space') startReady(null); return; }
+    if (curScreen === 'menu' || curScreen === 'settings') { if (e.code === 'Space' && curScreen === 'menu') startReady(null); return; }
     if (curScreen === 'over') { if (e.code === 'Space') retry(); return; }
     if (curScreen === 'done') { if (e.code === 'Space') { if (game.career.n < LEVELS) startReady(game.career.n + 1); else retry(); } return; }
     if (curScreen === 'pause') { if (e.code === 'Space') resumeGame(); return; }
@@ -3416,7 +3485,7 @@ window.addEventListener('keydown', e => {
   } else if (e.code === 'KeyP' || e.code === 'Escape') {
     if (curScreen === 'pause') resumeGame();
     else if (!curScreen) pauseGame();
-    else if (curScreen === 'shop' || curScreen === 'saves' || curScreen === 'help' || curScreen === 'career') {
+    else if (curScreen === 'shop' || curScreen === 'saves' || curScreen === 'help' || curScreen === 'career' || curScreen === 'settings') {
       if (curScreen === 'shop') $('btnShopBack').click(); else showScreen('menu');
     }
   } else if (e.code === 'Enter' && (curScreen === 'menu' || curScreen === 'over')) {
