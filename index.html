@@ -448,6 +448,7 @@
       <li><b>Carrière</b>: levels met een start en finish, steeds moeilijker. <b>Eindeloos</b>: zo ver mogelijk komen.</li>
       <li><b>Multiplayer</b>: speel tegen een vriend op een ander apparaat, of samen op één scherm. <b>Race</b>: eerste bij de finish wint. <b>Endurance</b>: wie het langst volhoudt, wint. Upgrades staan dan uit. Hoe je het instelt, staat onder <b>❓ Set-up</b> in het multiplayermenu.</li>
       <li>Door ver te komen verdien je <b>XP</b>; met spelerslevels ontgrendel je nieuwe upgrades.</li>
+      <li>🌀 In het <b>Portaalwoud</b> hangen portalen: vlieg door het <b>blauwe</b> portaal en je komt met al je vaart uit het <b>oranje</b> portaal verderop.</li>
       <li>Vind je hoog boven het plafond een pad van gouden ballonnen? Pak ze perfect achter elkaar en je vliegt de ruimte in!</li>
       <li><kbd>P</kbd> of <kbd>Esc</kbd> pauzeert het spel.</li>
     </ul>
@@ -625,20 +626,23 @@ const BIOMES = [
     c:{ skyTop:'#1e0a0e', skyMid:'#5a1c18', skyBot:'#c2481c', sun:'#ffb060', far:'#4a1d1a', far2:'#331311', mid:'#1f0c0c', canopy:'#2e2016', canopy2:'#4d3320', hazTop:'#ffae2a', hazBot:'#a81c0a', vine:'#6b5230', leaf:'#8a6a3a' } },
   { name:'Sterrennacht', bonus:3, icon:'🌙', start:4100, tip:'Alles komt samen… succes!', style:'night', particle:'star', hazardName:'het nachtmeer', shroom:'#c04ad8',
     c:{ skyTop:'#050822', skyMid:'#171a4a', skyBot:'#3b2c70', sun:'#f4f1d8', far:'#1c2152', far2:'#141a40', mid:'#101842', canopy:'#12302e', canopy2:'#1e4a42', hazTop:'#4046b8', hazBot:'#0c1036', vine:'#3c8a6a', leaf:'#5ac08a' } },
+  { name:'Portaalwoud', bonus:4, icon:'🌀', start:5200, tip:'Vlieg door een blauw portaal: je komt met al je vaart uit het oranje!', style:'jungle', particle:'firefly', hazardName:'de energiestroom', shroom:'#ff8a1a',
+    c:{ skyTop:'#161a45', skyMid:'#3b3b8f', skyBot:'#8fcfe0', sun:'#e6fbff', far:'#4a57a3', far2:'#384385', mid:'#26306c', canopy:'#26586a', canopy2:'#3a9a98', hazTop:'#63e2ff', hazBot:'#1c2a78', vine:'#3f8f86', leaf:'#7fe0c8' } },
 ];
 for (const b of BIOMES) { b.rgb = {}; for (const k in b.c) b.rgb[k] = hexToRgb(b.c[k]); }
 
 // Kansen per kolom lianen: vijanden en speciale lianen, per biome
 function features(bi) {
   return {
-    wasps:   [0, .30, .14, .10, .10, .16][bi],
-    fire:    [0, 0, 0, 0, .45, .20][bi],
-    birds:   [0, 0, 0, .22, .06, .20][bi],
-    rotten:  [0, .12, .28, .06, .20, .16][bi],
-    icy:     [0, 0, .05, .40, 0, .16][bi],
-    turbo:   [.08, .07, .07, .07, .10, .08][bi],
-    elastic: [.05, .06, .10, .05, .06, .08][bi],
-    fruit:   [.08, .07, .06, .06, .05, .06][bi],
+    wasps:   [0, .30, .14, .10, .10, .16, .10][bi],
+    fire:    [0, 0, 0, 0, .45, .20, 0][bi],
+    birds:   [0, 0, 0, .22, .06, .20, .10][bi],
+    rotten:  [0, .12, .28, .06, .20, .16, .10][bi],
+    icy:     [0, 0, .05, .40, 0, .16, .06][bi],
+    turbo:   [.08, .07, .07, .07, .10, .08, .08][bi],
+    elastic: [.05, .06, .10, .05, .06, .08, .07][bi],
+    fruit:   [.08, .07, .06, .06, .05, .06, .06][bi],
+    portals: [0, 0, 0, 0, 0, 0, .45][bi],
   };
 }
 
@@ -681,7 +685,7 @@ const xpNeed = L => Math.round(260 * Math.pow(L, 1.6)); // XP nodig om van level
 function playerLevel(xp) { let L = 1; while (xp >= xpNeed(L)) { xp -= xpNeed(L); L++; } return { L, into: xp, need: xpNeed(L) }; }
 const unlocked = u => !u.unlock || playerLevel(save.xp).L >= u.unlock;
 // ---- Carrière: levels met een start en een finish; hoe hoger, hoe moeilijker ----
-const LEVELS = 30;
+const LEVELS = 35;
 function levelInfo(n) {
   const bi = Math.min(BIOMES.length - 1, Math.floor((n - 1) / 5));
   return { n, bi, L: 180 + n * 40, diff: clamp(0.04 + (n - 1) * 0.045, 0, 1.35) };
@@ -865,6 +869,7 @@ const Sfx = {
   milestone() { [523, 784, 1046].forEach((f, i) => this.tone(f, 0.18, 'triangle', 0.1, 0, i * 0.08)); this.noise(0.3, 0.05, 6000, 0.2); },
   bigjump() { [659, 880, 1318].forEach((f, i) => this.tone(f, 0.12, 'square', 0.04, 0, i * 0.06)); },
   // Vrolijk riedeltje bij een nieuwe biome; elke biome klinkt een toon hoger, de donkere biomes in mineur
+  portal() { this.tone(260, 0.4, 'sine', 0.12, 1400); this.tone(520, 0.3, 'triangle', 0.05, 2100, 0.05); this.noise(0.3, 0.07, 2600); },
   jingle(bi) {
     if (!save.sound || !this.ac) return;
     const root = 392 * Math.pow(2, (bi * 2) / 12), minor = bi >= 4;
@@ -999,7 +1004,7 @@ const Music = {
     if (s === 0 && bar % 4 === 0) {
       // nieuwe toonsoort per biome (op een frase-grens)
       const bi = this.biome;
-      this.key = [0, -3, 2, 5, -2, -5][bi]; this.minor = bi >= 4;
+      this.key = [0, -3, 2, 5, -2, -5, 3][bi]; this.minor = bi >= 4;
       if (bar % 8 === 0 || !this.phrase) this.makePhrase();
     }
     const prog = this.minor ? [0, -4, 3, -2] : [0, -3, 5, 7];
@@ -1058,14 +1063,15 @@ const LOCAL = { on: false, split: 'v', vw: 0, vh: 0, worlds: null, base: null, c
 // Kwaliteitsniveaus: het spel meet zelf de framerate en schakelt terug als het te traag gaat.
 // px = maximaal aantal pixels voor het beeld, bg = resolutie van de (vage) achtergrond
 const QUALITY = [
+  { px: 0.24e6, bg: 0.38, bgEvery: 3, rays: false, clouds: false, parts: 110, amb: 0, lite: true }, // noodstand voor trage machines
   { px: 0.42e6, bg: 0.45, bgEvery: 2, rays: false, clouds: false, parts: 220, amb: 25 },
   { px: 0.75e6, bg: 0.5,  bgEvery: 2, rays: false, clouds: true,  parts: 400, amb: 45 },
   { px: 1.25e6, bg: 0.55, bgEvery: 1, rays: true,  clouds: true,  parts: 650, amb: 70 },
   { px: 2.1e6,  bg: 0.6,  bgEvery: 1, rays: true,  clouds: true,  parts: 900, amb: 70 },
 ];
-const QKEY = 'andyApples.quality';
-let qLevel = 2, qMax = 3;
-try { const q = JSON.parse(localStorage.getItem(QKEY)); if (q && q.l >= 0 && q.l <= 3) qLevel = Math.max(1, q.l); } catch (e) { /* geen voorkeur */ }
+const QKEY = 'andyApples.quality2';
+let qLevel = 2, qMax = 4;
+try { const q = JSON.parse(localStorage.getItem(QKEY)); if (q && q.l >= 0 && q.l <= 4) qLevel = Math.min(3, q.l); } catch (e) { /* geen voorkeur */ }
 let Q = QUALITY[qLevel];
 let dpr = 1, pr = 1, cssW = 0, cssH = 0, scale = 1, viewW = 0, viewH = 0;
 let bgFrame = 0, bgStale = true;
@@ -1074,6 +1080,7 @@ let bgCtx = bgCanvas.getContext('2d', { alpha: false });
 // ---- Draaiknop: een staande telefoon liggend gebruiken ----
 // Eerst proberen we het echte scherm te draaien (volledig scherm + oriëntatie vastzetten, werkt op Android).
 // Lukt dat niet (bijv. iPhone), dan draaien we de hele pagina zelf een kwartslag.
+const IS_MOBILE = navigator.maxTouchPoints > 0 && Math.min(screen.width, screen.height) < 900;
 const ROT_KEY = 'andyApples.rotate';
 let rotPref = false, rotOn = false;
 try { rotPref = localStorage.getItem(ROT_KEY) === '1'; } catch (e) { /* geen voorkeur */ }
@@ -1120,6 +1127,8 @@ function resize() {
   }
   LOCAL.vw = vw; LOCAL.vh = vh;
   scale = Math.min(vh / 740, vw / 500);
+  // telefoons/tablets: iets verder uitgezoomd voor meer overzicht
+  if (IS_MOBILE) scale *= vw < vh ? 0.76 : 0.86;
   viewW = vw / scale; viewH = vh / scale;
   RW = Math.round(vw * pr); RH = Math.round(vh * pr);
   bgCanvas.width = Math.max(2, Math.round(vw * pr * Q.bg)); bgCanvas.height = Math.max(2, Math.round(vh * pr * Q.bg));
@@ -1127,7 +1136,7 @@ function resize() {
   bgStale = true;
 }
 function setQuality(l) {
-  qLevel = clamp(l, 0, 3);
+  qLevel = clamp(l, 0, 4);
   try { localStorage.setItem(QKEY, JSON.stringify({ l: qLevel })); } catch (e) { /* negeren */ }
   resize();
 }
@@ -1143,7 +1152,7 @@ const baseTop = () => WORLD_H + 20 - viewH + Math.max(0, viewH - 760) * 0.4;
 // =====================================================================
 //  Wereldstatus
 // =====================================================================
-let vines = [], apples = [], shrooms = [], foes = [], parts = [], texts = [], fishes = [], tramps = [];
+let vines = [], apples = [], shrooms = [], foes = [], parts = [], texts = [], fishes = [], tramps = [], portals = [];
 let gen = { x: 0, special: 0 };
 let run = null;
 let camX = 0, camY = 0, lastCamX = 0, shakeT = 0, shakeAmp = 0, flashT = 0;
@@ -1183,7 +1192,7 @@ function makeVine(x, ay, len, type, bi) {
 }
 
 function resetWorld() {
-  vines = []; apples = []; shrooms = []; foes = []; parts = []; texts = []; fishes = []; tramps = [];
+  vines = []; apples = []; shrooms = []; foes = []; parts = []; texts = []; fishes = []; tramps = []; portals = [];
   time = 0;
   const C = game.career;
   // carrière en multiplayer: vaste seed, zodat de wereld elke keer (en bij beide spelers) hetzelfde is
@@ -1199,7 +1208,7 @@ function resetWorld() {
     lastVine: null, releaseT: 0, invuln: 0, balloonT: 0, turboT: 0, deadT: 0, spin: 0, splashed: false, diving: false,
     airT: 0, airX: 0, standPress: -1, helmets: lvl('helmet'), balloons: lvl('balloon'), rocketEnd: 0,
     parrot: lvl('parrot') ? { x: sx - 40, y: sy - 60, cd: 1, target: null, t: 0 } : null };
-  gen = { x: FIRST_VINE.x, lastPath: 0, special: 0, col: 0, low: FIRST_VINE.ay + FIRST_VINE.len, tips: [null, null, FIRST_VINE.ay + FIRST_VINE.len * TIP_F] };
+  gen = { x: FIRST_VINE.x, lastPortal: -1e9, lastPath: 0, special: 0, col: 0, low: FIRST_VINE.ay + FIRST_VINE.len, tips: [null, null, FIRST_VINE.ay + FIRST_VINE.len * TIP_F] };
   run = { picked: 0, earned: 0, stolen: 0, golden: 0, dist: 0, biome: 0, reason: '', lastWoo: 0,
     combo: 0, lastPick: -9, firstJump: true, nextMile: 100, tricks: 0, space: false, spaceVisits: 0, appleTotal: 0 };
   if (C) { run.biome = C.bi; C.finishX = START_X + C.L * PX_PER_M; }
@@ -1248,6 +1257,7 @@ function vineFits(x, ay, len, type) {
     if (Math.abs(v.rest[0] - x) > 700) continue; // rest[0]: vaste plek (luchtballonnen drijven weg)
     if (segDist(seg, v.rest) < 75 || Math.hypot(v.x - x, v.ay - ay) < 130) return false;
   }
+  for (const P of portals) if (segDist(seg, portalSeg(P.bx, P.by, 0)) < 105 || segDist(seg, portalSeg(P.ox, P.oy, P.oa)) < 105) return false;
   return true;
 }
 function addVine(x, ay, len, type, bi, force) {
@@ -1321,12 +1331,24 @@ function genNext() {
     if (bv) bv.balloon = { vx: grand(60, 90), hue: (genRandom() * 360) | 0, bob: grand(0, 6) };
   }
 
+  // Portaalwoud: af en toe een portaalpaar. Blauw hangt in het gat tussen twee kolommen,
+  // oranje een flink stuk verder (en meestal hoger). Nooit meer dan één paar tegelijk in beeld.
+  if (F.portals && m > 8 && gen.x - gen.lastPortal > 2300 && genRandom() < F.portals) {
+    const bx = (gen.x + x) / 2 + grand(-30, 30);
+    for (const by of [grand(-200, 200), grand(-320, 280), grand(-420, 120)]) {
+      const s = portalSeg(bx, by, 0);
+      if (!vines.every(v => Math.abs(v.rest[0] - bx) > 700 || segDist(s, v.rest) > 105)) continue;
+      const P = { bx, by, ox: bx + grand(1150, 1500), oy: grand(-650, -250), oa: grand(-0.45, -0.15), ph: genRandom() * 6, used: 0 };
+      portals.push(P); gen.lastPortal = bx;
+      break;
+    }
+  }
   const x0 = gen.x, x1 = x - 250 * Math.sin(VINE_SLANT);
   // lucht-trampolines tussen de kolommen, op een plek waar geen liaan hangt
   if (m > 25 && genRandom() < 0.2 + 0.1 * lvl('shroom')) {
     for (let t = 0; t < 6; t++) {
       const tx = (gen.x + x) / 2 + grand(-60, 60), ty = grand(CEIL_Y + 250, HAZARD_Y - 230), seg = [tx - 75, ty - 40, tx + 75, ty + 40];
-      if (vines.every(v => Math.abs(v.rest[0] - tx) > 700 || segDist(seg, v.rest) > 70)) { tramps.push({ x: tx, y: ty, w: 120, sq: 0, bi: vbi, ph: grand(0, 6) }); break; }
+      if (vines.every(v => Math.abs(v.rest[0] - tx) > 700 || segDist(seg, v.rest) > 70) && portals.every(P => Math.hypot(P.bx - tx, P.by - ty) > 220 && Math.hypot(P.ox - tx, P.oy - ty) > 220)) { tramps.push({ x: tx, y: ty, w: 120, sq: 0, bi: vbi, ph: grand(0, 6) }); break; }
     }
   }
   if (m > 20 && genRandom() < 0.16 * (1 - 0.6 * dc) * (1 + 0.4 * lvl('shroom'))) shrooms.push({ x: (gen.x + x) / 2 + grand(-40, 40), w: 180, bi: vbi, sq: 0 });
@@ -1587,6 +1609,30 @@ function jump() {
   for (let i = 0; i < 10; i++) addPart({ x: G.x + rand(-14, 14), y: ROCK.top, vx: rand(-120, 60), vy: rand(-120, -20), life: 0.5, max: 0.5, col: 'rgba(210,190,160,.8)', r: rand(3, 6), g: 300 });
   Sfx.jump();
 }
+// ---- Portalen (Portaalwoud) ----
+const PORTAL_RY = 78, PORTAL_RX = 24;
+// het portaal als lijnstuk (voor de ruimte-check met lianen); a = richting waarin je eruit komt
+function portalSeg(x, y, a) { const dx = Math.sin(a) * PORTAL_RY, dy = -Math.cos(a) * PORTAL_RY; return [x - dx, y - dy, x + dx, y + dy]; }
+// "speedy thing goes in, speedy thing comes out": je vaart blijft behouden, alleen de richting verandert
+function enterPortal(P) {
+  const ox = G.x, oy = G.y;
+  const sp = Math.max(Math.hypot(G.vx, G.vy), 780) * 1.05;
+  const inA = clamp(Math.atan2(G.vy, G.vx), -0.6, 0.6);
+  const outA = P.oa + inA * 0.35;
+  const off = clamp(G.y - P.by, -PORTAL_RY, PORTAL_RY) * 0.5; // waar je het portaal raakte, schuift mee
+  G.x = P.ox + Math.cos(P.oa) * 26 - Math.sin(P.oa) * off; G.y = P.oy + Math.sin(P.oa) * 26 + Math.cos(P.oa) * off;
+  G.vx = Math.cos(outA) * sp; G.vy = Math.sin(outA) * sp;
+  G.airT = 0.3; G.airX = G.x; G.noDive = false; G.dive = 0; G.diveT = 0; G.releaseT = 0;
+  // de camera verschuift mee, zodat Andy op dezelfde plek in beeld blijft
+  camX += G.x - ox; lastCamX += G.x - ox; camY += G.y - oy; bgStale = true;
+  P.used = time;
+  for (let i = 0; i < 18; i++) {
+    const a = rand(0, 6.28);
+    addPart({ x: P.bx + Math.cos(a) * PORTAL_RX, y: P.by + Math.sin(a) * PORTAL_RY, vx: rand(-80, 40), vy: rand(-60, 60), life: 0.5, max: 0.5, col: '#5cc8ff', r: rand(2, 4), g: 0 });
+    addPart({ x: G.x, y: G.y, vx: Math.cos(outA + rand(-0.8, 0.8)) * rand(100, 380), vy: Math.sin(outA + rand(-0.8, 0.8)) * rand(100, 380), life: 0.55, max: 0.55, col: i % 2 ? '#ff9a2a' : '#ffd08a', r: rand(2, 5), g: 0 });
+  }
+  if (game.mode === 'playing') { reward(G.x, G.y - 60, 'Portaal!', 2, '#ffb14a'); Sfx.portal(); }
+}
 function snapVine(v) {
   v.anchored = false; v.pts[0].im = 1;
   const q = v.pts[1];
@@ -1682,6 +1728,7 @@ function step(dt) {
   for (const s of shrooms) s.sq *= Math.pow(0.02, dt);
   for (const t of tramps) t.sq *= Math.pow(0.03, dt);
   if (tramps.length && tramps[0].x < camX - 400) tramps.shift();
+  if (portals.length && portals[0].ox < camX - 700) portals.shift();
   updateSpace(dt);
   if (game.mp) mpStep(dt);
 }
@@ -1754,8 +1801,11 @@ function updateGorilla(dt, holdHang, holdAir) {
     G.vx -= G.vx * 0.015 * dt;
     const sp = Math.hypot(G.vx, G.vy), maxS = maxSpeed() * (G.turboT > 0 ? 1.15 : 1) * (space ? 1.3 : 1);
     if (sp > maxS) { G.vx *= maxS / sp; G.vy *= maxS / sp; }
-    const prevFeet = G.y + FEET;
+    const prevFeet = G.y + FEET, prevX = G.x;
     G.x += G.vx * dt; G.y += G.vy * dt;
+    for (const P of portals) { // door de voorkant van een blauw portaal vliegen
+      if (G.vx > 0 && prevX < P.bx && G.x >= P.bx && Math.abs(G.y - P.by) < PORTAL_RY - 6) { enterPortal(P); break; }
+    }
     if (G.x < WALL_X) { G.x = WALL_X; G.vx = Math.abs(G.vx) * 0.4; }
     // de startrots is massief: erop landen of ertegen botsen
     if (G.x > ROCK.x0 - 10 && G.x - G_R * 0.6 < ROCK.x1) {
@@ -2630,6 +2680,7 @@ function drawMidTreeLayer(P) {
   ctx.fillStyle = fog; ctx.fillRect(-PAD, base - 450, viewW + 2 * PAD, viewH + PAD + 450);
 }
 function drawFlyers() {
+  if (Q.lite) return;
   for (const f of life.flyers) {
     const x = f.lx - camX * f.f, y = f.y - (camY - baseTop()) * 0.45;
     if (x < -40 || x > viewW + 40 || y < -40 || y > viewH + 40) continue;
@@ -2756,6 +2807,43 @@ function drawRock() {
   const ap = appleSprite(false); ctx.drawImage(ap.c, x1 - 70, top - 30, 22, 24);
 }
 // Finish in de carrière: een geblokte vlaggenlijn over de hele hoogte
+// Portalen: een gloeiende ellips met een draaiende kolk. front=false: de gloed erachter, true: de rand ervoor
+const PORTAL_COL = { b: ['92,200,255', '#2f8fff', '#0b2a66'], o: ['255,160,60', '#ff7a12', '#5a2204'] };
+function drawPortalOne(x, y, rot, kind, ph, front, used) {
+  if (x < camX - 140 || x > camX + viewW + 140 || y < camY - 140 || y > camY + viewH + 140) return;
+  const [glow, rim, deep] = PORTAL_COL[kind], pulse = 1 + Math.sin(time * 3 + ph) * 0.04 + (time - used < 0.4 ? (0.4 - (time - used)) : 0);
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.scale(pulse, pulse);
+  if (!front) {
+    if (!Q.lite) { ctx.fillStyle = `rgba(${glow},.22)`; ell(0, 0, PORTAL_RX + 16, PORTAL_RY + 16); }
+    ctx.fillStyle = cachedGrad('portal' + kind, () => { const g = ctx.createRadialGradient(0, 0, 4, 0, 0, PORTAL_RY); g.addColorStop(0, deep); g.addColorStop(0.75, rim); g.addColorStop(1, `rgba(${glow},.9)`); return g; });
+    ctx.save(); ctx.scale(PORTAL_RX / PORTAL_RY, 1); circ(0, 0, PORTAL_RY); ctx.restore();
+    // draaiende kolk
+    ctx.strokeStyle = `rgba(${glow},.55)`; ctx.lineWidth = 2.5;
+    for (let k = 0; k < 3; k++) { const a = time * 2.4 + k * 2.09 + ph; ctx.beginPath(); ctx.ellipse(0, 0, PORTAL_RX * 0.6, PORTAL_RY * 0.62, 0, a, a + 1.3); ctx.stroke(); }
+  } else {
+    ctx.strokeStyle = rim; ctx.lineWidth = 6; ctx.beginPath(); ctx.ellipse(0, 0, PORTAL_RX, PORTAL_RY, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.ellipse(0, 0, PORTAL_RX - 1, PORTAL_RY - 1, 0, 0, Math.PI * 2); ctx.stroke();
+    if (!Q.lite) for (let k = 0; k < 5; k++) { // vonkjes langs de rand
+      const a = time * (kind === 'b' ? 1.6 : -1.6) + k * 1.257 + ph;
+      ctx.fillStyle = `rgba(${glow},.95)`; circ(Math.cos(a) * PORTAL_RX, Math.sin(a) * PORTAL_RY, 2.4);
+    }
+  }
+  ctx.restore();
+}
+function drawPortals(front) {
+  for (const P of portals) {
+    drawPortalOne(P.bx, P.by, 0, 'b', P.ph, front, P.used);
+    drawPortalOne(P.ox, P.oy, P.oa, 'o', P.ph + 1, front, P.used);
+    // pijltjes bij het blauwe portaal: hier naar binnen
+    if (front && P.bx > camX - 100 && P.bx < camX + viewW + 100) {
+      ctx.fillStyle = 'rgba(160,220,255,.7)';
+      for (let k = 0; k < 2; k++) {
+        const ax = P.bx - 70 + k * 20 + ((time * 40) % 20);
+        ctx.beginPath(); ctx.moveTo(ax, P.by - 9); ctx.lineTo(ax + 10, P.by); ctx.lineTo(ax, P.by + 9); ctx.lineTo(ax + 4, P.by); ctx.closePath(); ctx.fill();
+      }
+    }
+  }
+}
 function drawFinish() {
   const C = game.career || game.mp;
   if (!C || !C.finishX) return;
@@ -2891,7 +2979,7 @@ function drawVine(v) {
   if (v.type === 'turbo') { ctx.strokeStyle = `rgba(255,215,70,${0.25 + 0.15 * Math.sin(time * 6)})`; ctx.lineWidth = 16; path(); ctx.stroke(); }
   ctx.strokeStyle = v.dark; ctx.lineWidth = v.type === 'balloon' ? 5 : 7.5; path(); ctx.stroke();
   ctx.strokeStyle = v.col; ctx.lineWidth = v.type === 'balloon' ? 3 : 4.5; path(); ctx.stroke();
-  if (qLevel >= 2) { ctx.strokeStyle = v.light; ctx.lineWidth = 1.4; ctx.save(); ctx.translate(-1.2, -0.5); path(); ctx.stroke(); ctx.restore(); }
+  if (qLevel >= 3) { ctx.strokeStyle = v.light; ctx.lineWidth = 1.4; ctx.save(); ctx.translate(-1.2, -0.5); path(); ctx.stroke(); ctx.restore(); }
   if (v.type === 'elastic') { ctx.setLineDash([5, 7]); ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 2.5; path(); ctx.stroke(); ctx.setLineDash([]); }
   if (v.type === 'icy') { ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 1.5; path(); ctx.stroke(); }
   if (v.type === 'balloon') return;
@@ -2950,7 +3038,7 @@ function drawBranch(v) {
 function drawApple(a) {
   const bob = a.vine || a.loose ? 0 : Math.sin(a.t * 3) * 3;
   const x = a.x, y = a.y + bob, s = appleSprite(a.gold);
-  if (a.gold) ctx.drawImage(glowSprite('255,230,120').c, x - 28, y - 28, 56, 56);
+  if (a.gold && !Q.lite) ctx.drawImage(glowSprite('255,230,120').c, x - 28, y - 28, 56, 56);
   const sc = 0.62 * (1 + Math.sin(a.t * 4) * 0.04);
   ctx.drawImage(s.c, x - s.w * sc / 2, y - s.h * sc / 2 - 2, s.w * sc, s.h * sc);
   if (a.gold && Math.sin(a.t * 5) > 0.6) { ctx.fillStyle = '#fff'; starPath(ctx, x + 8, y - 6, 4, a.t); ctx.fill(); }
@@ -3088,7 +3176,7 @@ function drawGorilla() {
   ctx.save(); ctx.translate(G.x, G.y);
   // zachte gloed zodat Andy goed opvalt tegen de achtergrond
   ctx.globalAlpha = G.turboT > 0 ? 0.7 : 0.35;
-  ctx.drawImage(glowSprite(G.turboT > 0 ? '255,220,90' : '255,255,255').c, -52, -52, 104, 104);
+  if (!Q.lite) ctx.drawImage(glowSprite(G.turboT > 0 ? '255,220,90' : '255,255,255').c, -52, -52, 104, 104);
   ctx.globalAlpha = 1;
   if (G.balloonT > 0) {
     ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; line(0, -28, Math.sin(time * 3) * 4, -82);
@@ -3378,9 +3466,11 @@ function render() {
   drawFinish();
   drawShrooms();
   drawTramps();
+  drawPortals(false);
   const vx0 = camX - 300, vx1 = camX + viewW + 420, vy0 = camY - 60, vy1 = camY + viewH + 60;
   for (const v of vines) if (v.x > vx0 && v.rest[2] - 200 < vx1 && v.ay < vy1 && v.rest[3] + 150 > vy0) drawVine(v);
   for (const v of vines) if (v.x > camX - 80 && v.x < camX + viewW + 80 && v.ay > camY - 220 && v.ay < camY + viewH + 60) drawBranch(v);
+  drawPortals(true);
   for (const a of apples) if (a.x > camX - 30 && a.x < camX + viewW + 30 && a.y > camY - 30 && a.y < camY + viewH + 30) drawApple(a);
   drawFoes();
   drawFish();
@@ -3984,11 +4074,11 @@ function drawMpOverlay() {
 // =====================================================================
 let curW = -1;
 function grabWorld() {
-  return { vines, apples, shrooms, foes, parts, texts, fishes, tramps, gen, run, camX, camY, lastCamX, shakeT, shakeAmp, flashT, time, G,
+  return { vines, apples, shrooms, foes, parts, texts, fishes, tramps, portals, gen, run, camX, camY, lastCamX, shakeT, shakeAmp, flashT, time, G,
     vineSeq, genRandom, input, holdLock: game.holdLock, mp: game.mp, amb, life, layerCaches, ghostPin };
 }
 function putWorld(w) {
-  ({ vines, apples, shrooms, foes, parts, texts, fishes, tramps, gen, run, camX, camY, lastCamX, shakeT, shakeAmp, flashT, time, G,
+  ({ vines, apples, shrooms, foes, parts, texts, fishes, tramps, portals, gen, run, camX, camY, lastCamX, shakeT, shakeAmp, flashT, time, G,
     vineSeq, genRandom, input, amb, life, layerCaches, ghostPin } = w);
   game.holdLock = w.holdLock; game.mp = w.mp;
 }
@@ -3999,7 +4089,7 @@ function useWorld(i) {
   curW = i;
 }
 function freshWorld(i, cfg, seed) {
-  return { vines: [], apples: [], shrooms: [], foes: [], parts: [], texts: [], fishes: [], tramps: [], gen: { x: 0, special: 0 }, run: null,
+  return { vines: [], apples: [], shrooms: [], foes: [], parts: [], texts: [], fishes: [], tramps: [], portals: [], gen: { x: 0, special: 0 }, run: null,
     camX: 0, camY: 0, lastCamX: 0, shakeT: 0, shakeAmp: 0, flashT: 0, time: 0, G: null, vineSeq: 0, genRandom: Math.random,
     input: { down: false, presses: 0 }, holdLock: false, amb: makeAmb(), life: makeLife(), layerCaches: {}, ghostPin: { v: null, k: 0, x: 0, y: 0 },
     mp: { local: true, idx: i, mode: cfg.mode, len: cfg.mode === 'race' ? cfg.len : 0, seed, t: 0, myEv: null, falls: 0, result: null,
@@ -4059,7 +4149,7 @@ function localLoop(dt) {
     }
     acc += dt;
     let n = 0;
-    while (acc >= STEP && n < 4) { n++; acc -= STEP; }
+    while (acc >= STEP && n < 6) { n++; acc -= STEP; }
     if (acc > STEP) acc = 0;
     for (const i of [0, 1]) {
       useWorld(i);
@@ -4683,19 +4773,22 @@ function updateHud() {
 // =====================================================================
 let last = performance.now(), acc = 0;
 // automatische kwaliteit: te traag -> resolutie en effecten omlaag (en onthouden voor de volgende keer)
-const perf = { ema: 16.7, t: 0, cool: 3, good: 0 };
+const perf = { ema: 16.7, t: 0, cool: 3, good: 0, slow: 0 };
 // na een tabwissel, focuswissel of pauze haperen de eerste beelden: die tellen niet mee
-function perfSettle() { perf.cool = Math.max(perf.cool, 2.5); perf.ema = 16.7; }
+function perfSettle() { perf.cool = Math.max(perf.cool, 2.5); perf.ema = 16.7; perf.slow = 0; }
 function adaptQuality(dtMs) {
   if (document.hidden || game.paused || curScreen) { perf.cool = Math.max(perf.cool, 1); return; }
-  if (dtMs > 60) return;
-  perf.ema += (dtMs - perf.ema) * 0.05;
+  if (dtMs > 250) return; // echte hapering (bijv. tabwissel): niet meetellen
+  dtMs = Math.min(dtMs, 120); // trage beelden tellen WEL mee, anders schakelt een trage machine nooit terug
+  perf.ema += (dtMs - perf.ema) * 0.07;
+  perf.slow += ((dtMs > 19 ? 1 : 0) - perf.slow) * 0.05; // aandeel trage beelden: losse haperingen tellen nauwelijks
   perf.t += dtMs / 1000; perf.cool -= dtMs / 1000;
   perf.good = perf.ema < 17.6 ? perf.good + dtMs / 1000 : 0;
   if (perf.cool > 0) return;
-  if (perf.ema > 21 && qLevel > 0) { qMax = qLevel; setQuality(qLevel - 1); perf.t = 0; perf.cool = 3; perf.ema = 16.7; perf.good = 0; }
+  // veel te traag: sneller terugschakelen
+  if (perf.ema > 21 && perf.slow > 0.45 && qLevel > 0) { const slow = perf.ema > 32; qMax = qLevel; setQuality(qLevel - 1); perf.t = 0; perf.cool = slow ? 1 : 2.5; perf.ema = 16.7; perf.slow = 0; perf.good = 0; }
   // omhoog als het een tijd soepel loopt; na een eerdere terugval pas na langere tijd opnieuw proberen
-  else if (qLevel < 3 && perf.good > (qLevel + 1 >= qMax ? 25 : 6)) { if (qLevel + 1 >= qMax) qMax = 3; setQuality(qLevel + 1); perf.good = 0; perf.cool = 3; }
+  else if (qLevel < 4 && perf.good > (qLevel + 1 >= qMax ? 25 : 6)) { if (qLevel + 1 >= qMax) qMax = 4; setQuality(qLevel + 1); perf.good = 0; perf.cool = 3; }
 }
 window.addEventListener('focus', perfSettle);
 document.addEventListener('visibilitychange', perfSettle);
@@ -4709,7 +4802,7 @@ function frame(now) {
     acc += dt;
     let steps = 0;
     // hooguit 4 physics-stappen per beeld: liever even iets trager dan een haperende spiraal
-    while (acc >= STEP && steps < 4) { step(DT); acc -= STEP; steps++; }
+    while (acc >= STEP && steps < 6) { step(DT); acc -= STEP; steps++; }
     if (acc > STEP) acc = 0;
     const gdt = dt * GAME_SPEED;
     mpFrame(dt, gdt);
@@ -4729,7 +4822,7 @@ function frame(now) {
 
 // Debug-/testhaak (handig voor automatische tests)
 window.__andy = { get G() { return G; }, get run() { return run; }, get game() { return game; }, get save() { return save; },
-  get vines() { return vines; }, get apples() { return apples; }, get foes() { return foes; }, get quality() { return qLevel; }, get tramps() { return tramps; }, attach, release, AIR_G, MAX_FALL, DT, Sfx, Music, press, unpress, startReady,
+  get vines() { return vines; }, get apples() { return apples; }, get foes() { return foes; }, get quality() { return qLevel; }, get tramps() { return tramps; }, get portalsList() { return portals; }, attach, release, AIR_G, MAX_FALL, DT, Sfx, Music, press, unpress, startReady,
   MP, get ghostPin() { return ghostPin; }, mpStartMatch, localStart, get LOCAL() { return LOCAL; }, localPress, localUnpress, useWorld, mpHost, mpConnect, mpMakeAnswer, mpJoinStart, mpHostStart, mpSelect, mpAgain, mpForfeit, openMp, mpRender, get curScreen() { return curScreen; } };
 
 resetWorld();
