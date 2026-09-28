@@ -221,7 +221,7 @@ function treeSprite(bi, v) {
     const rnd = mulberry32(bi * 977 + v * 131 + 7), rr = (a, b) => a + rnd() * (b - a);
     const cx = W / 2, base = H - 4;
     const leaf = C.mid, cols = [shade(leaf, -0.32), leaf, shade(leaf, 0.2), shade(leaf, 0.42)];
-    const bark = { jungle: '#5a4030', swamp: '#4a4632', savanne: '#6e5236', ice: '#4b3b34', volcano: '#231815', night: '#262c52', blocky: '#6b4a2b', paint: '#8b5a2b', poly3d: '#4a3a8a', candy: '#f3d9e6' }[style] || '#5a4030';
+    const bark = { jungle: '#5a4030', swamp: '#4a4632', savanne: '#6e5236', ice: '#4b3b34', volcano: '#231815', night: '#262c52', blocky: '#6b4a2b', paint: '#8b5a2b', poly3d: '#4a3a8a', candy: '#f3d9e6', desert: '#7a5a3a', shroom: '#efe3cf', cloud: '#dfe9f3', neon: '#1a0a2e' }[style] || '#5a4030';
     const barkD = shade(bark, -0.4), barkL = shade(bark, 0.22);
     const trunk = (w0, w1, h) => {
       const gr = g.createLinearGradient(cx - w0, 0, cx + w0, 0);
@@ -363,6 +363,48 @@ function treeSprite(bi, v) {
         const pts = crown(base - h - 30, rr(95, 120), rr(60, 75), 24, ['#f59ac7', '#ffb8dc', '#ffd6ec', '#ffffff']);
         for (let i = 0; i < 8; i++) { const [x, y, r] = pts[(rnd() * pts.length) | 0]; g.fillStyle = ['#ff4f4f', '#4fb0ff', '#ffe14f', '#6fe07a'][i % 4]; g.fillRect(x + rr(-r, r) * 0.5, y + rr(-r, r) * 0.5, 7, 3); }
       }
+    } else if (style === 'desert') { // saguaro-cactus met armen en een bloempje
+      const h = rr(220, 330), w = rr(17, 22), cg = C.canopy, cgL = shade(cg, 0.22), cgD = shade(cg, -0.3);
+      const arm = (sd, y0, up, out) => {
+        g.strokeStyle = cgD; g.lineWidth = w * 1.5 + 4; g.lineCap = 'round';
+        g.beginPath(); g.moveTo(cx, y0); g.lineTo(cx + sd * out, y0); g.lineTo(cx + sd * out, y0 - up); g.stroke();
+        g.strokeStyle = cg; g.lineWidth = w * 1.5; g.beginPath(); g.moveTo(cx, y0); g.lineTo(cx + sd * out, y0); g.lineTo(cx + sd * out, y0 - up); g.stroke();
+      };
+      arm(-1, base - h * rr(0.35, 0.5), rr(50, 90), rr(40, 55));
+      if (v % 2 === 0) arm(1, base - h * rr(0.5, 0.65), rr(40, 70), rr(36, 50));
+      const gr = g.createLinearGradient(cx - w, 0, cx + w, 0); gr.addColorStop(0, cgD); gr.addColorStop(0.45, cgL); gr.addColorStop(1, cgD);
+      g.fillStyle = gr; g.beginPath(); g.moveTo(cx - w, base); g.lineTo(cx - w, base - h + w); g.arc(cx, base - h + w, w, Math.PI, 0); g.lineTo(cx + w, base); g.closePath(); g.fill();
+      g.strokeStyle = cgD; g.lineWidth = 1.5; for (const dx of [-w * 0.5, 0, w * 0.5]) { g.beginPath(); g.moveTo(cx + dx, base - 4); g.lineTo(cx + dx, base - h + w * 0.6); g.stroke(); } // ribbels
+      g.fillStyle = '#fff6d0'; for (let i = 0; i < 18; i++) g.fillRect(cx + rr(-w, w), base - rr(10, h - 10), 1.5, 4); // stekels
+      if (v % 3 !== 1) { g.fillStyle = v % 2 ? '#ff5a7a' : '#ffd23f'; blob(g, cx, base - h - 2, 7); g.fillStyle = '#fff6d0'; blob(g, cx, base - h - 2, 2.5); }
+    } else if (style === 'shroom') { // reuzenpaddenstoel: dikke steel, grote hoed met stippen, lamellen eronder
+      const h = rr(200, 320), R = rr(95, 130), capY = base - h, cap = [C.canopy, '#6a8cff', '#ffb02e', C.canopy][v % 4];
+      const sg = g.createLinearGradient(cx - 24, 0, cx + 24, 0); sg.addColorStop(0, '#cbbfa8'); sg.addColorStop(0.5, '#f7efe0'); sg.addColorStop(1, '#bfb198');
+      g.fillStyle = sg; g.beginPath(); g.moveTo(cx - 30, base); g.quadraticCurveTo(cx - 14, base - h * 0.5, cx - 18, capY); g.lineTo(cx + 18, capY); g.quadraticCurveTo(cx + 14, base - h * 0.5, cx + 30, base); g.closePath(); g.fill();
+      g.fillStyle = 'rgba(255,255,255,.7)'; g.beginPath(); g.ellipse(cx, base - h * 0.45, 26, 9, 0, 0, Math.PI * 2); g.fill(); // ring
+      g.fillStyle = '#e8d9c0'; g.beginPath(); g.ellipse(cx, capY + 4, R * 0.92, 18, 0, 0, Math.PI * 2); g.fill(); // lamellen
+      g.strokeStyle = '#c9b89c'; g.lineWidth = 1.5; for (let k = -8; k <= 8; k++) { g.beginPath(); g.moveTo(cx, capY + 4); g.lineTo(cx + k * R * 0.11, capY + 4 + 16 * Math.cos(k / 8)); g.stroke(); }
+      const cgr = g.createRadialGradient(cx - R * 0.3, capY - R * 0.45, 5, cx, capY - R * 0.2, R * 1.1); cgr.addColorStop(0, shade(cap, 0.35)); cgr.addColorStop(0.6, cap); cgr.addColorStop(1, shade(cap, -0.35));
+      g.fillStyle = cgr; g.beginPath(); g.moveTo(cx - R, capY + 2); g.bezierCurveTo(cx - R, capY - R * 0.95, cx + R, capY - R * 0.95, cx + R, capY + 2); g.quadraticCurveTo(cx, capY + 16, cx - R, capY + 2); g.fill();
+      g.fillStyle = 'rgba(255,255,255,.9)'; for (let i = 0; i < 9; i++) { const a = rr(-2.6, -0.5), d = rr(0.3, 0.85); blob(g, cx + Math.cos(a) * R * d, capY + Math.sin(a) * R * 0.6 * d, rr(6, 13)); }
+      for (let i = 0; i < 6; i++) { const px = cx + rr(-R, R) * 0.8, py = capY + rr(10, 30); const gl = g.createRadialGradient(px, py, 0, px, py, 8); gl.addColorStop(0, 'rgba(160,255,220,.9)'); gl.addColorStop(1, 'rgba(160,255,220,0)'); g.fillStyle = gl; blob(g, px, py, 8); }
+    } else if (style === 'cloud') { // wolkenboom: een dun gouden stammetje met een donzige wolk als kruin
+      const h = rr(230, 320);
+      g.strokeStyle = '#d9a93a'; g.lineWidth = 10; g.lineCap = 'round'; g.beginPath(); g.moveTo(cx, base); g.quadraticCurveTo(cx + rr(-20, 20), base - h * 0.5, cx, base - h); g.stroke();
+      g.strokeStyle = '#ffe28a'; g.lineWidth = 3; g.beginPath(); g.moveTo(cx - 2, base); g.quadraticCurveTo(cx - 2, base - h * 0.5, cx - 2, base - h); g.stroke();
+      crown(base - h - 20, rr(100, 130), rr(55, 70), 24, ['#b8d4ee', '#e8f3ff', '#ffffff', '#ffffff']);
+      if (v % 2) { g.fillStyle = '#ffe28a'; for (let i = 0; i < 5; i++) blob(g, cx + rr(-80, 80), base - h - rr(0, 50), 4); }
+    } else if (style === 'neon') { // neonpalm: donkere silhouet met gloeiende randen
+      const h = rr(250, 340), lean = rr(-30, 30), topX = cx + lean, topY = base - h, c1 = v % 2 ? '#00e5ff' : '#ff2bd6', c2 = v % 2 ? '#ff2bd6' : '#00e5ff';
+      g.lineCap = 'round'; g.shadowColor = c1; g.shadowBlur = 14;
+      g.strokeStyle = '#140a28'; g.lineWidth = 16; g.beginPath(); g.moveTo(cx, base); g.quadraticCurveTo(cx, base - h * 0.5, topX, topY); g.stroke();
+      g.strokeStyle = c1; g.lineWidth = 3; g.beginPath(); g.moveTo(cx - 8, base); g.quadraticCurveTo(cx - 8, base - h * 0.5, topX - 6, topY); g.stroke();
+      for (let k = 0; k < 7; k++) { // bladeren
+        const a = -Math.PI / 2 + (k - 3) * 0.48 + rr(-0.1, 0.1), L = rr(95, 130), ex = topX + Math.cos(a) * L, ey = topY + Math.sin(a) * L * 0.6 + L * 0.35;
+        g.strokeStyle = '#140a28'; g.lineWidth = 9; g.beginPath(); g.moveTo(topX, topY); g.quadraticCurveTo(topX + Math.cos(a) * L * 0.6, topY + Math.sin(a) * L * 0.6 - 20, ex, ey); g.stroke();
+        g.strokeStyle = k % 2 ? c1 : c2; g.shadowColor = g.strokeStyle; g.lineWidth = 2.5; g.beginPath(); g.moveTo(topX, topY); g.quadraticCurveTo(topX + Math.cos(a) * L * 0.6, topY + Math.sin(a) * L * 0.6 - 20, ex, ey); g.stroke();
+      }
+      g.shadowBlur = 0;
     } else { // vulkaan: verkoolde dode boom met gloeiende scheuren
       const h = rr(220, 310);
       trunk(15, 5, h);
@@ -396,6 +438,10 @@ const MTN = {
   paint:   { amp: 200, freq: 0.0026, ridged: false, plateau: 0, snow: 0 },
   poly3d:  { amp: 300, freq: 0.0040, ridged: true, plateau: 0, snow: 0, facet: 90 },   // facet: rechte vlakken
   candy:   { amp: 220, freq: 0.0030, ridged: false, plateau: 0, snow: 0.35 },           // 'sneeuw' = glazuur
+  desert:  { amp: 170, freq: 0.0022, ridged: false, plateau: 0, snow: 0 },              // zachte duinen (en piramides, zie drawMountainLayer)
+  shroom:  { amp: 230, freq: 0.0034, ridged: false, plateau: 0, snow: 0 },
+  cloud:   { amp: 150, freq: 0.0050, ridged: false, plateau: 0, snow: 0 },              // wolkenbergen met een lichte rand
+  neon:    { amp: 280, freq: 0.0044, ridged: true, plateau: 0, snow: 0, facet: 70 },    // synthwave: rechte vlakken met een neonrand
 };
 function mtnH(x, p, seed) {
   let n1 = noise1(x * p.freq + seed);
@@ -566,6 +612,22 @@ function drawMountainLayer(P, L) {
       ctx.strokeStyle = B.style === 'paint' ? '#000' : 'rgba(255,120,220,.8)'; ctx.lineWidth = B.style === 'paint' ? 4 : 2; ctx.lineJoin = 'round';
       ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke();
     }
+    if (B.style === 'neon') { // gloeiende rand en een raster op de berg
+      ctx.save(); path(); ctx.clip(); ctx.strokeStyle = 'rgba(255,43,214,.28)'; ctx.lineWidth = 1.5;
+      for (let y = base - amp; y < base + 60; y += 26) line(-PAD, y, viewW + PAD, y);
+      ctx.restore();
+      ctx.strokeStyle = L.key === 'far' ? '#ff2bd6' : '#00e5ff'; ctx.lineWidth = 2.5; ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = 10;
+      ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke(); ctx.shadowBlur = 0;
+    }
+    if (B.style === 'cloud') { ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 6; ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y + 3) : ctx.moveTo(x, y + 3)); ctx.stroke(); }
+    if (B.style === 'desert' && L.key === 'far') { // piramides aan de horizon
+      for (let k = Math.floor((off - 900) / 1300); k * 1300 - off < viewW + 900; k++) {
+        if (hash(k * 3.3) < 0.45) continue;
+        const x = k * 1300 + hash(k * 1.7) * 500 - off, s = 160 + hash(k * 5.1) * 120, yb = base + 10;
+        ctx.fillStyle = rgbStr(mixC(hexToRgb('#e2b06a'), hazeTop, L.haze)); ctx.beginPath(); ctx.moveTo(x - s, yb); ctx.lineTo(x, yb - s * 0.9); ctx.lineTo(x + s, yb); ctx.fill();
+        ctx.fillStyle = rgbStr(mixC(hexToRgb('#b07a3a'), hazeTop, L.haze)); ctx.beginPath(); ctx.moveTo(x, yb - s * 0.9); ctx.lineTo(x + s, yb); ctx.lineTo(x + s * 0.25, yb); ctx.fill();
+      }
+    }
     if (B.style === 'night') { ctx.strokeStyle = 'rgba(200,210,255,.3)'; ctx.lineWidth = 1.5; ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke(); }
     // vulkanen met gloeiende krater
     if (B.style === 'volcano' && L.key === 'far') {
@@ -644,7 +706,7 @@ function drawForestLayer(P) {
   crossfade(P, (B, bi, w) => {
     const st = B.style;
     ctx.fillStyle = rgbStr(col); ctx.fillRect(-10 - PAD, base - 40, viewW + 20 + 2 * PAD, viewH + 2 * PAD + Math.max(0, 40 - base));
-    const sp = st === 'savanne' ? 120 : st === 'blocky' || st === 'poly3d' || st === 'candy' ? 66 : 30;
+    const sp = st === 'savanne' || st === 'desert' ? 110 : st === 'blocky' || st === 'poly3d' || st === 'candy' || st === 'shroom' || st === 'cloud' ? 66 : st === 'neon' ? 34 : 30;
     for (let i = Math.floor((off - 100 - PAD) / sp); i <= Math.floor((off + viewW + 100 + PAD) / sp); i++) {
       const x = i * sp + hash(i * 1.9) * sp * 0.8 - off, h = hash(i * 3.7), top = base - 50 - noise1(i * 0.15) * 70 - h * 40;
       if (st === 'jungle' || st === 'night' || st === 'swamp') {
@@ -669,6 +731,19 @@ function drawForestLayer(P) {
         const hh = 50 + h * 70, w = 24 + h * 12;
         ctx.fillStyle = rgbStr(colL); ctx.beginPath(); ctx.moveTo(x - w, base - 36); ctx.lineTo(x, base - 36 - hh); ctx.lineTo(x, base - 36); ctx.fill();
         ctx.fillStyle = rgbStr(colD); ctx.beginPath(); ctx.moveTo(x + w, base - 36); ctx.lineTo(x, base - 36 - hh); ctx.lineTo(x, base - 36); ctx.fill();
+      } else if (st === 'desert') { // kleine cactussen en duinruggetjes
+        if (h < 0.4) { ctx.fillStyle = rgbStr(colD); ctx.fillRect(x - 4, top + 20, 8, base - top - 60); ctx.fillRect(x - 14, top + 44, 10, 5); ctx.fillRect(x - 14, top + 30, 5, 18); }
+        ctx.fillStyle = rgbStr(colL); ell(x, base - 40, 60, 10);
+      } else if (st === 'shroom') { // paddenstoelen
+        const r = 14 + h * 16; ctx.fillStyle = rgbStr(colL); ctx.fillRect(x - 3, top + 10, 6, base - top - 50);
+        ctx.fillStyle = rgbStr(mixC(col, [220, 80, 120], 0.35)); ctx.beginPath(); ctx.ellipse(x, top + 10, r, r * 0.6, 0, Math.PI, 0); ctx.fill();
+      } else if (st === 'cloud') { // wolkjes
+        ctx.fillStyle = 'rgba(255,255,255,.85)'; circ(x, top + 20, 20 + h * 16); circ(x + 18, top + 26, 14 + h * 8);
+      } else if (st === 'neon') { // skyline met verlichte ramen
+        const bw = 22 + h * 14, bh = 40 + noise1(i * 0.7) * 90 + h * 30;
+        ctx.fillStyle = '#10062a'; ctx.fillRect(x - bw / 2, base - 40 - bh, bw, bh + 40);
+        ctx.fillStyle = h > 0.5 ? 'rgba(0,229,255,.8)' : 'rgba(255,43,214,.8)';
+        for (let yy = base - 34 - bh; yy < base - 46; yy += 10) for (let xx = -bw / 2 + 4; xx < bw / 2 - 4; xx += 8) if (hash(i * 7 + yy * 0.3 + xx) > 0.55) ctx.fillRect(x + xx, yy, 3, 4);
       } else if (st === 'candy') { // lolly's
         ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 3; line(x, base - 40, x, top + 14);
         ctx.fillStyle = rgbStr(mixC(col, [255, 120, 190], 0.3)); circ(x, top + 8, 14 + h * 8);
@@ -750,6 +825,10 @@ const TRUNK = {
   paint:   { bark: '#8b5a2b', moss: null },
   poly3d:  { bark: '#3a2f6e', moss: null },
   candy:   { bark: '#fbe3ee', moss: '#ff7eb9' },
+  desert:  { bark: '#b08a5a', moss: null },
+  shroom:  { bark: '#e9dfcc', moss: '#c9425e' },
+  cloud:   { bark: '#e2ecf6', moss: '#ffffff' },
+  neon:    { bark: '#170a2c', moss: null },
 };
 const TRUNK_SP = 880;
 // Tekent drawTrunkLayer iets in dit stuk van de laag (laagcoördinaten)? Volgt precies de vormen daar:
@@ -796,6 +875,7 @@ function drawTrunkLayer(P) {
       if (B.style === 'blocky') { ctx.strokeStyle = rgbStr(barkD, 0.7); ctx.lineWidth = 3; const g0 = Math.floor((yOff + y0) / wq) * wq - yOff; for (let y = g0; y < y1; y += wq) ctx.strokeRect(-wq / 2, y, wq, wq); }
       else if (B.style === 'paint') { ctx.fillStyle = '#000'; ctx.fillRect(-wq / 2 - 4, y0, 7, y1 - y0); ctx.fillRect(wq / 2 - 3, y0, 7, y1 - y0); }
       else if (B.style === 'poly3d') { ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.fillRect(-wq / 2, y0, wq * 0.35, y1 - y0); ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(wq * 0.2, y0, wq * 0.3, y1 - y0); }
+      else if (B.style === 'neon') { ctx.fillStyle = '#00e5ff'; ctx.fillRect(-wq / 2, y0, 3, y1 - y0); ctx.fillStyle = '#ff2bd6'; ctx.fillRect(wq / 2 - 3, y0, 3, y1 - y0); } // neonranden
       else if (B.style === 'candy') {
         ctx.save(); ctx.beginPath(); ctx.rect(-wq / 2, y0, wq, y1 - y0); ctx.clip(); ctx.fillStyle = 'rgba(255,79,139,.75)';
         const g0 = Math.floor((yOff + y0) / 70) * 70 - yOff;

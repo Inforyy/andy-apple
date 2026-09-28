@@ -108,10 +108,10 @@ async function main() {
     const [scr, t, shown] = got.split('|');
     check(scr === 'mp' && t === title && (modes === null || shown === modes), `${btn}: '${title}'${modes === null ? '' : ` met modi [${modes}]`}`);
     await js(`document.getElementById('btnMpBack').click()`);
-    check(await until(`__andy.curScreen === 'modes'`, 1000), `${btn}: terug naar Spelmodi`);
+    check(await until(`__andy.curScreen === 'modes'`, 1000), `${btn}: terug naar Gamemodes`);
     await js(`document.getElementById('btnModesBack').click()`);
   }
-  check(await js('__andy.curScreen') === 'menu', 'Spelmodi: terug naar het menu');
+  check(await js('__andy.curScreen') === 'menu', 'Gamemodes: terug naar het menu');
   await js(`document.getElementById('btnSettings').click(); document.getElementById('btnDebug').click()`);
   check(await js('__andy.curScreen') === 'debug', 'debugscherm opent');
   await js(`document.getElementById('btnDebugBack').click(); document.getElementById('btnSettingsBack').click()`);
@@ -191,9 +191,12 @@ async function main() {
   await js('__andy.startReady(null)'); await sleep(100);
   await js('__andy.press()');
   await until(`__andy.G.state === 'hang'`, 3000);
-  await js(`(() => { const G = __andy.G; __andy.release(); G.state = 'air'; G.x = START_X + 1095 * PX_PER_M; G.y = -100; G.vx = 900; G.vy = -500; })()`);
-  check(await until('!!__andy.run.cine && __andy.run.biome === 2', 3000), 'filmische overgang naar de Savanne');
-  check(await js('biomeSeg(11500).i !== biomeSeg(12700).i && biomeSeg(11500).i < BIOMES.length'), 'na de laatste biome komen de biomes terug');
+  await js(`(() => { const G = __andy.G; __andy.release(); __andy.unpress(); G.state = 'air'; G.x = START_X + BIOMES[2].start * PX_PER_M - 400; G.y = -100; G.vx = 900; G.vy = -500; })()`);
+  check(await until('!!__andy.G.auto', 1000), 'biomegrens: Andy grijpt vanzelf de reuzenliaan');
+  check(await until('!!__andy.run.cine && __andy.run.biome === 2', 3000), 'over de klif: filmische overgang naar de Savanne');
+  check(await until('!__andy.G.auto && __andy.G.state === "air" && __andy.G.vx > 1200', 3000), 'losgelaten met extra vaart, binnen 3 seconden');
+  check(await js('biomeSeg(CYCLE_START + 100).i !== biomeSeg(CYCLE_START + CYCLE_LEN + 100).i && biomeSeg(CYCLE_START + 100).i < BIOMES.length'), 'na de laatste biome komen de biomes terug');
+  await js('__andy.press()');
   await js(`(() => { const G = __andy.G; G.state = 'air'; G.x = START_X + 1500 * PX_PER_M; G.y = HAZARD_Y + 20; G.vy = 300; enterUnder(); loot.push({ x: G.x + 4, y: G.y, t: 0 }); })()`);
   check(await until(`__andy.G.state === 'swim' && __andy.run.under && __andy.run.loot === 1`, 3000), 'onder water, kist opgepakt');
   // naar het luchtgat zetten (een paar keer: de zwemstap kan Andy er net naast laten drijven); eerst moet er een zijn
@@ -231,7 +234,7 @@ async function main() {
   await js('__andy.startReady(1)');
   check(await until('__andy.game.career && __andy.game.career.n === 1', 1000), 'level 1 start');
   await swing('__andy.press()', '__andy.unpress()', 1);
-  for (const n of [57, 65, 73, 81]) { // de stijl-biomes (blokjes, Paint, 3D, snoep)
+  for (const n of [57, 65, 73, 81, 89, 97, 105, 113]) { // de stijl-biomes (blokjes, Paint, 3D, snoep) en de nieuwe (woestijn, paddenstoelen, wolken, neon)
     await js(`__andy.startReady(${n})`);
     await swing('__andy.press()', '__andy.unpress()', 0.6);
     check(await js(`__andy.game.career.n === ${n}`), `level ${n} (${await js(`BIOMES[__andy.game.career.bi].name`)}) tekent zonder fouten`);

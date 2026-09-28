@@ -47,44 +47,54 @@ const KEEP_BEHIND = 2400;
 const BIOMES = [
   { name:'Jungle', bonus:0, icon:'🌿', start:0, tip:'Gouden turbolianen geven extra vaart!', style:'jungle', particle:'leaf', hazardName:'de rivier', shroom:'#e8322b',
     c:{ skyTop:'#4fb8ef', skyMid:'#9fdcf2', skyBot:'#e2f7d2', sun:'#fff3a0', far:'#86bfa0', far2:'#5a9d6c', mid:'#2f7d45', canopy:'#1f6b33', canopy2:'#3f9a45', hazTop:'#46b6e2', hazBot:'#155489', vine:'#4f8f2a', leaf:'#6fc04a' } },
-  { name:'Moeras', bonus:0.5, icon:'🐸', start:450, tip:'Rotte lianen breken! Wespen stelen appels.', style:'swamp', particle:'firefly', hazardName:'het moeras', shroom:'#8a5bd1',
+  { name:'Moeras', bonus:0.5, icon:'🐸', start:600, tip:'Rotte lianen breken! Wespen stelen appels.', style:'swamp', particle:'firefly', hazardName:'het moeras', shroom:'#8a5bd1',
     c:{ skyTop:'#6f8c70', skyMid:'#a9b98e', skyBot:'#dcdca6', sun:'#f0f0b0', far:'#72876a', far2:'#556b48', mid:'#3a4d2e', canopy:'#2e4524', canopy2:'#4d6a33', hazTop:'#6b8a3a', hazBot:'#26331a', vine:'#5f7d2c', leaf:'#8aa04a' } },
-  { name:'Savanne', bonus:1, icon:'🦒', start:1100, tip:'Roze elastieken lianen veren mee!', style:'savanne', particle:'dust', hazardName:'het drijfzand', shroom:'#e07a1f',
+  { name:'Savanne', bonus:1, icon:'🦒', start:1450, tip:'Roze elastieken lianen veren mee!', style:'savanne', particle:'dust', hazardName:'het drijfzand', shroom:'#e07a1f',
     c:{ skyTop:'#ef8a3c', skyMid:'#f7b86a', skyBot:'#fde7aa', sun:'#fff0c0', far:'#d9925a', far2:'#b9783f', mid:'#6e5320', canopy:'#5f7a22', canopy2:'#90a83a', hazTop:'#d9a45a', hazBot:'#7a4e1e', vine:'#7d8a2a', leaf:'#a8b84a' } },
-  { name:'IJsbergen', bonus:1.5, icon:'❄️', start:1900, tip:'IJslianen zijn glad – je glijdt omlaag!', style:'ice', particle:'snow', hazardName:'het ijswater', shroom:'#4aa3df',
+  { name:'IJsbergen', bonus:1.5, icon:'❄️', start:2450, tip:'IJslianen zijn glad – je glijdt omlaag!', style:'ice', particle:'snow', hazardName:'het ijswater', shroom:'#4aa3df',
     c:{ skyTop:'#7cbbea', skyMid:'#b4dcf5', skyBot:'#f0f9ff', sun:'#ffffff', far:'#c3d8ec', far2:'#94b4d2', mid:'#2f5d62', canopy:'#d4e7f5', canopy2:'#f4fbff', hazTop:'#8fd0f0', hazBot:'#205d8e', vine:'#5c9aa8', leaf:'#d8f0ff' } },
-  { name:'Vulkaan', bonus:2, icon:'🌋', start:2900, tip:'Vuurballen verbranden je appels!', style:'volcano', particle:'ember', hazardName:'de lava', shroom:'#b83b2b',
+  { name:'Vulkaan', bonus:2, icon:'🌋', start:3700, tip:'Vuurballen verbranden je appels!', style:'volcano', particle:'ember', hazardName:'de lava', shroom:'#b83b2b',
     c:{ skyTop:'#1e0a0e', skyMid:'#5a1c18', skyBot:'#c2481c', sun:'#ffb060', far:'#4a1d1a', far2:'#331311', mid:'#1f0c0c', canopy:'#2e2016', canopy2:'#4d3320', hazTop:'#ffae2a', hazBot:'#a81c0a', vine:'#6b5230', leaf:'#8a6a3a' } },
-  { name:'Sterrennacht', bonus:3, icon:'🌙', start:4100, tip:'Alles komt samen… succes!', style:'night', particle:'star', hazardName:'het nachtmeer', shroom:'#c04ad8',
+  { name:'Sterrennacht', bonus:3, icon:'🌙', start:5200, tip:'Alles komt samen… succes!', style:'night', particle:'star', hazardName:'het nachtmeer', shroom:'#c04ad8',
     c:{ skyTop:'#050822', skyMid:'#171a4a', skyBot:'#3b2c70', sun:'#f4f1d8', far:'#1c2152', far2:'#141a40', mid:'#101842', canopy:'#12302e', canopy2:'#1e4a42', hazTop:'#4046b8', hazBot:'#0c1036', vine:'#3c8a6a', leaf:'#5ac08a' } },
-  { name:'Portaalwoud', bonus:4, icon:'🌀', start:5200, tip:'Vlieg door een blauw portaal: je komt met al je vaart uit het oranje!', style:'jungle', particle:'firefly', hazardName:'de energiestroom', shroom:'#ff8a1a',
+  { name:'Portaalwoud', bonus:4, icon:'🌀', start:6600, tip:'Vlieg door een blauw portaal: je komt met al je vaart uit het oranje!', style:'jungle', particle:'firefly', hazardName:'de energiestroom', shroom:'#ff8a1a',
     c:{ skyTop:'#161a45', skyMid:'#3b3b8f', skyBot:'#8fcfe0', sun:'#e6fbff', far:'#4a57a3', far2:'#384385', mid:'#26306c', canopy:'#26586a', canopy2:'#3a9a98', hazTop:'#63e2ff', hazBot:'#1c2a78', vine:'#3f8f86', leaf:'#7fe0c8' } },
   // Vier stijl-biomes: alles wordt anders getekend (blokjes, Paint, 3D, snoep), zie de stijlen in render-bg.js/render-world.js
-  { name:'Kubuswoud', bonus:5, icon:'🟩', start:6300, tip:'Alles is van blokjes, net als in Minecraft!', style:'blocky', particle:'pixel', hazardName:'het blokwater', shroom:'#c0392b',
+  { name:'Kubuswoud', bonus:5, icon:'🟩', start:8000, tip:'Alles is van blokjes, net als in Minecraft!', style:'blocky', particle:'pixel', hazardName:'het blokwater', shroom:'#c0392b',
     c:{ skyTop:'#6f9ff7', skyMid:'#8fb6fa', skyBot:'#c3d8fb', sun:'#fffbe0', far:'#7e9a6a', far2:'#5f8a4a', mid:'#3f7a2a', canopy:'#3a7d24', canopy2:'#5aa532', hazTop:'#3f76e4', hazBot:'#1d3f9a', vine:'#4a8a2a', leaf:'#60b538' } },
-  { name:'Tekenland', bonus:6, icon:'🖍️', start:7400, tip:'Alles is getekend in Paint. Pas op voor de verfpot!', style:'paint', particle:'paint', hazardName:'de verfpot', shroom:'#ed1c24',
+  { name:'Tekenland', bonus:6, icon:'🖍️', start:9400, tip:'Alles is getekend in Paint. Pas op voor de verfpot!', style:'paint', particle:'paint', hazardName:'de verfpot', shroom:'#ed1c24',
     c:{ skyTop:'#99d9ea', skyMid:'#a8def0', skyBot:'#d4f1f9', sun:'#fff200', far:'#b5e61d', far2:'#22b14c', mid:'#22b14c', canopy:'#22b14c', canopy2:'#b5e61d', hazTop:'#00a2e8', hazBot:'#3f48cc', vine:'#22b14c', leaf:'#b5e61d' } },
-  { name:'3D-wereld', bonus:7, icon:'🧊', start:8500, tip:'Welkom in de derde dimensie!', style:'poly3d', particle:'cube', hazardName:'de rasterzee', shroom:'#ff3d7f',
+  { name:'3D-wereld', bonus:7, icon:'🧊', start:10800, tip:'Welkom in de derde dimensie!', style:'poly3d', particle:'cube', hazardName:'de rasterzee', shroom:'#ff3d7f',
     c:{ skyTop:'#1a1f5c', skyMid:'#5a4fcf', skyBot:'#ff9ecf', sun:'#ffe066', far:'#6a4bc7', far2:'#4a3aa0', mid:'#2e2a6e', canopy:'#3fd0c9', canopy2:'#7af0e0', hazTop:'#ff4fb4', hazBot:'#20124d', vine:'#3fc9b8', leaf:'#8ff5e5' } },
-  { name:'Snoepland', bonus:8, icon:'🍭', start:9700, tip:'Zoete lianen en een rivier van chocola!', style:'candy', particle:'sprinkle', hazardName:'de chocoladerivier', shroom:'#ff5fa2',
+  { name:'Snoepland', bonus:8, icon:'🍭', start:12300, tip:'Zoete lianen en een rivier van chocola!', style:'candy', particle:'sprinkle', hazardName:'de chocoladerivier', shroom:'#ff5fa2',
     c:{ skyTop:'#ffb3d9', skyMid:'#ffd1e8', skyBot:'#fff0f7', sun:'#fff6b0', far:'#f7a8cf', far2:'#e58bbd', mid:'#c76a9f', canopy:'#ff7eb9', canopy2:'#ffc2e0', hazTop:'#8a4b2a', hazBot:'#4a2412', vine:'#e84a8a', leaf:'#7fdc9a' } },
+  // Vier nieuwe biomes: woestijn, paddenstoelen, wolken en neon
+  { name:'Woestijn', bonus:9, icon:'🏜️', start:13800, tip:'Cactussen prikken niet, maar de gieren wel!', style:'desert', particle:'dust', hazardName:'het drijfzand', shroom:'#e0703a',
+    c:{ skyTop:'#f39c4a', skyMid:'#f9c784', skyBot:'#fff0cf', sun:'#fff7c2', far:'#e8b27a', far2:'#d99a5c', mid:'#c28448', canopy:'#5f8f34', canopy2:'#86b046', hazTop:'#d9a45a', hazBot:'#8a5a2a', vine:'#8a6a3a', leaf:'#a8c060' } },
+  { name:'Paddenstoelenbos', bonus:10, icon:'🍄', start:15300, tip:'Reuzenpaddenstoelen: stuiter er hoog op!', style:'shroom', particle:'spore', hazardName:'de sporenpoel', shroom:'#ff5a8a',
+    c:{ skyTop:'#2a1e5c', skyMid:'#6a4a9a', skyBot:'#e3b8ff', sun:'#fff0b0', far:'#7a5aa8', far2:'#5e4490', mid:'#4a3478', canopy:'#c9425e', canopy2:'#f59ac0', hazTop:'#7affc4', hazBot:'#1e5a4a', vine:'#6ac48a', leaf:'#b8f0a0' } },
+  { name:'Wolkenrijk', bonus:11, icon:'☁️', start:16800, tip:'Gouden lianen hangen hier aan de wolken. Pas op voor het onweer!', style:'cloud', particle:'fluff', hazardName:'de onweerswolken', shroom:'#ffb0d8',
+    c:{ skyTop:'#5cb8ff', skyMid:'#9fd6ff', skyBot:'#eef8ff', sun:'#fffbe0', far:'#ffffff', far2:'#e3eefa', mid:'#c7ddf2', canopy:'#9ccbee', canopy2:'#ffffff', hazTop:'#5a6788', hazBot:'#232840', vine:'#e8b84a', leaf:'#fff1b8' } },
+  { name:'Neonstad', bonus:12, icon:'🌃', start:18300, tip:'Alles gloeit! Pas op voor de neonzee.', style:'neon', particle:'neon', hazardName:'de neonzee', shroom:'#00e5ff',
+    c:{ skyTop:'#06021a', skyMid:'#2a0845', skyBot:'#ff4fa0', sun:'#ffd84a', far:'#3a0a5a', far2:'#27074a', mid:'#150333', canopy:'#00e5ff', canopy2:'#ff2bd6', hazTop:'#ff2bd6', hazBot:'#1a0030', vine:'#00e5ff', leaf:'#7dffea' } },
 ];
 // Muziek per biome: toonsoort (halve tonen) en of hij in mineur klinkt (ook voor het riedeltje bij een nieuwe biome)
-BIOMES.forEach((b, i) => { b.key = [0, -3, 2, 5, -2, -5, 3, -1, 4, 1, 6][i]; b.minor = [4, 5, 6, 9].includes(i); });
+BIOMES.forEach((b, i) => { b.key = [0, -3, 2, 5, -2, -5, 3, -1, 4, 1, 6, -4, 2, 7, 0][i]; b.minor = [4, 5, 6, 9, 12, 14].includes(i); });
 for (const b of BIOMES) { b.rgb = {}; for (const k in b.c) b.rgb[k] = hexToRgb(b.c[k]); }
 
 // Kansen per kolom lianen: vijanden en speciale lianen, per biome
 function features(bi) {
   return {
-    wasps:   [0, .30, .14, .10, .10, .16, .10, .12, .12, .14, .12][bi],
-    fire:    [0, 0, 0, 0, .45, .20, 0, 0, 0, .15, 0][bi],
-    birds:   [0, 0, 0, .22, .06, .20, .10, .15, .18, .20, .15][bi],
-    rotten:  [0, .12, .28, .06, .20, .16, .10, .12, .12, .14, .12][bi],
-    icy:     [0, 0, .05, .40, 0, .16, .06, .06, .06, .10, .06][bi],
-    turbo:   [.08, .07, .07, .07, .10, .08, .08, .08, .08, .09, .10][bi],
-    elastic: [.05, .06, .10, .05, .06, .08, .07, .07, .08, .08, .12][bi],
-    fruit:   [.08, .07, .06, .06, .05, .06, .06, .06, .07, .06, .10][bi],
-    portals: [0, 0, 0, 0, 0, 0, .45, 0, 0, .2, 0][bi],
+    wasps:   [0, .30, .14, .10, .10, .16, .10, .12, .12, .14, .12, .10, .14, .08, .14][bi],
+    fire:    [0, 0, 0, 0, .45, .20, 0, 0, 0, .15, 0, 0, 0, 0, .14][bi],
+    birds:   [0, 0, 0, .22, .06, .20, .10, .15, .18, .20, .15, .24, .10, .26, .18][bi],
+    rotten:  [0, .12, .28, .06, .20, .16, .10, .12, .12, .14, .12, .20, .14, .10, .12][bi],
+    icy:     [0, 0, .05, .40, 0, .16, .06, .06, .06, .10, .06, 0, .04, .14, .08][bi],
+    turbo:   [.08, .07, .07, .07, .10, .08, .08, .08, .08, .09, .10, .08, .09, .10, .13][bi],
+    elastic: [.05, .06, .10, .05, .06, .08, .07, .07, .08, .08, .12, .06, .16, .08, .10][bi],
+    fruit:   [.08, .07, .06, .06, .05, .06, .06, .06, .07, .06, .10, .06, .08, .07, .07][bi],
+    portals: [0, 0, 0, 0, 0, 0, .45, 0, 0, .2, 0, 0, 0, 0, .25][bi],
+    shrooms: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.6, 3.2, 1, 1][bi], // hoe vaak er paddenstoelen staan (Paddenstoelenbos: heel vaak)
   };
 }
 
@@ -163,6 +173,10 @@ const BOSSES = [
   { name: 'Gumgum',        col: '#ed1c24', proj: 'verf',   moves: ['dive', 'throw', 'rain'] },
   { name: 'Polygoon',      col: '#ff4fb4', proj: 'kubus',  moves: ['throw', 'dive', 'rain'] },
   { name: 'Suikerspinner', col: '#ff7eb9', proj: 'snoep',  moves: ['rain', 'dive', 'throw'] },
+  { name: 'Schorpioenkoning', col: '#c9853a', proj: 'zand', moves: ['throw', 'dive', 'rain'] },
+  { name: 'Sporenheks',    col: '#b04adf', proj: 'spore',  moves: ['rain', 'throw', 'dive'] },
+  { name: 'Donderwolk',    col: '#6a7aa0', proj: 'bliksem', moves: ['rain', 'dive', 'throw'] },
+  { name: 'Glitchbaas',    col: '#ff2bd6', proj: 'glitch', moves: ['throw', 'dive', 'rain'] },
 ];
 // Tijdelijke power-ups in carrièrelevels (seconden; clock geeft extra tijd)
 const POWERUPS = {
@@ -255,7 +269,7 @@ const HEADSTARTS = [{ m: 250, cost: 60 }, { m: 500, cost: 150 }, { m: 1000, cost
 
 // De wereld is een rij biome-stukken. Na de laatste biome (Snoepland) komen de biomes steeds opnieuw terug,
 // elk CYCLE_LEN meter lang, in een vaste, door elkaar gehusselde volgorde: zo blijf je nooit in dezelfde biome.
-const CYCLE_START = 11000, CYCLE_LEN = 1100, CYCLE_ORDER = [3, 8, 5, 10, 1, 7, 4, 9, 2, 6];
+const CYCLE_START = 19800, CYCLE_LEN = 1400, CYCLE_ORDER = [3, 8, 12, 5, 10, 1, 14, 7, 4, 11, 9, 2, 13, 6];
 // het biome-stuk op afstand m: { i: biome, start, n: volgnummer (hoeveelste stuk), next: volgende biome, nextStart }
 function biomeSeg(m) {
   if (game.career) { const i = game.career.bi; return { i, start: -1e9, n: 0, next: i, nextStart: 1e12 }; }

@@ -306,7 +306,7 @@ function hitHazard() {
 }
 // Vijanden kunnen Andy NOOIT laten vallen of doodgaan: ze stelen alleen appels.
 function hitFoe(f) {
-  if (G.invuln > 0 || G.state === 'rocket' || f.done || powOn('star')) return;
+  if (G.invuln > 0 || G.state === 'rocket' || f.done || powOn('star') || G.auto) return;
   f.done = true;
   G.invuln = 1.4;
   if (G.helmets > 0) {
@@ -389,8 +389,10 @@ function updateGorilla(dt, holdHang, holdAir) {
   G.turboT = Math.max(0, G.turboT - dt);
   G.releaseT -= dt;
   const playing = game.mode === 'playing';
+  if (!G.auto) checkTrans(); // biomegrens: vanzelf de reuzenliaan grijpen
 
-  if (G.state === 'hang') {
+  if (G.auto) autoSwing(dt);
+  else if (G.state === 'hang') {
     const v = G.vine, p = v.pts;
     G.diving = false;
     // omlaag glijden na een grijp te hoog aan de liaan
@@ -697,11 +699,59 @@ function updateTrick(dt, holdAir) {
     if (G.y < HAZARD_Y - 220) { G.trick = TRICKS[(Math.random() * TRICKS.length) | 0]; G.trickT = 0; }
   }
 }
-// ---- Nieuwe biome: een korte, filmische overgang ----
-// Slow motion, filmbalken, een grote titelkaart en een lichtflits in de kleuren van de nieuwe biome (zie drawCinematic).
-// De wereld rond de grens is een rustige buffer zonder vijanden (zie inBiomeBuffer). Online zonder slow motion:
-// daar moeten alle spelers even snel blijven.
-const CINE_DUR = 3.4;
+// ---- Nieuwe biome: over de klif aan een reuzenliaan ----
+// Op elke biomegrens staat een klif, met erboven een enorme liaan (zie TRANS, biomeGapAt en drawBiomeCliffs).
+// Komt Andy in de buurt, dan grijpt hij die liaan vanzelf, zwaait over de klif en wordt aan de andere kant
+// met extra vaart de nieuwe biome in geslingerd. De speler hoeft niets te doen; alles duurt nog geen 3 seconden.
+// Tijdens de zwaai verschijnen filmbalken en een titelkaart (zie drawCinematic).
+// TRANS: ay/L = ophangpunt en lengte van de reuzenliaan; before = hoe ver vóór de grens hij grijpt;
+// grab = hoe lang het vastpakken duurt, swing = de hele zwaai (echte seconden); th1 = hoek bij het loslaten.
+const TRANS = { ay: CEIL_Y - 450, L: 1400, hang: 46, before: 1000, after: 900, grab: 0.4, swing: 1.45, th1: 0.95 };
+const CINE_DUR = 2.8;
+// de biomegrens (x) waar Andy nu in de buurt is, of null
+function transBoundary(x) {
+  if (game.career) return null;
+  const S = biomeSeg((x - START_X) / PX_PER_M), bn = START_X + S.nextStart * PX_PER_M, bs = START_X + S.start * PX_PER_M;
+  if (x > bn - TRANS.before && x < bn + TRANS.after) return bn;
+  if (S.start > 0 && x > bs - TRANS.before && x < bs + TRANS.after) return bs;
+  return null;
+}
+function checkTrans() {
+  if (game.mode !== 'playing' || run.space || run.under || (G.state !== 'air' && G.state !== 'hang')) return;
+  const bx = transBoundary(G.x);
+  if (bx === null || run.transDone === bx) return;
+  if (G.state === 'hang') release(false);
+  G.state = 'air';
+  G.auto = { bx, t: 0, th0: clamp(Math.asin(clamp((G.x - bx) / TRANS.L, -1, 1)), -0.95, 0.4), sx: G.x, sy: G.y };
+  run.transDone = bx;
+  G.trick = null; G.trickRot = 0; G.dive = 0; G.diving = false;
+  if (!aiWorld()) { Sfx.grab(); Sfx.tarzan(); }
+}
+// de hoek van de reuzenliaan op tijd t van de zwaai (zacht op gang, snel door het laagste punt)
+function transAngle(A, t) {
+  const u = clamp(t / TRANS.swing, 0, 1), K = 0.86, e = (1 - Math.cos(Math.PI * u * K)) / (1 - Math.cos(Math.PI * K));
+  return A.th0 + (TRANS.th1 - A.th0) * e;
+}
+function autoSwing(dt) {
+  const A = G.auto, rdt = dt / (GAME_SPEED * Math.max(0.05, timeScale()));
+  A.t += rdt;
+  const th = transAngle(A, A.t), s = Math.sin(th), c = Math.cos(th);
+  const hx = A.bx + TRANS.L * s, hy = TRANS.ay + TRANS.L * c, px = hx + s * TRANS.hang, py = hy + c * TRANS.hang;
+  // eerst naar het uiteinde van de liaan toe (vastpakken), daarna hangt hij er gewoon aan
+  const k = clamp(A.t / TRANS.grab, 0, 1), e = k * k * (3 - 2 * k);
+  const nx = A.sx + (px - A.sx) * e, ny = A.sy + (py - A.sy) * e;
+  G.vx = (nx - G.x) / dt; G.vy = (ny - G.y) / dt; // voor de camera en het uitzoomen
+  G.x = nx; G.y = ny; G.hx = hx + (nx - px); G.hy = hy + (ny - py);
+  G.angle += (-th - G.angle) * Math.min(1, rdt * 14);
+  G.airT = 0; G.airX = G.x;
+  if (Math.random() < 0.5) addPart({ type: 'streak', x: G.x + rand(-14, 14), y: G.y + rand(-14, 14), vx: -G.vx * 0.05, vy: -G.vy * 0.05, life: 0.3, max: 0.3, col: 'rgba(255,255,255,.75)', r: 2.5, g: 0 });
+  if (A.t >= TRANS.swing) { // loslaten: met extra vaart de nieuwe biome in
+    G.auto = null;
+    G.vx = 1900; G.vy = -520; G.turboT = 0.9; G.noDive = true; G.airT = 0; G.airX = G.x;
+    if (!aiWorld()) { floatText(G.x, G.y - 70, 'Wiiieee!', '#ffffff', 30); Sfx.woohoo(1900); Sfx.whoosh(0.5, 400, 1600, 0.1); }
+    starBurst(G.x, G.y, 18, BIOMES[run.biome].c.sun); shake(5, 0.3);
+  }
+}
 function enterBiome(S) {
   run.biomeN = S.n; run.biome = S.i; Music.biome = S.i;
   const b = BIOMES[S.i], mult = `Elke appel ×${fmtNum(applesPerPick(S.i, run.dist))}`;
@@ -709,15 +759,15 @@ function enterBiome(S) {
   run.cine = { t: 0, bi: S.i, sub: mult, lap: S.n >= BIOMES.length };
   confetti(G.x + 150, G.y - 220, 120); confetti(G.x + 450, G.y - 260, 80);
   starBurst(G.x, G.y, 30, b.c.sun);
-  flashT = 0.5; shake(6, 0.5);
+  flashT = 0.35; shake(4, 0.4);
   Sfx.biome(S.i);
 }
-// tempo tijdens de overgang: even bijna stilstand, daarna rustig weer op snelheid (in echte seconden, zie frameSolo)
+// tempo tijdens de overgang: een heel kort vertraagd moment op het hoogste punt boven de klif, verder gewoon op snelheid
 function cineSlow() {
   const C = run && run.cine;
   if (!C || game.mp) return 1;
   const t = C.t;
-  return t < 0.25 ? 1 - t / 0.25 * 0.7 : t < 1.5 ? 0.3 : t < 2.4 ? 0.3 + (t - 1.5) / 0.9 * 0.7 : 1;
+  return t < 0.15 ? 1 - t / 0.15 * 0.35 : t < 0.45 ? 0.65 : t < 0.8 ? 0.65 + (t - 0.45) / 0.35 * 0.35 : 1;
 }
 
 // ---- Kisten (loot-boxes): oppakken tijdens het spelen, openen na afloop (zie game.js) ----

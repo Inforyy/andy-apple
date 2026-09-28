@@ -123,7 +123,7 @@ function bossDefeated() {
   floatText(G.x, G.y - 100, `${B.name} verslagen!`, '#ffe46b', 30);
   Sfx.cheer();
 }
-const PROJ_COL = { kokos: '#6b4423', angel: '#2a2a2a', bot: '#efe6d0', ijs: '#bfefff', vuur: '#ff7a1a', ster: '#fff27a', orb: '#7fe0c8', blok: '#8a6238', verf: '#00a2e8', kubus: '#ff4fb4', snoep: '#ff7eb9' };
+const PROJ_COL = { zand: '#e0b070', spore: '#d08aff', bliksem: '#fff27a', glitch: '#00e5ff', kokos: '#6b4423', angel: '#2a2a2a', bot: '#efe6d0', ijs: '#bfefff', vuur: '#ff7a1a', ster: '#fff27a', orb: '#7fe0c8', blok: '#8a6238', verf: '#00a2e8', kubus: '#ff4fb4', snoep: '#ff7eb9' };
 const projCol = k => PROJ_COL[k] || '#ffffff';
 
 // ---- tekenen in de wereld ----

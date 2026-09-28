@@ -98,6 +98,9 @@ function updateAmbient(dt, type, camDX, camDY) {
       case 'paint': vx = Math.sin(time * 0.5 + p.ph) * 14; vy = 10 + Math.cos(time * 0.6 + p.ph) * 10; break;
       case 'cube': vy = -(14 + p.s * 18); vx = Math.sin(time * 0.6 + p.ph) * 10; break;
       case 'sprinkle': vy = 45 + p.s * 35; vx = Math.sin(time * 1.1 + p.ph) * 20; break;
+      case 'spore': vy = -(10 + p.s * 16); vx = Math.sin(time * 0.8 + p.ph) * 16; break;
+      case 'fluff': vx = -(30 + p.s * 30); vy = Math.sin(time * 0.6 + p.ph) * 10; break;
+      case 'neon': vy = -(20 + p.s * 25); vx = Math.sin(time * 1.4 + p.ph) * 6; break;
     }
     p.x += vx * dt - camDX * (0.6 + p.s * 0.3);
     p.y += vy * dt - camDY * (0.6 + p.s * 0.3);
