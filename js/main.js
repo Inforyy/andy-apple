@@ -28,7 +28,10 @@ function adaptQuality(dtMs) {
   if (perf.win < 2000) return;
   const frac = perf.slow / perf.n;
   perf.win = perf.n = perf.slow = 0;
-  if (frac > 0.3 && qLevel > 0) { qMax = qLevel - 1; setQuality(qLevel - 1); perf.cool = 1.5; perf.good = 0; }
+  if (frac > 0.3 && qLevel > 0) {
+    qMax = qLevel - 1; setQuality(qLevel - 1); perf.cool = 1.5; perf.good = 0;
+    if (qLevel === 0) gpuWarn(true); // helemaal terug naar 'minimaal': het beeld is aantoonbaar te traag
+  }
   else if (frac < 0.03) { if (++perf.good >= 4 && qLevel < qMax) { setQuality(qLevel + 1); perf.good = 0; perf.cool = 2; } } // 8 s soepel: een stap omhoog
   else perf.good = 0;
 }
@@ -118,6 +121,7 @@ inputInit();
 resetWorld();
 refreshMenu();
 showScreen('menu');
+if (softwareRender()) gpuWarn(false);
 // uitnodigingslink (…#join=lobby-id): meteen naar multiplayer en verbinden
 function checkJoinLink() {
   const m = /[#&]join=([^&]+)/.exec(location.hash);

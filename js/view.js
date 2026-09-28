@@ -167,13 +167,26 @@ function setQuality(l) {
   try { localStorage.setItem(QKEY, JSON.stringify({ l: qLevel, auto: qAuto })); } catch (e) { /* negeren */ }
   applyQuality();
 }
-// Schuifje in Instellingen: 0 = automatisch (kiest zelf uit alle 5 niveaus), 1 = laag, 2 = normaal, 3 = hoog
+// Schuifje in Instellingen: 0 = AI (automatisch) (kiest zelf uit alle 5 niveaus), 1 = laag, 2 = normaal, 3 = hoog
 const QUALITY_CHOICES = [null, 1, 3, 4];
 const qualityChoice = () => qAuto ? 0 : qLevel >= 4 ? 3 : qLevel >= 2 ? 2 : 1;
 function setQualityChoice(i) {
   if (i === qualityChoice()) return;
   if (i === 0) { qAuto = true; qMax = 4; setQuality(Math.max(2, qLevel)); }
   else { qAuto = false; setQuality(QUALITY_CHOICES[i]); }
+}
+// Tekent de browser zonder grafische kaart (software)? Browsers zeggen niet of canvas-tekenen versneld is,
+// maar de WebGL-renderer verraadt het meestal: geen WebGL, of een software-renderer. (Dat het canvas toch
+// traag is terwijl WebGL wel een GPU meldt, vangt adaptQuality in main.js op.)
+function softwareRender() {
+  try {
+    const c = document.createElement('canvas'), gl = c.getContext('webgl') || c.getContext('experimental-webgl');
+    if (!gl) return true;
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    const r = String(gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER) || '');
+    const lose = gl.getExtension('WEBGL_lose_context'); if (lose) lose.loseContext();
+    return /swiftshader|llvmpipe|softpipe|software|basic render/i.test(r);
+  } catch (e) { return false; }
 }
 const gradCache = new Map();
 function cachedGrad(key, make) { let g = gradCache.get(key); if (!g) { g = make(); gradCache.set(key, g); if (gradCache.size > 300) gradCache.clear(); } return g; }

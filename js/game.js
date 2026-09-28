@@ -11,6 +11,7 @@ function showScreen(id) {
   for (const s of document.querySelectorAll('.screen')) s.classList.toggle('show', s.id === id);
   $('hud').classList.toggle('hidden', !(game.mode === 'ready' || game.mode === 'playing' || game.mode === 'dying' || game.mode === 'done' || game.mode === 'mpcount' || game.mode === 'mpend'));
   renderHeadStart();
+  if (gpuWarnPending && id && id !== 'pause') gpuWarn(gpuWarnPending === 'slow');
 }
 // ---- Head-start: alleen vóór de eerste sprong van een run in Eindeloos ----
 function renderHeadStart() {
@@ -27,6 +28,24 @@ function buyHeadStart(i) {
   Sfx.buy();
   run.headStart = h.m;
   begin();
+}
+// ---- Waarschuwing: geen grafische versnelling (bij het openen) of te traag beeld (tijdens het spelen) ----
+// Hooguit één keer per sessie, nooit midden in een run (dan pas bij het volgende menu of eindscherm), en weg te klikken voor altijd.
+const GPU_KEY = 'andyApples.gpuWarn';
+let gpuWarnPending = false, gpuWarnShown = false;
+function gpuWarn(slow) {
+  if (gpuWarnShown || IN_APP) return;
+  try { if (localStorage.getItem(GPU_KEY) === '1') return; } catch (e) { /* */ }
+  if (!curScreen || curScreen === 'pause') { gpuWarnPending = slow ? 'slow' : 'gpu'; return; }
+  gpuWarnShown = true; gpuWarnPending = false;
+  const firefox = /firefox|fxios/i.test(navigator.userAgent);
+  $('gpuWarnTxt').textContent = slow
+    ? 'Het spel loopt in deze browser traag, zelfs op de laagste grafische stand.'
+    : 'Je browser gebruikt geen grafische versnelling (GPU) voor dit spel. Het werkt wel, maar minder soepel en in een lagere resolutie.';
+  $('gpuWarnTip').textContent = firefox
+    ? 'Tip: in Chrome loopt het spel op dit apparaat waarschijnlijk veel soepeler.'
+    : 'Tip: zet hardwareversnelling aan in de instellingen van je browser, of probeer een andere browser (bijv. Chrome).';
+  $('gpuWarn').classList.remove('hidden');
 }
 function showBanner(big, small) {
   const b = $('banner');
@@ -335,7 +354,9 @@ function uiInit() {
   $('dbgZoom').addEventListener('input', e => { DBG.zoom = clamp(+e.target.value || 1, 0.4, 2.5); dbgPersist(); resize(); renderDbg(); });
   $('dbgSpeed').addEventListener('input', e => { DBG.speed = clamp(+e.target.value || 1, 0.25, 2.5); dbgPersist(); renderDbg(); });
   on('btnDbgReset', () => { DBG.zoom = 1; DBG.speed = 1; dbgPersist(); resize(); renderDbg(); });
-  on('btnDbgFps', () => { DBG.fps = !DBG.fps; dbgPersist(); renderDbg(); });
+  on('btnGpuOk', () => $('gpuWarn').classList.add('hidden'));
+  on('btnGpuNever', () => { try { localStorage.setItem(GPU_KEY, '1'); } catch (e) { /* */ } $('gpuWarn').classList.add('hidden'); });
+  on('btnDbgFps',() => { DBG.fps = !DBG.fps; dbgPersist(); renderDbg(); });
   on('btnDbgLock', () => { DBG.open = false; DBG.zoom = 1; DBG.speed = 1; DBG.fps = false; dbgPersist(); resize(); renderDbg(); });
   $('qualRange').addEventListener('input', e => { setQualityChoice(+e.target.value); renderQuality(); });
   for (const t of document.querySelectorAll('.qual-ticks [data-q]')) t.addEventListener('click', () => { setQualityChoice(+t.dataset.q); renderQuality(); });

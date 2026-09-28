@@ -244,7 +244,7 @@
     <div class="qual">
       <div class="qual-h"><label for="qualRange">Grafische kwaliteit</label><span id="qualNow"></span></div>
       <input type="range" id="qualRange" min="0" max="3" step="1" value="0">
-      <div class="qual-ticks"><span data-q="0">Auto</span><span data-q="1">Laag</span><span data-q="2">Normaal</span><span data-q="3">Hoog</span></div>
+      <div class="qual-ticks"><span data-q="0">AI</span><span data-q="1">Laag</span><span data-q="2">Normaal</span><span data-q="3">Hoog</span></div>
     </div>
     <div class="stats" id="menuStats" style="margin-top:16px"></div>
     <div class="row"><button class="btn ghost" id="btnDebug">Debug</button><button class="btn" id="btnSettingsBack">← Terug</button></div>
@@ -396,6 +396,17 @@
       <button class="btn" id="btnDoneShop">Upgrades</button>
       <button class="btn" id="btnDoneLevels">Levels</button>
     </div>
+  </div>
+</div>
+
+<!-- Waarschuwing: geen grafische versnelling of traag beeld (los venster boven het menu) -->
+<div id="gpuWarn" class="popup hidden">
+  <div class="panel" style="max-width:440px">
+    <h2>Traag beeld</h2>
+    <p class="sub" id="gpuWarnTxt"></p>
+    <p class="sub" id="gpuWarnTip"></p>
+    <button class="btn big green" id="btnGpuOk">Oké</button>
+    <div class="row"><button class="btn ghost" id="btnGpuNever">Niet meer tonen</button></div>
   </div>
 </div>
 
