@@ -7,8 +7,22 @@
 <title>Andy Apples</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%8E%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="css/style.css">
+<!-- Opstartscherm: inline, zodat het er staat voordat de rest geladen en getekend is -->
+<style>
+#splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+  background:radial-gradient(circle at 50% 40%,#1f6b33,#0d2a1a 70%);color:#fff;font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;transition:opacity .4s}
+#splash.out{opacity:0;pointer-events:none}
+#splash .sp-apple{font-size:72px;line-height:1;animation:sp-swing 1.2s ease-in-out infinite;transform-origin:50% 0}
+#splash .sp-title{font-size:40px;font-weight:900;letter-spacing:1px;text-shadow:0 4px 0 rgba(0,0,0,.3)}
+#splash .sp-title span{color:#ff5a4a}
+#splash .sp-bar{width:140px;height:6px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden}
+#splash .sp-bar i{display:block;width:40%;height:100%;border-radius:3px;background:#ff5a4a;animation:sp-load 1s ease-in-out infinite}
+@keyframes sp-swing{0%,100%{transform:rotate(-14deg)}50%{transform:rotate(14deg)}}
+@keyframes sp-load{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}
+</style>
 </head>
 <body>
+<div id="splash" aria-hidden="true"><div class="sp-apple">🍎</div><div class="sp-title">Andy <span>Apples</span></div><div class="sp-bar"><i></i></div></div>
 <!-- Eigen lijn-iconen (in plaats van emoji's, die er per toestel anders uitzien); gebruik: <svg class="ico"><use href="#i-naam"/></svg> -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></symbol>
@@ -25,6 +39,10 @@
   <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 22V3"/><path d="M5 4h13l-2.5 4.5L18 13H5"/></symbol>
   <symbol id="i-infinity" viewBox="0 0 24 24"><path d="M12 12c-2-2.7-4-4-6-4a4 4 0 0 0 0 8c2 0 4-1.3 6-4zm0 0c2 2.7 4 4 6 4a4 4 0 0 0 0-8c-2 0-4 1.3-6 4z"/></symbol>
   <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20a15 15 0 0 1 0-20z"/></symbol>
+  <symbol id="i-split" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M12 4v14"/><path d="M8 21h8"/></symbol>
+  <symbol id="i-kiwi" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><path d="M12 5v1.5M12 17.5V19M5 12h1.5M17.5 12H19M7 7l1 1M16 16l1 1M7 17l1-1M16 8l1-1"/></symbol>
+  <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></symbol>
   <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5z"/></symbol>
   <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/><path d="M7.5 5.5l9 5"/></symbol>
   <symbol id="i-none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M6.5 17.5l11-11"/></symbol>
@@ -76,7 +94,7 @@
       </button>
       <button class="mode multi" id="btnMulti">
         <span class="mode-ic"><svg class="ico" aria-hidden="true"><use href="#i-users"/></svg></span>
-        <span class="mode-txt"><span class="mode-t">Multiplayer</span><span class="mode-s" id="mmMulti">Tegen een vriend</span></span>
+        <span class="mode-txt"><span class="mode-t">Spelmodi</span><span class="mode-s" id="mmMulti">Online, samen of tegen Kiwi</span></span>
         <span class="mode-go"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg></span>
       </button>
     </div>
@@ -90,82 +108,75 @@
 </div>
 
 
+<!-- Spelmodi -->
+<div id="modes" class="screen">
+  <div class="panel modes">
+    <div class="p-head"><button class="ic-btn" id="btnModesBack" aria-label="Menu" title="Menu"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg></button><h2>Spelmodi</h2><span></span></div>
+    <div class="modes-grid">
+      <button class="mode multi" id="btnModeOnline">
+        <span class="mode-ic"><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg></span>
+        <span class="mode-txt"><span class="mode-t">Multiplayer</span><span class="mode-s" id="mdOnline">Online met vrienden, tot 20 spelers</span></span>
+        <span class="mode-go"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg></span>
+      </button>
+      <button class="mode duo" id="btnModeDuo">
+        <span class="mode-ic"><svg class="ico" aria-hidden="true"><use href="#i-split"/></svg></span>
+        <span class="mode-txt"><span class="mode-t">Duel</span><span class="mode-s" id="mdDuo">Met z&#39;n tweeën op één scherm</span></span>
+        <span class="mode-go"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg></span>
+      </button>
+      <button class="mode kiwi" id="btnModeKiwi">
+        <span class="mode-ic"><svg class="ico" aria-hidden="true"><use href="#i-kiwi"/></svg></span>
+        <span class="mode-txt"><span class="mode-t">Tegen Kiwi</span><span class="mode-s" id="mdKiwi">Race naar de finish tegen de computer</span></span>
+        <span class="mode-go"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg></span>
+      </button>
+      <button class="mode chase" id="btnModeChase">
+        <span class="mode-ic"><svg class="ico" aria-hidden="true"><use href="#i-zap"/></svg></span>
+        <span class="mode-txt"><span class="mode-t">Achtervolging</span><span class="mode-s" id="mdChase">Kiwi zit je achterna. Hoe lang blijf je hem voor?</span></span>
+        <span class="mode-go"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg></span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Multiplayer -->
 <div id="mp" class="screen">
   <div class="panel mpp">
     <div class="p-head"><button class="ic-btn" id="btnMpBack" aria-label="Menu" title="Menu"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg></button><h2 id="mpTitle">Multiplayer</h2><button class="ic-btn" id="btnMpSetup" aria-label="Uitleg" title="Uitleg"><svg class="ico" aria-hidden="true"><use href="#i-help"/></svg></button></div>
-    <div class="mp-top"><div class="mp-name"><label for="mpName">Naam</label><input id="mpName" maxlength="12" spellcheck="false" autocomplete="off"></div></div>
+    <div class="set-card" id="mpMe"><div class="set-row"><span class="set-ic s4"><svg class="ico" aria-hidden="true"><use href="#i-user"/></svg></span><label class="set-lbl" for="mpName">Naam</label><input class="mp-name" id="mpName" maxlength="12" spellcheck="false" autocomplete="off"></div></div>
 
     <!-- start: kiezen -->
-    <div id="mpHome">
-      <section class="mp-card" id="mpOnline">
-        <div class="mp-card-h"><h3>Online lobbies</h3><button class="btn green sm" id="btnMpHost">+ Nieuwe lobby</button></div>
-        <ul class="lobbies" id="mpLobbies"></ul>
-      </section>
-      <section class="mp-card" id="mpDevice">
-        <div class="mp-card-h"><h3>Op dit apparaat</h3></div>
-        <div class="row"><button class="btn local" id="btnMpLocal">2 spelers, één scherm</button><button class="btn kiwi" id="btnMpAi">Tegen Kiwi (AI)</button><button class="btn kiwi" id="btnMpChase">Achtervolging</button></div>
-      </section>
-      <details class="mp-manual" id="mpManual">
-        <summary>Handmatig verbinden (zonder server, 2 spelers)</summary>
-        <div class="row" id="mpManPick"><button class="btn" id="btnMpManualHost">Maak uitnodigingscode</button><button class="btn" id="btnMpJoin">Ik heb een code</button></div>
-        <div id="mpManHost" class="hidden">
-          <div class="mp-step">
-            <h3>1. Stuur deze uitnodigingscode</h3>
-            <textarea id="mpOffer" readonly spellcheck="false" placeholder="Code wordt gemaakt…"></textarea>
-            <div class="row"><button class="btn" id="btnMpCopyOffer" disabled>Kopieer</button></div>
-          </div>
-          <div class="mp-step">
-            <h3>2. Plak de antwoordcode</h3>
-            <textarea id="mpAnswerIn" spellcheck="false" placeholder="Plak de antwoordcode…"></textarea>
-            <div class="row"><button class="btn green" id="btnMpConnect">Verbinden</button></div>
-          </div>
-        </div>
-        <div id="mpManJoin" class="hidden">
-          <div class="mp-step">
-            <h3>1. Plak de uitnodigingscode</h3>
-            <textarea id="mpOfferIn" spellcheck="false" placeholder="Plak de uitnodigingscode…"></textarea>
-            <div class="row"><button class="btn green" id="btnMpMakeAnswer">Maak antwoordcode</button></div>
-          </div>
-          <div class="mp-step hidden" id="mpAnswerStep">
-            <h3>2. Stuur deze antwoordcode terug</h3>
-            <textarea id="mpAnswer" readonly spellcheck="false" placeholder="Code wordt gemaakt…"></textarea>
-            <div class="row"><button class="btn" id="btnMpCopyAnswer" disabled>Kopieer</button></div>
-          </div>
-        </div>
-      </details>
-    </div>
+    <section class="set-group" id="mpHome">
+      <div class="grp-h"><h3>Online lobbies</h3><button class="btn green sm" id="btnMpHost">+ Nieuwe lobby</button></div>
+      <ul class="set-card lobbies" id="mpLobbies"></ul>
+    </section>
 
     <!-- bezig met verbinden / lobby openen -->
     <div id="mpBusy" class="mp-status wait hidden"><i></i><span id="mpBusyTxt">Verbinden…</span></div>
 
     <!-- in een lobby (of klaar om lokaal te spelen) -->
-    <div id="mpRoom" class="hidden">
-      <section class="mp-card">
-        <div class="mp-card-h"><h3>Spelers</h3><span class="mp-count" id="mpCountTxt"></span></div>
-        <ul class="players" id="mpPlayers"></ul>
-        <div class="row hidden" id="mpShareRow"><button class="btn sm" id="btnMpShare">Uitnodiging kopiëren</button></div>
+    <div id="mpRoom" class="set-groups hidden">
+      <section class="set-group">
+        <div class="grp-h"><h3>Spelers <span id="mpCountTxt"></span></h3><button class="btn ghost sm hidden" id="btnMpShare">Uitnodigen</button></div>
+        <ul class="set-card players" id="mpPlayers"></ul>
       </section>
-      <section class="mp-card">
-        <div class="mp-card-h"><h3>Spelmodus</h3><span class="mp-count" id="mpModeWho"></span></div>
-        <div class="mp-modes">
-          <button class="mp-mode" id="mpModeRace" data-mode="race"><b>Race</b><small>Eerst bij de finish wint. Val je, dan kom je terug (en verlies je tijd).</small></button>
-          <button class="mp-mode" id="mpModeEnd" data-mode="endurance"><b>Endurance</b><small>Wie het langst volhoudt, wint. Een storm jaagt je op.</small></button>
-          <button class="mp-mode hidden" id="mpModeChase" data-mode="chase"><b>Achtervolging</b><small>Kiwi zit je achterna en wordt steeds sneller. Hoe lang blijf je hem voor?</small></button>
-        </div>
-        <div class="mp-lens" id="mpLens">
-          <button class="mp-len" data-len="500">500 m</button>
-          <button class="mp-len" data-len="1000">1000 m</button>
-          <button class="mp-len" data-len="2000">2000 m</button>
-        </div>
-        <div class="mp-lens hidden" id="mpAiLvls">
-          <button class="mp-len" data-ai="0">Makkelijk</button>
-          <button class="mp-len" data-ai="1">Normaal</button>
-          <button class="mp-len" data-ai="2">Moeilijk</button>
-          <button class="mp-len" data-ai="3">Expert</button>
+      <section class="set-group">
+        <div class="grp-h"><h3>Spelmodus</h3><span class="grp-note" id="mpModeWho"></span></div>
+        <div class="set-card">
+          <div class="set-row" id="mpModeRow">
+            <div class="seg">
+              <button id="mpModeRace" data-mode="race">Race</button>
+              <button id="mpModeEnd" data-mode="endurance">Endurance</button>
+              <button class="hidden" id="mpModeChase" data-mode="chase">Achtervolging</button>
+            </div>
+          </div>
+          <p class="mp-desc" id="mpModeDesc"></p>
+          <div class="set-row" id="mpLens"><span class="set-lbl">Afstand</span>
+            <div class="seg"><button data-len="500">500 m</button><button data-len="1000">1000 m</button><button data-len="2000">2000 m</button></div>
+          </div>
+          <div class="set-row hidden" id="mpAiLvls"><span class="set-lbl">Niveau</span>
+            <div class="seg"><button data-ai="0">Makkelijk</button><button data-ai="1">Normaal</button><button data-ai="2">Moeilijk</button><button data-ai="3">Expert</button></div>
+          </div>
         </div>
       </section>
-      <p class="sub hidden" id="mpLocalKeys"><b style="color:#e8322b">Speler 1</b>: <kbd>SPATIE</kbd> of links/boven tikken · <b style="color:#2f7fe0">Speler 2</b>: <kbd>↑</kbd> / <kbd>ENTER</kbd> of rechts/onder tikken</p>
       <p class="sub hidden" id="mpGuestWait">Wachten tot de host start…</p>
     </div>
 
@@ -187,7 +198,7 @@
       <li>Anderen klikken in de lijst op <b>Meedoen</b> (of openen de link). Er passen <b>20 spelers</b> in een lobby.</li>
       <li>De host kiest <b>Race</b> of <b>Endurance</b> en klikt op <b>Start</b>. Na afloop start de host met <b>Nieuwe ronde</b> het volgende potje.</li>
     </ol>
-    <div class="tip">Blijft het hangen op <b>Verbinden…</b>? Sommige netwerken blokkeren directe verbindingen. Zet beide apparaten op hetzelfde wifi-netwerk, of probeer <b>Handmatig verbinden</b> (twee codes uitwisselen, werkt zonder server).</div>
+    <div class="tip">Blijft het hangen op <b>Verbinden…</b>? Sommige netwerken blokkeren directe verbindingen. Zet beide apparaten op hetzelfde wifi-netwerk en probeer het opnieuw.</div>
     <div class="tip">Laat het spel in beeld: wie tijdens een potje een paar seconden wegklikt, geeft op. Twee tabbladen in één venster werkt niet; gebruik twee aparte vensters.</div>
     <h3>Op één apparaat</h3>
     <p>Kies <b>Op één scherm</b>. <b style="color:#e8322b">Speler 1</b>: <kbd>SPATIE</kbd> of de linker/bovenste helft. <b style="color:#2f7fe0">Speler 2</b>: <kbd>↑</kbd> / <kbd>ENTER</kbd> of de rechter/onderste helft.</p>

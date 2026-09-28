@@ -40,7 +40,7 @@ Laat los als Andy naar voren zwaait. Alleen in het water (of de lava, …) valle
 
 - 🏁 **Carrière**: 55 levels met een start en een finish, steeds langer en moeilijker. Elke 5 levels een nieuwe wereld. Tot 3 sterren per level, afhankelijk van hoeveel appels je pakt.
 - ♾️ **Eindeloos**: kom zo ver mogelijk. Het wordt geleidelijk lastiger en iets sneller (tot een plafond). Met een account kom je met je gebruikersnaam op de online ranglijst.
-- 👥 **Multiplayer**: online tot 20 spelers, met z'n tweeën op één scherm, of tegen Kiwi de AI. Zie [Multiplayer](#multiplayer).
+- 👥 **Spelmodi**: Multiplayer (online tot 20 spelers), Duel (met z'n tweeën op één scherm), Tegen Kiwi en Achtervolging. Zie [Multiplayer](#multiplayer).
 
 ## Het spel
 
@@ -105,14 +105,13 @@ Zwaaikracht en Lanceerkracht verhogen ook je topsnelheid: snelheid moet je verdi
 In multiplayer staan upgrades uit, en appels en XP tellen niet mee voor je save. Iedereen speelt in dezelfde wereld en ziet de anderen als extra gorilla's.
 
 **Manieren van spelen**
-- **Online lobbies (tot 20 spelers)**: kies **Multiplayer → + Nieuwe lobby**. Je lobby verschijnt in de lijst van anderen, of je stuurt een uitnodigingslink. De host kiest de spelmodus en start vanaf 2 spelers. Na afloop start de host een nieuwe ronde.
-- **2 spelers, één scherm**: speler 1 speelt met `Spatie` (of de linker/bovenste helft van het scherm), speler 2 met `↑` of `Enter` (of de rechter/onderste helft). Geen internet nodig.
-- **Tegen Kiwi (AI)**: een orang-oetan op niveau *Makkelijk*, *Normaal*, *Moeilijk* of *Expert*.
-- **Handmatig verbinden (2 spelers)**: werkt zonder server, door twee codes uit te wisselen. Handig als een netwerk directe verbindingen blokkeert.
+- **Online lobbies (tot 20 spelers)**: kies **Spelmodi → Multiplayer → + Nieuwe lobby**. Je lobby verschijnt in de lijst van anderen, of je stuurt een uitnodigingslink. De host kiest de spelmodus en start vanaf 2 spelers. Na afloop start de host een nieuwe ronde.
+- **Duel** (2 spelers, één scherm): speler 1 speelt met `Spatie` (of de linker/bovenste helft van het scherm), speler 2 met `↑` of `Enter` (of de rechter/onderste helft). Geen internet nodig.
+- **Tegen Kiwi (AI)**: een race naar de finish tegen een orang-oetan op niveau *Makkelijk*, *Normaal*, *Moeilijk* of *Expert*.
 
 **Spelmodi**
 - **Race**: wie het eerst bij de finish is (500, 1000 of 2000 m), wint. Val je, dan kom je terug op een liaan en verlies je tijd.
-- **Endurance**: wie het langst volhoudt, wint. Een storm jaagt je op.
+- **Endurance** (Multiplayer en Duel): wie het langst volhoudt, wint. Een storm jaagt je op.
 - **Achtervolging** (tegen Kiwi): Kiwi start 3 tellen na jou en wordt steeds sneller. Hoe lang hou je het vol? Je record wordt bewaard.
 
 Online gebruikt het spel Supabase alleen om lobbies te vinden en de verbinding op te zetten. Daarna praten de spelers direct met de host (WebRTC). Bij 20 spelers heeft de host een goede verbinding nodig.
