@@ -1061,19 +1061,16 @@ let VOX = 0, VOY = 0, RW = 0, RH = 0;
 const LOCAL = { on: false, split: 'v', vw: 0, vh: 0, worlds: null, base: null, cfg: null, result: null, count: 0, lastCount: 99, score: [0, 0] };
 // Kwaliteitsniveaus: het spel meet zelf de framerate en schakelt terug als het te traag gaat.
 // px = maximaal aantal pixels voor het beeld, bg = resolutie van de (vage) achtergrond
-// viewMul: hoeveel van de extra uitzoom (basis + snelheid) een niveau krijgt. Verder uitzoomen laat meer
-// van de wereld zien, en dus ook meer lianen/appels om te simuleren en te tekenen: op trage machines
-// (lage kwaliteit) temperen we dat automatisch mee, net als de andere effecten.
 const QUALITY = [
-  { px: 0.24e6, bg: 0.38, bgEvery: 3, rays: false, clouds: false, parts: 110, amb: 0, lite: true, viewMul: 0.3 }, // noodstand voor trage machines
-  { px: 0.42e6, bg: 0.45, bgEvery: 2, rays: false, clouds: false, parts: 220, amb: 25, viewMul: 0.55 },
-  { px: 0.75e6, bg: 0.5,  bgEvery: 2, rays: false, clouds: true,  parts: 400, amb: 45, viewMul: 0.8 },
-  { px: 1.25e6, bg: 0.55, bgEvery: 1, rays: true,  clouds: true,  parts: 650, amb: 70, viewMul: 1 },
-  { px: 2.1e6,  bg: 0.6,  bgEvery: 1, rays: true,  clouds: true,  parts: 900, amb: 70, viewMul: 1 },
+  { px: 0.3e6,  bg: 0.38, bgEvery: 3, rays: false, clouds: false, parts: 110, amb: 0, lite: true }, // noodstand voor trage machines
+  { px: 0.6e6,  bg: 0.45, bgEvery: 2, rays: false, clouds: false, parts: 220, amb: 25 },
+  { px: 1.1e6,  bg: 0.5,  bgEvery: 2, rays: false, clouds: true,  parts: 400, amb: 45 },
+  { px: 2.0e6,  bg: 0.55, bgEvery: 1, rays: true,  clouds: true,  parts: 650, amb: 70 },
+  { px: 3.6e6,  bg: 0.6,  bgEvery: 1, rays: true,  clouds: true,  parts: 900, amb: 70 },
 ];
-const QKEY = 'andyApples.quality2';
-let qLevel = 2, qMax = 4;
-try { const q = JSON.parse(localStorage.getItem(QKEY)); if (q && q.l >= 0 && q.l <= 4) qLevel = Math.min(3, q.l); } catch (e) { /* geen voorkeur */ }
+const QKEY = 'andyApples.quality3';
+let qLevel = 3, qMax = 4;
+try { const q = JSON.parse(localStorage.getItem(QKEY)); if (q && q.l >= 0 && q.l <= 4) qLevel = q.l; } catch (e) { /* geen voorkeur */ }
 let Q = QUALITY[qLevel];
 let dpr = 1, pr = 1, cssW = 0, cssH = 0, baseScale = 1, scale = 1, viewW = 0, viewH = 0, zoomK = 0;
 let bgFrame = 0, bgStale = true;
@@ -1141,9 +1138,8 @@ function resize() {
   }
   LOCAL.vw = vw; LOCAL.vh = vh;
   baseScale = Math.min(vh / 740, vw / 500);
-  // standaard 50% verder uitgezoomd (los van de snelheidsafhankelijke zoom hieronder). Op lagere
-  // kwaliteitsniveaus (tragere machines) temperen we dit, want meer overzicht = meer te simuleren.
-  baseScale /= 1 + (BASE_ZOOM_OUT - 1) * Q.viewMul;
+  // standaard 50% verder uitgezoomd (los van de snelheidsafhankelijke zoom hieronder)
+  baseScale /= BASE_ZOOM_OUT;
   // telefoons/tablets: iets verder uitgezoomd voor meer overzicht
   if (IS_MOBILE) baseScale *= vw < vh ? 0.76 : 0.86;
   RW = Math.round(vw * pr); RH = Math.round(vh * pr);
@@ -1153,25 +1149,35 @@ function resize() {
   applyZoom();
 }
 const BASE_ZOOM_OUT = 1.5; // standaard-zoomniveau: 50% verder uitgezoomd dan het oorspronkelijke beeld
-// Hoe sneller Andy gaat, hoe verder uitgezoomd (meer overzicht bij hoge snelheid). zoomK (0..1) volgt
-// de snelheid met wat vertraging, zodat het zoomen vloeiend gaat i.p.v. te schokken.
-const ZOOM_LO = 550, ZOOM_HI = 1750, ZOOM_OUT = 0.32; // bij zoomK=1 is er ~32% meer wereld te zien
-function zoomTarget() {
-  if (!G || G.state === 'dead') return 0;
-  const sp = Math.hypot(G.vx, G.vy);
-  return clamp((sp - ZOOM_LO) / (ZOOM_HI - ZOOM_LO), 0, 1);
-}
+// Hoe sneller Andy gaat, hoe verder uitgezoomd (meer overzicht bij hoge snelheid).
+// De zoom volgt NIET de directe snelheid (die schommelt bij elke zwaai sterk), maar de gemiddelde
+// voorwaartse snelheid over ruim een seconde, en beweegt daar dan ook nog rustig naartoe.
+const ZOOM_LO = 450, ZOOM_HI = 1250, ZOOM_OUT = 0.32; // bij zoomK=1 is er 32% meer wereld te zien
 function updateZoom(dt) {
-  const target = zoomTarget();
-  // sneller uitzoomen dan weer inzoomen: zo ben je meteen voorbereid als het tempo omhoog schiet
-  const rate = target > zoomK ? 3 : 1.4;
-  zoomK += (target - zoomK) * Math.min(1, dt * rate);
+  let target = 0;
+  if (G && G.state !== 'dead') {
+    G.spdAvg = (G.spdAvg || 0) + (Math.max(0, G.vx) - (G.spdAvg || 0)) * Math.min(1, dt * 0.8);
+    const k = clamp((G.spdAvg - ZOOM_LO) / (ZOOM_HI - ZOOM_LO), 0, 1);
+    target = k * k * (3 - 2 * k); // zacht begin en einde
+  }
+  zoomK += (target - zoomK) * Math.min(1, dt * 0.7);
   applyZoom();
 }
 function applyZoom() {
-  scale = baseScale / (1 + zoomK * ZOOM_OUT * Q.viewMul);
+  scale = baseScale / (1 + zoomK * ZOOM_OUT);
   const vw = LOCAL.vw || cssW, vh = LOCAL.vh || cssH;
   viewW = vw / scale; viewH = vh / scale;
+}
+// De achtergrond (lucht, bergen, bos, reuzenstammen, voorgrond) wordt altijd op de vaste basiszoom
+// getekend: die lagen worden gebufferd, en een zoom die elk beeld een beetje verandert zou die
+// buffers anders elk beeld opnieuw laten opbouwen (traag en schokkerig). Alleen de speelwereld zoomt.
+function withBaseView(fn) {
+  const s0 = scale, w0 = viewW, h0 = viewH, cx = camX, cy = camY;
+  const vw = LOCAL.vw || cssW, vh = LOCAL.vh || cssH;
+  scale = baseScale; viewW = vw / scale; viewH = vh / scale;
+  camX = cx + (w0 - viewW) * 0.5;                       // zelfde midden
+  camY = HAZARD_Y - (HAZARD_Y - cy) * s0 / scale;        // waterlijn op precies dezelfde hoogte in beeld
+  try { fn(); } finally { scale = s0; viewW = w0; viewH = h0; camX = cx; camY = cy; }
 }
 function setQuality(l) {
   qLevel = clamp(l, 0, 4);
@@ -1185,7 +1191,8 @@ window.addEventListener('orientationchange', () => setTimeout(resize, 200));
 document.documentElement.classList.toggle('touch', navigator.maxTouchPoints > 0 || (window.matchMedia && matchMedia('(pointer: coarse)').matches));
 resize();
 // bovenkant van het beeld in rust; op hoge (staande) schermen gaat een deel van de extra ruimte naar het water
-const baseTop = () => WORLD_H + 20 - viewH + Math.max(0, viewH - 760) * 0.4;
+// (alleen op echt staande schermen; niet omdat het beeld door het uitzoomen hoger wordt)
+const baseTop = () => WORLD_H + 20 - viewH + Math.max(0, viewH - Math.max(760, viewW * 0.62)) * 0.4;
 
 // =====================================================================
 //  Wereldstatus
@@ -3488,32 +3495,33 @@ function render() {
   if (clip) { mainCtx.save(); mainCtx.setTransform(1, 0, 0, 1, 0, 0); mainCtx.beginPath(); mainCtx.rect(VOX, VOY, RW, RH); mainCtx.clip(); }
   // 1) verre achtergrond in een aparte buffer op lage resolutie (mag toch wat vaag zijn);
   //    op de lage kwaliteitsniveaus wordt die maar om het andere beeld ververst
+  const S0 = baseScale * pr; // vaste basiszoom voor de achtergrond
   if (++bgFrame % Q.bgEvery === 0 || bgStale || clip) {
     bgStale = false;
     ctx = bgCtx;
-    const SB = S * Q.bg;
+    const SB = S0 * Q.bg;
     ctx.setTransform(SB, 0, 0, SB, 0, 0);
-    drawSky(P);
-    drawMountains(P);
-    drawAltClouds(P);
-    drawFlocks(P);
-    drawForestLine(P);
-    drawMidTrees(P);
-    const sw = spaceWeight();
-    if (sw > 0) drawSpace(sw);
+    withBaseView(() => {
+      drawSky(P);
+      drawMountains(P);
+      drawAltClouds(P);
+      drawFlocks(P);
+      drawForestLine(P);
+      drawMidTrees(P);
+      const sw = spaceWeight();
+      if (sw > 0) drawSpace(sw);
+    });
     ctx = mainCtx;
   }
   ctx.setTransform(1, 0, 0, 1, VOX, VOY);
   ctx.imageSmoothingEnabled = true;
   ctx.drawImage(bgCanvas, 0, 0, RW, RH);
   // 2) nabije achtergrond op volle resolutie
-  ctx.setTransform(S, 0, 0, S, VOX, VOY);
+  ctx.setTransform(S0, 0, 0, S0, VOX, VOY);
   const spW = spaceWeight();
   if (spW < 1) {
     ctx.globalAlpha = 1 - spW;
-    drawFlyers();
-    drawGiantTrunks(P);
-    drawLightRays(P);
+    withBaseView(() => { drawFlyers(); drawGiantTrunks(P); drawLightRays(P); });
     ctx.globalAlpha = 1;
   }
   // 3) de speelwereld
@@ -3539,9 +3547,9 @@ function render() {
   if (game.mp) drawStorm();
   drawHazard(P);
   drawTexts();
+  ctx.setTransform(S0, 0, 0, S0, VOX, VOY);
+  withBaseView(() => { drawForeground(P); if (spW < 0.6) drawAmbient(P); });
   ctx.setTransform(S, 0, 0, S, VOX, VOY);
-  drawForeground(P);
-  if (spW < 0.6) drawAmbient(P);
   drawWarnings();
   if (game.mp) drawMpOverlay();
   drawFlash();
@@ -4220,7 +4228,7 @@ function localLoop(dt) {
       updateZoom(gdt);
       genUntil(camX + viewW + 900);
       const P = paletteAt((camX + viewW * 0.5 - START_X) / PX_PER_M);
-      updateAmbient(gdt, P.t < 0.5 ? P.a.particle : P.b.particle, camX - lastCamX, camY - oy);
+      { const dx = camX - lastCamX, dy = camY - oy; withBaseView(() => updateAmbient(gdt, P.t < 0.5 ? P.a.particle : P.b.particle, dx, dy)); }
       updateLife(gdt, P);
       lastCamX = camX;
       localPin(i);
@@ -4849,12 +4857,13 @@ function adaptQuality(dtMs) {
   perf.ema += (dtMs - perf.ema) * 0.07;
   perf.slow += ((dtMs > 19 ? 1 : 0) - perf.slow) * 0.05; // aandeel trage beelden: losse haperingen tellen nauwelijks
   perf.t += dtMs / 1000; perf.cool -= dtMs / 1000;
-  perf.good = perf.ema < 17.6 ? perf.good + dtMs / 1000 : 0;
+  // 'soepel' = nauwelijks trage beelden (een losse hapering reset de teller niet)
+  perf.good = perf.slow < 0.2 && perf.ema < 18.5 ? perf.good + dtMs / 1000 : 0;
   if (perf.cool > 0) return;
   // veel te traag: sneller terugschakelen
   if (perf.ema > 21 && perf.slow > 0.45 && qLevel > 0) { const slow = perf.ema > 32; qMax = qLevel; setQuality(qLevel - 1); perf.t = 0; perf.cool = slow ? 1 : 2.5; perf.ema = 16.7; perf.slow = 0; perf.good = 0; }
   // omhoog als het een tijd soepel loopt; na een eerdere terugval pas na langere tijd opnieuw proberen
-  else if (qLevel < 4 && perf.good > (qLevel + 1 >= qMax ? 25 : 6)) { if (qLevel + 1 >= qMax) qMax = 4; setQuality(qLevel + 1); perf.good = 0; perf.cool = 3; }
+  else if (qLevel < 4 && perf.good > (qLevel + 1 >= qMax ? 15 : 3)) { if (qLevel + 1 >= qMax) qMax = 4; setQuality(qLevel + 1); perf.good = 0; perf.cool = 3; }
 }
 window.addEventListener('focus', perfSettle);
 document.addEventListener('visibilitychange', perfSettle);
@@ -4878,7 +4887,7 @@ function frame(now) {
     updateZoom(gdt);
     genUntil(camX + viewW + 900);
     const P = paletteAt((camX + viewW * 0.5 - START_X) / PX_PER_M);
-    updateAmbient(gdt, P.t < 0.5 ? P.a.particle : P.b.particle, camX - lastCamX, camY - oy);
+    { const dx = camX - lastCamX, dy = camY - oy; withBaseView(() => updateAmbient(gdt, P.t < 0.5 ? P.a.particle : P.b.particle, dx, dy)); }
     updateLife(gdt, P);
     lastCamX = camX;
     updateHud();
