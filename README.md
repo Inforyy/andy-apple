@@ -39,7 +39,7 @@ Laat los als Andy naar voren zwaait. Alleen in het water (of de lava, …) valle
 ## Spelmodi
 
 - 🏁 **Carrière**: 55 levels met een start en een finish, steeds langer en moeilijker. Elke 5 levels een nieuwe wereld. Tot 3 sterren per level, afhankelijk van hoeveel appels je pakt.
-- ♾️ **Eindeloos**: kom zo ver mogelijk. Het wordt geleidelijk lastiger en iets sneller (tot een plafond), met een online ranglijst.
+- ♾️ **Eindeloos**: kom zo ver mogelijk. Het wordt geleidelijk lastiger en iets sneller (tot een plafond). Met een account kom je met je gebruikersnaam op de online ranglijst.
 - 👥 **Multiplayer**: online tot 20 spelers, met z'n tweeën op één scherm, of tegen Kiwi de AI. Zie [Multiplayer](#multiplayer).
 
 ## Het spel
@@ -119,6 +119,8 @@ Online gebruikt het spel Supabase alleen om lobbies te vinden en de verbinding o
 
 ## Instellingen
 
+Instellingen open je met het tandwiel rechtsboven in het hoofdmenu, of in het pauzescherm.
+
 - **Grafische kwaliteit**: een schuifje met *AI* (standaard: het spel meet de framerate en kiest zelf), *Laag*, *Normaal* en *Hoog*. Tekent je browser zonder grafische versnelling, of moet het spel naar de laagste stand, dan krijg je in het menu een melding met een tip.
 - **Liggend spelen**: op telefoons standaard aan. Waar het kan wordt het scherm liggend vastgezet; anders draait het spel het beeld zelf een kwartslag.
 - **Volledig scherm**, **geluid** en **muziek**: los aan en uit te zetten.
@@ -129,6 +131,7 @@ Online gebruikt het spel Supabase alleen om lobbies te vinden en de verbinding o
 - Je voortgang wordt automatisch in de browser bewaard.
 - Via **Opslaan** exporteer je een `.json`-bestand, of kopieer je een save-code (handig op een telefoon). Met **Importeer** laad je die weer in. Saves hebben een checksum, zodat je een waarschuwing krijgt als er met de hand aan is gezeten.
 - Met een **account** wordt je voortgang ook online bewaard en kun je op een ander apparaat verder. Heb je op beide plekken voortgang, dan vraagt het spel welke je wilt houden.
+- Bij **Account** kies je ook een **gebruikersnaam** (uniek, 3–16 tekens: letters, cijfers en `_`). Die zie je op de ranglijst en in multiplayer. Zonder account krijg je in multiplayer een willekeurige naam, die je zelf kunt aanpassen.
 - De Android-app heeft een eigen voortgang, los van de browser. Zet die over met exporteren en importeren.
 
 ## Voor ontwikkelaars
@@ -172,37 +175,53 @@ Accounts, online lobbies en de ranglijst gebruiken één gratis [Supabase](https
    create policy "eigen save maken"    on public.saves for insert to authenticated with check ((select auth.uid()) = user_id);
    create policy "eigen save bijwerken" on public.saves for update to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
 
-   -- ===== Ranglijst (Eindeloos) =====
-   create table public.scores (
-     player_id  text primary key check (char_length(player_id) between 16 and 40),
-     name       text not null check (char_length(name) between 1 and 12),
+   -- ===== Gebruikersnamen: uniek (ook zonder op hoofdletters te letten), 3-16 tekens =====
+   create table public.profiles (
+     user_id    uuid primary key references auth.users (id) on delete cascade,
+     username   text not null check (username ~ '^[A-Za-z0-9_]{3,16}$'),
+     updated_at timestamptz not null default now()
+   );
+   create unique index profiles_username_uniek on public.profiles (lower(username));
+   alter table public.profiles enable row level security;
+   create policy "eigen naam lezen"    on public.profiles for select to authenticated using ((select auth.uid()) = user_id);
+   create policy "eigen naam maken"    on public.profiles for insert to authenticated with check ((select auth.uid()) = user_id);
+   create policy "eigen naam wijzigen" on public.profiles for update to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+   grant select, insert, update on public.profiles to authenticated;
+
+   -- ===== Ranglijst (Eindeloos): alleen spelers met een account en een gebruikersnaam =====
+   create table public.ranking (
+     user_id    uuid primary key references auth.users (id) on delete cascade,
      dist       integer not null check (dist between 0 and 100000),
      updated_at timestamptz not null default now()
    );
-   create index scores_dist_idx on public.scores (dist desc);
-   alter table public.scores enable row level security;
-   create policy "ranglijst lezen" on public.scores for select to anon, authenticated using (true);
-   revoke all on table public.scores from anon, authenticated;
-   grant select (name, dist, updated_at) on table public.scores to anon, authenticated;
+   alter table public.ranking enable row level security;  -- geen policies: schrijven kan alleen via submit_run
 
-   create or replace function public.submit_score(p_id text, p_name text, p_dist integer)
+   create or replace function public.submit_run(p_dist integer)
    returns void language plpgsql security definer set search_path = public as $$
    begin
-     if p_id is null or p_id !~ '^[0-9a-f]{24}$' then raise exception 'ongeldig id'; end if;
+     if auth.uid() is null then raise exception 'niet ingelogd'; end if;
      if p_dist is null or p_dist < 0 or p_dist > 100000 then raise exception 'ongeldige afstand'; end if;
-     p_name := left(btrim(regexp_replace(coalesce(p_name, ''), '[<>&"]', '', 'g')), 12);
-     if p_name = '' then p_name := 'Andy'; end if;
-     insert into public.scores (player_id, name, dist) values (p_id, p_name, p_dist)
-     on conflict (player_id) do update
-       set name = excluded.name,
-           dist = greatest(scores.dist, excluded.dist),
-           updated_at = case when excluded.dist > scores.dist then now() else scores.updated_at end;
+     insert into public.ranking (user_id, dist) values (auth.uid(), p_dist)
+     on conflict (user_id) do update
+       set dist = greatest(ranking.dist, excluded.dist),
+           updated_at = case when excluded.dist > ranking.dist then now() else ranking.updated_at end;
    end $$;
-   revoke all on function public.submit_score(text, text, integer) from public;
-   grant execute on function public.submit_score(text, text, integer) to anon, authenticated;
+   revoke all on function public.submit_run(integer) from public, anon;
+   grant execute on function public.submit_run(integer) to authenticated;
+
+   -- openbare lijst: alleen naam en afstand (de view leest de tabellen als eigenaar, dus e-mail en id blijven verborgen)
+   create or replace view public.leaderboard as
+     select p.username as name, r.dist, r.updated_at from public.ranking r join public.profiles p using (user_id);
+   revoke all on public.leaderboard from anon, authenticated;
+   grant select on public.leaderboard to anon, authenticated;
    ```
 
-   Bestaat de ranglijst-tabel al (van een eerdere versie)? Voer dan alleen het blok *Accounts* uit.
+   Had je al een eerdere versie ingericht? Voer dan alleen de blokken *Gebruikersnamen* en *Ranglijst* uit. De oude, anonieme ranglijst wordt niet meer gebruikt; die ruim je op met:
+
+   ```sql
+   drop function if exists public.submit_score(text, text, integer);
+   drop table if exists public.scores;
+   ```
 
 3. **Lobbies** hebben geen tabel nodig: ze gebruiken Realtime, dat standaard aan staat. Staat bij **Realtime → Settings** "Allow public access" uit, zet dat dan aan.
 4. **Inloggen met e-mail** staat standaard aan. Zet onder **Authentication → URL Configuration** de **Site URL** op het adres van je spel, voor de bevestigingsmail. Geen bevestigingsmail nodig? Zet dan **Confirm email** uit. De ingebouwde mailserver verstuurt maar een paar mails per uur; stel voor meer spelers een eigen mailprovider in onder **Authentication → Emails → SMTP Settings**.
@@ -220,4 +239,4 @@ Accounts, online lobbies en de ranglijst gebruiken één gratis [Supabase](https
 
 **Goed om te weten**
 - Een vergeten wachtwoord kun je (nog) niet in het spel resetten. Dat kan in Supabase bij **Authentication → Users**.
-- De ranglijst is niet waterdicht: iemand met technische kennis kan een nepscore insturen. Verwijder die in **Table Editor → scores**.
+- Op de ranglijst staan alleen spelers met een account en een gebruikersnaam. Helemaal waterdicht is hij niet: een ingelogde speler met technische kennis kan een nepscore insturen. Verwijder die in **Table Editor → ranking**.

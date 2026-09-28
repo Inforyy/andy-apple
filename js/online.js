@@ -29,22 +29,13 @@ function getSb() {
 
 
 // =====================================================================
-//  Ranglijst (Eindeloos): optioneel, via een gratis Supabase-project (zie README)
+//  Ranglijst (Eindeloos): alleen spelers met een account en een gebruikersnaam (zie README)
 // =====================================================================
-const LB_ID_KEY = 'andyApples.playerId', LB_SENT_KEY = 'andyApples.lbSent';
+// Scores worden alleen via een ingelogde sessie bewaard (functie submit_run); de openbare lijst is de view "leaderboard".
+const LB_SENT_KEY = 'andyApples.lbSent2';
 const lbOn = sbOn;
 let lbReturn = 'menu';
-function lbPlayerId() { // geheim, willekeurig id van deze speler (alleen jouw eigen rij kun je bijwerken)
-  let id = '';
-  try { id = localStorage.getItem(LB_ID_KEY) || ''; } catch (e) { /* geen opslag */ }
-  if (!/^[0-9a-f]{24}$/.test(id)) {
-    const b = new Uint8Array(12);
-    try { crypto.getRandomValues(b); } catch (e) { for (let i = 0; i < 12; i++) b[i] = Math.random() * 256; }
-    id = Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
-    try { localStorage.setItem(LB_ID_KEY, id); } catch (e) { /* negeren */ }
-  }
-  return id;
-}
+const lbReady = () => !!(ACC.user && ACC.username); // mag deze speler op de ranglijst?
 async function lbFetch(path, opt) {
   const { url, key } = CONFIG.supabase;
   const headers = Object.assign({ apikey: key, 'Content-Type': 'application/json' }, /^eyJ/.test(key) ? { Authorization: 'Bearer ' + key } : {}, opt && opt.headers);
@@ -55,44 +46,49 @@ async function lbFetch(path, opt) {
     return r;
   } finally { clearTimeout(t); }
 }
-// stuurt je beste afstand (en naam) naar de ranglijst, alleen als er iets veranderd is
+// stuurt je beste afstand naar de ranglijst (alleen ingelogd, met een gebruikersnaam, en alleen als er iets veranderd is)
 async function lbSubmit(force) {
-  if (!lbOn() || save.lbBest < 1) return;
-  const name = myName();
+  if (!lbOn() || !lbReady() || save.lbBest < 1) return;
   let sent = {};
   try { sent = JSON.parse(localStorage.getItem(LB_SENT_KEY)) || {}; } catch (e) { /* niets verstuurd */ }
-  if (!force && sent.d >= save.lbBest && sent.n === name) return;
-  await lbFetch('rpc/submit_score', { method: 'POST', body: JSON.stringify({ p_id: lbPlayerId(), p_name: name, p_dist: save.lbBest }) });
-  try { localStorage.setItem(LB_SENT_KEY, JSON.stringify({ d: save.lbBest, n: name })); } catch (e) { /* negeren */ }
+  if (!force && sent.u === ACC.user.id && sent.d >= save.lbBest) return;
+  const { error } = await (await getSb()).rpc('submit_run', { p_dist: save.lbBest });
+  if (error) throw error;
+  try { localStorage.setItem(LB_SENT_KEY, JSON.stringify({ u: ACC.user.id, d: save.lbBest })); } catch (e) { /* negeren */ }
 }
 // jouw plek: het aantal spelers met een grotere afstand + 1
 async function lbRank() {
-  if (!lbOn() || save.lbBest < 1) return 0;
-  const r = await lbFetch(`scores?select=name&dist=gt.${save.lbBest}`, { method: 'HEAD', headers: { Prefer: 'count=exact' } });
+  if (!lbOn() || !lbReady() || save.lbBest < 1) return 0;
+  const r = await lbFetch(`leaderboard?select=name&dist=gt.${save.lbBest}`, { method: 'HEAD', headers: { Prefer: 'count=exact' } });
   const m = /\/(\d+)/.exec(r.headers.get('content-range') || '');
   return m ? +m[1] + 1 : 0;
 }
 async function lbShow() {
-  const list = $('lbList'), me = myName();
+  const list = $('lbList'), me = ACC.username;
   $('lbSub').textContent = save.lbBest ? `Eindeloos · jouw record: ${save.lbBest} m` : 'Eindeloos · verste afstand';
   // runs met een aangepaste debug-snelheid tellen niet mee: zeg dat erbij als je 'echte' record daardoor lager is
   if (save.best > save.lbBest) $('lbSub').textContent += ` (${save.best} m telt niet mee: gespeeld met een aangepaste debug-snelheid)`;
   $('lbMsg').textContent = '';
+  // nog niet op de ranglijst: zeg hoe je erop komt
+  $('lbJoin').classList.toggle('hidden', !lbOn() || lbReady());
+  $('lbJoinTxt').textContent = ACC.user ? 'Kies een gebruikersnaam om op de ranglijst te komen.' : 'Log in om met je gebruikersnaam op de ranglijst te komen.';
   if (!lbOn()) { list.innerHTML = '<li class="empty">De ranglijst is nog niet ingesteld.</li>'; return; }
   if (!list.children.length || list.querySelector('.empty')) list.innerHTML = '<li class="empty">Laden…</li>';
   try {
     await lbSubmit().catch(() => { /* versturen mislukt: de lijst toch laten zien */ });
-    const rows = await (await lbFetch('scores?select=name,dist&order=dist.desc,updated_at.asc&limit=50')).json();
+    const rows = await (await lbFetch('leaderboard?select=name,dist&order=dist.desc,updated_at.asc&limit=50')).json();
     let mine = false;
     list.innerHTML = rows.length ? rows.map((r, i) => {
-      const isMe = !mine && r.name === me && r.dist === save.lbBest;
+      const isMe = !mine && !!me && r.name.toLowerCase() === me.toLowerCase();
       if (isMe) mine = true;
       return `<li class="${isMe ? 'me' : ''}"><b>${i + 1}</b><span>${escHtml(r.name)}</span><span>${r.dist | 0} m</span></li>`;
     }).join('') : '<li class="empty">Nog niemand. Word de eerste!</li>';
-    if (!mine && save.lbBest) { const rk = await lbRank().catch(() => 0); if (rk) $('lbMsg').textContent = `Jij staat op #${rk}`; $('lbMsg').className = 'msg ok'; }
-  } catch (e) { list.innerHTML = '<li class="empty">Kon de ranglijst niet laden. Heb je internet?</li>'; }
+    if (!mine && lbReady() && save.lbBest) { const rk = await lbRank().catch(() => 0); if (rk) { $('lbMsg').textContent = `Jij staat op #${rk}`; $('lbMsg').className = 'msg ok'; } }
+  } catch (e) {
+    list.innerHTML = /HTTP 404/.test(e.message) ? '<li class="empty">De ranglijst moet nog worden ingericht (zie README).</li>' : '<li class="empty">Kon de ranglijst niet laden. Heb je internet?</li>';
+  }
 }
-function openLb(from) { lbReturn = from || 'menu'; $('lbName').value = myName(); showScreen('lb'); lbShow(); }
+function openLb(from) { lbReturn = from || 'menu'; showScreen('lb'); lbShow(); }
 function setMyName(n) {
   n = cleanName(n);
   try { localStorage.setItem(MP_NAME_KEY, n); } catch (err) { /* negeren */ }
@@ -104,7 +100,7 @@ function lbInit() {
   on('btnOverLb', () => openLb('over'));
   on('btnLbBack', () => showScreen(lbReturn));
   on('btnLbPlay', () => startReady(null));
-  $('lbName').addEventListener('change', e => { setMyName(e.target.value); e.target.value = myName(); if (lbOn()) lbShow(); });
+  on('btnLbAcc', () => openAccount('lb'));
 }
 
 // =====================================================================
@@ -113,7 +109,7 @@ function lbInit() {
 // De save blijft ook gewoon lokaal staan. Elke wijziging wordt na een paar seconden online bewaard.
 // Bij het inloggen (of opstarten) wordt de online save opgehaald; zijn beide kanten gewijzigd, dan kies je zelf.
 const SYNC_KEY = 'andyApples.sync';   // { uid, at: tijd van de laatst gesynchroniseerde online save, dirty }
-const ACC = { user: null, rev: 0, timer: 0, applying: false, status: '', listening: false };
+const ACC = { user: null, username: null, rev: 0, timer: 0, applying: false, status: '', listening: false, back: 'menu' };
 function syncState() { try { return JSON.parse(localStorage.getItem(SYNC_KEY)) || {}; } catch (e) { return {}; } }
 function setSync(o) { try { localStorage.setItem(SYNC_KEY, JSON.stringify(o)); } catch (e) { /* negeren */ } }
 const sameT = (a, b) => !!a && !!b && Date.parse(a) === Date.parse(b);
@@ -184,8 +180,8 @@ async function accEnsure() {
     sb.auth.onAuthStateChange((ev, session) => {
       const u = session ? session.user : null, prev = ACC.user;
       ACC.user = u;
-      if (u && (!prev || prev.id !== u.id)) setTimeout(cloudPull, 0); // niet binnen deze callback zelf (advies van Supabase)
-      if (!u) ACC.status = '';
+      if (u && (!prev || prev.id !== u.id)) { ACC.username = null; setTimeout(() => { cloudPull(); loadProfile(); }, 0); } // niet binnen deze callback zelf (advies van Supabase)
+      if (!u) { ACC.status = ''; ACC.username = null; }
       accRender(); refreshMenu();
     });
   }
@@ -201,12 +197,53 @@ function accErr(e) {
   if (/fetch|network|internet/i.test(m)) return 'Geen verbinding met de server. Heb je internet?';
   return 'Er ging iets mis: ' + m;
 }
+// ---- Gebruikersnaam (tabel "profiles"): uniek, 3-16 tekens; nodig voor de ranglijst, en je naam in multiplayer ----
+const USERNAME_RE = /^[A-Za-z0-9_]{3,16}$/;
+async function loadProfile() {
+  const u = ACC.user;
+  if (!u) return;
+  try {
+    const { data, error } = await (await getSb()).from('profiles').select('username').eq('user_id', u.id).maybeSingle();
+    if (error) throw error;
+    if (ACC.user !== u) return;
+    ACC.username = data ? data.username : null;
+    accRender();
+    if (ACC.username) lbSubmit().catch(() => { /* later opnieuw */ });
+  } catch (e) { /* offline of tabel nog niet ingericht: geen naam */ }
+}
+// voorstel voor een nieuwe naam: het begin van je e-mailadres, zonder rare tekens
+const suggestName = email => String(email || '').split('@')[0].replace(/[^A-Za-z0-9_]/g, '').slice(0, 16);
+async function saveUsername() {
+  const u = ACC.user, name = $('accName').value.trim();
+  if (!u) return;
+  if (!USERNAME_RE.test(name)) { accMsg('Een gebruikersnaam heeft 3 tot 16 tekens: letters, cijfers of _.'); return; }
+  if (name === ACC.username) { accMsg('Dat is al je gebruikersnaam.', true); return; }
+  $('btnAccName').disabled = true;
+  try {
+    const { error } = await (await getSb()).from('profiles').upsert({ user_id: u.id, username: name, updated_at: new Date().toISOString() });
+    if (error) {
+      if (error.code === '23505') accMsg(`De naam "${name}" is al bezet. Kies een andere.`);
+      else if (error.code === '23514') accMsg('Een gebruikersnaam heeft 3 tot 16 tekens: letters, cijfers of _.');
+      else if (error.code === '42P01' || /could not find|does not exist/i.test(error.message || '')) accMsg('Gebruikersnamen zijn nog niet ingericht in de database (zie README).');
+      else accMsg(accErr(error));
+    } else {
+      const first = !ACC.username;
+      ACC.username = name; accRender();
+      accMsg(first ? `Welkom op de ranglijst, ${name}!` : 'Gebruikersnaam aangepast.', true);
+      lbSubmit(true).catch(() => { /* later opnieuw */ });
+    }
+  } catch (e) { accMsg(accErr(e)); }
+  $('btnAccName').disabled = false;
+}
 function accMsg(t, ok) { const el = $('accMsg'); el.textContent = t || ''; el.className = 'msg ' + (ok ? 'ok' : 'err'); }
 function accRender() {
   const u = ACC.user;
   $('accOut').classList.toggle('hidden', !!u);
   $('accIn').classList.toggle('hidden', !u);
   $('accWho').textContent = u ? u.email || '' : '';
+  const inp = $('accName');
+  if (u && document.activeElement !== inp) inp.value = ACC.username || suggestName(u.email);
+  $('accNameHint').textContent = u && !ACC.username ? 'Kies een gebruikersnaam om op de ranglijst te komen.' : 'Deze naam zie je op de ranglijst en in multiplayer.';
   $('accSync').textContent = ACC.status;
   $('mmAcc').textContent = u ? 'Ingelogd' : 'Account';
 }
@@ -228,14 +265,17 @@ async function accLogin(signup) {
   } catch (e) { accMsg(accErr(e)); }
   $('btnAccLogin').disabled = $('btnAccSignup').disabled = false;
 }
-function openAccount() {
+function openAccount(from) {
+  ACC.back = from || 'menu';
   accMsg(''); accRender(); showScreen('account');
   if (sbOn()) accEnsure().catch(e => accMsg(accErr(e)));
 }
 // Bij het opstarten (vanuit main.js): knoppen van het account
 function accountInit() {
-  on('btnAccount', openAccount);
-  on('btnAccBack', () => showScreen('menu'));
+  on('btnAccount', () => openAccount('menu'));
+  on('btnAccBack', () => { if (ACC.back === 'lb') { showScreen('lb'); lbShow(); } else showScreen('menu'); });
+  on('btnAccName', saveUsername);
+  $('accName').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); saveUsername(); } });
   on('btnAccLogin', () => accLogin(false));
   on('btnAccSignup', () => accLogin(true));
   $('accPass').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); accLogin(false); } });
@@ -243,7 +283,7 @@ function accountInit() {
   on('btnAccLogout', async () => {
     try { await cloudPush(); } catch (e) { /* offline: lokaal blijft alles staan */ }
     try { await (await getSb()).auth.signOut(); } catch (e) { /* */ }
-    ACC.user = null; setSync({}); accRender(); refreshMenu();
+    ACC.user = null; ACC.username = null; setSync({}); accRender(); refreshMenu();
     accMsg('Uitgelogd. Je voortgang staat nog op dit apparaat.', true);
   });
   window.addEventListener('pagehide', () => { if (ACC.user && syncState().dirty) cloudPush().catch(() => { /* */ }); });

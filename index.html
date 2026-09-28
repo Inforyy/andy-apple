@@ -9,6 +9,27 @@
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+<!-- Eigen lijn-iconen (in plaats van emoji's, die er per toestel anders uitzien); gebruik: <svg class="ico"><use href="#i-naam"/></svg> -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></symbol>
+  <symbol id="i-cog" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-sound" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+  <symbol id="i-full" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2.5"/><path d="M18 12h.01"/></symbol>
+  <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9z"/><path d="M19 15v6"/><path d="M16 18h6"/></symbol>
+  <symbol id="i-cart" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.3"/><circle cx="18" cy="20" r="1.3"/><path d="M2 3h2.5l2.4 11.4a2 2 0 0 0 2 1.6h8.4a2 2 0 0 0 2-1.5L21 7H5.3"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 21h8"/><path d="M12 16v5"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 22V3"/><path d="M5 4h13l-2.5 4.5L18 13H5"/></symbol>
+  <symbol id="i-infinity" viewBox="0 0 24 24"><path d="M12 12c-2-2.7-4-4-6-4a4 4 0 0 0 0 8c2 0 4-1.3 6-4zm0 0c2 2.7 4 4 6 4a4 4 0 0 0 0-8c-2 0-4 1.3-6 4z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5z"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/><path d="M7.5 5.5l9 5"/></symbol>
+  <symbol id="i-retry" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></symbol>
+</svg>
 <canvas id="game"></canvas>
 
 <div id="hud" class="hidden">
@@ -38,33 +59,33 @@
       <div class="mm-status">
         <div class="chip">🍎 <b id="mmApples">0</b></div>
         <div class="chip lvl" title="Spelerslevel"><span class="ring" id="mmRing"><b id="mmLevel">1</b></span><span class="lvl-txt"><b>Level</b><small id="mmXp">0 / 150 XP</small></span></div>
+        <button class="ic-btn mm-cog" id="btnSettings" aria-label="Instellingen" title="Instellingen"><svg class="ico" aria-hidden="true"><use href="#i-cog"/></svg></button>
       </div>
     </header>
     <div class="mm-modes">
       <button class="mode career" id="btnCareer">
-        <span class="mode-ic">🏁</span>
+        <span class="mode-ic"><svg class="ico" aria-hidden="true"><use href="#i-flag"/></svg></span>
         <span class="mode-txt"><span class="mode-t">Carrière</span><span class="mode-s" id="mmCareer">Level 1</span></span>
-        <span class="mode-go">▶</span>
+        <span class="mode-go"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg></span>
       </button>
       <button class="mode endless" id="btnPlay">
-        <span class="mode-ic">♾️</span>
+        <span class="mode-ic"><svg class="ico" aria-hidden="true"><use href="#i-infinity"/></svg></span>
         <span class="mode-txt"><span class="mode-t">Eindeloos</span><span class="mode-s" id="mmEndless">Record: 0 m</span></span>
-        <span class="mode-go">▶</span>
+        <span class="mode-go"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg></span>
       </button>
       <button class="mode multi" id="btnMulti">
-        <span class="mode-ic">👥</span>
+        <span class="mode-ic"><svg class="ico" aria-hidden="true"><use href="#i-users"/></svg></span>
         <span class="mode-txt"><span class="mode-t">Multiplayer</span><span class="mode-s" id="mmMulti">Tegen een vriend</span></span>
-        <span class="mode-go">▶</span>
+        <span class="mode-go"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg></span>
       </button>
     </div>
     <nav class="mm-bar">
-      <button class="ib" id="btnShop"><span class="ib-ic">🛒</span><small>Upgrades</small></button>
-      <button class="ib" id="btnCrates"><span class="ib-ic">📦</span><small>Kisten</small></button>
-      <button class="ib" id="btnLb"><span class="ib-ic">🏆</span><small>Ranglijst</small></button>
-      <button class="ib" id="btnAccount"><span class="ib-ic">👤</span><small id="mmAcc">Account</small></button>
-      <button class="ib" id="btnSaves"><span class="ib-ic">💾</span><small>Opslaan</small></button>
-      <button class="ib" id="btnHelp"><span class="ib-ic">❓</span><small>Uitleg</small></button>
-      <button class="ib" id="btnSettings"><span class="ib-ic">⚙️</span><small>Instellingen</small></button>
+      <button class="ib" id="btnShop"><span class="ib-ic"><svg class="ico" aria-hidden="true"><use href="#i-cart"/></svg></span><small>Upgrades</small></button>
+      <button class="ib" id="btnCrates"><span class="ib-ic"><svg class="ico" aria-hidden="true"><use href="#i-box"/></svg></span><small>Kisten</small></button>
+      <button class="ib" id="btnLb"><span class="ib-ic"><svg class="ico" aria-hidden="true"><use href="#i-trophy"/></svg></span><small>Ranglijst</small></button>
+      <button class="ib" id="btnAccount"><span class="ib-ic"><svg class="ico" aria-hidden="true"><use href="#i-user"/></svg></span><small id="mmAcc">Account</small></button>
+      <button class="ib" id="btnSaves"><span class="ib-ic"><svg class="ico" aria-hidden="true"><use href="#i-save"/></svg></span><small>Opslaan</small></button>
+      <button class="ib" id="btnHelp"><span class="ib-ic"><svg class="ico" aria-hidden="true"><use href="#i-help"/></svg></span><small>Uitleg</small></button>
     </nav>
   </div>
 </div>
@@ -73,7 +94,8 @@
 <!-- Multiplayer -->
 <div id="mp" class="screen">
   <div class="panel mpp">
-    <div class="mp-top"><h2 id="mpTitle">Multiplayer</h2><div class="mp-name"><label for="mpName">Naam</label><input id="mpName" maxlength="12" spellcheck="false" autocomplete="off"></div></div>
+    <div class="p-head"><button class="ic-btn" id="btnMpBack" aria-label="Menu" title="Menu"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg></button><h2 id="mpTitle">Multiplayer</h2><button class="ic-btn" id="btnMpSetup" aria-label="Uitleg" title="Uitleg"><svg class="ico" aria-hidden="true"><use href="#i-help"/></svg></button></div>
+    <div class="mp-top"><div class="mp-name"><label for="mpName">Naam</label><input id="mpName" maxlength="12" spellcheck="false" autocomplete="off"></div></div>
 
     <!-- start: kiezen -->
     <div id="mpHome">
@@ -145,15 +167,13 @@
         </div>
       </section>
       <p class="sub hidden" id="mpLocalKeys"><b style="color:#e8322b">Speler 1</b>: <kbd>SPATIE</kbd> of links/boven tikken · <b style="color:#2f7fe0">Speler 2</b>: <kbd>↑</kbd> / <kbd>ENTER</kbd> of rechts/onder tikken</p>
-      <div class="row"><button class="btn big green" id="btnMpStart">Start</button></div>
       <p class="sub hidden" id="mpGuestWait">Wachten tot de host start…</p>
     </div>
 
     <div id="mpMsg" class="msg"></div>
-    <div class="row">
-      <button class="btn ghost" id="btnMpSetup">Uitleg</button>
+    <div class="p-foot">
       <button class="btn ghost red hidden" id="btnMpCancel">Annuleren</button>
-      <button class="btn" id="btnMpBack">← Menu</button>
+      <button class="btn big green hidden" id="btnMpStart">Start</button>
     </div>
   </div>
 </div>
@@ -161,7 +181,7 @@
 <!-- Multiplayer: instructies -->
 <div id="mpSetup" class="screen">
   <div class="panel help setup">
-    <h2 style="text-align:center">Multiplayer</h2>
+    <div class="p-head"><button class="ic-btn" id="btnMpSetupBack" aria-label="Terug" title="Terug"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg></button><h2>Uitleg</h2><span></span></div>
     <h3>Online</h3>
     <ol>
       <li>Kies <b>+ Nieuwe lobby</b>. Je lobby verschijnt in de lijst van andere spelers; met <b>Uitnodiging kopiëren</b> stuur je ook een link.</li>
@@ -179,23 +199,19 @@
       <li><b>Achtervolging</b> (tegen Kiwi): Kiwi start een paar tellen na jou en probeert je in te halen. Hij wordt steeds sneller; hoe lang hou je het vol?</li>
       <li>Upgrades staan uit; appels en XP tellen niet mee voor je save.</li>
     </ul>
-    <div class="row"><button class="btn" id="btnMpSetupBack">← Terug</button></div>
   </div>
 </div>
 
 <!-- Multiplayer: uitslag -->
 <div id="mpRes" class="screen">
   <div class="panel">
-    <h2 id="mpResTitle">Gewonnen!</h2>
+    <div class="p-head"><button class="ic-btn" id="btnMpLeave" aria-label="Stoppen" title="Stoppen"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg></button><h2 id="mpResTitle">Gewonnen!</h2><span></span></div>
     <p class="sub" id="mpResSub"></p>
     <div class="results" id="mpResTable"></div>
     <div id="mpResScore" class="sub"></div>
-    <div class="row">
+    <div class="p-foot">
+      <div class="row"><button class="btn" id="btnMpLobby">Lobby</button></div>
       <button class="btn big green" id="btnMpAgain">Rematch</button>
-    </div>
-    <div class="row">
-      <button class="btn" id="btnMpLobby">Lobby</button>
-      <button class="btn ghost" id="btnMpLeave">Stoppen</button>
     </div>
   </div>
 </div>
@@ -203,19 +219,19 @@
 <!-- Ranglijst (eindeloos) -->
 <div id="lb" class="screen">
   <div class="panel">
-    <h2>Ranglijst</h2>
+    <div class="p-head"><button class="ic-btn" id="btnLbBack" aria-label="Terug" title="Terug"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg></button><h2>Ranglijst</h2><span></span></div>
     <p class="sub" id="lbSub">Eindeloos · verste afstand</p>
-    <div class="mp-name"><label for="lbName">Naam</label><input id="lbName" maxlength="12" spellcheck="false" autocomplete="off"></div>
+    <div class="lb-join hidden" id="lbJoin"><span id="lbJoinTxt"></span><button class="btn sm green" id="btnLbAcc">Naar account</button></div>
     <ol class="lb" id="lbList"></ol>
     <div id="lbMsg" class="msg"></div>
-    <div class="row"><button class="btn" id="btnLbBack">← Terug</button><button class="btn green" id="btnLbPlay">▶ Spelen</button></div>
+    <div class="p-foot"><button class="btn big green" id="btnLbPlay"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>Spelen</button></div>
   </div>
 </div>
 
 <!-- Account -->
 <div id="account" class="screen">
   <div class="panel acc" style="max-width:420px">
-    <h2>Account</h2>
+    <div class="p-head"><button class="ic-btn" id="btnAccBack" aria-label="Terug" title="Terug"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg></button><h2>Account</h2><span></span></div>
     <div id="accOut">
       <p class="sub">Log in om je voortgang online te bewaren en op andere apparaten verder te spelen.</p>
       <input type="email" id="accEmail" placeholder="E-mailadres" autocomplete="email" spellcheck="false">
@@ -224,38 +240,54 @@
     </div>
     <div id="accIn" class="hidden">
       <p class="sub">Ingelogd als <b id="accWho"></b></p>
+      <div class="acc-name">
+        <label for="accName">Gebruikersnaam</label>
+        <div class="acc-name-row"><input id="accName" maxlength="16" spellcheck="false" autocomplete="username" placeholder="Bijv. SnelleAap"><button class="btn sm green" id="btnAccName">Opslaan</button></div>
+        <small id="accNameHint"></small>
+      </div>
       <p class="sub" id="accSync"></p>
       <div class="row"><button class="btn green" id="btnAccSync">Nu opslaan</button><button class="btn ghost red" id="btnAccLogout">Uitloggen</button></div>
     </div>
     <div id="accMsg" class="msg"></div>
-    <div class="row"><button class="btn" id="btnAccBack">← Terug</button></div>
   </div>
 </div>
 
 <!-- Instellingen -->
 <div id="settings" class="screen">
-  <div class="panel" style="max-width:420px">
-    <h2>Instellingen</h2>
-    <div class="stack">
-      <button class="btn big" id="btnSound">Geluid aan</button>
-      <button class="btn big" id="btnMusic">Muziek aan</button>
-      <button class="btn big" id="btnFullscreen">Volledig scherm</button>
-      <button class="btn big" id="btnRotate">Liggend spelen</button>
+  <div class="panel">
+    <div class="p-head"><button class="ic-btn" id="btnSettingsBack" aria-label="Terug" title="Terug"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg></button><h2>Instellingen</h2><span></span></div>
+    <div class="set-groups">
+      <section class="set-group">
+        <h3>Geluid</h3>
+        <div class="set-card">
+          <div class="set-row"><span class="set-ic s1"><svg class="ico" aria-hidden="true"><use href="#i-sound"/></svg></span><span class="set-lbl">Geluidseffecten</span><button class="tgl" id="btnSound" aria-label="Geluidseffecten">Aan</button></div>
+          <div class="set-row"><span class="set-ic s2"><svg class="ico" aria-hidden="true"><use href="#i-music"/></svg></span><span class="set-lbl">Muziek</span><button class="tgl" id="btnMusic" aria-label="Muziek">Aan</button></div>
+        </div>
+      </section>
+      <section class="set-group">
+        <h3>Scherm</h3>
+        <div class="set-card">
+          <div class="set-row" id="rowFullscreen"><span class="set-ic s3"><svg class="ico" aria-hidden="true"><use href="#i-full"/></svg></span><span class="set-lbl">Volledig scherm</span><button class="tgl" id="btnFullscreen" aria-label="Volledig scherm">Uit</button></div>
+          <div class="set-row" id="rowRotate"><span class="set-ic s4"><svg class="ico" aria-hidden="true"><use href="#i-phone"/></svg></span><span class="set-lbl">Liggend spelen</span><button class="tgl" id="btnRotate" aria-label="Liggend spelen">Uit</button></div>
+        </div>
+      </section>
     </div>
-    <div class="qual">
-      <div class="qual-h"><label for="qualRange">Grafische kwaliteit</label><span id="qualNow"></span></div>
-      <input type="range" id="qualRange" min="0" max="3" step="1" value="0">
-      <div class="qual-ticks"><span data-q="0">AI</span><span data-q="1">Laag</span><span data-q="2">Normaal</span><span data-q="3">Hoog</span></div>
-    </div>
-    <div class="stats" id="menuStats" style="margin-top:16px"></div>
-    <div class="row"><button class="btn ghost" id="btnDebug">Debug</button><button class="btn" id="btnSettingsBack">← Terug</button></div>
+    <section class="set-group">
+      <h3>Grafische kwaliteit</h3>
+      <div class="set-card qual">
+        <div class="qual-h"><span class="set-ic s5"><svg class="ico" aria-hidden="true"><use href="#i-sparkle"/></svg></span><label for="qualRange">Kwaliteit</label></div>
+        <input type="range" id="qualRange" min="0" max="3" step="1" value="0">
+        <div class="qual-ticks"><span data-q="0">AI</span><span data-q="1">Laag</span><span data-q="2">Normaal</span><span data-q="3">Hoog</span></div>
+      </div>
+    </section>
+    <button class="link" id="btnDebug">Debug</button>
   </div>
 </div>
 
 <!-- Debug (achter een wachtwoord) -->
 <div id="debug" class="screen">
   <div class="panel dbg" style="max-width:420px">
-    <h2>Debug</h2>
+    <div class="p-head"><button class="ic-btn" id="btnDebugBack" aria-label="Terug" title="Terug"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg></button><h2>Debug</h2><span></span></div>
     <div id="dbgLock">
       <input type="password" id="dbgPass" placeholder="Wachtwoord" autocomplete="off">
       <div class="row"><button class="btn green" id="btnDbgUnlock">Ontgrendel</button></div>
@@ -270,14 +302,13 @@
       <div class="row"><button class="btn ghost" id="btnDbgReset">Standaard</button><button class="btn ghost red" id="btnDbgLock">Vergrendel</button></div>
     </div>
     <div id="dbgMsg" class="msg"></div>
-    <div class="row"><button class="btn" id="btnDebugBack">← Terug</button></div>
   </div>
 </div>
 
 <!-- Uitleg -->
 <div id="help" class="screen">
   <div class="panel help">
-    <h2 style="text-align:center">Hoe speel je?</h2>
+    <div class="p-head"><button class="ic-btn" id="btnHelpBack" aria-label="Terug" title="Terug"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg></button><h2>Hoe speel je?</h2><span></span></div>
     <ul>
       <li>Houd <kbd>SPATIE</kbd>, de muis of het scherm <b>ingedrukt</b> om te springen en aan een liaan te hangen.</li>
       <li><b>Laat los</b> als Andy naar voren zwaait om weg te springen.</li>
@@ -302,26 +333,26 @@
     </div>
     <h3>Biomes</h3>
     <div class="biomes" id="helpBiomes"></div>
-    <div class="row"><button class="btn" id="btnHelpBack">← Terug</button></div>
   </div>
 </div>
 
 <!-- Winkel -->
 <div id="shop" class="screen">
   <div class="panel wide shop">
-    <div class="panel-head"><h2>Upgrades</h2><span class="lvl" id="shopLvl"></span><div class="bank">🍎 <span id="shopBank">0</span></div></div>
+    <div class="p-head"><button class="ic-btn" id="btnShopBack" aria-label="Terug" title="Terug"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg></button><h2>Upgrades</h2><div class="bank">🍎 <span id="shopBank">0</span></div></div>
+    <p class="sub" id="shopLvl"></p>
     <div class="shop-list">
       <div id="shopGrid" class="grid"></div>
       <div id="shopLocks" class="locks"></div>
     </div>
-    <div class="shop-foot"><div class="row"><button class="btn" id="btnShopBack">← Terug</button><button class="btn green" id="btnShopPlay">▶ Spelen</button></div></div>
+    <div class="p-foot shop-foot"><button class="btn big green" id="btnShopPlay"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>Spelen</button></div>
   </div>
 </div>
 
 <!-- Opslaan -->
 <div id="saves" class="screen">
   <div class="panel">
-    <h2>Voortgang</h2>
+    <div class="p-head"><button class="ic-btn" id="btnSavesBack" aria-label="Terug" title="Terug"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg></button><h2>Voortgang</h2><span></span></div>
     <p class="sub">Wordt automatisch bewaard in deze browser. Exporteer voor een back-up of een ander apparaat.</p>
     <div class="stats" id="saveStats"></div>
     <div class="row">
@@ -338,17 +369,14 @@
       </div>
     </details>
     <div id="saveMsg" class="msg"></div>
-    <div class="row">
-      <button class="btn ghost red" id="btnReset">Voortgang wissen</button>
-      <button class="btn" id="btnSavesBack">← Terug</button>
-    </div>
+    <button class="link red" id="btnReset">Voortgang wissen</button>
   </div>
 </div>
 
 <!-- Game over -->
 <div id="over" class="screen">
   <div class="panel">
-    <h2 id="overTitle">Plons!</h2>
+    <div class="p-head"><button class="ic-btn" id="btnOverMenu" aria-label="Menu" title="Menu"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg></button><h2 id="overTitle">Plons!</h2><span></span></div>
     <p class="sub" id="overReason"></p>
     <div id="overRecord" class="record hidden">Nieuw record!</div>
     <div class="results">
@@ -361,13 +389,14 @@
     <div id="ovXp"></div>
     <div id="ovLoot" class="lootgot hidden"></div>
     <div id="ovRank" class="sub hidden"></div>
-    <button class="btn big green" id="btnRetry">↻ Opnieuw</button>
-    <div class="row">
-      <button class="btn" id="btnOverShop">Upgrades</button>
-      <button class="btn" id="btnOverCrates">📦 Kisten</button>
-      <button class="btn" id="btnOverLb">Ranglijst</button>
-      <button class="btn" id="btnOverLevels">Levels</button>
-      <button class="btn" id="btnOverMenu">Menu</button>
+    <div class="p-foot">
+      <div class="row">
+        <button class="btn" id="btnOverShop">Upgrades</button>
+        <button class="btn" id="btnOverCrates">Kisten</button>
+        <button class="btn" id="btnOverLb">Ranglijst</button>
+        <button class="btn" id="btnOverLevels">Levels</button>
+      </div>
+      <button class="btn big green" id="btnRetry"><svg class="ico" aria-hidden="true"><use href="#i-retry"/></svg>Opnieuw</button>
     </div>
   </div>
 </div>
@@ -375,33 +404,31 @@
 <!-- Kisten openen en garderobe -->
 <div id="crate" class="screen">
   <div class="panel wide crate">
-    <div class="panel-head"><h2>📦 Kisten</h2><div class="bank">📦 <span id="crBoxes">0</span></div></div>
+    <div class="p-head"><button class="ic-btn" id="btnCrBack" aria-label="Terug" title="Terug"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg></button><h2>Kisten</h2><div class="bank"><svg class="ico" aria-hidden="true"><use href="#i-box"/></svg><span id="crBoxes">0</span></div></div>
     <div class="cr-reel" id="crReel"><div class="cr-strip" id="crStrip"></div><div class="cr-mark"></div></div>
     <div id="crResult" class="cr-result">Pak kisten op tijdens het spelen en open ze hier.</div>
-    <button class="btn big green" id="btnCrOpen">Open een kist</button>
     <p class="sub cr-odds" id="crOdds"></p>
     <div class="cr-bottom">
       <canvas id="crPreview" width="170" height="190"></canvas>
       <div class="wardrobe" id="crWardrobe"></div>
     </div>
-    <div class="row"><button class="btn" id="btnCrBack">← Terug</button></div>
+    <div class="p-foot"><button class="btn big green" id="btnCrOpen">Open een kist</button></div>
   </div>
 </div>
 
 <!-- Carrière -->
 <div id="career" class="screen">
   <div class="panel wide">
-    <div class="panel-head"><h2>Carrière</h2><div class="bank">★ <span id="carStars">0</span></div></div>
-    <p class="sub" style="text-align:left">★ finish · ★★ 35% van de appels · ★★★ 65%</p>
+    <div class="p-head"><button class="ic-btn" id="btnCareerBack" aria-label="Terug" title="Terug"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg></button><h2>Carrière</h2><div class="bank">★ <span id="carStars">0</span></div></div>
+    <p class="sub">★ finish · ★★ 35% van de appels · ★★★ 65%</p>
     <div id="levelGrid" class="lvgrid"></div>
-    <div class="row"><button class="btn" id="btnCareerBack">← Terug</button></div>
   </div>
 </div>
 
 <!-- Level gehaald -->
 <div id="done" class="screen">
   <div class="panel">
-    <h2 id="doneTitle">Level gehaald!</h2>
+    <div class="p-head"><button class="ic-btn" id="btnDoneMenu" aria-label="Menu" title="Menu"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg></button><h2 id="doneTitle">Level gehaald!</h2><span></span></div>
     <div class="bigstars" id="doneStars"></div>
     <div class="results">
       <div><span>Appels gepakt</span><b id="dnApples"></b></div>
@@ -411,13 +438,15 @@
     </div>
     <div id="dnXp"></div>
     <div id="dnLoot" class="lootgot hidden"></div>
-    <div style="margin-bottom:12px"><span class="bank">🍎 <span id="dnBank"></span></span></div>
-    <button class="btn big green" id="btnNextLevel">▶ Volgend level</button>
-    <div class="row">
-      <button class="btn" id="btnDoneRetry">↻ Opnieuw</button>
-      <button class="btn" id="btnDoneShop">Upgrades</button>
-      <button class="btn" id="btnDoneCrates">📦 Kisten</button>
-      <button class="btn" id="btnDoneLevels">Levels</button>
+    <div class="dn-bank"><span class="bank">🍎 <span id="dnBank"></span></span></div>
+    <div class="p-foot">
+      <div class="row">
+        <button class="btn" id="btnDoneRetry"><svg class="ico" aria-hidden="true"><use href="#i-retry"/></svg>Opnieuw</button>
+        <button class="btn" id="btnDoneShop">Upgrades</button>
+        <button class="btn" id="btnDoneCrates">Kisten</button>
+        <button class="btn" id="btnDoneLevels">Levels</button>
+      </div>
+      <button class="btn big green" id="btnNextLevel"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>Volgend level</button>
     </div>
   </div>
 </div>
@@ -425,24 +454,24 @@
 <!-- Waarschuwing: geen grafische versnelling of traag beeld (los venster boven het menu) -->
 <div id="gpuWarn" class="popup hidden">
   <div class="panel" style="max-width:440px">
-    <h2>Traag beeld</h2>
+    <div class="p-head"><span></span><h2>Traag beeld</h2><span></span></div>
     <p class="sub" id="gpuWarnTxt"></p>
     <p class="sub" id="gpuWarnTip"></p>
-    <button class="btn big green" id="btnGpuOk">Oké</button>
-    <div class="row"><button class="btn ghost" id="btnGpuNever">Niet meer tonen</button></div>
+    <div class="p-foot">
+      <div class="row"><button class="btn ghost" id="btnGpuNever">Niet meer tonen</button></div>
+      <button class="btn big green" id="btnGpuOk">Oké</button>
+    </div>
   </div>
 </div>
 
 <!-- Pauze -->
 <div id="pause" class="screen">
-  <div class="panel">
-    <h2 id="pauseTitle">Pauze</h2>
+  <div class="panel" style="max-width:420px">
+    <div class="p-head"><span></span><h2 id="pauseTitle">Pauze</h2><button class="ic-btn" id="btnPauseSettings" aria-label="Instellingen" title="Instellingen"><svg class="ico" aria-hidden="true"><use href="#i-cog"/></svg></button></div>
     <p class="sub" id="pauseSub"></p>
-    <button class="btn big green" id="btnResume">▶ Doorgaan</button>
-    <div class="row">
-      <button class="btn" id="btnQuit">Stoppen</button>
-      <button class="btn ghost" id="btnPauseSound">Geluid aan</button>
-      <button class="btn ghost" id="btnPauseMusic">Muziek aan</button>
+    <div class="p-foot">
+      <div class="row"><button class="btn" id="btnQuit">Stoppen</button></div>
+      <button class="btn big green" id="btnResume"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>Doorgaan</button>
     </div>
   </div>
 </div>

@@ -93,7 +93,6 @@ h2{font-size:32px;font-weight:900;color:#c2410c;margin-bottom:4px}
 .badge{position:absolute;top:-8px;right:-6px;background:#e8322b;color:#fff;border-radius:999px;font-size:13px;padding:2px 8px;
   box-shadow:0 2px 0 #7a1a12;animation:pulse2 1s ease-in-out infinite}
 @keyframes pulse2{50%{transform:scale(1.15)}}
-.panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .bank{font-size:22px;font-weight:900;background:#fff3c4;border:3px solid #e0a82e;border-radius:999px;padding:4px 14px;color:#7a4a1c}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;margin:4px 0 8px;text-align:left}
 .card{background:#fff;border:3px solid #e8c98a;border-radius:16px;padding:8px 10px;display:flex;align-items:center;gap:10px}
@@ -113,8 +112,6 @@ h2{font-size:32px;font-weight:900;color:#c2410c;margin-bottom:4px}
 .panel.shop{display:flex;flex-direction:column;overflow:hidden;padding-bottom:12px}
 .shop-list{flex:1 1 auto;min-height:0;overflow:auto;touch-action:pan-y;margin:6px -8px 0;padding:0 8px}
 .shop-foot{flex:none;margin-top:4px;padding-top:8px;border-top:2px dashed rgba(122,74,28,.25)}
-.shop-foot .row{margin-top:0}
-.panel-head .lvl{font-weight:900;color:#6b4423;font-size:15px}
 .results{background:rgba(122,74,28,.1);border-radius:16px;padding:8px 14px;margin:8px 0 12px;text-align:left}
 .results div{display:flex;justify-content:space-between;padding:5px 0;font-size:17px;border-bottom:1px dashed rgba(122,74,28,.25)}
 .results div:last-child{border:none}
@@ -133,22 +130,6 @@ summary{cursor:pointer;font-weight:800;color:#7a4a1c}
 .biomes{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
 .biomes div{background:rgba(122,74,28,.1);border-radius:10px;padding:6px 8px;font-size:14px}
 .stack>*+*{margin-top:10px}
-/* schuifje grafische kwaliteit (Instellingen) */
-.qual{background:rgba(122,74,28,.1);border-radius:16px;padding:10px 18px 12px;margin-top:12px;text-align:left}
-.qual-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-weight:900;color:#6b4423}
-.qual-h span{font-size:14px;color:#c2410c}
-.qual input[type=range]{--p:0;-webkit-appearance:none;appearance:none;display:block;width:100%;height:10px;margin:16px 0 8px;border-radius:5px;cursor:pointer;
-  background:linear-gradient(90deg,#f59e0b calc(var(--p)*1%),#ecdcb8 0);outline:none}
-.qual input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;border:3px solid #fff;
-  background:linear-gradient(#f59e0b,#d97706);box-shadow:0 3px 0 #92400e,0 0 0 2px #d97706}
-.qual input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;border:3px solid #fff;
-  background:linear-gradient(#f59e0b,#d97706);box-shadow:0 3px 0 #92400e,0 0 0 2px #d97706}
-.qual input[type=range]::-moz-range-track{background:transparent}
-.qual-ticks{position:relative;height:20px;font-size:14px;font-weight:800;color:#7a5a3a}
-.qual-ticks span{position:absolute;transform:translateX(-50%);cursor:pointer;white-space:nowrap}
-.qual-ticks span:nth-child(1){left:14px}.qual-ticks span:nth-child(2){left:calc(14px + (100% - 28px) / 3)}
-.qual-ticks span:nth-child(3){left:calc(14px + (100% - 28px) * 2 / 3)}.qual-ticks span:nth-child(4){left:calc(100% - 14px)}
-.qual-ticks span.on{color:#c2410c}
 .xp{background:rgba(122,74,28,.1);border-radius:12px;padding:6px 10px;margin:4px 0 10px;text-align:left}
 .xp-top{display:flex;justify-content:space-between;font-size:14px;font-weight:800;color:#6b4423}
 .xp-bar{height:10px;border-radius:5px;background:#ecdcb8;margin-top:4px;overflow:hidden}
@@ -324,3 +305,169 @@ html.slim #mpHud{top:auto;bottom:max(10px,env(safe-area-inset-bottom));width:80v
 .dbg input[type=range]{width:100%}
 .dbg input[type=password]{font:inherit;font-weight:800;border:3px solid #e8c98a;border-radius:12px;padding:8px 10px;width:100%;text-align:center;color:#4a2c12;background:#fff}
 kbd{background:#fff;border:2px solid #d6b77a;border-bottom-width:4px;border-radius:6px;padding:0 6px;font-weight:800;font-size:13px}
+
+/* ---------- Vaste opbouw van elk paneel ----------
+   kop: ← links (terug/menu), titel in het midden, rechts eventueel een icoon of teller;
+   onderaan: eerst de overige knoppen, dan de hoofdactie (groot en groen), altijd op dezelfde plek. */
+.panel{display:flex;flex-direction:column;gap:12px}
+.panel>*{margin-top:0;margin-bottom:0}
+.panel .sub:empty,.panel .msg:empty{display:none}
+.p-head{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;min-height:44px}
+.p-head>:first-child{justify-self:start}
+.p-head>:last-child{justify-self:end}
+.p-head h2{margin:0;text-align:center;line-height:1.1}
+.ic-btn{flex:none;width:44px;height:44px;border-radius:50%;border:none;display:grid;place-items:center;cursor:pointer;
+  font:inherit;font-size:22px;font-weight:900;line-height:1;color:#6b4423;background:rgba(122,74,28,.14);transition:background .12s,transform .06s}
+.ic-btn:hover{background:rgba(122,74,28,.24)}
+.ic-btn:active{transform:translateY(2px)}
+.p-foot{display:flex;flex-direction:column;gap:10px;margin-top:2px}
+.p-foot .row{margin:0}
+.p-foot .btn.big{width:100%}
+.link{align-self:center;background:none;border:none;padding:4px 8px;font:inherit;font-size:14px;font-weight:700;color:#7a5a3a;
+  text-decoration:underline;cursor:pointer}
+.link.red{color:#b91c1c}
+.shop-foot{margin-top:4px}
+/* de onderbalk (met de hoofdactie) blijft onderaan het paneel staan; de inhoud scrollt eronder door */
+.panel{--pb:20px}
+html.short .panel{--pb:14px}
+.p-foot{position:sticky;bottom:calc(-1 * var(--pb));z-index:1;padding:6px 0 var(--pb);margin:0 0 calc(-1 * var(--pb));
+  background:linear-gradient(rgba(255,231,179,0),#ffe7b3 6px)}
+/* een onderbalk zonder zichtbare knoppen neemt geen ruimte in (en dekt niets af) */
+.p-foot:not(:has(> :not(.hidden))){display:none}
+.record{align-self:center}
+/* hoofdmenu: instellingen als klein tandwiel naast appels en level */
+.mm-cog{width:46px;height:46px;font-size:22px;background:rgba(0,0,0,.42);border:2px solid rgba(255,255,255,.18);color:#fff}
+.mm-cog:hover{background:rgba(0,0,0,.55)}
+/* lage schermen (telefoon liggend): compacter, zodat alles in beeld past */
+html.short .mm-bar{flex-wrap:nowrap;gap:6px}
+html.short .mm-cog{width:40px;height:40px;font-size:19px}
+html.short .panel{gap:9px}
+html.short .ic-btn{width:38px;height:38px;font-size:19px}
+html.short .p-head{min-height:38px}
+html.short .results{padding:4px 12px}
+html.short .results div{padding:3px 0;font-size:15px}
+html.short .results .total{font-size:18px}
+html.short .bigstars{font-size:34px;margin:0}
+html.short .btn.big{font-size:22px;padding:10px 18px}
+/* ---------- Instellingen: gegroepeerde kaarten met schakelaars ---------- */
+.set-groups{display:flex;flex-direction:column;gap:12px}
+.set-group{display:flex;flex-direction:column;gap:6px;text-align:left}
+.set-group h3{margin:0 0 0 8px;font-size:12.5px;font-weight:900;letter-spacing:.8px;text-transform:uppercase;color:#a0724a}
+.set-card{background:#fff;border:2px solid #f0dcb4;border-radius:18px;box-shadow:0 3px 0 rgba(122,74,28,.12);overflow:hidden}
+.set-row{display:flex;align-items:center;gap:12px;padding:10px 12px 10px 10px;border-top:2px solid #f6ead2}
+.set-row:first-child{border-top:none}
+.set-ic{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:18px;background:#fff1d6}
+.set-lbl{flex:1;font-weight:800;font-size:16px;color:#4a2c12}
+/* schakelaar: baan met een schuivend bolletje (de tekst Aan/Uit is er voor schermlezers) */
+.tgl{flex:none;position:relative;width:54px;height:32px;border:none;border-radius:999px;padding:0;cursor:pointer;
+  font-size:0;color:transparent;background:#dccaa6;transition:background .15s}
+.tgl::after{content:'';position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;
+  box-shadow:0 2px 4px rgba(0,0,0,.25);transition:transform .15s}
+.tgl.on{background:#22c55e}
+.tgl.on::after{transform:translateX(22px)}
+.tgl:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}
+/* kwaliteitsschuifje */
+.qual{padding:10px 14px 12px 10px}
+.qual-h{display:flex;align-items:center;gap:12px}
+.qual-h label{flex:1;font-weight:800;font-size:16px;color:#4a2c12}
+.qual-h span:last-child{font-size:13px;font-weight:800;color:#c2410c;background:#fff1d6;border-radius:999px;padding:3px 10px}
+.qual-h span:last-child:empty{display:none}
+.qual input[type=range]{--p:0;-webkit-appearance:none;appearance:none;display:block;width:calc(100% - 8px);height:10px;margin:18px 4px 10px;
+  border-radius:5px;cursor:pointer;outline:none;background:linear-gradient(90deg,#f59e0b calc(var(--p)*1%),#ead7b0 0)}
+.qual input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;border:4px solid #fff;
+  background:#f59e0b;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.qual input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;border:4px solid #fff;background:#f59e0b;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.qual input[type=range]::-moz-range-track{background:transparent}
+.qual-ticks{position:relative;height:20px;margin:0 4px;font-size:14px;font-weight:800;color:#a0724a}
+.qual-ticks span{position:absolute;transform:translateX(-50%);cursor:pointer;white-space:nowrap}
+.qual-ticks span:nth-child(1){left:14px}.qual-ticks span:nth-child(2){left:calc(14px + (100% - 28px) / 3)}
+.qual-ticks span:nth-child(3){left:calc(14px + (100% - 28px) * 2 / 3)}.qual-ticks span:nth-child(4){left:calc(100% - 14px)}
+.qual-ticks span.on{color:#c2410c}
+.link{color:#a0724a;font-size:13px}
+/* lage schermen: de twee groepen naast elkaar */
+html.short .set-groups{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+html.short .set-row{padding:6px 10px 6px 8px;gap:9px}
+html.short .set-ic{width:30px;height:30px;font-size:16px}
+html.short .set-lbl{font-size:14.5px}
+html.short .qual{padding:8px 12px 8px 8px}
+html.short .qual input[type=range]{margin:12px 4px 8px}
+html.short #settings .panel{max-width:640px}
+/* lage schermen: de onderbalk in één rij (overige knoppen links, hoofdactie rechts), zodat hij de inhoud niet bedekt */
+html.short .p-foot{flex-direction:row;align-items:stretch;gap:8px}
+html.short .p-foot .row{flex:3 1 0;flex-wrap:nowrap;gap:8px}
+html.short .p-foot .row .btn,html.short .p-foot>.btn:not(.big){flex:1 1 0;min-width:0;font-size:15px;padding:8px 6px;white-space:nowrap}
+html.short .p-foot .btn.big{flex:2 1 0;width:auto;font-size:20px;padding:8px 12px;white-space:nowrap}
+#settings .panel{max-width:440px}
+html.short #done .panel,html.short #over .panel,html.short #mpRes .panel{max-width:640px}
+/* ---------- Eigen lijn-iconen ---------- */
+.ico{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;display:block;flex:none}
+.ic-btn .ico{width:22px;height:22px;stroke-width:2.6}
+html.short .ic-btn .ico{width:19px;height:19px}
+.mm-cog .ico{width:24px;height:24px}
+.set-ic{color:#fff;background:#f59e0b;box-shadow:inset 0 -2px 0 rgba(0,0,0,.12)}
+.set-ic .ico{width:19px;height:19px;stroke-width:2.4}
+.set-ic.s1{background:#f97316}.set-ic.s2{background:#a855f7}.set-ic.s3{background:#3b82f6}.set-ic.s4{background:#10b981}.set-ic.s5{background:#ec4899}
+.ib-ic{color:#fff}
+.ib-ic .ico{width:27px;height:27px;stroke-width:2.3}
+html.short .ib-ic .ico{width:22px;height:22px}
+.mode-ic{display:grid;place-items:center;width:52px;height:52px;border-radius:16px;background:rgba(255,255,255,.2);color:#fff;filter:none}
+.mode-ic .ico{width:30px;height:30px;stroke-width:2.6}
+html.narrow .mode-ic,html.short .mode-ic{width:44px;height:44px;border-radius:13px}
+html.narrow .mode-ic .ico,html.short .mode-ic .ico{width:25px;height:25px}
+/* iconen in knoppen (▶ spelen, ↻ opnieuw) */
+.btn .ico{display:inline-block;width:.95em;height:.95em;margin:0 .35em -.1em 0;stroke-width:2.8}
+.btn .ico use[href="#i-play"],.mode-go .ico{fill:currentColor}
+.mode-go{color:#fff}
+.mode-go .ico{width:20px;height:20px;margin-left:3px;stroke-width:2}
+/* ranglijst: hoe je erop komt */
+.lb-join{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff3c4;border:2px solid #e0a82e;border-radius:14px;
+  padding:8px 10px 8px 14px;font-weight:800;font-size:14px;color:#7a4a1c;text-align:left}
+.lb-join .btn{flex:none}
+/* account: gebruikersnaam */
+.acc-name{display:flex;flex-direction:column;gap:6px;text-align:left;background:#fff;border:2px solid #f0dcb4;border-radius:16px;padding:10px 12px}
+.acc-name label{font-weight:900;font-size:12.5px;letter-spacing:.8px;text-transform:uppercase;color:#a0724a}
+.acc-name-row{display:flex;gap:8px}
+.acc-name-row input{flex:1;min-width:0;margin:0;font:inherit;font-weight:800;border:3px solid #e8c98a;border-radius:12px;padding:7px 10px;color:#4a2c12;background:#fff}
+.acc-name-row .btn{flex:none}
+.acc-name small{font-size:12.5px;color:#7a5a3a;font-weight:700}
+.mp-name input[readonly]{background:#f6ead2;color:#7a5a3a}
+/* ---------- Hoofdmenu: de drie modusknoppen ---------- */
+.mode{--sh:rgba(0,0,0,.3);--ic:#333;border:none;border-radius:22px;padding:14px 16px 14px 14px;gap:14px;
+  box-shadow:0 6px 0 var(--sh),0 14px 26px rgba(0,0,0,.28)}
+.mode:hover{transform:translateY(-2px);box-shadow:0 8px 0 var(--sh),0 18px 30px rgba(0,0,0,.3)}
+.mode:active{transform:translateY(5px);box-shadow:0 1px 0 var(--sh),0 6px 12px rgba(0,0,0,.25)}
+.mode.career{background:linear-gradient(160deg,#ffae33,#f0612b);--sh:#b3441a;--ic:#ea580c}
+.mode.endless{background:linear-gradient(160deg,#4fdc86,#14a45a);--sh:#0c7440;--ic:#16a34a}
+.mode.multi{background:linear-gradient(160deg,#6aa5ff,#7b4cf0);--sh:#4c2aa8;--ic:#6d28d9}
+.mode-ic{width:54px;height:54px;border-radius:50%;background:#fff;color:var(--ic);box-shadow:0 3px 0 rgba(0,0,0,.15)}
+.mode-ic .ico{width:28px;height:28px;stroke-width:2.6}
+.mode-t{font-size:28px;text-shadow:0 2px 0 rgba(0,0,0,.2);letter-spacing:.2px}
+.mode-s{font-size:14.5px;opacity:.95;text-shadow:0 1px 0 rgba(0,0,0,.15)}
+.mode-go{width:42px;height:42px;background:rgba(0,0,0,.18)}
+.mode-go .ico{width:17px;height:17px}
+html.narrow .mode-ic,html.short .mode-ic{width:46px;height:46px;border-radius:50%}
+html.narrow .mode-ic .ico,html.short .mode-ic .ico{width:24px;height:24px}
+html.short .mode{padding:9px 12px 9px 10px;border-radius:18px;box-shadow:0 5px 0 var(--sh),0 10px 18px rgba(0,0,0,.25)}
+html.short .mode-go{width:36px;height:36px}
+/* uitlegschermen: overal dezelfde afstanden; een kopje krijgt wat extra lucht erboven */
+.panel.help>*{margin:0}
+.panel.help>h3{margin-top:6px}
+.panel.help ol,.panel.help ul{padding-left:4px}
+.setup .tip{margin:0}
+/* instellingen op lage schermen: past zonder scrollen */
+html.short .set-groups{gap:8px}
+html.short .set-group{gap:4px}
+html.short #settings .panel{gap:7px}
+html.short .qual input[type=range]{margin:10px 4px 6px}
+html.short .p-head h2{font-size:25px}
+html.short .panel .sub{font-size:13.5px;line-height:1.3}
+html.short .xp{padding:4px 10px}
+html.short .xp-bar{height:8px;margin-top:3px}
+html.short .record{padding:3px 14px;font-size:14px}
+html.short .panel .bank{font-size:18px;padding:2px 12px}
+/* telefoon liggend: wat geen nieuwe informatie geeft, valt weg, zodat de uitslag zonder scrollen past */
+@media (max-height:460px){
+  #overReason,.dn-bank{display:none}
+}
+html.short .set-row{padding:5px 10px 5px 8px}
+html.short .qual{padding:6px 12px 6px 8px}

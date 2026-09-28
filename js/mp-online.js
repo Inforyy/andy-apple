@@ -38,7 +38,21 @@ const colorOf = id => { let h = 0; for (let i = 0; i < id.length; i++) h = (h * 
 const palCache = new Map();
 const palOf = col => { let p = palCache.get(col); if (!p) { p = Object.assign({}, GC2, { band: col, bandD: shade(col, -0.35) }); palCache.set(col, p); } return p; };
 const cleanName = n => String(n || '').replace(/[<>&"]/g, '').trim().slice(0, 12);
-function myName() { let n = ''; try { n = localStorage.getItem(MP_NAME_KEY) || ''; } catch (e) { /* geen opslag */ } return cleanName(n) || 'Andy'; }
+// Multiplayer zonder account en zonder zelfgekozen naam: één vaste, willekeurige naam (bijv. WildeAap42) in plaats van steeds 'Andy'
+const NAME_ADJ = ['Wilde', 'Snelle', 'Rappe', 'Gekke', 'Stoere', 'Slimme', 'Blije', 'Coole', 'Dolle', 'Vlotte', 'Sterke', 'Kleine', 'Grote', 'Gouden'];
+const NAME_DIER = ['Aap', 'Kiwi', 'Panda', 'Tijger', 'Koala', 'Gekko', 'Lemur', 'Jaguar', 'Toekan', 'Gibbon', 'Makaak', 'Ara', 'Uil', 'Vos'];
+function randomName() {
+  const pick = a => a[(Math.random() * a.length) | 0];
+  let n; do n = pick(NAME_ADJ) + pick(NAME_DIER); while (n.length > 10);
+  return n + (10 + ((Math.random() * 90) | 0));
+}
+function myName() {
+  if (ACC.user && ACC.username) return ACC.username; // ingelogd: altijd je gebruikersnaam
+  let n = '';
+  try { n = cleanName(localStorage.getItem(MP_NAME_KEY) || ''); } catch (e) { /* geen opslag */ }
+  if (!n) { n = randomName(); try { localStorage.setItem(MP_NAME_KEY, n); } catch (e) { /* geen opslag */ } }
+  return n;
+}
 const escHtml = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 // ---- codes: sessiebeschrijving -> (gecomprimeerde) tekst om te kopiëren ----
@@ -542,7 +556,7 @@ function mpRender() {
   $('btnMpCancel').textContent = loc ? 'Andere modus' : room ? (host ? 'Lobby sluiten' : 'Lobby verlaten') : 'Annuleren';
   document.querySelector('.mp-top .mp-name').classList.toggle('hidden', loc && !vsAi);
   lobbyRender();
-  if (!room) return;
+  if (!room) { $('btnMpStart').classList.add('hidden'); return; } // de startknop staat onderaan, buiten de lobby-kaart
   // spelers
   const list = loc ? (vsAi ? [{ name: myName(), col: '#e8322b', me: 1 }, { name: 'Kiwi', col: GCK.band }] : [{ name: 'Speler 1', col: '#e8322b' }, { name: 'Speler 2', col: '#2f7fe0' }])
     : [{ name: myName(), col: '#e8322b', me: 1, host }].concat([...MP.players.values()].filter(P => P.inRoster).map(P => ({ name: P.name, col: P.col, host: guest && P.host })));
@@ -576,6 +590,8 @@ function openMp() {
   for (const P of [...MP.players.values()]) if (!P.inRoster) MP.players.delete(P.id);
   if (game.mode !== 'menu') { game.career = null; resetWorld(); game.mode = 'menu'; }
   $('mpName').value = myName();
+  $('mpName').readOnly = !!(ACC.user && ACC.username); // je gebruikersnaam pas je aan bij Account
+  $('mpName').title = $('mpName').readOnly ? 'Je gebruikersnaam; aan te passen bij Account' : '';
   mpRender();
   showScreen('mp');
   lobbyWatch();

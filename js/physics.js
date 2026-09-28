@@ -367,7 +367,7 @@ function step(dt) {
   updateApples(dt);
   for (const s of shrooms) s.sq *= Math.pow(0.02, dt);
   for (const t of tramps) t.sq *= Math.pow(0.03, dt);
-  if (tramps.length && tramps[0].x < camX - 400) tramps.shift();
+  if (tramps.length && tramps[0].x < camX - KEEP_BEHIND) tramps.shift();
   if (portals.length && portals[0].ox < camX - 700) portals.shift();
   updateSpace(dt);
   if (game.mp) mpStep(dt);

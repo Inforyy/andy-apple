@@ -98,7 +98,7 @@ function resize() {
   applyRot();
   cssW = rotOn ? window.innerHeight : window.innerWidth; cssH = rotOn ? window.innerWidth : window.innerHeight;
   const hc = document.documentElement.classList;
-  hc.toggle('narrow', cssW <= 720 || cssW <= cssH); hc.toggle('slim', cssW <= 720); hc.toggle('short', cssH < 520);
+  hc.toggle('narrow', cssW <= 720 || cssW <= cssH); hc.toggle('slim', cssW <= 720); hc.toggle('short', cssH < 640);
   canvas.style.width = cssW + 'px'; canvas.style.height = cssH + 'px';
   let vw = cssW, vh = cssH;
   if (LOCAL.on && !LOCAL.ai) { // naast elkaar op een breed scherm, boven elkaar op een smal/staand scherm

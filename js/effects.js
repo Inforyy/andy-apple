@@ -57,16 +57,17 @@ function updateEffects(dt) {
   for (let i = vines.length - 1; i >= 0; i--) {
     const v = vines[i];
     if (v === G.vine) continue;
-    if (v.x < camX - 900 || (!v.anchored && v.pts[0].y > HAZARD_Y + 200)) vines.splice(i, 1);
+    if (v.x < camX - KEEP_BEHIND || (!v.anchored && v.pts[0].y > HAZARD_Y + 200)) vines.splice(i, 1);
   }
-  for (let i = shrooms.length - 1; i >= 0; i--) if (shrooms[i].x < camX - 300) shrooms.splice(i, 1);
+  for (let i = shrooms.length - 1; i >= 0; i--) if (shrooms[i].x < camX - KEEP_BEHIND) shrooms.splice(i, 1);
   shakeT = Math.max(0, shakeT - dt); if (shakeT === 0) shakeAmp = 0;
   flashT = Math.max(0, flashT - dt);
 }
 
 function updateCamera(dt) {
-  // bij hoge snelheid kijkt de camera verder vooruit
-  const tx = Math.max(-100, G.x - viewW * (G.state === 'rocket' ? 0.25 : 0.33 - clamp(G.vx / 1800, 0, 1) * 0.1));
+  // bij hoge snelheid kijkt de camera verder vooruit; vlieg je achteruit, dan schuift hij mee zodat je ziet waar je heen gaat
+  const look = 0.33 - clamp(G.vx / 1800, 0, 1) * 0.1 + (G.state === 'air' ? clamp(-G.vx / 700, 0, 1) * 0.2 : 0);
+  const tx = Math.max(-100, G.x - viewW * (G.state === 'rocket' ? 0.25 : look));
   camX += (tx - camX) * Math.min(1, dt * (G.state === 'rocket' ? 14 : 4.5)); // een (snelle) head-start-vlucht strak volgen
   // verticaal meebewegen (de wereld is veel hoger dan het scherm), maar nooit onder de bodem kijken
   // onder water mag de camera wel onder de waterlijn (daar speel je dan)

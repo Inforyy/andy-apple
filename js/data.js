@@ -35,6 +35,10 @@ const VINE_SLANT = Math.atan2(-VINE_TILT, GRAVITY);   // rusthoek (~31°)
 const TIP_F = Math.cos(VINE_SLANT);                   // hoe hoog het uiteinde hangt t.o.v. de lengte
 const ELASTIC_STRETCH = 1.45; // hoe ver een elastieken liaan mag uitrekken
 const SPR_RES = 1.25;         // resolutie van voorgetekende sprites
+// Hoe ver achter de camera lianen, paddenstoelen en trampolines blijven bestaan (ruim één scherm): vlieg je
+// terug, dan staan ze er nog. Kost vrijwel niets, want buiten beeld worden ze niet gesimuleerd of getekend.
+// (Opnieuw genereren kan niet: de generator werkt alleen vooruit en moet in carrière/multiplayer gelijk blijven.)
+const KEEP_BEHIND = 2400;
 
 // =====================================================================
 //  Biomes

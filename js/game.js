@@ -191,7 +191,6 @@ function pauseGame() {
   const multi = !!game.mp && !game.mp.local; // op één scherm mag je gewoon pauzeren
   $('pauseTitle').textContent = multi ? 'Menu' : 'Pauze';
   $('pauseSub').textContent = multi ? 'Het potje loopt door!' : '';
-  $('btnResume').textContent = '▶ Doorgaan';
   $('btnQuit').textContent = multi ? 'Opgeven' : 'Stoppen';
   if (multi) { // in multiplayer kun je niet pauzeren
     if (game.mode !== 'playing' || game.mp.result) return;
@@ -244,27 +243,28 @@ function refreshMenu() {
   $('mmCareer').textContent = `Level ${next} · ★ ${stars} / ${LEVELS * 3}`;
   $('mmEndless').textContent = save.best ? `Record: ${save.best} m` : 'Kom zo ver mogelijk';
   $('mmMulti').textContent = save.mpGames ? `${save.mpWins} van ${save.mpGames} gewonnen` : 'Tegen een vriend';
-  $('menuStats').innerHTML = statsHtml();
-  $('btnRotate').textContent = rotPref ? 'Staand spelen' : 'Liggend spelen';
-  $('btnFullscreen').textContent = isFullscreen() ? 'Volledig scherm uit' : 'Volledig scherm';
-  $('btnFullscreen').classList.toggle('hidden', !canFullscreen || IN_APP);
-  $('btnRotate').classList.toggle('hidden', IN_APP);
+  setToggle('btnRotate', rotPref);
+  setToggle('btnFullscreen', isFullscreen());
+  $('rowFullscreen').classList.toggle('hidden', !canFullscreen || IN_APP);
+  $('rowRotate').classList.toggle('hidden', IN_APP);
   renderQuality();
   $('saveStats').innerHTML = statsHtml();
   setBadge($('btnShop'), affordableCount());
   setBadge($('btnCrates'), save.boxes);
   $('btnLb').classList.toggle('hidden', !lbOn());
   $('btnAccount').classList.toggle('hidden', !sbOn());
-  const snd = save.sound ? 'Geluid aan' : 'Geluid uit';
-  const mus = save.music ? 'Muziek aan' : 'Muziek uit';
-  $('btnSound').textContent = snd; $('btnPauseSound').textContent = snd;
-  $('btnMusic').textContent = mus; $('btnPauseMusic').textContent = mus;
+  setToggle('btnSound', save.sound);
+  setToggle('btnMusic', save.music);
 }
+// aan/uit-schakelaar in Instellingen
+function setToggle(id, on) { const b = $(id); b.textContent = on ? 'Aan' : 'Uit'; b.classList.toggle('on', !!on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+// Instellingen openen vanuit het menu of de pauze; ← gaat terug naar waar je vandaan kwam
+let settingsReturn = 'menu';
+function openSettings(from) { settingsReturn = from; refreshMenu(); showScreen('settings'); }
 // schuifje grafische kwaliteit (Instellingen); bij Auto staat erbij welk niveau het spel nu gebruikt
 function renderQuality() {
   const c = qualityChoice(), r = $('qualRange');
   r.value = c; r.style.setProperty('--p', c / 3 * 100);
-  $('qualNow').textContent = qAuto ? `nu: ${QUALITY_NAMES[qLevel]}` : '';
   for (const t of document.querySelectorAll('.qual-ticks [data-q]')) t.classList.toggle('on', +t.dataset.q === c);
 }
 function renderShop() {
@@ -492,6 +492,7 @@ function uiInit() {
   on('btnCareerBack', toMenu);
   on('btnNextLevel', () => startReady(game.career.n + 1));
   on('btnDoneRetry', retry);
+  on('btnDoneMenu', toMenu);
   on('btnDoneLevels', () => { toMenu(); openCareer(); });
   on('btnDoneShop', () => openShop('done'));
   on('btnOverLevels', () => { toMenu(); openCareer(); });
@@ -503,8 +504,9 @@ function uiInit() {
   on('btnCrOpen', spinCrate);
   on('btnSaves', () => { $('saveMsg').textContent = ''; refreshMenu(); showScreen('saves'); });
   on('btnHelp', () => showScreen('help'));
-  on('btnSettings', () => { refreshMenu(); showScreen('settings'); });
-  on('btnSettingsBack', () => showScreen('menu'));
+  on('btnSettings', () => openSettings('menu'));
+  on('btnPauseSettings', () => openSettings('pause'));
+  on('btnSettingsBack', () => showScreen(settingsReturn));
   on('btnFullscreen', () => { toggleFullscreen().then(refreshMenu); refreshMenu(); });
   on('btnRotate', () => { toggleRotate().then(refreshMenu); refreshMenu(); });
   document.addEventListener('fullscreenchange', refreshMenu);
@@ -513,9 +515,7 @@ function uiInit() {
   const toggleSound = () => { save.sound = !save.sound; persist(); refreshMenu(); };
   const toggleMusic = () => { save.music = !save.music; persist(); refreshMenu(); if (save.music) Music.start(); else Music.stop(); };
   on('btnSound', toggleSound);
-  on('btnPauseSound', toggleSound);
   on('btnMusic', toggleMusic);
-  on('btnPauseMusic', toggleMusic);
   on('btnShopBack', () => { if (shopReturn === 'done') $('dnBank').textContent = save.apples; if (shopReturn === 'over') setBadge($('btnOverShop'), affordableCount()); refreshMenu(); showScreen(shopReturn); });
   on('btnShopPlay', () => (shopReturn === 'done' || shopReturn === 'over') ? retry() : startReady(null));
   on('btnSavesBack', () => showScreen('menu'));
@@ -647,7 +647,8 @@ function inputInit() {
       else if (curScreen === 'account') showScreen('menu');
       else if (curScreen === 'debug') showScreen('settings');
       else if (curScreen === 'crate') { if (!CRATE.spinning) $('btnCrBack').click(); }
-      else if (curScreen === 'shop' || curScreen === 'saves' || curScreen === 'help' || curScreen === 'career' || curScreen === 'settings') {
+      else if (curScreen === 'settings') showScreen(settingsReturn);
+      else if (curScreen === 'shop' || curScreen === 'saves' || curScreen === 'help' || curScreen === 'career') {
         if (curScreen === 'shop') $('btnShopBack').click(); else showScreen('menu');
       }
     } else if (e.code === 'Enter' && (curScreen === 'menu' || curScreen === 'over')) {
