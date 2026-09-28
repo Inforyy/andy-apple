@@ -9,27 +9,27 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.PowerManager;
+import android.view.Display;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
+import android.webkit.RenderProcessGoneDetail;
 import android.webkit.ValueCallback;
-import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import java.io.OutputStream;
 
 /**
  * Andy Apples als Android-app: een schermvullende WebView die het spel (assets/index.html) laadt.
- * Een kleine JavaScript-brug regelt wat een WebView zelf niet kan: een save-bestand opslaan,
- * tekst naar het klembord kopiëren en een save-bestand kiezen om te importeren.
+ * Een kleine JavaScript-brug regelt wat een WebView zelf niet kan: tekst naar het klembord kopiëren.
+ * Voor soepel en zuinig spelen: het scherm op 60 Hz, gelijkmatige prestaties waar het toestel dat kan,
+ * en op de achtergrond staan de timers stil.
  */
 public class MainActivity extends Activity {
-    private static final int REQ_OPEN = 1, REQ_SAVE = 2;
     private WebView web;
-    private ValueCallback<Uri[]> fileCallback;
-    private String pendingSave;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -41,13 +41,16 @@ public class MainActivity extends Activity {
             lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
             getWindow().setAttributes(lp);
         }
+        use60Hz();
+        // gelijkmatige prestaties: liever een vaste, iets lagere kloksnelheid dan na een paar minuten warm worden en haperen
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        if (pm != null && pm.isSustainedPerformanceModeSupported()) getWindow().setSustainedPerformanceMode(true);
 
         web = new WebView(this);
         web.setBackgroundColor(Color.rgb(13, 42, 26));
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true); // localStorage: hier staat je voortgang in
-        s.setDatabaseEnabled(true);
         s.setAllowFileAccess(true);
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setUserAgentString(s.getUserAgentString() + " AndyApplesApp/1.0");
@@ -59,24 +62,21 @@ public class MainActivity extends Activity {
                 try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))); } catch (Exception e) { /* geen app */ }
                 return true;
             }
-        });
-        web.setWebChromeClient(new WebChromeClient() {
+
+            // Het tekenproces van de WebView is gestopt (bijv. door Android opgeruimd): de app opnieuw opbouwen
+            // in plaats van helemaal te laten crashen. Je voortgang staat in localStorage en blijft bewaard.
             @Override
-            public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
-                if (fileCallback != null) fileCallback.onReceiveValue(null);
-                fileCallback = callback;
-                Intent i = new Intent(Intent.ACTION_GET_CONTENT);
-                i.addCategory(Intent.CATEGORY_OPENABLE);
-                i.setType("*/*");
-                try {
-                    startActivityForResult(Intent.createChooser(i, "Save-bestand kiezen"), REQ_OPEN);
-                } catch (Exception e) {
-                    fileCallback = null;
-                    return false;
-                }
+            public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+                if (view != web) return true;
+                if (view.getParent() instanceof ViewGroup) ((ViewGroup) view.getParent()).removeView(view);
+                view.destroy();
+                web = null;
+                recreate();
                 return true;
             }
         });
+        // op de achtergrond het spel liever niet afsluiten (dan ben je je run kwijt)
+        if (Build.VERSION.SDK_INT >= 26) web.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, true);
         web.addJavascriptInterface(new Bridge(), "AndroidBridge");
         setContentView(web);
         hideSystemBars();
@@ -95,48 +95,23 @@ public class MainActivity extends Activity {
             });
         }
 
-        @JavascriptInterface
-        public void saveFile(final String name, final String text) {
-            runOnUiThread(new Runnable() {
-                public void run() {
-                    pendingSave = text;
-                    Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-                    i.addCategory(Intent.CATEGORY_OPENABLE);
-                    i.setType("application/json");
-                    i.putExtra(Intent.EXTRA_TITLE, name);
-                    try {
-                        startActivityForResult(i, REQ_SAVE);
-                    } catch (Exception e) {
-                        pendingSave = null;
-                        web.evaluateJavascript("window.__andySaved && window.__andySaved(false)", null);
-                    }
-                }
-            });
-        }
     }
 
-    @Override
-    protected void onActivityResult(int request, int result, Intent data) {
-        super.onActivityResult(request, result, data);
-        Uri uri = (result == RESULT_OK && data != null) ? data.getData() : null;
-        if (request == REQ_OPEN) {
-            if (fileCallback != null) fileCallback.onReceiveValue(uri != null ? new Uri[] { uri } : null);
-            fileCallback = null;
-        } else if (request == REQ_SAVE) {
-            boolean ok = false;
-            if (uri != null && pendingSave != null) {
-                try {
-                    OutputStream os = getContentResolver().openOutputStream(uri);
-                    if (os != null) {
-                        os.write(pendingSave.getBytes("UTF-8"));
-                        os.close();
-                        ok = true;
-                    }
-                } catch (Exception e) { /* mislukt */ }
-            }
-            pendingSave = null;
-            web.evaluateJavascript("window.__andySaved && window.__andySaved(" + ok + ")", null);
+    /**
+     * Het scherm op 60 Hz zetten. Op telefoons met 90/120 Hz zou het spel anders twee keer zo vaak tekenen:
+     * dubbel zoveel werk voor de grafische chip, een warmer toestel en een lege batterij, terwijl de physics
+     * toch in vaste stappen loopt. Kies een 60-Hz-stand met dezelfde resolutie; het verzoek zelf is een hint.
+     */
+    private void use60Hz() {
+        WindowManager.LayoutParams lp = getWindow().getAttributes();
+        Display d = getWindowManager().getDefaultDisplay();
+        Display.Mode cur = d.getMode();
+        for (Display.Mode m : d.getSupportedModes()) {
+            if (m.getPhysicalWidth() == cur.getPhysicalWidth() && m.getPhysicalHeight() == cur.getPhysicalHeight()
+                    && Math.abs(m.getRefreshRate() - 60f) < 1f) { lp.preferredDisplayModeId = m.getModeId(); break; }
         }
+        lp.preferredRefreshRate = 60f;
+        getWindow().setAttributes(lp);
     }
 
     private void hideSystemBars() {
@@ -148,18 +123,22 @@ public class MainActivity extends Activity {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) hideSystemBars();
+        if (hasFocus && web != null) hideSystemBars();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+        if (web == null) return;
         web.onPause();
+        web.pauseTimers(); // op de achtergrond geen JavaScript-timers laten doorlopen (batterij)
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        if (web == null) return;
+        web.resumeTimers();
         web.onResume();
         hideSystemBars();
     }
@@ -167,6 +146,7 @@ public class MainActivity extends Activity {
     /** Terugknop: eerst het spel laten reageren (pauze, terug naar menu); in het hoofdmenu gaat de app naar de achtergrond. */
     @Override
     public void onBackPressed() {
+        if (web == null) { super.onBackPressed(); return; }
         web.evaluateJavascript("(function(){ return !!(window.__andyBack && window.__andyBack()); })()", new ValueCallback<String>() {
             public void onReceiveValue(String handled) {
                 if (!"true".equals(handled)) moveTaskToBack(true);
