@@ -22,7 +22,7 @@ Een 2D-slingerspel in de browser. Andy de gorilla zwaait aan lianen door elf wer
 
 - **Online**: open de [link hierboven](https://stijnbarendse.nl/appel). Werkt het best in Chrome; in Firefox loopt het op sommige apparaten minder soepel.
 - **Lokaal**: open `index.html` in een browser. Houd het bestand bij de mappen `css/` en `js/`. Internet is alleen nodig voor online multiplayer, accounts en de ranglijst.
-- **Android-app**: [`android/AndyApples.apk`](android/AndyApples.apk) (Android 7.0+, schermvullend en liggend). Installeren en zelf bouwen: zie [`android/README.md`](android/README.md).
+- **Android-app**: [`android/AndyApples.apk`](android/AndyApples.apk) (Android 7.0+, schermvullend en liggend). Ook te downloaden via de knop **App** in het hoofdmenu van het spel (die haalt de nieuwste versie van `main` op GitHub; het adres staat in `apkUrl` in `js/config.js`). Installeren en zelf bouwen: zie [`android/README.md`](android/README.md).
 
 ## Besturing
 
