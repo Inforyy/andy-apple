@@ -248,8 +248,28 @@ const LOOT = [
   { id: 'hat_wizard',r: 'epic', kind: 'hat',   name: 'Tovenaarshoed', icon: '🧙' },
   { id: 'suit_apple',r: 'legendary', kind: 'suit',  name: 'Appelkostuum',   icon: '🍎' },
   { id: 'fur_rainbow',r:'legendary', kind: 'color', name: 'Regenboogvacht', icon: '🌈', rainbow: true },
+  // meer uiterlijk: vachten, hoeden, kostuums en sporen (een spoor volgt je als je hard gaat)
+  { id: 'fur_white',  r: 'uncommon', kind: 'color', name: 'Sneeuwvacht',  icon: '⚪', fur: '#d9d4ca', furD: '#a8a197', furL: '#ffffff' },
+  { id: 'hat_party',  r: 'uncommon', kind: 'hat',   name: 'Feesthoedje', icon: '🥳' },
+  { id: 'trail_hearts', r: 'uncommon', kind: 'trail', name: 'Hartjesspoor', icon: '💗' },
+  { id: 'fur_green',  r: 'rare', kind: 'color', name: 'Junglegroen',   icon: '🟢', fur: '#3f7a3a', furD: '#26502a', furL: '#78b865' },
+  { id: 'hat_tophat', r: 'rare', kind: 'hat',   name: 'Hoge hoed',     icon: '🎩' },
+  { id: 'hat_chef',   r: 'rare', kind: 'hat',   name: 'Koksmuts',      icon: '👨‍🍳' },
+  { id: 'trail_stars',r: 'rare', kind: 'trail', name: 'Sterrenspoor',  icon: '⭐' },
+  { id: 'fur_purple', r: 'epic', kind: 'color', name: 'Paarse vacht',  icon: '🟣', fur: '#6b3fa0', furD: '#442468', furL: '#a57ad8' },
+  { id: 'hat_viking', r: 'epic', kind: 'hat',   name: 'Vikinghelm',    icon: '🪖' },
+  { id: 'trail_fire', r: 'epic', kind: 'trail', name: 'Vuurspoor',     icon: '🔥' },
+  { id: 'suit_astro', r: 'epic', kind: 'suit',  name: 'Astronautenpak', icon: '🧑‍🚀' },
+  { id: 'hat_halo',   r: 'legendary', kind: 'hat',   name: 'Aureool',        icon: '😇' },
+  { id: 'trail_rainbow', r: 'legendary', kind: 'trail', name: 'Regenboogspoor', icon: '🌈' },
+  // S.V. Syntaxis: een setje met het groene logo en binaire code
+  { id: 'fur_syntaxis',  r: 'rare', kind: 'color', name: 'Syntaxis-vacht', icon: '<i class="svx">S.V.</i>', fur: '#2e3236', furD: '#1c1f22', furL: '#79c143', syntaxis: true },
+  { id: 'hat_syntaxis',  r: 'rare', kind: 'hat',   name: 'Syntaxis-pet',   icon: '<i class="svx">S.V.</i>', syntaxis: true },
+  { id: 'trail_binary',  r: 'epic', kind: 'trail', name: 'Binair spoor',   icon: '<i class="svx">01</i>', syntaxis: true },
+  { id: 'suit_syntaxis', r: 'legendary', kind: 'suit', name: 'Syntaxis-hoodie', icon: '<i class="svx">S.V.</i>', syntaxis: true },
 ];
 const LOOT_BY_ID = Object.fromEntries(LOOT.map(l => [l.id, l]));
+const COSM_KINDS = ['color', 'hat', 'suit', 'trail']; // soorten uiterlijk in de garderobe
 const DUPE_APPLES = { uncommon: 40, rare: 90, epic: 180, legendary: 400 };
 const CRATE_PRICE = 250; // een kist kopen met appels (in het kistenscherm)
 // kiest een willekeurige buit: eerst de zeldzaamheid (op gewicht), dan een item daarbinnen

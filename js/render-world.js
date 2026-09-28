@@ -472,6 +472,7 @@ function drawFoes() {
     if (f.type === 'wasp') drawWasp(f);
     else if (f.type === 'fire') drawFire(f);
     else if (f.type === 'jelly') drawJelly(f);
+    else if (f.type === 'puffer') drawPuffer(f);
     else drawBird(f);
   }
 }
@@ -676,6 +677,13 @@ function drawGorilla() {
     ctx.fillStyle = cachedGrad('applesuit', () => { const g = ctx.createRadialGradient(-6, -4, 2, 0, 3, 20); g.addColorStop(0, '#ff8a7a'); g.addColorStop(0.5, '#e8322b'); g.addColorStop(1, '#9e1b16'); return g; });
     ell(0, 3, 18.5, 16.5);
   }
+  if (GC.svHood) { // Syntaxis-hoodie: groen logo op de borst en een koordje
+    ctx.fillStyle = GC.ink; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(-10.5, -2.5, 21, 11, 2.5) : ctx.rect(-10.5, -2.5, 21, 11); ctx.fill();
+    ctx.fillStyle = '#79c143'; ctx.font = '900 8px Courier New, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('S.V.', 0, 3.2);
+    ctx.fillStyle = 'rgba(121,193,67,.7)'; ctx.font = '700 3.2px Courier New, monospace'; ctx.fillText('0101 1001', 0, 10.8);
+    ctx.strokeStyle = '#79c143'; ctx.lineWidth = 1; line(-3, -6, -4, 0); line(3, -6, 4, 0);
+  }
+  if (GC.svFur) { ctx.fillStyle = 'rgba(121,193,67,.85)'; ctx.font = '700 4px Courier New, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('10', -9, 10); ctx.fillText('01', 9, 11); } // Syntaxis-vacht: binaire plukjes
   ctx.strokeStyle = GC.furL; ctx.lineWidth = 1.3; ctx.lineCap = 'round'; // vachtplukjes op de schouders
   line(-14, -6, -17, -9); line(-12, -8, -14, -12); line(14, -6, 17, -9); line(12, -8, 14, -12);
   // hoofd met kuif en oren (eerst de contour, dan de vulling)
@@ -732,6 +740,11 @@ function drawGorilla() {
   }
   if (GC.appleSuit) drawAppleSuitTop();
   if (GC.hat) drawHat(GC.hat);
+  if (GC.astro) { // astronautenpak: een glazen helm om het hoofd
+    ctx.strokeStyle = 'rgba(210,235,255,.9)'; ctx.lineWidth = 2; ctx.fillStyle = 'rgba(170,215,255,.18)'; ctx.beginPath(); ctx.arc(0, -19, 19, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.55)'; ell(-8, -28, 4, 7, -0.5);
+    ctx.fillStyle = '#c9ced6'; ctx.fillRect(-12, -3, 24, 4); ctx.fillStyle = '#e8322b'; circ(7, 3, 1.6); ctx.fillStyle = '#2f7fe0'; circ(3, 3, 1.6);
+  }
   if (an && an.kind === 'juggle') { // drie appels in een boogje boven de handen
     for (let i = 0; i < 3; i++) {
       const ph = an.u * 5 + i * Math.PI * 2 / 3, x = Math.cos(ph) * 12, y = -40 - Math.abs(Math.sin(ph)) * 22;
@@ -770,6 +783,7 @@ function drawParts() {
       case 'confetti': ctx.fillStyle = p.col; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillRect(-p.r, -p.r * 0.5, p.r * 2, p.r * Math.abs(Math.cos(p.rot * 1.7))); ctx.restore(); break;
       case 'leaf': ctx.fillStyle = p.col; ell(p.x, p.y, p.r * 1.6, p.r * 0.75, p.rot); break;
       case 'streak': ctx.strokeStyle = p.col; ctx.lineWidth = p.r; line(p.x, p.y, p.x - p.vx * 0.12, p.y - p.vy * 0.12); break;
+      case 'glyph': ctx.fillStyle = p.col; ctx.font = `900 ${p.r}px Courier New, monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(p.ch, p.x, p.y); break; // tekentje (hartje, 0 of 1)
       default: ctx.fillStyle = p.col; circ(p.x, p.y, p.r);
     }
   }
@@ -1141,6 +1155,13 @@ function drawUnderwater(P) {
     ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.strokeText('⬆ LUCHT', e, UNDER_TOP + 70 + Math.sin(time * 4) * 5);
     ctx.fillStyle = '#e6fbff'; ctx.fillText('⬆ LUCHT', e, UNDER_TOP + 70 + Math.sin(time * 4) * 5);
   }
+  // tegenstromingen: pijltjes die naar links schuiven
+  ctx.strokeStyle = 'rgba(160,220,255,.45)'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+  for (const c of U.currents) {
+    if (c.x1 < x0 || c.x0 > x1) continue;
+    ctx.fillStyle = 'rgba(120,190,255,.1)'; ctx.fillRect(c.x0, c.y0, c.x1 - c.x0, c.y1 - c.y0);
+    for (let yy = c.y0 + 25; yy < c.y1; yy += 45) for (let xx = c.x0 + ((-time * 220) % 70 + 70) % 70; xx < c.x1; xx += 70) { ctx.beginPath(); ctx.moveTo(xx + 14, yy - 8); ctx.lineTo(xx, yy); ctx.lineTo(xx + 14, yy + 8); ctx.stroke(); }
+  }
   // rotswanden
   for (const w of U.walls) {
     if (w.x < x0 - 80 || w.x > x1 + 80) continue;
@@ -1214,6 +1235,20 @@ function drawLoot() {
     }
   }
 }
+// kogelvis: rond en stekelig als hij zich opblaast
+function drawPuffer(f) {
+  const r = f.r, d = Math.sign(G.x - f.x) || 1;
+  ctx.save(); ctx.translate(f.x, f.y); ctx.scale(d, 1);
+  ctx.fillStyle = '#e0a53a'; ctx.beginPath(); ctx.moveTo(-r * 0.9, 0); ctx.lineTo(-r * 1.5, -r * 0.5); ctx.lineTo(-r * 1.5, r * 0.5); ctx.fill(); // staart
+  ctx.strokeStyle = '#8a5a1a'; ctx.lineWidth = 2;
+  if (r > 22) for (let k = 0; k < 14; k++) { const a = k / 14 * Math.PI * 2; line(Math.cos(a) * r * 0.9, Math.sin(a) * r * 0.9, Math.cos(a) * (r + 7), Math.sin(a) * (r + 7)); } // stekels
+  ctx.fillStyle = '#f4c95a'; circ(0, 0, r);
+  ctx.fillStyle = '#fff2c8'; ell(0, r * 0.35, r * 0.75, r * 0.45);
+  ctx.fillStyle = '#6a4a1a'; for (let k = 0; k < 5; k++) circ(-r * 0.4 + k * r * 0.2, -r * 0.45 + (k % 2) * 4, 2.2);
+  ctx.fillStyle = '#fff'; circ(r * 0.45, -r * 0.2, r * 0.26); ctx.fillStyle = '#111'; circ(r * 0.52, -r * 0.2, r * 0.13);
+  ctx.fillStyle = '#c0394b'; ell(r * 0.85, r * 0.12, 3, 2.5);
+  ctx.restore();
+}
 function drawJelly(f) {
   const p = 1 + Math.sin(f.t * 3) * 0.08;
   ctx.save(); ctx.translate(f.x, f.y);
@@ -1226,6 +1261,8 @@ function drawJelly(f) {
 }
 // ---- Uiterlijk van Andy (uit kisten, zie game.js) ----
 const APPLE_SUIT = { fur: '#e8322b', furD: '#a8141c', furL: '#ff8a7a', band: '#4caf50', bandD: '#2e7d32', appleSuit: true };
+const ASTRO_SUIT = { fur: '#eef1f6', furD: '#b8c0cc', furL: '#ffffff', band: '#2f7fe0', bandD: '#1d5bb0', cape: '#2f7fe0', capeD: '#1d5bb0', astro: true };
+const SV_SUIT = { fur: '#2e3236', furD: '#1c1f22', furL: '#79c143', band: '#79c143', bandD: '#4a8a25', cape: '#79c143', capeD: '#4a8a25', svHood: true }; // Syntaxis-hoodie
 let lookKey = '', lookPal = null;
 // het palet voor jouw eigen gorilla, met je gekozen vachtkleur, hoed en kostuum
 function myLook() {
@@ -1238,7 +1275,8 @@ function myLook() {
   const key = c.color + '|' + c.hat + '|' + c.suit;
   if (key !== lookKey || !lookPal) {
     lookKey = key;
-    const base = c.suit === 'suit_kiwi' ? GCK : c.suit === 'suit_apple' ? Object.assign({}, GC, APPLE_SUIT) : col ? Object.assign({}, GC, { fur: col.fur, furD: col.furD, furL: col.furL }) : GC;
+    const base = c.suit === 'suit_kiwi' ? GCK : c.suit === 'suit_apple' ? Object.assign({}, GC, APPLE_SUIT) : c.suit === 'suit_astro' ? Object.assign({}, GC, ASTRO_SUIT)
+      : c.suit === 'suit_syntaxis' ? Object.assign({}, GC, SV_SUIT) : col ? Object.assign({}, GC, { fur: col.fur, furD: col.furD, furL: col.furL, svFur: !!col.syntaxis }) : GC;
     lookPal = Object.assign({}, base, { hat: c.suit === 'suit_apple' ? '' : c.hat });
   }
   return lookPal;
@@ -1261,6 +1299,29 @@ function drawHat(id) {
   } else if (id === 'hat_crown') {
     shape('#f5c518', () => { ctx.moveTo(-12, -25); ctx.lineTo(-13, -38); ctx.lineTo(-6, -31); ctx.lineTo(0, -41); ctx.lineTo(6, -31); ctx.lineTo(13, -38); ctx.lineTo(12, -25); });
     ctx.fillStyle = '#e8322b'; circ(0, -29, 2.2); ctx.fillStyle = '#2f7fe0'; circ(-7, -28.5, 1.8); circ(7, -28.5, 1.8);
+  } else if (id === 'hat_party') {
+    shape('#ff4fa3', () => { ctx.moveTo(-9, -27); ctx.lineTo(1, -52); ctx.lineTo(10, -27); });
+    ctx.strokeStyle = '#ffe14f'; ctx.lineWidth = 2; line(-6, -33, 6, -36); line(-3, -41, 4, -43);
+    ctx.fillStyle = '#4fd0ff'; circ(1, -53, 3.2);
+  } else if (id === 'hat_tophat') {
+    shape('#1d1d24', () => { ctx.ellipse(0, -27, 19, 4, 0, 0, Math.PI * 2); });
+    shape('#1d1d24', () => { ctx.rect(-10, -52, 20, 25); });
+    ctx.fillStyle = '#c81e3a'; ctx.fillRect(-10, -33, 20, 4);
+  } else if (id === 'hat_chef') {
+    shape('#ffffff', () => { ctx.rect(-10, -36, 20, 10); });
+    shape('#ffffff', () => { ctx.arc(-6, -40, 7, 0, Math.PI * 2); ctx.moveTo(13, -42); ctx.arc(6, -42, 7, 0, Math.PI * 2); ctx.moveTo(7, -47); ctx.arc(0, -47, 7, 0, Math.PI * 2); });
+  } else if (id === 'hat_viking') {
+    shape('#e7dcc0', () => { ctx.moveTo(-12, -30); ctx.quadraticCurveTo(-24, -34, -22, -48); ctx.quadraticCurveTo(-17, -38, -9, -36); });
+    shape('#e7dcc0', () => { ctx.moveTo(12, -30); ctx.quadraticCurveTo(24, -34, 22, -48); ctx.quadraticCurveTo(17, -38, 9, -36); });
+    shape('#8a939e', () => { ctx.arc(0, -26, 13, Math.PI, 0); });
+    ctx.fillStyle = '#c9a45a'; ctx.fillRect(-13, -28, 26, 3.5); ctx.fillRect(-1.5, -39, 3, 12);
+  } else if (id === 'hat_halo') {
+    ctx.strokeStyle = '#ffe14f'; ctx.lineWidth = 3; ctx.shadowColor = '#fff39a'; ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.ellipse(0, -44 + Math.sin(time * 2) * 1.5, 12, 3.5, 0, 0, Math.PI * 2); ctx.stroke(); ctx.shadowBlur = 0;
+  } else if (id === 'hat_syntaxis') { // groene pet met het S.V.-logo
+    shape('#2e3236', () => { ctx.arc(0, -25, 12.5, Math.PI, 0); });
+    shape('#79c143', () => { ctx.ellipse(10, -25, 11, 3, 0, 0, Math.PI * 2); });
+    ctx.fillStyle = '#79c143'; ctx.font = '900 6.5px Courier New, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('S.V.', 0, -30);
   } else if (id === 'hat_wizard') {
     shape('#5b2fa8', () => { ctx.moveTo(-13, -27); ctx.quadraticCurveTo(-2, -45, 6, -60); ctx.quadraticCurveTo(4, -42, 13, -27); });
     shape('#5b2fa8', () => { ctx.ellipse(0, -27, 18, 4.5, 0, 0, Math.PI * 2); });

@@ -360,7 +360,7 @@ function openCrate(from) {
   previewLoop();
 }
 const crateCard = (it, win) => `<div class="cr-card${win ? ' win' : ''}" style="--rc:${RARITY[it.r].col}"><span>${it.icon}</span><small>${escHtml(it.name)}</small></div>`;
-const WD_TABS = [['color', 'Vacht'], ['hat', 'Hoed'], ['suit', 'Kostuum']];
+const WD_TABS = [['color', 'Vacht'], ['hat', 'Hoed'], ['suit', 'Kostuum'], ['trail', 'Spoor']];
 function renderCrate() {
   $('crBoxes').textContent = save.boxes;
   const b = $('btnCrOpen');

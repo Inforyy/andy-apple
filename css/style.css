@@ -414,6 +414,7 @@ html.short .btn.big{font-size:22px;padding:10px 18px}
 .set-row:first-child{border-top:none}
 .set-ic{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:18px;background:#fff1d6}
 .set-lbl{flex:1;font-weight:800;font-size:16px;color:#4a2c12}
+.svx{font-style:normal;font-family:'Courier New',monospace;font-weight:900;color:#79c143;letter-spacing:-1px;text-shadow:0 0 6px rgba(121,193,67,.6),2px 2px 0 #1c1f22;background:#2e3236;border-radius:6px;padding:0 4px}
 .set-lbl small{display:block;font-size:12px;font-weight:700;color:#a0703c}
 .set-ic.s6{background:#fde7e7;font-size:20px}
 .btn.rst{padding:7px 14px;font-size:15px;background:#fff;color:#c62828;border:2px solid #f3b8b8;box-shadow:0 3px 0 #f3b8b8}

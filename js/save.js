@@ -7,7 +7,7 @@
 // =====================================================================
 const SAVE_KEY = 'andyApples.save.v1';
 function defaultSave() {
-  return { version:3, upt:1, matrixSeen:0, apples:0, xp:0, upgrades:{}, best:0, totalApples:0, totalDistance:0, runs:0, maxBiome:0, sound:true, music:true, sfxVol:0.8, musicVol:0.8, lbBest:0, mpGames:0, mpWins:0, chaseBest:0, boxes:0, cosm:{ own:[], color:'', hat:'', suit:'' }, career:{ lpw:LEVELS_PER_WORLD, unlocked:1, anim:0, at:1, stars:Array.from({ length: LEVELS }, () => 0) } };
+  return { version:3, upt:1, matrixSeen:0, apples:0, xp:0, upgrades:{}, best:0, totalApples:0, totalDistance:0, runs:0, maxBiome:0, sound:true, music:true, sfxVol:0.8, musicVol:0.8, lbBest:0, mpGames:0, mpWins:0, chaseBest:0, boxes:0, cosm:{ own:[], color:'', hat:'', suit:'', trail:'' }, career:{ lpw:LEVELS_PER_WORLD, unlocked:1, anim:0, at:1, stars:Array.from({ length: LEVELS }, () => 0) } };
 }
 // Oude carrière (5 levels per wereld, het 5e was de baas) omzetten naar LEVELS_PER_WORLD per wereld:
 // levels 1-4 blijven, de baas wordt het kasteel (laatste level); de nieuwe levels ertussen moet je nog spelen.
@@ -55,8 +55,8 @@ function normalizeSave(o) {
   // kisten en uiterlijk: alleen bestaande items, en alleen aantrekken wat je hebt
   s.boxes = Math.min(num(o.boxes), 9999);
   const cm = (o.cosm && typeof o.cosm === 'object') ? o.cosm : {};
-  s.cosm.own = [...new Set(Array.isArray(cm.own) ? cm.own.filter(id => LOOT_BY_ID[id] && ['color', 'hat', 'suit'].includes(LOOT_BY_ID[id].kind)) : [])];
-  for (const k of ['color', 'hat', 'suit']) s.cosm[k] = s.cosm.own.includes(cm[k]) && LOOT_BY_ID[cm[k]].kind === k ? cm[k] : '';
+  s.cosm.own = [...new Set(Array.isArray(cm.own) ? cm.own.filter(id => LOOT_BY_ID[id] && COSM_KINDS.includes(LOOT_BY_ID[id].kind)) : [])];
+  for (const k of COSM_KINDS) s.cosm[k] = s.cosm.own.includes(cm[k]) && LOOT_BY_ID[cm[k]].kind === k ? cm[k] : '';
   const c = migrateCareer((o.career && typeof o.career === 'object') ? o.career : {});
   s.career.unlocked = clamp(num(c.unlocked) || 1, 1, LEVELS);
   s.career.stars = Array.from({ length: LEVELS }, (_, i) => clamp(num(Array.isArray(c.stars) ? c.stars[i] : 0), 0, 3));

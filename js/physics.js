@@ -245,6 +245,17 @@ function release(voluntary = true) {
     if (voluntary && Math.hypot(vx, vy) > 750 && time - run.lastWoo > 4 && Math.random() < 0.5) { run.lastWoo = time; Sfx.woohoo(Math.hypot(vx, vy)); }
   }
 }
+// ---- Spoor (uiterlijk uit kisten): volgt Andy als hij hard gaat ----
+function cosmTrail() {
+  const sp = Math.hypot(G.vx, G.vy);
+  if (sp < 420 || Math.random() > 0.35 + sp / 3000) return;
+  const t = save.cosm.trail, x = G.x - G.vx * 0.03 + rand(-8, 8), y = G.y - G.vy * 0.03 + rand(-8, 8), vx = -G.vx * 0.1 + rand(-30, 30), vy = rand(-40, 40);
+  if (t === 'trail_hearts') addPart({ type: 'glyph', ch: '♥', x, y, vx, vy: vy - 40, life: 0.7, max: 0.7, col: Math.random() < 0.5 ? '#ff4f8b' : '#ff9ec7', r: rand(9, 14), g: -30 });
+  else if (t === 'trail_stars') addPart({ type: 'star', x, y, vx, vy, life: 0.6, max: 0.6, col: Math.random() < 0.5 ? '#ffe14f' : '#ffffff', r: rand(2.5, 4), rot: rand(0, 6), vr: 6, g: 0 });
+  else if (t === 'trail_fire') addPart({ x, y, vx, vy: vy - 60, life: 0.45, max: 0.45, col: ['#ffd23f', '#ff8a1a', '#ff4a1a'][(Math.random() * 3) | 0], r: rand(3, 7), g: -120 });
+  else if (t === 'trail_rainbow') addPart({ x, y, vx: vx * 0.3, vy: 0, life: 0.6, max: 0.6, col: `hsl(${(time * 240) % 360},90%,62%)`, r: 6, g: 0 });
+  else if (t === 'trail_binary') addPart({ type: 'glyph', ch: Math.random() < 0.5 ? '0' : '1', x, y, vx, vy: vy + 30, life: 0.8, max: 0.8, col: Math.random() < 0.3 ? '#d8ffe0' : '#79c143', r: rand(15, 22), g: 40 });
+}
 // ---- Het Matrix-geheim ----
 // Wie vanaf de allereerste liaan hard naar achteren loslaat en tegen de wand achter de startrots vliegt, belandt in
 // de Matrix: vallende groene code, en Kiwi die in een paar tekstballonnen uitlegt dat je de verkeerde kant op ging.
@@ -363,6 +374,12 @@ function hitFoe(f) {
   if (G.invuln > 0 || G.state === 'rocket' || f.done || powOn('star') || G.auto) return;
   f.done = true;
   G.invuln = 1.4;
+  if (run.under && (f.type === 'jelly' || f.type === 'puffer')) { // onder water kost een steek je lucht
+    run.under.t -= UNDER_STING; G.vx = -260; G.vy = f.y > G.y ? -300 : 300;
+    floatText(G.x, G.y - 55, `-${UNDER_STING} s lucht!`, '#ff8080', 24); starBurst(f.x, f.y, 12, '#ffb0e0');
+    Sfx.crack(); Sfx.hey(); shake(4, 0.2); f.fleeT = 0;
+    return;
+  }
   if (G.helmets > 0) {
     G.helmets--;
     starBurst(f.x, f.y, 14, '#ffffff');
@@ -446,6 +463,7 @@ function updateGorilla(dt, holdHang, holdAir) {
   const playing = game.mode === 'playing';
   if (!G.auto) checkTrans(); // biomegrens: vanzelf de reuzenliaan grijpen
   if (G.matrixShot) checkMatrix();
+  if (save.cosm.trail && playing && !aiWorld() && (G.state === 'air' || G.state === 'hang')) cosmTrail();
 
   if (G.auto) autoSwing(dt);
   else if (G.state === 'hang') {
@@ -648,6 +666,9 @@ function updateFoes(dt) {
       }
     } else if (f.type === 'jelly') { // kwal onder water: deint op en neer
       f.t += dt; f.y = f.y0 + Math.sin(f.t * 1.3) * 40; f.x = f.x0 + Math.sin(f.t * 0.6) * 25;
+    } else if (f.type === 'puffer') { // kogelvis: zwemt langzaam op je af en blaast zich elke paar tellen op
+      f.t += dt; const puff = Math.max(0, Math.sin(f.t * 1.4)); f.r = 16 + puff * 20;
+      if (Math.abs(f.x - G.x) < 700) { f.x += Math.sign(G.x - f.x) * 60 * dt; f.y += clamp(G.y - f.y, -80, 80) * dt * 0.8; }
     } else if (f.type === 'bird') {
       f.t += dt;
       if (!f.active && f.x < camX + viewW + 450) f.active = true;
@@ -851,38 +872,46 @@ function updateLoot(dt) {
 
 // ---- Onder water ----
 // Val je in het water (niet in lava, niet online), dan is er UNDER_CHANCE kans dat Andy niet verdrinkt maar ondergaat:
-// een onderwaterwereld met rotswanden, kwallen en parels. Een sterke stroming houdt je onder water, behalve bij een
-// luchtgat (een bellenzuil). Haal je er binnen UNDER_TIME seconden geen, dan verdrinkt Andy.
-const UNDER_CHANCE = 0.2, UNDER_TIME = 30, UNDER_FLOOR = HAZARD_Y + 1000, UNDER_TOP = HAZARD_Y + 45;
+// een onderwaterwereld met rotswanden (sommige schuiven op en neer), tegenstromingen, kwallen, kogelvissen en parels.
+// Een sterke stroming houdt je onder water, behalve bij een luchtgat (een bellenzuil), en die liggen ver uit elkaar.
+// Haal je er binnen UNDER_TIME seconden geen, dan verdrinkt Andy. Een kwal of kogelvis kost je lucht (UNDER_STING).
+// Het moet voelen als een tweede kans die je moet verdienen.
+const UNDER_CHANCE = 0.2, UNDER_TIME = 22, UNDER_STING = 3, UNDER_FLOOR = HAZARD_Y + 1000, UNDER_TOP = HAZARD_Y + 45;
 function canGoUnder() {
   return !game.mp && game.mode === 'playing' && !run.under && BIOMES[biomeIndexAt(run.dist)].style !== 'volcano' && Math.random() < UNDER_CHANCE;
 }
 function enterUnder() {
   if (G.state === 'hang') { freeHand(G.vine, G.k); G.vine = null; }
-  const U = run.under = { t: UNDER_TIME, x0: G.x, exits: [], walls: [], genX: G.x + 500, nextExit: G.x + 2100, beep: 99, visits: (run.underVisits || 0) + 1 };
+  const U = run.under = { t: UNDER_TIME, x0: G.x, exits: [], walls: [], currents: [], genX: G.x + 500, nextExit: G.x + rand(2800, 3300), beep: 99, visits: (run.underVisits || 0) + 1 };
   run.underVisits = U.visits;
   G.state = 'swim'; G.vy = clamp(G.vy, 200, 500); G.vx = Math.max(200, Math.min(G.vx, 700));
   G.trick = null; G.trickRot = 0; G.dive = 0; G.diveT = 0; G.diving = false; G.airT = 0;
   genUnder(U, G.x + 2400);
   splash(G.x, 30); Sfx.splash(G.x); Sfx.underIn(); shake(5, 0.3);
-  showBanner('Onder water! 🫧', `Zoek binnen ${UNDER_TIME} s een luchtgat (bellenzuil) om boven te komen`);
+  showBanner('Tweede kans! 🫧', `Zoek binnen ${UNDER_TIME} s een luchtgat. Pas op voor kwallen, kogelvissen en de stroming!`);
 }
 // stukje onderwaterwereld erbij (Math.random: dit is alleen voor jou, geen gedeelde wereld)
 function genUnder(U, xMax) {
   while (U.genX < xMax) {
     const x = U.genX;
-    if (x >= U.nextExit) { U.exits.push(x + 100); U.nextExit = x + rand(1700, 2300); U.genX += 420; continue; }
-    // rotswand: van de bodem omhoog of van boven omlaag, met altijd een doorgang
-    if (Math.random() < 0.8) {
-      const fromTop = Math.random() < 0.45, gap = rand(300, 420);
-      U.walls.push(fromTop ? { x, w: rand(60, 110), y0: UNDER_TOP - 60, y1: UNDER_FLOOR - gap - rand(0, 250) } : { x, w: rand(60, 110), y0: UNDER_TOP + gap + rand(0, 250), y1: UNDER_FLOOR + 40 });
+    if (x >= U.nextExit) { U.exits.push(x + 100); U.nextExit = x + rand(2600, 3400); U.genX += 420; continue; }
+    // rotswand: van de bodem omhoog of van boven omlaag, met altijd een (krappe) doorgang; soms schuift hij op en neer
+    if (Math.random() < 0.95) {
+      const fromTop = Math.random() < 0.45, gap = rand(230, 320), amp = Math.random() < 0.35 ? rand(60, 130) : 0;
+      const W0 = fromTop ? { x, w: rand(60, 110), y0: UNDER_TOP - 60, y1: UNDER_FLOOR - gap - rand(0, 250) } : { x, w: rand(60, 110), y0: UNDER_TOP + gap + rand(0, 250), y1: UNDER_FLOOR + 40 };
+      W0.by0 = W0.y0; W0.by1 = W0.y1; W0.amp = amp; W0.ph = rand(0, 6); W0.sp = rand(0.8, 1.4);
+      U.walls.push(W0);
     }
+    // tegenstroming: een zone die je terugduwt (zwem er snel doorheen of eromheen)
+    if (Math.random() < 0.3) { const y = rand(UNDER_TOP + 120, UNDER_FLOOR - 260); U.currents.push({ x0: x + 120, x1: x + rand(420, 560), y0: y, y1: y + rand(140, 220) }); }
+    // kogelvis: zwemt op je af en blaast zich af en toe op
+    if (Math.random() < 0.3) { const y = rand(UNDER_TOP + 150, UNDER_FLOOR - 150), px2 = x + rand(250, 420); foes.push({ type: 'puffer', x: px2, y, y0: y, t: rand(0, 6), r: 18, bi: 0 }); }
     { // parels in een groepje: een golvend rijtje of een bosje
       const cx = x + rand(180, 360), cy = rand(UNDER_TOP + 140, UNDER_FLOOR - 140), row = Math.random() < 0.6;
       const pts = row ? [0, 1, 2, 3, 4].map(i => [(i - 2) * 42, Math.sin(i * 1.2) * 18]) : [[0, 0], ...[0, 1, 2, 3, 4].map(k => [Math.cos(k * 1.257) * 34, Math.sin(k * 1.257) * 34])];
       for (const [ox, oy] of pts) apples.push({ x: cx + ox, y: cy + oy, gold: Math.random() < 0.12, pearl: true, t: Math.random() * 6 });
     }
-    if (Math.random() < 0.55) { const y = rand(UNDER_TOP + 150, UNDER_FLOOR - 150), jx = x + rand(200, 380); foes.push({ type: 'jelly', x0: jx, y0: y, x: jx, y, t: rand(0, 6), r: 20, bi: 0, hue: rand(260, 340) }); }
+    if (Math.random() < 0.75) { const y = rand(UNDER_TOP + 150, UNDER_FLOOR - 150), jx = x + rand(200, 380); foes.push({ type: 'jelly', x0: jx, y0: y, x: jx, y, t: rand(0, 6), r: 20, bi: 0, hue: rand(260, 340) }); }
     if (!game.mp && Math.random() < 0.12) addLoot(x + rand(150, 400), rand(UNDER_TOP + 150, UNDER_FLOOR - 120));
     U.genX += rand(480, 600);
   }
@@ -894,7 +923,9 @@ function updateSwim(dt, hold) {
   genUnder(U, G.x + 2400);
   // zwemmen: ingedrukt = een slag omhoog en vooruit; los = je zakt langzaam
   G.vy += (hold ? -1400 : 300) * dt;
-  G.vx += ((hold ? 600 : 360) - G.vx) * Math.min(1, dt * 1.6);
+  G.vx += ((hold ? 540 : 320) - G.vx) * Math.min(1, dt * 1.6);
+  for (const c of U.currents) if (G.x > c.x0 && G.x < c.x1 && G.y > c.y0 && G.y < c.y1) { G.vx -= 1500 * dt; G.vy += Math.sin(time * 3) * 200 * dt; } // tegenstroming
+  for (const w of U.walls) if (w.amp) { const o = Math.sin(time * w.sp + w.ph) * w.amp; w.y0 = w.by0 + o; w.y1 = w.by1 + o; } // schuivende wanden
   G.vy *= Math.pow(0.3, dt); G.vy = clamp(G.vy, -560, 460);
   const px = G.x;
   G.x += G.vx * dt; G.y += G.vy * dt;
@@ -922,8 +953,8 @@ function leaveUnder(ex) {
   G.airT = 0; G.airX = G.x; G.noDive = true; G.invuln = 1; G.angle = 0;
   camY = Math.min(camY, baseTop()); // de camera springt mee terug naar boven
   splash(G.x, 26); Sfx.underOut();
-  reward(G.x, G.y - 70, `Boven water! (${Math.max(0, Math.ceil(U.t))} s over)`, 10 + Math.ceil(Math.max(0, U.t)), '#bfefff');
-  for (let i = foes.length - 1; i >= 0; i--) if (foes[i].type === 'jelly') foes.splice(i, 1);
+  reward(G.x, G.y - 70, `Tweede kans gegrepen! (${Math.max(0, Math.ceil(U.t))} s over)`, 15 + 2 * Math.ceil(Math.max(0, U.t)), '#bfefff');
+  for (let i = foes.length - 1; i >= 0; i--) if (foes[i].type === 'jelly' || foes[i].type === 'puffer') foes.splice(i, 1);
   for (let i = apples.length - 1; i >= 0; i--) if (apples[i].pearl) apples.splice(i, 1);
 }
 
