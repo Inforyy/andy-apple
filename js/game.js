@@ -271,8 +271,8 @@ function refreshMenu() {
   $('mmEndless').textContent = save.best ? `Record: ${save.best} m` : 'Kom zo ver mogelijk';
   setToggle('btnRotate', rotPref);
   setToggle('btnFullscreen', isFullscreen());
-  $('rowFullscreen').classList.toggle('hidden', !canFullscreen || IN_APP);
-  $('rowRotate').classList.toggle('hidden', IN_APP);
+  $('rowFullscreen').classList.toggle('hidden', IN_APP ? !appScreen() : !canFullscreen);
+  $('rowRotate').classList.toggle('hidden', IN_APP && !appScreen());
   renderQuality();
   setBadge($('btnShop'), affordableCount());
   setBadge($('btnCrates'), save.boxes);

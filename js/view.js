@@ -56,6 +56,7 @@ const ROT_KEY = 'andyApples.rotate';
 // telefoons/tablets spelen standaard liggend (tot de speler in Instellingen 'Staand spelen' kiest)
 let rotPref = IS_MOBILE, rotOn = false;
 try { const r = localStorage.getItem(ROT_KEY); if (r !== null) rotPref = r === '1'; } catch (e) { /* geen voorkeur */ }
+if (IN_APP && typeof AndroidBridge.isLandscape === 'function') rotPref = !!AndroidBridge.isLandscape(); // de app bewaart dit zelf
 function applyRot() {
   rotOn = rotPref && !IN_APP && window.innerHeight > window.innerWidth;
   const b = document.body;
@@ -66,9 +67,12 @@ function applyRot() {
 // schermcoördinaten -> coördinaten in het (eventueel gedraaide) spel
 const toGame = (x, y) => rotOn ? [y, window.innerWidth - x] : [x, y];
 const canFullscreen = !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
-function isFullscreen() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+// in de Android-app regelt de app zelf volledig scherm en draaien (AndroidBridge.setFullscreen/setLandscape)
+const appScreen = () => IN_APP && typeof AndroidBridge.setFullscreen === 'function';
+function isFullscreen() { if (appScreen()) return !!AndroidBridge.isFullscreen(); return !!(document.fullscreenElement || document.webkitFullscreenElement); }
 // ---- Volledig scherm: eigen, losse knop ----
 async function toggleFullscreen() {
+  if (appScreen()) { AndroidBridge.setFullscreen(!AndroidBridge.isFullscreen()); setTimeout(resize, 350); return; }
   try {
     const el = document.documentElement;
     if (isFullscreen()) { if (document.exitFullscreen) await document.exitFullscreen(); else if (document.webkitExitFullscreen) await document.webkitExitFullscreen(); }
@@ -89,6 +93,7 @@ async function lockLandscape() {
 async function toggleRotate() {
   rotPref = !rotPref;
   try { localStorage.setItem(ROT_KEY, rotPref ? '1' : '0'); } catch (e) { /* negeren */ }
+  if (appScreen()) { AndroidBridge.setLandscape(rotPref); setTimeout(resize, 350); return; }
   if (rotPref) await lockLandscape();
   else {
     try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) { /* */ }

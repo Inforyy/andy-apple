@@ -72,7 +72,8 @@ function updateCamera(dt) {
   // verticaal meebewegen (de wereld is veel hoger dan het scherm), maar nooit onder de bodem kijken
   // onder water mag de camera wel onder de waterlijn (daar speel je dan)
   const bt = run && run.under ? Infinity : baseTop();
-  const ty = Math.min(bt, G.y - viewH * 0.5 + clamp(G.vy * 0.15, -110, 190));
+  let ty = Math.min(bt, G.y - viewH * 0.5 + clamp(G.vy * 0.15, -110, 190));
+  if (G.auto) ty = HAZARD_Y + 170 - viewH; // boven zee tussen twee eilanden: de zee onderaan in beeld
   camY += (ty - camY) * Math.min(1, dt * 4.5);
   if (G.state !== 'dead') camY = clamp(camY, G.y - viewH + 120, G.y - 100);
   camY = Math.min(camY, bt);

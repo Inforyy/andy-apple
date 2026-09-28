@@ -1056,8 +1056,8 @@ function drawFlash() {
 // =====================================================================
 //  Biome-overgang, onder water, kisten en het uiterlijk van Andy
 // =====================================================================
-// Op elke biomegrens (Eindeloos) houdt de wereld op: het water stort over een klif een diepe afgrond in, waar geen
-// achtergrond en geen grond meer is; aan de overkant begint de nieuwe biome weer met een klif. Boven de afgrond hangen
+// Op elke biomegrens (Eindeloos) houdt het eiland op: daarna is er alleen open zee (geen bergen of bos), tot aan het
+// eiland van de nieuwe biome. Boven de zee hangen
 // aan een reuzentak de reuzenlianen waarmee Andy vanzelf naar de nieuwe biome zwaait (zie TRANS en autoSwing).
 // voidSpans: de afgronden in beeld (wereld-x), zodat het water en de voorgrond daar niet getekend worden (clipVoid).
 const voidSpans = [];
@@ -1088,63 +1088,84 @@ function clipVoid() {
   ctx.clip('evenodd'); ctx.setTransform(T);
   return true;
 }
-const VOID_COL = [4, 5, 14];
-// de afgrond zelf: een donkere leegte, de wereld vervaagt aan beide randen, en twee kliffen met een waterval
+// De open zee tussen twee eilanden: de lucht loopt door, de achtergrond (bergen, bos) houdt op bij de kust,
+// en onder je is alleen maar water, tot aan de horizon (met in de verte nog een paar eilandjes).
+const SEA_TOP = [120, 196, 232], SEA_BOT = [16, 84, 150], SEA_HOR = HAZARD_Y - 300; // kleuren van de zee; de horizon
 function drawVoid(bx, xL, xR, A, B) {
-  const y0 = camY - 120, y1 = camY + viewH + 120;
+  const y0 = camY - 60, y1 = camY + viewH + 60;
   const P = paletteAt((bx - START_X) / PX_PER_M);
-  const top = rgbStr(mixC(P.skyTopC, VOID_COL, 0.72)), mid = rgbStr(mixC(P.skyTopC, VOID_COL, 0.9)), bot = rgbStr(VOID_COL);
-  const g = ctx.createLinearGradient(0, TRANS.ay, 0, HAZARD_Y + 700);
-  g.addColorStop(0, top); g.addColorStop(0.55, mid); g.addColorStop(1, bot);
-  // de leegte met rafelige randen: de achtergrond houdt daar gewoon op
-  ctx.fillStyle = g; ctx.beginPath();
-  const st = 70, ya = Math.floor(y0 / st) * st, yb = Math.ceil(y1 / st) * st;
-  for (let y = ya; y <= yb; y += st) ctx.lineTo(xL - 20 - hash(y * 0.013 + bx) * 70, y);
-  for (let y = yb; y >= ya; y -= st) ctx.lineTo(xR + 20 + hash(y * 0.017 - bx) * 70, y);
-  ctx.closePath(); ctx.fill();
-  // de wereld vervaagt in de leegte
-  for (const [x, dir] of [[xL - 90, -1], [xR + 90, 1]]) {
-    const f = ctx.createLinearGradient(x + dir * 260, 0, x, 0);
-    f.addColorStop(0, rgbStr(mixC(P.skyTopC, VOID_COL, 0.72), 0)); f.addColorStop(1, rgbStr(mixC(P.skyTopC, VOID_COL, 0.72), 0.9));
-    ctx.fillStyle = f; ctx.fillRect(Math.min(x, x + dir * 260), y0, 260, Math.min(y1, HAZARD_Y) - y0);
-  }
-  // mistflarden die langzaam door de diepte drijven
-  for (let i = 0; i < 7; i++) {
-    const x = xL + ((hash(i * 3.1 + bx) * (xR - xL) + time * (20 + i * 6)) % (xR - xL)), y = HAZARD_Y + 180 + hash(i * 7.7) * 520;
-    ctx.fillStyle = `rgba(150,160,200,${0.05 + hash(i * 1.9) * 0.05})`; ell(x, y, 260 + hash(i) * 200, 40 + hash(i * 2) * 30);
-  }
-  drawCliffFace(xL, -1, A);
-  drawCliffFace(xR, 1, B);
-  // de waterval: het water van de oude biome stort over de rand de diepte in
-  if (camY + viewH > HAZARD_Y - 60) {
-    const wf = ctx.createLinearGradient(0, HAZARD_Y, 0, HAZARD_Y + 620);
-    wf.addColorStop(0, rgbStr(A.rgb.hazTop, 0.95)); wf.addColorStop(0.5, rgbStr(A.rgb.hazBot, 0.6)); wf.addColorStop(1, rgbStr(A.rgb.hazBot, 0));
-    ctx.fillStyle = wf; ctx.beginPath(); ctx.moveTo(xL - 30, HAZARD_Y - 2);
-    ctx.quadraticCurveTo(xL + 40, HAZARD_Y + 4, xL + 60, HAZARD_Y + 120); ctx.lineTo(xL + 80, HAZARD_Y + 640); ctx.lineTo(xL - 4, HAZARD_Y + 640); ctx.lineTo(xL - 12, HAZARD_Y + 60); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,.45)';
-    for (let k = 0; k < 10; k++) { const y = HAZARD_Y + ((time * 320 + k * 67) % 560), x = xL + 4 + (k % 4) * 16 + (y - HAZARD_Y) * 0.06; ctx.globalAlpha = clamp(1 - (y - HAZARD_Y) / 560, 0, 1) * 0.8; ctx.fillRect(x, y, 4, 40); }
+  // lucht (zelfde verloop als de achtergrond) met aan beide kusten een zachte overgang
+  const sky = ctx.createLinearGradient(0, camY, 0, camY + viewH);
+  sky.addColorStop(0, P.skyTop); sky.addColorStop(0.55, P.skyMid); sky.addColorStop(1, P.skyBot);
+  // een band van lucht of zee over de hele zee, en aan beide kusten in stapjes doorzichtiger: het land lost erin op
+  const band = (fill, ya, yb) => {
+    ctx.fillStyle = fill; ctx.fillRect(xL, ya, xR - xL, yb - ya);
+    for (let k = 0; k < 8; k++) { ctx.globalAlpha = (k + 1) / 9; const w = 40; ctx.fillRect(xL - (8 - k) * w, ya, w, yb - ya); ctx.fillRect(xR + (7 - k) * w, ya, w, yb - ya); }
     ctx.globalAlpha = 1;
+  };
+  const hy = Math.min(y1, SEA_HOR + 2);
+  if (hy > y0) {
+    band(sky, y0, hy);
+    // wolken boven zee
+    ctx.fillStyle = 'rgba(255,255,255,.75)';
+    for (let i = 0; i < 6; i++) {
+      const x = xL + 200 + ((hash(i * 4.1 + bx) * (xR - xL - 400) + time * (8 + i * 3)) % (xR - xL - 400)), y = TRANS.ay + 200 + hash(i * 2.3) * 900;
+      if (y < y0 - 80 || y > hy) continue;
+      const r = 50 + hash(i * 5.7) * 60; circ(x, y, r); circ(x + r * 0.9, y + 10, r * 0.75); circ(x - r * 0.9, y + 14, r * 0.65);
+    }
   }
+  if (y1 < SEA_HOR) return;
+  // de zee: licht bij de horizon, dieper blauw dichtbij
+  const sea = ctx.createLinearGradient(0, SEA_HOR, 0, HAZARD_Y + 260);
+  sea.addColorStop(0, rgbStr(mixC(SEA_TOP, P.skyBotC, 0.45))); sea.addColorStop(0.45, rgbStr(SEA_TOP)); sea.addColorStop(1, rgbStr(SEA_BOT));
+  band(sea, SEA_HOR, y1);
+  // eilandjes in de verte, in de kleuren van de oude en de nieuwe biome
+  for (let i = 0; i < 4; i++) {
+    const t = (i + 0.5) / 4, x = xL + t * (xR - xL) + (hash(i + bx) - 0.5) * 300, w = 140 + hash(i * 3.3) * 160, h = 18 + hash(i * 7.1) * 26;
+    ctx.fillStyle = rgbStr(mixC(mixC(A.rgb.far2, B.rgb.far2, t), P.skyBotC, 0.55));
+    ctx.beginPath(); ctx.ellipse(x, SEA_HOR + 2, w, h, 0, Math.PI, 0); ctx.fill();
+  }
+  // golfjes: dunner en dichter op elkaar richting de horizon, glinsteringen dichtbij
+  ctx.fillStyle = 'rgba(255,255,255,.35)';
+  for (let r = 0; r < 12; r++) {
+    const f = r / 11, y = SEA_HOR + 6 + f * f * (HAZARD_Y + 80 - SEA_HOR), gap = 40 + f * 110;
+    for (let x = Math.floor((Math.max(xL, camX) - 200) / gap) * gap; x < Math.min(xR, camX + viewW) + 200; x += gap) {
+      const h = hash(x * 0.011 + r * 3.7);
+      if (h < 0.55) continue;
+      ell(x + Math.sin(time * 1.3 + x * 0.01 + r) * 10, y, (8 + f * 26) * h, 0.8 + f * 2);
+    }
+  }
+  // het wateroppervlak vlak bij Andy (zelfde golfjes als het water op de eilanden)
+  ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 3; ctx.beginPath();
+  for (let x = Math.floor(Math.max(xL - 20, camX - 20) / 14) * 14; x <= Math.min(xR + 20, camX + viewW + 20); x += 14) { const y = waveY(x) + 1.5; ctx.lineTo(x, y); }
+  ctx.stroke();
+  drawIslandEdge(xL, -1, A);
+  drawIslandEdge(xR, 1, B);
 }
-// een klifwand die vanaf het wateroppervlak de diepte in loopt (dir -1: links van de afgrond, 1: rechts)
-function drawCliffFace(x, dir, bm) {
-  if (camY + viewH < HAZARD_Y - 120) return;
-  const deep = HAZARD_Y + 900, rim = dir > 0 ? 70 : 0; // rechts steekt de rand wat boven het water uit (met het naambord)
-  const g = ctx.createLinearGradient(0, HAZARD_Y - rim, 0, deep);
-  g.addColorStop(0, shade(bm.c.mid, -0.2)); g.addColorStop(0.35, shade(bm.c.mid, -0.55)); g.addColorStop(1, rgbStr(VOID_COL));
+// de kust van een eiland: een rotsige kaap met gras en een boompje, die in zee afloopt (dir -1: het eiland ligt links)
+function drawIslandEdge(x, dir, bm) {
+  if (camY + viewH < HAZARD_Y - 200 || x + 400 < camX || x - 400 > camX + viewW) return;
+  const W = HAZARD_Y, top = W - 70, inl = x - dir * 260, tip = x + dir * 70;
+  const g = ctx.createLinearGradient(0, top, 0, W + 220);
+  g.addColorStop(0, shade(bm.c.mid, 0.05)); g.addColorStop(0.45, shade(bm.c.mid, -0.3)); g.addColorStop(1, rgbStr(SEA_BOT, 0));
   ctx.fillStyle = g; ctx.beginPath();
-  const back = x - dir * 140;
-  ctx.moveTo(back, HAZARD_Y - rim * 0.6);
-  ctx.lineTo(x - dir * 30, HAZARD_Y - rim); ctx.lineTo(x + dir * 20, HAZARD_Y - rim * 0.7 + 6);
-  for (let y = HAZARD_Y + 40, i = 0; y <= deep; y += 60, i++) ctx.lineTo(x + dir * (30 + hash(i * 3.3 + x) * 60 - i * 6), y);
-  ctx.lineTo(back, deep); ctx.closePath(); ctx.fill();
-  // gesteentelagen
-  ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 4;
-  for (let k = 0; k < 6; k++) { const y = HAZARD_Y + 50 + k * 110; line(back, y + Math.sin(k) * 10, x + dir * (10 + hash(k + x) * 30), y + 12); }
-  if (rim) { // mos op de rand en het naambord van de nieuwe biome
-    ctx.strokeStyle = bm.c.canopy2; ctx.lineWidth = 14; ctx.lineCap = 'round';
-    line(back + 10, HAZARD_Y - rim * 0.6 - 2, x - dir * 30, HAZARD_Y - rim - 2);
-    const px = x + 70, py = HAZARD_Y - rim * 0.8;
+  ctx.moveTo(inl, W + 220); ctx.lineTo(inl, W + 4);
+  ctx.quadraticCurveTo(x - dir * 170, top - 6, x - dir * 40, top + 4);
+  ctx.quadraticCurveTo(x + dir * 40, top + 12, tip, W + 8);
+  ctx.lineTo(tip + dir * 60, W + 220); ctx.closePath(); ctx.fill();
+  // gras op de kaap
+  ctx.strokeStyle = bm.c.canopy2; ctx.lineWidth = 12; ctx.lineCap = 'round'; ctx.beginPath();
+  ctx.moveTo(inl + dir * 20, W - 2); ctx.quadraticCurveTo(x - dir * 170, top - 10, x - dir * 40, top); ctx.quadraticCurveTo(x + dir * 20, top + 6, x + dir * 42, top + 22); ctx.stroke();
+  // schuim waar de golven tegen de kaap slaan
+  ctx.fillStyle = 'rgba(255,255,255,.7)';
+  for (let k = 0; k < 5; k++) ell(tip + dir * (k * 14 - 10) + Math.sin(time * 2 + k) * 4, W + 6, 16 - k * 2, 4);
+  // een boompje op de kaap
+  const tx = x - dir * 110, ty = top + 2;
+  ctx.fillStyle = '#5a3a1c'; ctx.fillRect(tx - 5, ty - 70, 10, 72);
+  ctx.fillStyle = bm.c.canopy; circ(tx, ty - 82, 34); circ(tx - 26, ty - 64, 24); circ(tx + 26, ty - 66, 24);
+  ctx.fillStyle = bm.c.canopy2; circ(tx - 8, ty - 92, 16);
+  if (dir > 0) { // het naambord van de nieuwe biome
+    const px = x + 10, py = top + 10;
     ctx.fillStyle = '#5a3a1c'; ctx.fillRect(px - 5, py - 130, 10, 130);
     ctx.font = '900 30px Trebuchet MS, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const txt = `${bm.icon} ${bm.name.toUpperCase()}`, w = ctx.measureText(txt).width + 40;
