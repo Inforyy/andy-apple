@@ -239,6 +239,13 @@
   .mp-code .btn{flex:none}
   .mp-manual{margin-top:8px}
   .mp-manual .mp-step{margin:8px 0}
+  .lobbies{list-style:none;margin:4px 0 0;max-height:min(34vh,240px);overflow:auto;touch-action:pan-y}
+  .lobbies li{display:flex;align-items:center;gap:8px;background:#fff;border:2px solid #e8c98a;border-radius:12px;padding:5px 5px 5px 12px;margin:6px 0;font-weight:800}
+  .lobbies li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lobbies li small{font-weight:700;color:#7a5a3a}
+  .lobbies li .btn{font-size:15px;padding:6px 12px;box-shadow:0 3px 0 #166534}
+  .lobbies .empty{display:block;text-align:center;background:none;border:none;color:#7a5a3a;font-weight:700;padding:6px}
+  .acc input{font:inherit;font-weight:700;border:3px solid #e8c98a;border-radius:12px;padding:9px 12px;width:100%;color:#4a2c12;background:#fff;margin-top:8px}
   .lb{list-style:none;text-align:left;margin:6px 0;max-height:min(52vh,420px);overflow:auto;touch-action:pan-y}
   .lb li{display:grid;grid-template-columns:34px 1fr auto;gap:8px;align-items:center;padding:6px 10px;border-radius:10px;font-weight:800}
   .lb li:nth-child(odd){background:rgba(122,74,28,.08)}
@@ -303,6 +310,7 @@
     <nav class="mm-bar">
       <button class="ib" id="btnShop"><span class="ib-ic">🛒</span><small>Upgrades</small></button>
       <button class="ib" id="btnLb"><span class="ib-ic">🏆</span><small>Ranglijst</small></button>
+      <button class="ib" id="btnAccount"><span class="ib-ic">👤</span><small id="mmAcc">Account</small></button>
       <button class="ib" id="btnSaves"><span class="ib-ic">💾</span><small>Opslaan</small></button>
       <button class="ib" id="btnHelp"><span class="ib-ic">❓</span><small>Uitleg</small></button>
       <button class="ib" id="btnSettings"><span class="ib-ic">⚙️</span><small>Instellingen</small></button>
@@ -318,28 +326,34 @@
     <div class="mp-status" id="mpStatus"><i></i><span id="mpStatusTxt">Niet verbonden</span></div>
     <div class="mp-name"><label for="mpName">Naam</label><input id="mpName" maxlength="12" spellcheck="false" autocomplete="off"></div>
 
-    <!-- stap 0: kiezen -->
+    <!-- kiezen: lijst met open lobbies -->
     <div id="mpPick">
-      <div class="row">
-        <button class="btn green" id="btnMpHost">Hosten</button>
-        <button class="btn" id="btnMpJoin">Meedoen</button>
+      <div class="mp-step">
+        <h3>Open lobbies</h3>
+        <ul class="lobbies" id="mpLobbies"></ul>
       </div>
-      <div class="row"><button class="btn local" id="btnMpLocal">Op één scherm</button></div>
+      <div class="row">
+        <button class="btn green" id="btnMpHost">Lobby maken</button>
+        <button class="btn local" id="btnMpLocal">Op één scherm</button>
+      </div>
     </div>
 
-    <!-- host -->
+    <!-- eigen lobby (host), wachten op een speler -->
     <div id="mpHostBox" class="hidden">
       <div class="mp-step">
-        <h3>Spelcode</h3>
-        <p>Stuur deze code (of de link) naar je vriend. Je mag hem aanpassen.</p>
-        <div class="mp-code"><input id="mpRoom" maxlength="16" spellcheck="false" autocomplete="off" autocapitalize="off"><button class="btn ghost" id="btnMpRoom">Wijzig</button></div>
-        <div class="row"><button class="btn green" id="btnMpShare" disabled>Kopieer uitnodiging</button></div>
+        <h3>Je lobby staat open</h3>
+        <p>Andere spelers zien hem in hun lijst. Je kunt ook een uitnodiging sturen.</p>
+        <div class="row"><button class="btn green" id="btnMpShare">Kopieer uitnodiging</button></div>
       </div>
-      <details class="mp-manual" id="mpHostManual">
-        <summary>Lukt het niet? Verbind handmatig</summary>
+    </div>
+
+    <!-- handmatig: codes uitwisselen, werkt zonder server -->
+    <details class="mp-manual" id="mpManual">
+      <summary>Handmatig verbinden (zonder server)</summary>
+      <div class="row" id="mpManPick"><button class="btn" id="btnMpManualHost">Maak uitnodigingscode</button><button class="btn" id="btnMpJoin">Ik heb een code</button></div>
+      <div id="mpManHost" class="hidden">
         <div class="mp-step">
           <h3>1. Stuur deze uitnodigingscode</h3>
-          <div class="row" id="mpManualHostGo"><button class="btn" id="btnMpManualHost">Maak uitnodigingscode</button></div>
           <textarea id="mpOffer" readonly spellcheck="false" placeholder="Code wordt gemaakt…"></textarea>
           <div class="row"><button class="btn" id="btnMpCopyOffer" disabled>Kopieer</button></div>
         </div>
@@ -348,17 +362,8 @@
           <textarea id="mpAnswerIn" spellcheck="false" placeholder="Plak de antwoordcode…"></textarea>
           <div class="row"><button class="btn green" id="btnMpConnect">Verbinden</button></div>
         </div>
-      </details>
-    </div>
-
-    <!-- meedoen -->
-    <div id="mpJoinBox" class="hidden">
-      <div class="mp-step">
-        <h3>Spelcode van de host</h3>
-        <div class="mp-code"><input id="mpJoinRoom" maxlength="16" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="code"><button class="btn green" id="btnMpJoinGo">Verbinden</button></div>
       </div>
-      <details class="mp-manual">
-        <summary>Lukt het niet? Verbind handmatig</summary>
+      <div id="mpManJoin" class="hidden">
         <div class="mp-step">
           <h3>1. Plak de uitnodigingscode</h3>
           <textarea id="mpOfferIn" spellcheck="false" placeholder="Plak de uitnodigingscode…"></textarea>
@@ -369,8 +374,8 @@
           <textarea id="mpAnswer" readonly spellcheck="false" placeholder="Code wordt gemaakt…"></textarea>
           <div class="row"><button class="btn" id="btnMpCopyAnswer" disabled>Kopieer</button></div>
         </div>
-      </details>
-    </div>
+      </div>
+    </details>
 
     <!-- verbonden: lobby -->
     <div id="mpLobby" class="hidden">
@@ -402,13 +407,13 @@
 <div id="mpSetup" class="screen">
   <div class="panel help setup">
     <h2 style="text-align:center">Multiplayer</h2>
-    <h3>Op twee apparaten</h3>
+    <h3>Online</h3>
     <ol>
-      <li><b>Speler 1</b> kiest <b>Hosten</b> en stuurt de <b>spelcode</b> (of met <b>Kopieer uitnodiging</b> de link) naar speler 2.</li>
-      <li><b>Speler 2</b> kiest <b>Meedoen</b>, vult de spelcode in en klikt op <b>Verbinden</b>. Met de link gaat dat vanzelf.</li>
+      <li>Kies <b>Lobby maken</b>. Je lobby verschijnt in de lijst van andere spelers; met <b>Kopieer uitnodiging</b> stuur je een link.</li>
+      <li>De andere speler klikt in de lijst op <b>Meedoen</b> (of opent de link).</li>
       <li>De host kiest <b>Race</b> of <b>Endurance</b> en klikt op <b>Start</b>.</li>
     </ol>
-    <div class="tip">Blijft het hangen op <b>Verbinden…</b>? Zet beide apparaten op hetzelfde wifi-netwerk, of gebruik <b>Verbind handmatig</b> (twee codes uitwisselen, werkt zonder server).</div>
+    <div class="tip">Blijft het hangen op <b>Verbinden…</b>? Sommige netwerken blokkeren directe verbindingen. Zet beide apparaten op hetzelfde wifi-netwerk, of probeer <b>Handmatig verbinden</b> (twee codes uitwisselen, werkt zonder server).</div>
     <div class="tip">Laat het spel in beeld: wie tijdens een potje een paar seconden wegklikt, geeft op. Twee tabbladen in één venster werkt niet; gebruik twee aparte vensters.</div>
     <h3>Op één apparaat</h3>
     <p>Kies <b>Op één scherm</b>. <b style="color:#e8322b">Speler 1</b>: <kbd>SPATIE</kbd> of de linker/bovenste helft. <b style="color:#2f7fe0">Speler 2</b>: <kbd>↑</kbd> / <kbd>ENTER</kbd> of de rechter/onderste helft.</p>
@@ -449,6 +454,26 @@
     <ol class="lb" id="lbList"></ol>
     <div id="lbMsg" class="msg"></div>
     <div class="row"><button class="btn" id="btnLbBack">← Terug</button><button class="btn green" id="btnLbPlay">▶ Spelen</button></div>
+  </div>
+</div>
+
+<!-- Account -->
+<div id="account" class="screen">
+  <div class="panel acc" style="max-width:420px">
+    <h2>Account</h2>
+    <div id="accOut">
+      <p class="sub">Log in om je voortgang online te bewaren en op andere apparaten verder te spelen.</p>
+      <input type="email" id="accEmail" placeholder="E-mailadres" autocomplete="email" spellcheck="false">
+      <input type="password" id="accPass" placeholder="Wachtwoord (min. 6 tekens)" autocomplete="current-password">
+      <div class="row"><button class="btn green" id="btnAccLogin">Inloggen</button><button class="btn" id="btnAccSignup">Account maken</button></div>
+    </div>
+    <div id="accIn" class="hidden">
+      <p class="sub">Ingelogd als <b id="accWho"></b></p>
+      <p class="sub" id="accSync"></p>
+      <div class="row"><button class="btn green" id="btnAccSync">Nu opslaan</button><button class="btn ghost red" id="btnAccLogout">Uitloggen</button></div>
+    </div>
+    <div id="accMsg" class="msg"></div>
+    <div class="row"><button class="btn" id="btnAccBack">← Terug</button></div>
   </div>
 </div>
 
@@ -631,12 +656,12 @@
 'use strict';
 (() => {
 // =====================================================================
-//  Instellingen voor de website (zie README: "Ranglijst instellen")
+//  Instellingen voor de website (zie README: "Supabase instellen")
 // =====================================================================
 const CONFIG = {
-  // Supabase-project voor de ranglijst van Eindeloos: de "Project URL" en de "anon"/"publishable" key.
-  // Laat leeg als je (nog) geen ranglijst wilt; het spel werkt dan gewoon zonder.
-  leaderboard: { url: '', key: '' },
+  // Supabase-project voor accounts (voortgang online bewaren), online lobbies en de ranglijst van Eindeloos:
+  // de "Project URL" en de "anon"/"publishable" key. Leeg = alleen offline spelen (en handmatig verbinden).
+  supabase: { url: '', key: '' },
   // Adres waar het spel online staat (bijv. https://jouwnaam.github.io/andy-apple/). Wordt gebruikt voor
   // uitnodigingslinks als het spel als los bestand of in de Android-app draait. Leeg = het huidige adres.
   siteUrl: '',
@@ -797,6 +822,7 @@ function loadSave() {
   return normalizeSave(null);
 }
 function persist() {
+  try { cloudDirty(); } catch (e) { /* account-code nog niet geladen */ }
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); return true; } catch (e) { return false; }
 }
 let save = loadSave();
@@ -868,8 +894,11 @@ function diffAt(m) { if (game.career) return clamp(game.career.diff + Math.max(0
 // Eindeloos: het tempo gaat ook iets omhoog naarmate je verder komt, tot maximaal +12%% (bij 4000 m).
 // Debug-snelheid telt overal mee, behalve online (dan moeten beide spelers gelijk zijn).
 const TEMPO_MAX = 0.12, TEMPO_DIST = 4000;
+// Standaardtempo van het spel: 70% van het oude tempo (wat vroeger "70%" in het debugmenu was).
+// Werkt als tijdschaal: de physics-stappen blijven gelijk, er gaan er alleen minder per seconde.
+const BASE_SPEED = 0.7;
 function timeScale() {
-  let k = game.mp && !game.mp.local ? 1 : DBG.speed;
+  let k = BASE_SPEED * (game.mp && !game.mp.local ? 1 : DBG.speed);
   if (!game.career && !game.mp && run) { const t = clamp(run.dist / TEMPO_DIST, 0, 1); k *= 1 + TEMPO_MAX * t * t * (3 - 2 * t); }
   return k;
 }
@@ -1237,7 +1266,7 @@ const BASE_ZOOM_OUT = 1.25; // standaard-zoomniveau (was 1,5: het beeld staat nu
 // Hoe sneller Andy gaat, hoe verder uitgezoomd (meer overzicht bij hoge snelheid).
 // De zoom volgt NIET de directe snelheid (die schommelt bij elke zwaai sterk), maar de gemiddelde
 // voorwaartse snelheid over ruim een seconde, en beweegt daar dan ook nog rustig naartoe.
-const ZOOM_LO = 450, ZOOM_HI = 1250, ZOOM_OUT = 0.32; // bij zoomK=1 is er 32% meer wereld te zien
+const ZOOM_LO = 450, ZOOM_HI = 1250, ZOOM_OUT = 0.5; // bij zoomK=1 is er 50% meer wereld te zien
 function updateZoom(dt) {
   let target = 0;
   if (G && G.state !== 'dead') {
@@ -1723,8 +1752,8 @@ function release(voluntary = true) {
   vy -= 50;
   const playing = game.mode === 'playing';
   if (playing && voluntary && v.type === 'turbo') {
-    vx = vx * 1.35 + 150; vy = vy * 1.2 - 120;
-    G.turboT = 1.1;
+    vx = vx * 1.6 + 280; vy = vy * 1.3 - 180;
+    G.turboT = 1.6;
     floatText(G.x, G.y - 55, 'TURBO!', '#ffd23f', 26);
     starBurst(G.x, G.y, 16, '#ffd23f');
     shake(5, 0.25);
@@ -1857,7 +1886,7 @@ function die() {
 // =====================================================================
 function step(dt) {
   stepNo++;
-  if (G) { G.is = stepNo; G.ix = G.x; G.iy = G.y; G.ihx = G.hx; G.ihy = G.hy; G.ia = G.angle; G.itr = G.trickRot || 0; }
+  if (G) { G.is = stepNo; G.ix = G.x; G.iy = G.y; G.ihx = G.hx; G.ihy = G.hy; G.ihang = G.state === 'hang' ? G.vine : null; G.ia = G.angle; G.itr = G.trickRot || 0; }
   time += dt;
   const forced = game.mode === 'menu' || game.mode === 'ready' || game.mode === 'done' || game.mode === 'mpcount' || game.mode === 'mpend' || game.holdLock;
   const holdHang = forced || (game.mode === 'playing' && input.down);
@@ -1951,7 +1980,7 @@ function updateGorilla(dt, holdHang, holdAir) {
     const maxFall = MAX_FALL * glide * (1 + 0.8 * G.dive);
     if (G.vy > maxFall) G.vy += (maxFall - G.vy) * Math.min(1, dt * 6);
     G.vx -= G.vx * 0.015 * dt;
-    const sp = Math.hypot(G.vx, G.vy), maxS = maxSpeed() * (G.turboT > 0 ? 1.15 : 1) * (space ? 1.3 : 1);
+    const sp = Math.hypot(G.vx, G.vy), maxS = maxSpeed() * (G.turboT > 0 ? 1.4 : 1) * (space ? 1.3 : 1);
     if (sp > maxS) { G.vx *= maxS / sp; G.vy *= maxS / sp; }
     const prevFeet = G.y + FEET, prevX = G.x;
     G.x += G.vx * dt; G.y += G.vy * dt;
@@ -1972,8 +2001,12 @@ function updateGorilla(dt, holdHang, holdAir) {
     // lucht-trampolines
     for (const t of tramps) {
       const ty = t.y + Math.sin(time * 1.5 + t.ph) * 6;
-      if (G.vy > 0 && Math.abs(G.x - t.x) < t.w / 2 + 6 && prevFeet <= ty + 4 && G.y + FEET >= ty) {
-        G.y = ty - FEET; G.vy = -Math.max(1150, G.vy * 1.05) * (1 + 0.05 * lvl('shroom')); G.vx = Math.max(G.vx, 520); t.sq = 1;
+      // raak je hem van welke kant dan ook, dan schiet hij je omhoog (korte pauze zodat hij niet dubbel afgaat)
+      const dx = (G.x - t.x) / (t.w / 2 + G_R), dy = (G.y - ty) / (G_R + 26);
+      if (time > (t.cd || 0) && dx * dx + dy * dy < 1) {
+        t.cd = time + 0.4;
+        if (G.y > ty - FEET) G.y = Math.min(G.y, ty + 10);
+        G.vy = -Math.max(1350, Math.abs(G.vy) * 1.1) * (1 + 0.05 * lvl('shroom')); G.vx = Math.max(Math.abs(G.vx), 560); t.sq = 1;
         G.airT = 0.35; G.airX = G.x; G.noDive = false;
         floatText(t.x, ty - 40, 'Boing!', '#ffffff', 24);
         starBurst(t.x, ty, 10, '#7fd3ff');
@@ -3591,7 +3624,9 @@ function ipApply(g) {
   const a = renderAlpha, b = 1 - a;
   g.sx = g.x; g.sy = g.y; g.shx = g.hx; g.shy = g.hy; g.sa = g.angle; g.str = g.trickRot;
   g.x = g.ix * b + g.x * a; g.y = g.iy * b + g.y * a;
-  g.hx = g.ihx * b + g.hx * a; g.hy = g.ihy * b + g.hy * a;
+  // de hand alleen interpoleren als hij al aan dezelfde liaan hing: bij het grijpen is de oude handpositie
+  // verouderd (van een vorige liaan), en dan zou de arm één beeld lang over het hele scherm getekend worden
+  if (g.state === 'hang' && g.ihang === g.vine) { g.hx = g.ihx * b + g.hx * a; g.hy = g.ihy * b + g.hy * a; }
   g.angle = g.sa - wrapA(g.sa - g.ia) * b;
   if (g.trickRot) g.trickRot = g.str - wrapA(g.str - g.itr) * b;
   return true;
@@ -3695,7 +3730,7 @@ function renderScene() {
 // =====================================================================
 const MP_NAME_KEY = 'andyApples.name';
 const MP_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
-const MP = { pc: null, dc: null, peer: null, hosting: false, manual: false, room: '', joinTimer: 0, role: null, connected: false, busy: false, local: false, oppName: 'Tegenstander',
+const MP = { pc: null, dc: null, sig: null, lobby: null, joinId: null, peerId: null, hostId: null, iceQ: [], manual: false, joinTimer: 0, role: null, connected: false, busy: false, local: false, oppName: 'Tegenstander',
   sel: { mode: 'race', len: 1000 }, cfg: null, match: null, snaps: [], rt: null, ghost: null,
   lastMsg: 0, sendAcc: 0, again: false, oppAgain: false, score: { me: 0, opp: 0 }, hideTimer: 0 };
 let ghostPin = { v: null, k: 0, x: 0, y: 0 };
@@ -3749,18 +3784,21 @@ function mpNewPc() {
   MP.pc = pc;
   pc.addEventListener('connectionstatechange', () => {
     if (MP.pc !== pc) return;
-    if (pc.connectionState === 'failed') mpLost(MP.connected ? 'De verbinding is weggevallen.' : 'Verbinden is mislukt. Tip: zet beide apparaten op hetzelfde wifi-netwerk en probeer het opnieuw.');
+    if (pc.connectionState === 'failed' && MP.role === 'host' && !MP.manual && !MP.connected) { hostReset(); mpMsg('Verbinden met die speler lukte niet. Je lobby staat weer open.', false); }
+    else if (pc.connectionState === 'failed') mpLost(MP.connected ? 'De verbinding is weggevallen.' : 'Verbinden is mislukt. Tip: zet beide apparaten op hetzelfde wifi-netwerk en probeer het opnieuw.');
     else if (pc.connectionState === 'connecting') mpRender();
   });
   return pc;
 }
 function mpOpened() {
   clearTimeout(MP.joinTimer);
+  sigClose();
   MP.connected = true; MP.lastMsg = performance.now(); MP.score = { me: 0, opp: 0 };
   mpSend({ type: 'hello', name: myName() });
   if (MP.role === 'host') mpSend({ type: 'lobby', mode: MP.sel.mode, len: MP.sel.len });
   mpMsg('');
   Sfx.buy();
+  lobbyTrack(); // de lobby is vol: uit de lijst halen
   mpRender();
 }
 function mpData(text) { let m; try { m = JSON.parse(text); } catch (err) { return; } mpOnMsg(m); }
@@ -3773,14 +3811,17 @@ function mpSetupDc(dc) {
 function mpSend(m) { const dc = MP.dc; if (dc && dc.readyState === 'open') { try { dc.send(JSON.stringify(m)); } catch (e) { /* negeren */ } } }
 function mpClose(sayBye) {
   if (sayBye) mpSend({ type: 'bye' });
-  const pc = MP.pc, dc = MP.dc, peer = MP.peer;
-  MP.pc = null; MP.dc = null; MP.peer = null; MP.connected = false; MP.role = null; MP.busy = false; MP.hosting = false;
+  const pc = MP.pc, dc = MP.dc;
+  MP.pc = null; MP.dc = null; MP.connected = false; MP.role = null; MP.busy = false; MP.manual = false;
+  MP.lobby = null; MP.joinId = null; MP.peerId = null; MP.hostId = null; MP.iceQ = [];
   MP.again = MP.oppAgain = false;
   clearTimeout(MP.joinTimer);
+  sigClose();
+  lobbyTrack();
   // het afsluiten iets uitstellen, zodat het "bye"-bericht nog weg kan
-  setTimeout(() => { try { if (dc) dc.close(); } catch (e) { /* */ } try { if (pc) pc.close(); } catch (e) { /* */ } try { if (peer) peer.destroy(); } catch (e) { /* */ } }, sayBye ? 300 : 0);
+  setTimeout(() => { try { if (dc) dc.close(); } catch (e) { /* */ } try { if (pc) pc.close(); } catch (e) { /* */ } }, sayBye ? 300 : 0);
 }
-const mpActive = () => !!(MP.pc || MP.peer || MP.dc);
+const mpActive = () => !!(MP.pc || MP.dc || MP.sig);
 // verbinding kwijt: tijdens een potje eindigt dat zonder winnaar
 function mpLost(reason) {
   const wasConnected = MP.connected || MP.role;
@@ -3795,6 +3836,7 @@ async function mpHost() {
   if (MP.busy) return;
   mpClose(false);
   MP.role = 'host'; MP.busy = true; MP.manual = true;
+  $('mpManual').open = true;
   $('mpOffer').value = ''; $('mpAnswerIn').value = ''; $('btnMpCopyOffer').disabled = true;
   mpMsg(''); mpRender();
   try {
@@ -3820,11 +3862,11 @@ async function mpConnect() {
     mpRender();
   } catch (e) { mpMsg(e.message, false); }
 }
-function mpJoinStart(code) {
-  mpClose(false); MP.role = 'guest'; MP.manual = false;
-  $('mpOfferIn').value = ''; $('mpAnswer').value = ''; $('mpJoinRoom').value = code || '';
+function mpJoinStart() {
+  mpClose(false); MP.role = 'guest'; MP.manual = true;
+  $('mpOfferIn').value = ''; $('mpAnswer').value = '';
   mpMsg(''); mpRender();
-  if (code) mpPeerJoin(code); else setTimeout(() => $('mpJoinRoom').focus(), 50);
+  setTimeout(() => $('mpOfferIn').focus(), 50);
 }
 async function mpMakeAnswer() {
   if (MP.busy) return;
@@ -3859,104 +3901,225 @@ function mpCopy(id) {
   else { try { document.execCommand('copy'); done(); } catch (e) { mpMsg('Selecteer en kopieer de code handmatig.', true); } }
 }
 
-// ---- Verbinden met één spelcode (PeerJS) ----
-// Een gratis "makelaar"-server (PeerJS Cloud) koppelt de twee spelers via een korte spelcode die de
-// host zelf mag kiezen; daarna praten de browsers direct met elkaar (WebRTC), net als bij de codes.
-// De PeerJS-bibliotheek wordt pas geladen als je online multiplayer gebruikt.
-const PEER_PREFIX = 'andyapples-';
-const PEER_LIBS = ['https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js', 'https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js'];
-let peerLib = null;
-function loadPeerLib() {
-  if (window.Peer) return Promise.resolve();
-  if (!peerLib) peerLib = (async () => {
-    for (const src of PEER_LIBS) {
-      try {
-        await new Promise((res, rej) => { const el = document.createElement('script'); el.src = src; el.onload = res; el.onerror = () => { el.remove(); rej(new Error('laden mislukt')); }; document.head.appendChild(el); });
-        if (window.Peer) return;
-      } catch (e) { /* volgende bron proberen */ }
+// ---- Supabase (optioneel): één client voor accounts, lobbies en de ranglijst ----
+// De bibliotheek wordt pas geladen als het project is ingesteld (CONFIG.supabase).
+const sbOn = () => !!(CONFIG.supabase.url && CONFIG.supabase.key);
+const SB_LIBS = ['https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js', 'https://unpkg.com/@supabase/supabase-js@2.117.2/dist/umd/supabase.js'];
+let sbClient = null, sbLoading = null;
+function loadScript(src) {
+  return new Promise((res, rej) => { const el = document.createElement('script'); el.src = src; el.onload = res; el.onerror = () => { el.remove(); rej(new Error('laden mislukt')); }; document.head.appendChild(el); });
+}
+function getSb() {
+  if (!sbOn()) return Promise.reject(new Error('Online spelen is nog niet ingesteld.'));
+  if (sbClient) return Promise.resolve(sbClient);
+  if (!sbLoading) sbLoading = (async () => {
+    for (const src of SB_LIBS) {
+      if (window.supabase && window.supabase.createClient) break;
+      try { await loadScript(src); } catch (e) { /* volgende bron proberen */ }
     }
-    peerLib = null;
-    throw new Error('Kon online multiplayer niet laden. Heb je internet? Je kunt ook handmatig verbinden.');
+    if (!(window.supabase && window.supabase.createClient)) { sbLoading = null; throw new Error('Geen verbinding met de server. Heb je internet?'); }
+    sbClient = window.supabase.createClient(CONFIG.supabase.url.replace(/\/+$/, ''), CONFIG.supabase.key, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: /^https?:$/.test(location.protocol), storageKey: 'andyApples.auth' },
+    });
+    return sbClient;
   })();
-  return peerLib;
+  return sbLoading;
 }
-// spelcode: kleine letters en cijfers, zonder spaties of accenten
-const roomCode = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '').slice(0, 16);
-const suggestRoom = () => (roomCode(myName()) || 'andy').slice(0, 10) + (10 + Math.floor(Math.random() * 90));
-function mpInviteLink(code) {
-  const base = CONFIG.siteUrl || (/^https?:$/.test(location.protocol) ? location.origin + location.pathname : '');
-  return base ? `${base}#join=${code}` : '';
+const randHex = n => { const b = new Uint8Array(n); try { crypto.getRandomValues(b); } catch (e) { for (let i = 0; i < n; i++) b[i] = Math.random() * 256; } return Array.from(b, x => x.toString(16).padStart(2, '0')).join(''); };
+const CLIENT_ID = randHex(8); // per tabblad: wie is wie in een lobby
+
+// ---- Lobbies (Supabase Realtime) ----
+// Iedereen in het multiplayermenu luistert naar het kanaal "andy-lobbies". Wie een lobby maakt, meldt
+// zich daar aan (presence) en verschijnt zo in de lijst van de anderen. Wie op Meedoen klikt, stuurt via
+// het kanaal van die lobby een verzoek; de twee browsers wisselen daar hun WebRTC-gegevens uit en
+// verbinden daarna direct met elkaar. De server ziet dus alleen het opzetten, niet het spel zelf.
+const LOBBY = { ch: null, status: 'off', list: [], tracked: false };
+function lobbyInfo() { return { lobby: MP.lobby.id, name: myName(), ts: MP.lobby.ts, v: 1 }; }
+function lobbyWatch() {
+  if (!sbOn()) { LOBBY.status = 'off'; lobbyRender(); return Promise.resolve(false); }
+  if (LOBBY.ch) return LOBBY.ready || Promise.resolve(LOBBY.status === 'on');
+  LOBBY.status = 'loading'; lobbyRender();
+  LOBBY.ready = (async () => {
+    let sb;
+    try { sb = await getSb(); } catch (e) { LOBBY.status = 'err'; lobbyRender(); LOBBY.ready = null; return false; }
+    if (LOBBY.ch) return LOBBY.status === 'on';
+    const ch = sb.channel('andy-lobbies', { config: { presence: { key: CLIENT_ID } } });
+    LOBBY.ch = ch;
+    ch.on('presence', { event: 'sync' }, () => {
+      if (LOBBY.ch !== ch) return;
+      const st = ch.presenceState(), seen = new Set(), list = [];
+      for (const k in st) {
+        if (k === CLIENT_ID) continue;
+        for (const p of st[k]) if (p && typeof p.lobby === 'string' && !seen.has(p.lobby)) { seen.add(p.lobby); list.push({ id: p.lobby, name: cleanName(p.name) || 'Andy', ts: +p.ts || 0 }); }
+      }
+      LOBBY.list = list.sort((x, y) => y.ts - x.ts);
+      lobbyRender();
+    });
+    return new Promise(res => {
+      ch.subscribe(status => {
+        if (LOBBY.ch !== ch) return;
+        if (status === 'SUBSCRIBED') { LOBBY.status = 'on'; lobbyTrack(); res(true); }
+        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') { LOBBY.status = 'err'; LOBBY.tracked = false; res(false); }
+        lobbyRender();
+      });
+    });
+  })();
+  return LOBBY.ready;
 }
-function mpPeerError(err) {
-  const t = err && err.type;
-  if (MP.connected && t !== 'peer-unavailable') return; // makelaar kwijt, maar de directe verbinding werkt nog
-  const msg = t === 'unavailable-id' ? 'Deze spelcode is al in gebruik. Kies een andere.'
-    : t === 'peer-unavailable' ? 'Geen spel gevonden met deze code. Klopt de code, en wacht de host nog?'
-    : t === 'invalid-id' ? 'Ongeldige spelcode.'
-    : t === 'browser-incompatible' ? 'Deze browser ondersteunt geen online multiplayer.'
-    : (t === 'network' || t === 'server-error' || t === 'socket-error' || t === 'socket-closed') ? 'Geen verbinding met de multiplayer-server. Probeer het opnieuw, of verbind handmatig.'
-    : 'Verbinden mislukt. Probeer het opnieuw of verbind handmatig.';
-  const role = MP.role;
-  mpClose(false); MP.role = role; MP.manual = false;
-  mpMsg(msg, false); mpRender();
+function lobbyUnwatch() {
+  const ch = LOBBY.ch;
+  LOBBY.ch = null; LOBBY.ready = null; LOBBY.list = []; LOBBY.status = 'off'; LOBBY.tracked = false;
+  if (ch && sbClient) { try { sbClient.removeChannel(ch); } catch (e) { /* */ } }
 }
-function mpSetupConn(conn) {
-  const dc = { get readyState() { return conn.open ? 'open' : 'connecting'; }, send: t => conn.send(t), close: () => conn.close() };
-  MP.dc = dc;
-  conn.on('open', () => { if (MP.dc === dc) mpOpened(); });
-  conn.on('data', d => { if (MP.dc === dc) mpData(String(d)); });
-  conn.on('close', () => { if (MP.dc === dc) mpLost('De verbinding is verbroken.'); });
-  conn.on('error', () => { if (MP.dc === dc) mpLost(MP.connected ? 'De verbinding is weggevallen.' : 'Verbinden is mislukt. Tip: zet beide apparaten op hetzelfde wifi-netwerk.'); });
+// eigen lobby aan- of afmelden in de lijst (alleen zolang je als host op een speler wacht)
+function lobbyTrack() {
+  const ch = LOBBY.ch, want = !!(MP.lobby && MP.role === 'host' && !MP.connected);
+  if (!ch || LOBBY.status !== 'on') return;
+  if (want) { LOBBY.tracked = true; ch.track(lobbyInfo()).catch(() => { /* */ }); }
+  else if (LOBBY.tracked) { LOBBY.tracked = false; ch.untrack().catch(() => { /* */ }); }
 }
-async function mpPeerHost(code) {
-  code = roomCode(code);
-  $('mpRoom').value = code;
-  if (code.length < 3) { mpMsg('Kies een spelcode van minstens 3 letters of cijfers.', false); return; }
+function lobbyRender() {
+  const ul = $('mpLobbies');
+  if (!ul) return;
+  const empty = t => `<li class="empty">${t}</li>`;
+  if (!sbOn()) ul.innerHTML = empty('Online lobbies zijn nog niet ingesteld. Speel op één scherm of verbind handmatig.');
+  else if (LOBBY.status === 'loading' || LOBBY.status === 'off') ul.innerHTML = empty('Laden…');
+  else if (LOBBY.status === 'err') ul.innerHTML = empty('Geen verbinding met de server. Heb je internet?');
+  else if (!LOBBY.list.length) ul.innerHTML = empty('Nog geen open lobbies. Maak er zelf een!');
+  else {
+    ul.innerHTML = LOBBY.list.map(l => `<li><span>${escHtml(l.name)} <small>zoekt een tegenstander</small></span><button class="btn green" data-lobby="${escHtml(l.id)}">Meedoen</button></li>`).join('');
+    for (const bt of ul.querySelectorAll('button')) on(bt, () => { const l = LOBBY.list.find(x => x.id === bt.dataset.lobby); mpLobbyJoin(bt.dataset.lobby, l && l.name); });
+  }
+  $('btnMpHost').disabled = !sbOn() || LOBBY.status !== 'on';
+}
+
+// ---- signalering: per lobby een eigen kanaal ----
+function sigOpen(id) {
+  return getSb().then(sb => new Promise((res, rej) => {
+    const ch = sb.channel('andy-lobby-' + id, { config: { broadcast: { self: false } } });
+    MP.sig = ch;
+    ch.on('broadcast', { event: 'sig' }, msg => { if (MP.sig === ch && msg && msg.payload) sigOnMsg(msg.payload); });
+    const t = setTimeout(() => rej(new Error('Geen verbinding met de server.')), 12000);
+    ch.subscribe(st => {
+      if (st === 'SUBSCRIBED') { clearTimeout(t); res(ch); }
+      else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT') { clearTimeout(t); rej(new Error('Geen verbinding met de server.')); }
+    });
+  }));
+}
+function sigClose() {
+  const ch = MP.sig;
+  MP.sig = null;
+  if (ch && sbClient) setTimeout(() => { try { sbClient.removeChannel(ch); } catch (e) { /* */ } }, 500);
+}
+function sigSend(m) {
+  const ch = MP.sig;
+  if (ch) ch.send({ type: 'broadcast', event: 'sig', payload: Object.assign({ from: CLIENT_ID }, m) }).catch(() => { /* */ });
+}
+function addIce(c) {
+  const pc = MP.pc;
+  if (!c) return;
+  if (pc && pc.remoteDescription) pc.addIceCandidate(c).catch(() => { /* ongeldige kandidaat: negeren */ });
+  else MP.iceQ.push(c);
+}
+function flushIce() { const q = MP.iceQ.splice(0); for (const c of q) addIce(c); }
+function mpPc(to) {
+  const pc = mpNewPc();
+  MP.iceQ = [];
+  pc.onicecandidate = e => { if (e.candidate && MP.pc === pc) sigSend({ t: 'ice', to, c: e.candidate.toJSON() }); };
+  return pc;
+}
+// host: een speler wil meedoen
+async function hostAccept(from, name) {
+  MP.peerId = from; MP.oppName = cleanName(name) || 'Tegenstander';
+  clearTimeout(MP.joinTimer);
+  // lukt het niet binnen 20 s, dan staat de lobby weer open voor een ander
+  MP.joinTimer = setTimeout(() => { if (MP.role === 'host' && !MP.connected && MP.peerId === from) hostReset(); }, 20000);
+  try {
+    const pc = mpPc(from);
+    mpSetupDc(pc.createDataChannel('andy', { ordered: true }));
+    await pc.setLocalDescription(await pc.createOffer());
+    if (MP.pc === pc) sigSend({ t: 'offer', to: from, sdp: pc.localDescription.sdp });
+  } catch (e) { hostReset(); }
+  mpRender();
+}
+function hostReset() {
+  const pc = MP.pc, dc = MP.dc;
+  MP.pc = null; MP.dc = null; MP.peerId = null; MP.iceQ = [];
+  try { if (dc) dc.close(); } catch (e) { /* */ } try { if (pc) pc.close(); } catch (e) { /* */ }
+  mpRender();
+}
+// gast: de host stuurt zijn aanbod
+async function guestOffer(m) {
+  if (MP.pc) return;
+  MP.hostId = m.from;
+  const id = MP.joinId;
+  clearTimeout(MP.joinTimer);
+  MP.joinTimer = setTimeout(() => { if (MP.joinId === id && !MP.connected) mpJoinFail('Verbinden is mislukt. Tip: zet beide apparaten op hetzelfde wifi-netwerk.'); }, 20000);
+  try {
+    const pc = mpPc(m.from);
+    pc.ondatachannel = e => mpSetupDc(e.channel);
+    await pc.setRemoteDescription({ type: 'offer', sdp: m.sdp });
+    flushIce();
+    await pc.setLocalDescription(await pc.createAnswer());
+    if (MP.pc === pc) sigSend({ t: 'answer', to: m.from, sdp: pc.localDescription.sdp });
+  } catch (e) { mpJoinFail('Verbinden is mislukt.'); }
+}
+function sigOnMsg(m) {
+  if (!m || typeof m.from !== 'string' || (m.to && m.to !== CLIENT_ID)) return;
+  if (MP.role === 'host' && !MP.manual) {
+    if (m.t === 'join') {
+      if (MP.connected || (MP.peerId && MP.peerId !== m.from)) { sigSend({ t: 'full', to: m.from }); return; }
+      if (MP.peerId !== m.from) hostAccept(m.from, m.name);
+    } else if (m.from !== MP.peerId || !MP.pc) return;
+    else if (m.t === 'answer' && typeof m.sdp === 'string') MP.pc.setRemoteDescription({ type: 'answer', sdp: m.sdp }).then(flushIce, () => hostReset());
+    else if (m.t === 'ice') addIce(m.c);
+  } else if (MP.role === 'guest' && !MP.manual) {
+    if (MP.hostId && m.from !== MP.hostId) return;
+    if (m.t === 'full') mpJoinFail('Deze lobby is al vol.');
+    else if (m.t === 'offer' && typeof m.sdp === 'string') guestOffer(m);
+    else if (m.t === 'ice') addIce(m.c);
+  }
+}
+async function mpLobbyHost() {
+  if (MP.busy) return;
   mpClose(false);
-  MP.role = 'host'; MP.manual = false; MP.busy = true; MP.room = code;
+  MP.role = 'host'; MP.manual = false; MP.busy = true; MP.lobby = { id: randHex(5), ts: Date.now() };
+  const id = MP.lobby.id;
   mpMsg(''); mpRender();
-  try { await loadPeerLib(); } catch (e) { if (MP.room === code) { MP.busy = false; mpMsg(e.message, false); mpRender(); } return; }
-  if (MP.role !== 'host' || MP.room !== code || MP.peer || MP.manual) return;
-  let peer;
-  try { peer = new window.Peer(PEER_PREFIX + code, { config: { iceServers: MP_ICE } }); } catch (e) { mpPeerError(e); return; }
-  MP.peer = peer;
-  peer.on('open', () => { if (MP.peer !== peer) return; MP.busy = false; MP.hosting = true; mpRender(); });
-  peer.on('connection', conn => {
-    if (MP.peer !== peer) return;
-    if (MP.dc) { conn.on('open', () => { try { conn.send(JSON.stringify({ type: 'full' })); } catch (e) { /* */ } setTimeout(() => conn.close(), 400); }); return; }
-    mpSetupConn(conn);
-  });
-  peer.on('error', e => { if (MP.peer === peer) mpPeerError(e); });
-  peer.on('disconnected', () => { if (MP.peer === peer && !MP.connected) { try { peer.reconnect(); } catch (e) { /* */ } } });
+  try {
+    if (!(await lobbyWatch())) throw new Error('Geen verbinding met de server. Heb je internet?');
+    await sigOpen(id);
+  } catch (e) { if (MP.lobby && MP.lobby.id === id) { mpClose(false); mpMsg(e.message, false); } mpRender(); return; }
+  if (!MP.lobby || MP.lobby.id !== id) return;
+  MP.busy = false;
+  lobbyTrack();
+  mpRender();
 }
-async function mpPeerJoin(code) {
-  code = roomCode(code);
-  $('mpJoinRoom').value = code;
-  if (!code) { mpMsg('Vul de spelcode van de host in.', false); return; }
+async function mpLobbyJoin(id, name) {
+  if (!/^[0-9a-f]{6,16}$/.test(id || '')) return;
   mpClose(false);
-  MP.role = 'guest'; MP.manual = false; MP.busy = true; MP.room = code;
-  mpMsg('Verbinden…', true); mpRender();
-  try { await loadPeerLib(); } catch (e) { if (MP.room === code) { MP.busy = false; mpMsg(e.message, false); mpRender(); } return; }
-  if (MP.role !== 'guest' || MP.room !== code || MP.peer || MP.manual) return;
-  let peer;
-  try { peer = new window.Peer({ config: { iceServers: MP_ICE } }); } catch (e) { mpPeerError(e); return; }
-  MP.peer = peer;
-  peer.on('open', () => {
-    if (MP.peer !== peer) return;
-    mpSetupConn(peer.connect(PEER_PREFIX + code, { reliable: true, serialization: 'raw' }));
-    MP.joinTimer = setTimeout(() => { if (MP.peer === peer && !MP.connected) mpPeerError({ type: 'timeout' }); }, 20000);
-  });
-  peer.on('error', e => { if (MP.peer === peer) mpPeerError(e); });
+  MP.role = 'guest'; MP.manual = false; MP.busy = true; MP.joinId = id; MP.hostId = null; MP.oppName = cleanName(name) || 'Tegenstander';
+  mpMsg(''); mpRender();
+  try { await sigOpen(id); } catch (e) { if (MP.joinId === id) mpJoinFail(e.message); return; }
+  if (MP.joinId !== id) return;
+  sigSend({ t: 'join', name: myName() });
+  // geen antwoord binnen 8 s: de lobby is gesloten of al vol (daarna krijgt het verbinden zelf 20 s)
+  MP.joinTimer = setTimeout(() => { if (MP.joinId === id && !MP.connected && !MP.pc) mpJoinFail('Deze lobby is niet meer beschikbaar.'); }, 8000);
+}
+function mpJoinFail(msg) { mpClose(false); mpMsg(msg, false); mpRender(); }
+function mpInviteLink() {
+  const base = CONFIG.siteUrl || (/^https?:$/.test(location.protocol) ? location.origin + location.pathname : '');
+  return base && MP.lobby ? `${base}#join=${MP.lobby.id}` : '';
 }
 function mpShare() {
-  const code = MP.room, link = mpInviteLink(code);
-  if (!code || !MP.hosting) return;
-  const text = link ? `Speel Andy Apples tegen mij! ${link}  (spelcode: ${code})` : code;
-  const done = () => mpMsg(link ? 'Uitnodiging gekopieerd. Plak hem in een bericht aan je vriend.' : 'Spelcode gekopieerd.', true);
+  const link = mpInviteLink();
+  if (!link) { mpMsg('Vraag je vriend om je lobby in de lijst te kiezen.', true); return; }
+  const text = `Speel Andy Apples tegen mij! ${link}`;
+  const done = () => mpMsg('Uitnodiging gekopieerd. Plak hem in een bericht aan je vriend.', true);
   if (IN_APP) { AndroidBridge.copy(text); done(); return; }
-  if (navigator.share && link && IS_MOBILE) { navigator.share({ title: 'Andy Apples', text: `Speel Andy Apples tegen mij! Spelcode: ${code}`, url: link }).then(() => mpMsg('')).catch(() => { /* geannuleerd */ }); return; }
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, () => mpMsg('Kopiëren lukte niet. Stuur de spelcode: ' + code, true));
-  else mpMsg('Stuur deze spelcode naar je vriend: ' + code, true);
+  if (navigator.share && IS_MOBILE) { navigator.share({ title: 'Andy Apples', text: 'Speel Andy Apples tegen mij!', url: link }).catch(() => { /* geannuleerd */ }); return; }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, () => mpMsg(link, true));
+  else mpMsg(link, true);
 }
 
 // ---- berichten ----
@@ -3992,22 +4155,24 @@ function mpOnMsg(m) {
 // ---- lobby ----
 function mpMsg(text, ok) { const el = $('mpMsg'); el.textContent = text || ''; el.className = 'msg ' + (ok ? 'ok' : 'err'); }
 function mpRender() {
-  const st = $('mpStatus'), loc = !!MP.local, host = MP.role === 'host' || loc, guest = MP.role === 'guest', con = MP.connected || loc;
-  const connecting = (MP.pc && (MP.pc.connectionState === 'connecting' || (host && MP.pc.signalingState === 'stable'))) || (MP.dc && !con && !MP.manual);
+  const st = $('mpStatus'), loc = !!MP.local, host = MP.role === 'host' || loc, guest = MP.role === 'guest', con = MP.connected || loc, man = MP.manual;
+  const connecting = !con && ((MP.pc && (MP.pc.connectionState === 'connecting' || (host && MP.pc.signalingState === 'stable' && !man))) || (guest && !man && MP.busy) || (host && !man && MP.peerId));
   st.className = 'mp-status' + (con ? ' on' : MP.role ? ' wait' : '');
   $('mpLocalKeys').classList.toggle('hidden', !loc);
-  $('mpStatusTxt').textContent = loc ? 'Op één scherm · 2 spelers' : con ? `Verbonden met ${MP.oppName}` : connecting ? 'Verbinden…'
-    : host ? (MP.manual || MP.hosting ? 'Wachten op je vriend…' : MP.busy ? 'Spel openen…' : 'Niet verbonden') : guest ? (MP.busy ? 'Verbinden…' : 'Meedoen') : 'Niet verbonden';
+  $('mpStatusTxt').textContent = loc ? 'Op één scherm · 2 spelers' : con ? `Verbonden met ${MP.oppName}`
+    : connecting ? (guest ? `Verbinden met ${MP.oppName}…` : `${MP.oppName} doet mee, verbinden…`)
+    : host ? (MP.busy ? 'Lobby openen…' : 'Wachten op een speler…') : guest ? 'Code van de host plakken' : 'Niet verbonden';
   $('mpPick').classList.toggle('hidden', !!MP.role || con);
-  $('mpHostBox').classList.toggle('hidden', !host || con);
-  $('mpJoinBox').classList.toggle('hidden', !guest || con);
+  $('mpHostBox').classList.toggle('hidden', !host || con || man || loc || MP.busy);
+  $('mpManual').classList.toggle('hidden', con || (!!MP.role && !man));
+  $('mpManPick').classList.toggle('hidden', !!MP.role);
+  $('mpManHost').classList.toggle('hidden', !(host && man));
+  $('mpManJoin').classList.toggle('hidden', !(guest && man));
   $('mpAnswerStep').classList.toggle('hidden', !guest || (!MP.busy && !$('mpAnswer').value));
-  $('btnMpShare').disabled = !MP.hosting;
-  $('btnMpJoinGo').disabled = !!MP.busy && !MP.manual;
-  $('mpManualHostGo').classList.toggle('hidden', !!(MP.manual && MP.pc));
   $('mpLobby').classList.toggle('hidden', !con);
   $('btnMpCancel').classList.toggle('hidden', !MP.role && !con);
-  $('btnMpCancel').textContent = loc ? 'Terug' : con ? 'Verbreken' : 'Annuleren';
+  $('btnMpCancel').textContent = loc ? 'Terug' : con ? 'Verbreken' : host && !man ? 'Lobby sluiten' : 'Annuleren';
+  lobbyRender();
   document.querySelector('.mp-name').classList.toggle('hidden', loc);
   if (con) {
     $('mpMeName').textContent = loc ? 'Speler 1' : myName() + (host ? ' (host)' : '');
@@ -4029,6 +4194,7 @@ function openMp() {
   $('mpName').value = myName();
   mpRender();
   showScreen('mp');
+  lobbyWatch();
 }
 function mpSelect(mode, len) {
   if (MP.role !== 'host' && !MP.local) return;
@@ -4618,6 +4784,7 @@ function toMenu() {
   localExit(); MP.local = false;
   mpLeaveMatch();
   if (mpActive()) mpClose(true);
+  lobbyUnwatch();
   resetWorld();
   game.mode = 'menu';
   refreshMenu();
@@ -4628,6 +4795,7 @@ function startReady(level) {
   game.paused = false; Music.duck();
   game.career = typeof level === 'number' ? levelInfo(level) : null;
   if (mpActive()) mpClose(true);
+  lobbyUnwatch();
   localExit(); MP.local = false;
   mpLeaveMatch();
   resetWorld();
@@ -4794,6 +4962,7 @@ function refreshMenu() {
   $('saveStats').innerHTML = statsHtml();
   setBadge($('btnShop'), affordableCount());
   $('btnLb').classList.toggle('hidden', !lbOn());
+  $('btnAccount').classList.toggle('hidden', !sbOn());
   const snd = save.sound ? 'Geluid aan' : 'Geluid uit';
   const mus = save.music ? 'Muziek aan' : 'Muziek uit';
   $('btnSound').textContent = snd; $('btnPauseSound').textContent = snd;
@@ -4871,7 +5040,7 @@ function on(id, fn) {
 //  Ranglijst (Eindeloos): optioneel, via een gratis Supabase-project (zie README)
 // =====================================================================
 const LB_ID_KEY = 'andyApples.playerId', LB_SENT_KEY = 'andyApples.lbSent';
-const lbOn = () => !!(CONFIG.leaderboard.url && CONFIG.leaderboard.key);
+const lbOn = sbOn;
 let lbReturn = 'menu';
 function lbPlayerId() { // geheim, willekeurig id van deze speler (alleen jouw eigen rij kun je bijwerken)
   let id = '';
@@ -4885,7 +5054,7 @@ function lbPlayerId() { // geheim, willekeurig id van deze speler (alleen jouw e
   return id;
 }
 async function lbFetch(path, opt) {
-  const { url, key } = CONFIG.leaderboard;
+  const { url, key } = CONFIG.supabase;
   const headers = Object.assign({ apikey: key, 'Content-Type': 'application/json' }, /^eyJ/.test(key) ? { Authorization: 'Bearer ' + key } : {}, opt && opt.headers);
   const ctl = typeof AbortController === 'function' ? new AbortController() : null, t = setTimeout(() => ctl && ctl.abort(), 8000);
   try {
@@ -4941,6 +5110,145 @@ on('btnLbBack', () => showScreen(lbReturn));
 on('btnLbPlay', () => startReady(null));
 $('lbName').addEventListener('change', e => { setMyName(e.target.value); e.target.value = myName(); if (lbOn()) lbShow(); });
 
+// =====================================================================
+//  Account: voortgang online bewaren (Supabase Auth + tabel "saves", zie README)
+// =====================================================================
+// De save blijft ook gewoon lokaal staan. Elke wijziging wordt na een paar seconden online bewaard.
+// Bij het inloggen (of opstarten) wordt de online save opgehaald; zijn beide kanten gewijzigd, dan kies je zelf.
+const SYNC_KEY = 'andyApples.sync';   // { uid, at: tijd van de laatst gesynchroniseerde online save, dirty }
+const ACC = { user: null, rev: 0, timer: 0, applying: false, status: '', listening: false };
+function syncState() { try { return JSON.parse(localStorage.getItem(SYNC_KEY)) || {}; } catch (e) { return {}; } }
+function setSync(o) { try { localStorage.setItem(SYNC_KEY, JSON.stringify(o)); } catch (e) { /* negeren */ } }
+const sameT = (a, b) => !!a && !!b && Date.parse(a) === Date.parse(b);
+const saveSummary = sv => `level ${playerLevel(sv.xp).L}, ${sv.apples} appels, record ${sv.best} m`;
+const hasProgress = sv => sv.xp > 0 || sv.apples > 0 || sv.runs > 0;
+// aangeroepen bij elke persist(): markeer als gewijzigd en bewaar straks online
+function cloudDirty() {
+  if (ACC.applying || !ACC.user) return;
+  ACC.rev++;
+  const st = syncState();
+  if (st.uid === ACC.user.id && !st.dirty) setSync(Object.assign(st, { dirty: true }));
+  clearTimeout(ACC.timer);
+  ACC.timer = setTimeout(() => cloudPush().catch(() => { ACC.status = 'Online opslaan lukte niet; wordt later opnieuw geprobeerd.'; accRender(); }), 4000);
+}
+function applyCloud(data, at) {
+  ACC.applying = true;
+  try { save = normalizeSave(data); persist(); } finally { ACC.applying = false; }
+  setSync({ uid: ACC.user.id, at, dirty: false });
+  refreshMenu();
+  if (curScreen === 'shop') renderShop();
+}
+async function cloudPush(force) {
+  const u = ACC.user;
+  if (!u) return;
+  clearTimeout(ACC.timer);
+  const st = syncState();
+  if (!force && st.uid === u.id && !st.dirty) return;
+  const sb = await getSb(), rev = ACC.rev, at = new Date().toISOString();
+  const { error } = await sb.from('saves').upsert({ user_id: u.id, data: JSON.parse(JSON.stringify(save)), updated_at: at });
+  if (error) throw error;
+  if (ACC.user !== u) return;
+  setSync({ uid: u.id, at, dirty: ACC.rev !== rev }); // tijdens het versturen weer gewijzigd? dan blijft hij "dirty"
+  ACC.status = 'Online bewaard om ' + new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+  accRender();
+}
+async function cloudPull() {
+  const u = ACC.user;
+  if (!u) return;
+  ACC.status = 'Synchroniseren…'; accRender();
+  try {
+    const sb = await getSb();
+    const { data, error } = await sb.from('saves').select('data, updated_at').eq('user_id', u.id).maybeSingle();
+    if (error) throw error;
+    if (ACC.user !== u) return;
+    const st = syncState(), mine = st.uid === u.id;
+    if (!data) await cloudPush(true);                                          // nieuw account: huidige voortgang uploaden
+    else if (mine && !st.dirty) {                                               // hier niets gewijzigd: online versie nemen
+      if (!sameT(data.updated_at, st.at)) applyCloud(data.data, data.updated_at);
+      ACC.status = 'Voortgang is bijgewerkt.';
+    } else if (mine && sameT(data.updated_at, st.at)) await cloudPush(true);   // alleen hier gewijzigd
+    else {                                                                      // beide kanten gewijzigd (of eerste keer op dit apparaat)
+      const cloud = normalizeSave(data.data);
+      let useCloud;
+      if (!hasProgress(save) || JSON.stringify(cloud) === JSON.stringify(save)) useCloud = true;
+      else if (!hasProgress(cloud)) useCloud = false;
+      else useCloud = confirm(`Er staat al voortgang online.\n\nOnline: ${saveSummary(cloud)}\nDit apparaat: ${saveSummary(save)}\n\nOK = online voortgang gebruiken\nAnnuleren = voortgang van dit apparaat houden (overschrijft online)`);
+      if (useCloud) { applyCloud(data.data, data.updated_at); ACC.status = 'Online voortgang geladen.'; }
+      else await cloudPush(true);
+    }
+  } catch (e) { if (ACC.user === u) ACC.status = 'Online opslaan lukt nu niet. Je voortgang blijft op dit apparaat bewaard.'; }
+  accRender();
+}
+// Supabase laden en luisteren naar in- en uitloggen (ook een bewaarde sessie van een vorige keer)
+async function accEnsure() {
+  const sb = await getSb();
+  if (!ACC.listening) {
+    ACC.listening = true;
+    sb.auth.onAuthStateChange((ev, session) => {
+      const u = session ? session.user : null, prev = ACC.user;
+      ACC.user = u;
+      if (u && (!prev || prev.id !== u.id)) setTimeout(cloudPull, 0); // niet binnen deze callback zelf (advies van Supabase)
+      if (!u) ACC.status = '';
+      accRender(); refreshMenu();
+    });
+  }
+  return sb;
+}
+function accErr(e) {
+  const m = String((e && e.message) || e || '');
+  if (/invalid login/i.test(m)) return 'Onjuist e-mailadres of wachtwoord.';
+  if (/not confirmed/i.test(m)) return 'Bevestig eerst je e-mailadres via de link in je mail.';
+  if (/already registered|already exists/i.test(m)) return 'Er bestaat al een account met dit e-mailadres. Log in.';
+  if (/rate limit|too many/i.test(m)) return 'Te veel pogingen. Probeer het over een paar minuten opnieuw.';
+  if (/password/i.test(m)) return 'Kies een sterker wachtwoord (minstens 6 tekens).';
+  if (/fetch|network|internet/i.test(m)) return 'Geen verbinding met de server. Heb je internet?';
+  return 'Er ging iets mis: ' + m;
+}
+function accMsg(t, ok) { const el = $('accMsg'); el.textContent = t || ''; el.className = 'msg ' + (ok ? 'ok' : 'err'); }
+function accRender() {
+  const u = ACC.user;
+  $('accOut').classList.toggle('hidden', !!u);
+  $('accIn').classList.toggle('hidden', !u);
+  $('accWho').textContent = u ? u.email || '' : '';
+  $('accSync').textContent = ACC.status;
+  $('mmAcc').textContent = u ? 'Ingelogd' : 'Account';
+}
+async function accLogin(signup) {
+  const email = $('accEmail').value.trim(), password = $('accPass').value;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { accMsg('Vul een geldig e-mailadres in.'); return; }
+  if (password.length < 6) { accMsg('Het wachtwoord moet minstens 6 tekens hebben.'); return; }
+  $('btnAccLogin').disabled = $('btnAccSignup').disabled = true;
+  accMsg(signup ? 'Account maken…' : 'Inloggen…', true);
+  try {
+    const sb = await accEnsure();
+    const redirect = CONFIG.siteUrl || (/^https?:$/.test(location.protocol) ? location.origin + location.pathname : undefined);
+    const r = signup ? await sb.auth.signUp({ email, password, options: redirect ? { emailRedirectTo: redirect } : {} })
+      : await sb.auth.signInWithPassword({ email, password });
+    if (r.error) accMsg(accErr(r.error));
+    else if (signup && r.data.user && Array.isArray(r.data.user.identities) && !r.data.user.identities.length) accMsg('Er bestaat al een account met dit e-mailadres. Log in.');
+    else if (signup && !r.data.session) accMsg('Bijna klaar: klik op de link in de e-mail die je net kreeg, en log daarna hier in.', true);
+    else { $('accPass').value = ''; accMsg(''); }
+  } catch (e) { accMsg(accErr(e)); }
+  $('btnAccLogin').disabled = $('btnAccSignup').disabled = false;
+}
+function openAccount() {
+  accMsg(''); accRender(); showScreen('account');
+  if (sbOn()) accEnsure().catch(e => accMsg(accErr(e)));
+}
+on('btnAccount', openAccount);
+on('btnAccBack', () => showScreen('menu'));
+on('btnAccLogin', () => accLogin(false));
+on('btnAccSignup', () => accLogin(true));
+$('accPass').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); accLogin(false); } });
+on('btnAccSync', () => { accMsg(''); cloudPush(true).then(() => accMsg('Opgeslagen.', true), e => accMsg(accErr(e))); });
+on('btnAccLogout', async () => {
+  try { await cloudPush(); } catch (e) { /* offline: lokaal blijft alles staan */ }
+  try { await (await getSb()).auth.signOut(); } catch (e) { /* */ }
+  ACC.user = null; setSync({}); accRender(); refreshMenu();
+  accMsg('Uitgelogd. Je voortgang staat nog op dit apparaat.', true);
+});
+window.addEventListener('pagehide', () => { if (ACC.user && syncState().dirty) cloudPush().catch(() => { /* */ }); });
+
 // ---- Debug-instellingen: zoom en snelheid, achter een wachtwoord ----
 function renderDbg() {
   $('dbgLock').classList.toggle('hidden', DBG.open);
@@ -4968,22 +5276,16 @@ on('btnMulti', openMp);
 on('btnMpBack', toMenu);
 on('btnMpSetup', () => showScreen('mpSetup'));
 on('btnMpSetupBack', () => { mpRender(); showScreen('mp'); });
-on('btnMpHost', () => { MP.local = false; const c = roomCode($('mpRoom').value) || suggestRoom(); $('mpOffer').value = ''; $('mpAnswerIn').value = ''; mpPeerHost(c); });
-on('btnMpRoom', () => mpPeerHost($('mpRoom').value));
+on('btnMpHost', () => { MP.local = false; mpLobbyHost(); });
 on('btnMpShare', mpShare);
-on('btnMpManualHost', mpHost);
+on('btnMpManualHost', () => { MP.local = false; mpHost(); });
 on('btnMpJoin', () => { MP.local = false; mpJoinStart(); });
-on('btnMpJoinGo', () => mpPeerJoin($('mpJoinRoom').value));
-for (const [id, fn] of [['mpRoom', () => mpPeerHost($('mpRoom').value)], ['mpJoinRoom', () => mpPeerJoin($('mpJoinRoom').value)]]) {
-  $(id).addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); fn(); } });
-  $(id).addEventListener('input', e => { const c = roomCode(e.target.value); if (c !== e.target.value) e.target.value = c; });
-}
 on('btnMpLocal', () => { mpClose(false); MP.local = true; mpMsg(''); mpRender(); });
 on('btnMpConnect', mpConnect);
 on('btnMpMakeAnswer', mpMakeAnswer);
 on('btnMpCopyOffer', () => mpCopy('mpOffer'));
 on('btnMpCopyAnswer', () => mpCopy('mpAnswer'));
-on('btnMpCancel', () => { if (MP.local) MP.local = false; else mpClose(MP.connected); $('mpRoom').value = ''; mpMsg(''); mpRender(); });
+on('btnMpCancel', () => { if (MP.local) MP.local = false; else mpClose(MP.connected); mpMsg(''); mpRender(); });
 on('mpModeRace', () => mpSelect('race'));
 on('mpModeEnd', () => mpSelect('endurance'));
 for (const b of document.querySelectorAll('.mp-len')) on(b, () => mpSelect(null, +b.dataset.len));
@@ -4994,6 +5296,7 @@ on('btnMpLeave', toMenu);
 $('mpName').addEventListener('input', e => {
   const n = setMyName(e.target.value);
   mpSend({ type: 'hello', name: n || 'Andy' });
+  lobbyTrack();
   if (MP.connected) mpRender();
 });
 on('btnCareer', openCareer);
@@ -5143,6 +5446,7 @@ window.addEventListener('keydown', e => {
     else if (curScreen === 'mpSetup') { mpRender(); showScreen('mp'); }
     else if (curScreen === 'mp') toMenu();
     else if (curScreen === 'lb') showScreen(lbReturn);
+    else if (curScreen === 'account') showScreen('menu');
     else if (curScreen === 'debug') showScreen('settings');
     else if (curScreen === 'shop' || curScreen === 'saves' || curScreen === 'help' || curScreen === 'career' || curScreen === 'settings') {
       if (curScreen === 'shop') $('btnShopBack').click(); else showScreen('menu');
@@ -5282,16 +5586,17 @@ window.__andy = { get G() { return G; }, get run() { return run; }, get game() {
 resetWorld();
 refreshMenu();
 showScreen('menu');
-// uitnodigingslink (…#join=spelcode): meteen naar multiplayer en verbinden
+// uitnodigingslink (…#join=lobby-id): meteen naar multiplayer en verbinden
 function checkJoinLink() {
   const m = /[#&]join=([^&]+)/.exec(location.hash);
   if (!m) return;
   try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { location.hash = ''; }
-  openMp(); MP.local = false; mpJoinStart(roomCode(decodeURIComponent(m[1])));
+  openMp(); MP.local = false; mpLobbyJoin(decodeURIComponent(m[1]).toLowerCase(), '');
 }
 window.addEventListener('hashchange', checkJoinLink);
 checkJoinLink();
 if (lbOn()) lbSubmit().catch(() => { /* offline */ });
+try { if (sbOn() && (localStorage.getItem('andyApples.auth') || /access_token|code=/.test(location.hash + location.search))) accEnsure().catch(() => { /* offline */ }); } catch (e) { /* */ }
 requestAnimationFrame(frame);
 })();
 </script>
