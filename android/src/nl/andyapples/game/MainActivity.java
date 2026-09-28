@@ -25,7 +25,7 @@ import android.webkit.WebViewClient;
 /**
  * Andy Apples als Android-app: een schermvullende WebView die het spel (assets/index.html) laadt.
  * Een kleine JavaScript-brug regelt wat een WebView zelf niet kan: tekst naar het klembord kopiëren.
- * Voor soepel en zuinig spelen: het scherm op 60 Hz, gelijkmatige prestaties waar het toestel dat kan,
+ * Voor soepel en zuinig spelen: de hoogste verversingssnelheid van het scherm, gelijkmatige prestaties waar het toestel dat kan,
  * en op de achtergrond staan de timers stil.
  */
 public class MainActivity extends Activity {
@@ -41,7 +41,7 @@ public class MainActivity extends Activity {
             lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
             getWindow().setAttributes(lp);
         }
-        use60Hz();
+        useHighestRefreshRate();
         // gelijkmatige prestaties: liever een vaste, iets lagere kloksnelheid dan na een paar minuten warm worden en haperen
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         if (pm != null && pm.isSustainedPerformanceModeSupported()) getWindow().setSustainedPerformanceMode(true);
@@ -98,19 +98,20 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * Het scherm op 60 Hz zetten. Op telefoons met 90/120 Hz zou het spel anders twee keer zo vaak tekenen:
-     * dubbel zoveel werk voor de grafische chip, een warmer toestel en een lege batterij, terwijl de physics
-     * toch in vaste stappen loopt. Kies een 60-Hz-stand met dezelfde resolutie; het verzoek zelf is een hint.
+     * De hoogste verversingssnelheid van het scherm vragen (90/120 Hz waar dat kan). Veel toestellen houden apps
+     * anders op 60 Hz. Wordt het te zwaar, dan verlaagt de automatische kwaliteit (adaptQuality) de grafische stand.
+     * Kies de snelste stand met dezelfde resolutie; het verzoek zelf is een hint aan Android.
      */
-    private void use60Hz() {
+    private void useHighestRefreshRate() {
         WindowManager.LayoutParams lp = getWindow().getAttributes();
         Display d = getWindowManager().getDefaultDisplay();
-        Display.Mode cur = d.getMode();
+        Display.Mode cur = d.getMode(), best = cur;
         for (Display.Mode m : d.getSupportedModes()) {
             if (m.getPhysicalWidth() == cur.getPhysicalWidth() && m.getPhysicalHeight() == cur.getPhysicalHeight()
-                    && Math.abs(m.getRefreshRate() - 60f) < 1f) { lp.preferredDisplayModeId = m.getModeId(); break; }
+                    && m.getRefreshRate() > best.getRefreshRate()) best = m;
         }
-        lp.preferredRefreshRate = 60f;
+        lp.preferredDisplayModeId = best.getModeId();
+        lp.preferredRefreshRate = best.getRefreshRate();
         getWindow().setAttributes(lp);
     }
 

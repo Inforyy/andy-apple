@@ -11,7 +11,7 @@
 
 Werkt vanaf **Android 7.0**. Je voortgang wordt in de app zelf bewaard. Die staat los van je voortgang in de browser: log in beide met hetzelfde **account** om hem gelijk te houden.
 
-De app zet het scherm op 60 Hz (ook op telefoons met 90/120 Hz: dat scheelt de helft aan tekenwerk, warmte en batterij), vraagt waar het toestel dat kan om gelijkmatige prestaties, en laat op de achtergrond geen timers doorlopen. Stopt het tekenproces van de WebView onverwacht, dan bouwt de app zich opnieuw op in plaats van te crashen.
+De app vraagt de hoogste verversingssnelheid van het scherm (90/120 Hz waar dat kan; veel telefoons houden apps anders op 60 Hz), vraagt waar het toestel dat kan om gelijkmatige prestaties, en laat op de achtergrond geen timers doorlopen. Stopt het tekenproces van de WebView onverwacht, dan bouwt de app zich opnieuw op in plaats van te crashen.
 
 ## Zelf opnieuw bouwen
 
