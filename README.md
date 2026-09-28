@@ -6,6 +6,10 @@ Een 2D-slingerspel in puur HTML (geïnspireerd op *Benji Bananas*). Andy de gori
 
 Open `index.html` in een browser. Er is geen installatie, server of internetverbinding nodig: alles (graphics, geluid en physics) zit in dit ene bestand. Alleen voor multiplayer heb je een netwerkverbinding nodig.
 
+## Android-app
+
+In [`android/`](android/) staat **`AndyApples.apk`**: het spel als Android-app (schermvullend, altijd liggend, Android 7.0+). Hoe je hem installeert en zelf opnieuw bouwt, staat in [`android/README.md`](android/README.md).
+
 ## Multiplayer
 
 Speel met z'n tweeën, op twee manieren:
