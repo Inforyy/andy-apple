@@ -189,6 +189,7 @@
   html.rot .panel{touch-action:auto}
 
   /* ---------- Multiplayer ---------- */
+  .btn.kiwi{background:linear-gradient(#a3d65c,#4caf2e);box-shadow:0 5px 0 #2c6e18}
   .btn.local{background:linear-gradient(#60a5fa,#7c3aed);box-shadow:0 5px 0 #4c1d95}
   #hud.local .hud-col:not(.right),#hud.local #hudItems{display:none!important}
   #hud.local .hud-top{justify-content:flex-end}
@@ -336,6 +337,7 @@
         <button class="btn green" id="btnMpHost">Lobby maken</button>
         <button class="btn local" id="btnMpLocal">Op één scherm</button>
       </div>
+      <div class="row"><button class="btn kiwi" id="btnMpAi">Tegen Kiwi (AI)</button></div>
     </div>
 
     <!-- eigen lobby (host), wachten op een speler -->
@@ -389,6 +391,12 @@
         <button class="mp-len" data-len="1000">1000 m</button>
         <button class="mp-len" data-len="2000">2000 m</button>
       </div>
+      <div class="mp-lens hidden" id="mpAiLvls">
+        <button class="mp-len" data-ai="0">Makkelijk</button>
+        <button class="mp-len" data-ai="1">Normaal</button>
+        <button class="mp-len" data-ai="2">Moeilijk</button>
+        <button class="mp-len" data-ai="3">Expert</button>
+      </div>
       <div class="row"><button class="btn big green" id="btnMpStart">Start</button></div>
       <p class="sub hidden" id="mpLocalKeys" style="margin-top:10px"><b style="color:#e8322b">Speler 1</b>: <kbd>SPATIE</kbd> of links/boven tikken · <b style="color:#2f7fe0">Speler 2</b>: <kbd>↑</kbd> / <kbd>ENTER</kbd> of rechts/onder tikken</p>
       <p class="sub hidden" id="mpGuestWait" style="margin-top:10px">Wachten tot de host start…</p>
@@ -436,7 +444,7 @@
     <div class="results" id="mpResTable"></div>
     <div id="mpResScore" class="sub"></div>
     <div class="row">
-      <button class="btn big green" id="btnMpAgain">Revanche</button>
+      <button class="btn big green" id="btnMpAgain">Rematch</button>
     </div>
     <div class="row">
       <button class="btn" id="btnMpLobby">Lobby</button>
@@ -739,8 +747,8 @@ function features(bi) {
 //  Upgrades
 // =====================================================================
 const gripR      = l => 34 + 7 * l;
-const pumpA      = l => 520 * (1 + 0.22 * l);
-const launchM    = l => 1.1 + 0.07 * l;
+const pumpA      = l => 600 * (1 + 0.22 * l);
+const launchM    = l => 1.16 + 0.07 * l;
 const magnetR    = l => l ? 50 + 35 * l : 0;
 const appleVal   = l => 1 + 0.5 * l;
 const goldChance = l => 0.03 + 0.025 * l;
@@ -754,8 +762,8 @@ const fmtNum = n => (Math.round(n * 10) / 10).toString().replace('.', ',');
 
 const UPGRADES = [
   { id:'grip',    icon:'✋', name:'Lange armen',    info:'Grijp lianen van verder weg.',                          max:5, base:25,  growth:1.8,  fx:l => `${gripR(l)} bereik` },
-  { id:'swing',   icon:'🌀', name:'Zwaaikracht',    info:'Zwaai harder en sneller.',              max:5, base:30,  growth:1.8,  fx:l => `+${l * 22}% zwaai, max ${1030 + 110 * l}` },
-  { id:'launch',  icon:'💨', name:'Lanceerkracht',  info:'Meer vaart bij het loslaten.',                        max:5, base:40,  growth:1.85, fx:l => `+${l * 7}% vaart, top ${1300 + 110 * l}` },
+  { id:'swing',   icon:'🌀', name:'Zwaaikracht',    info:'Zwaai harder en sneller.',              max:5, base:30,  growth:1.8,  fx:l => `+${l * 22}% zwaai, max ${1250 + 120 * l}` },
+  { id:'launch',  icon:'💨', name:'Lanceerkracht',  info:'Meer vaart bij het loslaten.',                        max:5, base:40,  growth:1.85, fx:l => `+${l * 7}% vaart, top ${1600 + 130 * l}` },
   { id:'magnet',  icon:'🧲', name:'Appelmagneet',   info:'Trekt appels naar je toe.',                 max:5, base:35,  growth:1.8,  fx:l => l ? `${magnetR(l)} bereik` : 'geen' },
   { id:'value',   icon:'🧺', name:'Appeloogst',     info:'Elke appel telt voor meer.', max:5, base:50, growth:1.9, fx:l => `×${fmtNum(appleVal(l))} per appel` },
   { id:'golden',  icon:'✨', name:'Gouden appels',  info:'Meer gouden appels (5 waard).',                  unlock:4, max:4, base:45,  growth:1.9,  fx:l => `${Math.round(goldChance(l) * 100)}% kans` },
@@ -889,14 +897,18 @@ const $ = id => document.getElementById(id);
 function biomeIndexAt(m) { if (game.career) return game.career.bi; let i = 0; for (let j = 0; j < BIOMES.length; j++) if (m >= BIOMES[j].start) i = j; return i; }
 // Eindeloos (en multiplayer): de moeilijkheid loopt geleidelijk op en vlakt af naar een plafond,
 // zodat het spel altijd te doen blijft (meer gaten, grotere afstanden, meer vijanden, minder appels).
-const DIFF_MAX = 1.2, DIFF_RAMP = 3000;
-function diffAt(m) { if (game.career) return clamp(game.career.diff + Math.max(0, m) / game.career.L * 0.08, 0, 1.4); return DIFF_MAX * (1 - Math.exp(-Math.max(0, m) / DIFF_RAMP)); }
+// DIFF_START: ook aan het begin is het al iets lastiger dan de allereerste versie.
+const DIFF_START = 0.2, DIFF_MAX = 1.3, DIFF_RAMP = 3000;
+function diffAt(m) {
+  if (game.career) return clamp(game.career.diff + 0.08 + Math.max(0, m) / game.career.L * 0.08, 0, 1.45);
+  return DIFF_START + (DIFF_MAX - DIFF_START) * (1 - Math.exp(-Math.max(0, m) / DIFF_RAMP));
+}
 // Eindeloos: het tempo gaat ook iets omhoog naarmate je verder komt, tot maximaal +12%% (bij 4000 m).
 // Debug-snelheid telt overal mee, behalve online (dan moeten beide spelers gelijk zijn).
 const TEMPO_MAX = 0.12, TEMPO_DIST = 4000;
-// Standaardtempo van het spel: 70% van het oude tempo (wat vroeger "70%" in het debugmenu was).
+// Standaardtempo van het spel (100% in het debugmenu).
 // Werkt als tijdschaal: de physics-stappen blijven gelijk, er gaan er alleen minder per seconde.
-const BASE_SPEED = 0.7;
+const BASE_SPEED = 0.56; // = 80% van het vorige standaardtempo (0,7)
 function timeScale() {
   let k = BASE_SPEED * (game.mp && !game.mp.local ? 1 : DBG.speed);
   if (!game.career && !game.mp && run) { const t = clamp(run.dist / TEMPO_DIST, 0, 1); k *= 1 + TEMPO_MAX * t * t * (3 - 2 * t); }
@@ -993,6 +1005,8 @@ const Sfx = {
   },
   // "Hoe-hoe-WOE-HOEEE!": een apenroep. Een stembron met natuurlijke boventonen, adem, toonhoogte-jitter
   // en een ruw randje gaat door klinkerfilters (formanten); de lettergrepen stijgen zoals bij een echte aap.
+  // duiken: korte, dalende zoef
+  dive() { this.noise(0.25, 0.08, 1800, 0.02); this.tone(700, 0.22, 'triangle', 0.05, 220); },
   woohoo() {
     if (!save.sound || !this.ac) return;
     const ac = this.ac, t0 = ac.currentTime + 0.01, k = 0.93 + Math.random() * 0.15, end = t0 + 1.1;
@@ -1246,7 +1260,7 @@ function resize() {
   canvas.width = Math.round(cssW * pr); canvas.height = Math.round(cssH * pr);
   canvas.style.width = cssW + 'px'; canvas.style.height = cssH + 'px';
   let vw = cssW, vh = cssH;
-  if (LOCAL.on) { // naast elkaar op een breed scherm, boven elkaar op een smal/staand scherm
+  if (LOCAL.on && !LOCAL.ai) { // naast elkaar op een breed scherm, boven elkaar op een smal/staand scherm
     LOCAL.split = cssW >= cssH * 1.1 ? 'v' : 'h';
     if (LOCAL.split === 'v') vw = (cssW - 4) / 2; else vh = (cssH - 4) / 2;
   }
@@ -1617,7 +1631,7 @@ function simVine(v, dt) {
 }
 // ---- Zwaaien als echte slinger: hoek en hoeksnelheid rond het ophangpunt ----
 // x = anker + R·sin(θ), y = anker + R·cos(θ). De energie blijft behouden, dus zwaaien voelt vloeiend.
-const swingCap = () => 1030 + 110 * lvl('swing'); // iets lager zonder upgrade: de standaardsnelheid ligt wat rustiger
+const swingCap = () => 1250 + 120 * lvl('swing'); // tot hier kun je vaart opbouwen door te zwaaien
 function setHand() { G.hx = G.x - Math.sin(G.th) * ARM_LEN; G.hy = G.y - Math.cos(G.th) * ARM_LEN; }
 function freeHand(v, k) { // hand los: het touwpunt wordt weer gewoon touw en krijgt Andy's vaart mee
   if (!v || !v.pts[k]) return;
@@ -1700,7 +1714,7 @@ function attach(v, k) {
   const vt = (G.vx - (v.balloon ? v.balloon.vx : 0)) * c - G.vy * sn;
   let dir = Math.abs(c) > 0.2 ? Math.sign(c) : -Math.sign(sn) || 1;
   if (G.vx < -250 && Math.sign(vt) === -dir) dir = -dir;
-  G.om = dir * Math.max(speed, 420) / G.R;
+  G.om = dir * Math.max(speed, 480) / G.R;
   setHand();
   Sfx.grab();
   if (v.type === 'turbo' && game.mode === 'playing') Sfx.turboCharge();
@@ -1962,25 +1976,30 @@ function updateGorilla(dt, holdHang, holdAir) {
   } else if (G.state === 'air') {
     G.airT += dt;
     if (G.noDive && G.airT > 1.2) G.noDive = false;
-    // duiken gaat geleidelijk: eerst rustig, daarna steeds sneller naarmate je langer ingedrukt houdt
+    // duiken: meteen merkbaar (een duw omlaag en een zoef), en hoe langer je vasthoudt, hoe harder
     const diveHold = holdAir && !G.noDive;
+    if (diveHold && G.diveT === 0) {
+      G.vy = Math.max(G.vy + 260, Math.min(G.vy, 0) + 320);
+      Sfx.dive();
+      for (let i = 0; i < 6; i++) addPart({ type: 'streak', x: G.x + rand(-14, 14), y: G.y - rand(10, 30), vx: 0, vy: -rand(200, 400), life: 0.25, max: 0.25, col: 'rgba(255,255,255,.8)', r: 2.5, g: 0 });
+    }
     G.diveT = diveHold ? G.diveT + dt : 0;
-    const e = clamp((G.diveT - 0.04) / 0.5, 0, 1);
-    G.dive += (e * e - G.dive) * Math.min(1, dt * (diveHold ? 30 : 12));
+    const e = diveHold ? 0.45 + 0.55 * clamp(G.diveT / 0.35, 0, 1) : 0;
+    G.dive += (e - G.dive) * Math.min(1, dt * (diveHold ? 30 : 12));
     G.diving = G.dive > 0.25;
     const falling = G.vy > 0 && G.dive < 0.1, wing = lvl('wingsuit');
     const glide = falling ? 1 - 0.07 * wing : 1;
     const space = run.space && G.y < SPACE_Y;
-    G.vy += AIR_G * glide * (space ? 0.45 : 1) * (1 + 1.6 * G.dive) * dt;
+    G.vy += AIR_G * glide * (space ? 0.45 : 1) * (1 + 2.8 * G.dive) * dt;
     // ook zonder wingsuit-upgrade drijft Andy een klein beetje naar voren: zo kom je nooit hulpeloos
     // recht naar beneden vast te zitten tussen twee lianen in
     G.vx += 55 * dt;
     // wingsuit: een deel van de valsnelheid wordt voorwaartse vaart
     if (wing && falling && G.vx > 0) { const dv = Math.min(G.vy, 700) * 0.32 * wing * dt; G.vy -= dv; G.vx += dv * 0.85; }
-    const maxFall = MAX_FALL * glide * (1 + 0.8 * G.dive);
+    const maxFall = MAX_FALL * glide * (1 + 1.1 * G.dive);
     if (G.vy > maxFall) G.vy += (maxFall - G.vy) * Math.min(1, dt * 6);
     G.vx -= G.vx * 0.015 * dt;
-    const sp = Math.hypot(G.vx, G.vy), maxS = maxSpeed() * (G.turboT > 0 ? 1.4 : 1) * (space ? 1.3 : 1);
+    const sp = Math.hypot(G.vx, G.vy), maxS = maxSpeed() * (G.turboT > 0 ? 1.4 : 1) * (space ? 1.3 : 1) * (1 + 0.5 * G.dive); // duiken remt je voorwaartse vaart niet af
     if (sp > maxS) { G.vx *= maxS / sp; G.vy *= maxS / sp; }
     const prevFeet = G.y + FEET, prevX = G.x;
     G.x += G.vx * dt; G.y += G.vy * dt;
@@ -2161,7 +2180,7 @@ function collect(a) {
   }
 }
 
-const maxSpeed = () => 1300 + 110 * lvl('launch'); // iets lager zonder upgrade: de standaardsnelheid ligt wat rustiger
+const maxSpeed = () => 1600 + 130 * lvl('launch'); // topsnelheid in de lucht: ruimte om momentum op te bouwen
 // ---- Trucs: bij een lange luchtvlucht doet Andy vanzelf salto's en andere kunstjes ----
 const TRICKS = [
   { id: 'salto', name: 'Salto!', dur: 0.62, rot: -Math.PI * 2 },
@@ -3387,7 +3406,7 @@ function drawGorilla() {
   let h1, h2, f1 = [-8, 25], f2 = [8, 25], mouth = 'smile';
   const sw = Math.sin(time * 10);
   if (G.state === 'hang') {
-    const d = Math.hypot(G.hx - G.x, G.hy - G.y) / G_DRAW;
+    const d = Math.min(Math.hypot(G.hx - G.x, G.hy - G.y) / G_DRAW, 42); // nooit een uitgerekte arm tekenen
     h1 = [-3, -d]; h2 = [3, -d + 3];
     f1 = [-7 + sw * 2, 26]; f2 = [8 - sw * 2, 25]; mouth = Math.abs(G.om * G.R) > 700 ? 'open' : 'smile';
   } else if (G.state === 'stand') {
@@ -3461,13 +3480,24 @@ function drawGorilla() {
     ctx.fillStyle = '#ffffff'; ctx.fillRect(-4, -8, 8, 1.6);
     if (mouth === 'open') { ctx.fillStyle = '#c0394b'; ell(0, -4.8, 2.5, 1.2); }
   } else { ctx.strokeStyle = GC.ink; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(0, -9.5, 4, 0.3, Math.PI - 0.3); ctx.stroke(); }
+  if (GC.kiwi) { // Kiwi heeft een wilde oranje kuif en grote oorbellen-bakkebaarden
+    ctx.fillStyle = GC.ink; for (const [x, a] of [[-5, -0.5], [0, 0], [5, 0.5]]) { ctx.save(); ctx.translate(x, -30); ctx.rotate(a); ctx.beginPath(); ctx.moveTo(-3.4, 2); ctx.lineTo(0, -9.5); ctx.lineTo(3.4, 2); ctx.fill(); ctx.restore(); }
+    ctx.fillStyle = GC.furL; for (const [x, a] of [[-5, -0.5], [0, 0], [5, 0.5]]) { ctx.save(); ctx.translate(x, -30); ctx.rotate(a); ctx.beginPath(); ctx.moveTo(-2.2, 1.5); ctx.lineTo(0, -7.5); ctx.lineTo(2.2, 1.5); ctx.fill(); ctx.restore(); }
+    ctx.fillStyle = GC.furL; ell(-11.5, -8, 3.2, 5, 0.3); ell(11.5, -8, 3.2, 5, -0.3);
+  }
   // bandana met appelspeldje
   ctx.strokeStyle = GC.ink; ctx.lineWidth = 6.4; ctx.beginPath(); ctx.arc(0, -17, 12.6, Math.PI * 1.12, Math.PI * 1.88); ctx.stroke();
   ctx.strokeStyle = GC.band; ctx.lineWidth = 4.4; ctx.beginPath(); ctx.arc(0, -17, 12.6, Math.PI * 1.12, Math.PI * 1.88); ctx.stroke();
   ctx.fillStyle = 'rgba(255,255,255,.85)'; for (const a of [1.25, 1.45, 1.62, 1.78]) circ(Math.cos(Math.PI * a) * 12.6, -17 + Math.sin(Math.PI * a) * 12.6, 0.9);
   ctx.fillStyle = GC.ink; circ(-11.4, -23.5, 3.6); ctx.fillStyle = GC.band; circ(-11.4, -23.5, 2.6);
-  ctx.fillStyle = GC.ink; circ(0, -29.6, 3.3); ctx.fillStyle = '#e8322b'; circ(-0.9, -29.4, 2); circ(0.9, -29.4, 2);
-  ctx.fillStyle = '#4caf50'; ell(1.6, -32, 1.6, 0.8, -0.5);
+  if (GC.kiwi) { // Kiwi: een kiwischijfje als speld
+    ctx.fillStyle = GC.ink; circ(0, -29.6, 3.9); ctx.fillStyle = '#7a5230'; circ(0, -29.6, 3.1);
+    ctx.fillStyle = '#8cc63f'; circ(0, -29.6, 2.5); ctx.fillStyle = '#f4f1c8'; circ(0, -29.6, 0.9);
+    ctx.fillStyle = '#1b1b1b'; for (let i = 0; i < 6; i++) circ(Math.cos(i * 1.05) * 1.6, -29.6 + Math.sin(i * 1.05) * 1.6, 0.35);
+  } else {
+    ctx.fillStyle = GC.ink; circ(0, -29.6, 3.3); ctx.fillStyle = '#e8322b'; circ(-0.9, -29.4, 2); circ(0.9, -29.4, 2);
+    ctx.fillStyle = '#4caf50'; ell(1.6, -32, 1.6, 0.8, -0.5);
+  }
   ctx.restore();
 }
 function drawParrot() {
@@ -3736,6 +3766,9 @@ const MP = { pc: null, dc: null, sig: null, lobby: null, joinId: null, peerId: n
 let ghostPin = { v: null, k: 0, x: 0, y: 0 };
 const GC1 = GC;
 const GC2 = Object.assign({}, GC, { band: '#2f7fe0', bandD: '#17498f', fur: '#4a3a30', furD: '#30251d', furL: '#7a6452' });
+// Kiwi (de AI-tegenstander): een oranje orang-oetan met groene bandana en een kiwischijfje
+const GCK = Object.assign({}, GC, { kiwi: true, fur: '#b5561d', furD: '#7f3a12', furL: '#e8894a', skin: '#e9c39b', skinD: '#c0936c', band: '#4caf2e', bandD: '#2c6e18', cape: '#4caf2e', capeD: '#2c6e18' });
+const oppPal = () => LOCAL.ai ? GCK : GC2;
 const cleanName = n => String(n || '').replace(/[<>&"]/g, '').trim().slice(0, 12);
 function myName() { let n = ''; try { n = localStorage.getItem(MP_NAME_KEY) || ''; } catch (e) { /* geen opslag */ } return cleanName(n) || 'Andy'; }
 const escHtml = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -4158,8 +4191,11 @@ function mpRender() {
   const st = $('mpStatus'), loc = !!MP.local, host = MP.role === 'host' || loc, guest = MP.role === 'guest', con = MP.connected || loc, man = MP.manual;
   const connecting = !con && ((MP.pc && (MP.pc.connectionState === 'connecting' || (host && MP.pc.signalingState === 'stable' && !man))) || (guest && !man && MP.busy) || (host && !man && MP.peerId));
   st.className = 'mp-status' + (con ? ' on' : MP.role ? ' wait' : '');
-  $('mpLocalKeys').classList.toggle('hidden', !loc);
-  $('mpStatusTxt').textContent = loc ? 'Op één scherm · 2 spelers' : con ? `Verbonden met ${MP.oppName}`
+  const vsAi = loc && MP.aiLvl != null;
+  $('mpLocalKeys').classList.toggle('hidden', !loc || vsAi);
+  $('mpAiLvls').classList.toggle('hidden', !vsAi);
+  for (const b of document.querySelectorAll('[data-ai]')) b.classList.toggle('sel', +b.dataset.ai === MP.aiLvl);
+  $('mpStatusTxt').textContent = vsAi ? 'Tegen Kiwi (AI)' : loc ? 'Op één scherm · 2 spelers' : con ? `Verbonden met ${MP.oppName}`
     : connecting ? (guest ? `Verbinden met ${MP.oppName}…` : `${MP.oppName} doet mee, verbinden…`)
     : host ? (MP.busy ? 'Lobby openen…' : 'Wachten op een speler…') : guest ? 'Code van de host plakken' : 'Niet verbonden';
   $('mpPick').classList.toggle('hidden', !!MP.role || con);
@@ -4171,12 +4207,12 @@ function mpRender() {
   $('mpAnswerStep').classList.toggle('hidden', !guest || (!MP.busy && !$('mpAnswer').value));
   $('mpLobby').classList.toggle('hidden', !con);
   $('btnMpCancel').classList.toggle('hidden', !MP.role && !con);
-  $('btnMpCancel').textContent = loc ? 'Terug' : con ? 'Verbreken' : host && !man ? 'Lobby sluiten' : 'Annuleren';
+  $('btnMpCancel').textContent = loc ? 'Andere modus' : con ? 'Verbreken' : host && !man ? 'Lobby sluiten' : 'Annuleren';
   lobbyRender();
   document.querySelector('.mp-name').classList.toggle('hidden', loc);
   if (con) {
-    $('mpMeName').textContent = loc ? 'Speler 1' : myName() + (host ? ' (host)' : '');
-    $('mpOppName').textContent = loc ? 'Speler 2' : MP.oppName + (host ? '' : ' (host)');
+    $('mpMeName').textContent = vsAi ? myName() : loc ? 'Speler 1' : myName() + (host ? ' (host)' : '');
+    $('mpOppName').textContent = vsAi ? 'Kiwi' : loc ? 'Speler 2' : MP.oppName + (host ? '' : ' (host)');
     $('mpModeRace').classList.toggle('sel', MP.sel.mode === 'race');
     $('mpModeEnd').classList.toggle('sel', MP.sel.mode === 'endurance');
     $('mpModeRace').disabled = $('mpModeEnd').disabled = !host;
@@ -4315,13 +4351,13 @@ function mpShowResult() {
 }
 function mpAgainRender() {
   const b = $('btnMpAgain');
-  if (LOCAL.on) { b.disabled = false; b.textContent = 'Revanche'; return; }
+  if (LOCAL.on) { b.disabled = false; b.textContent = 'Rematch'; return; }
   if (!MP.connected) { b.disabled = true; b.textContent = 'Verbinding verbroken'; return; }
   b.disabled = MP.again;
-  b.textContent = MP.again ? 'Wachten op ' + MP.oppName + '…' : MP.oppAgain ? `Revanche! (${MP.oppName} wil ook)` : 'Revanche';
+  b.textContent = MP.again ? 'Wachten op ' + MP.oppName + '…' : MP.oppAgain ? `Rematch! (${MP.oppName} wil ook)` : 'Rematch';
 }
 function mpAgain() {
-  if (LOCAL.on) { localStart(LOCAL.cfg); return; }
+  if (LOCAL.on) { localStart(LOCAL.cfg, LOCAL.ai ? LOCAL.ai.lvl : null); return; }
   if (!MP.connected || MP.again) return;
   MP.again = true;
   mpSend({ type: 'again' });
@@ -4439,7 +4475,9 @@ function mpGhost(dt) {
   const s = f < 0.5 ? a : b, L = (p, q) => p + (q - p) * f;
   const g = MP.ghost || (MP.ghost = { balloonT: 0, invuln: 0, standT: 0, deadT: 0, trickRot: 0, R: 1, om: 0, turboT: 0, trick: null, trickT: 0 });
   g.x = L(a.x, b.x); g.y = L(a.y, b.y); g.vx = L(a.vx, b.vx); g.vy = L(a.vy, b.vy);
-  g.hx = L(a.hx, b.hx); g.hy = L(a.hy, b.hy); g.angle = lerpAng(a.a, b.a, f);
+  // hand alleen interpoleren als hij in beide standen aan dezelfde liaan hangt (anders is de oude handpositie verouderd)
+  if (a.st === 'hang' && b.st === 'hang' && a.vid === b.vid) { g.hx = L(a.hx, b.hx); g.hy = L(a.hy, b.hy); } else { g.hx = s.hx; g.hy = s.hy; }
+  g.angle = lerpAng(a.a, b.a, f);
   if (g.state !== s.st) { g.standT = 0; g.deadT = 0; }
   g.state = s.st; g.standT += dt; g.deadT += dt;
   g.diving = !!s.dv; g.turboT = s.tu ? 1 : 0; g.om = s.sp; g.R = 1;
@@ -4473,18 +4511,19 @@ function mpHud() {
 // ---- tekenen ----
 // de tegenstander: online de ontvangen stand, op één scherm de gorilla van de andere speler
 const ghostOf = () => { const M = game.mp; return M && M.local ? LOCAL.worlds[1 - M.idx].G : MP.ghost; };
-const oppNameOf = () => { const M = game.mp; return M && M.local ? `Speler ${2 - M.idx}` : MP.oppName; };
+const localName = i => LOCAL.ai ? (i ? 'Kiwi' : 'Jij') : `Speler ${i + 1}`;
+const oppNameOf = () => { const M = game.mp; return M && M.local ? localName(1 - M.idx) : MP.oppName; };
 function drawOwnGorilla() {
   const M = game.mp;
   if (!(M && M.local && M.idx === 1)) { drawGorilla(); return; }
-  const pal = GC; GC = GC2; // speler 2 is altijd de blauwe
+  const pal = GC; GC = oppPal(); // speler 2 is altijd de blauwe (of Kiwi)
   try { drawGorilla(); } finally { GC = pal; }
 }
 function drawGhost() {
   const g = ghostOf(), M = game.mp;
   if (!g || g.x < camX - 200 || g.x > camX + viewW + 200) return;
   const me = G, pal = GC, ip = M.local && ipApply(g); // op één scherm: ook de andere gorilla vloeiend
-  G = g; GC = M.local && M.idx === 1 ? GC1 : GC2;
+  G = g; GC = M.local && M.idx === 1 ? GC1 : oppPal();
   try { drawGorilla(); } finally { G = me; GC = pal; if (ip) ipRestore(g); }
   if (g.state === 'dead' && g.y > HAZARD_Y + 60) return;
   // naamkaartje
@@ -4575,8 +4614,11 @@ function freshWorld(i, cfg, seed) {
     mp: { local: true, idx: i, mode: cfg.mode, len: cfg.mode === 'race' ? cfg.len : 0, seed, t: 0, myEv: null, falls: 0, result: null,
       stormX: START_X - 1100, bolt: 0, boltX: 0, oppEv: null, oppT: 0 } };
 }
-function localStart(cfg) {
+function localStart(cfg, aiLvl) {
   const mode = cfg.mode === 'endurance' ? 'endurance' : 'race';
+  const ai = aiLvl != null && aiLvl >= 0 ? { lvl: clamp(aiLvl | 0, 0, AI_LV.length - 1) } : null;
+  if (LOCAL.on && !!LOCAL.ai !== !!ai) LOCAL.score = [0, 0];
+  LOCAL.ai = ai;
   LOCAL.cfg = { mode, len: [500, 1000, 2000].includes(cfg.len) ? cfg.len : 1000 };
   if (!LOCAL.on) { LOCAL.base = grabWorld(); LOCAL.on = true; LOCAL.score = [0, 0]; }
   curW = -1;
@@ -4597,7 +4639,7 @@ function localStart(cfg) {
 function localExit() {
   if (!LOCAL.on) return;
   putWorld(LOCAL.base);
-  curW = -1; LOCAL.on = false; LOCAL.worlds = null; LOCAL.base = null;
+  curW = -1; LOCAL.on = false; LOCAL.worlds = null; LOCAL.base = null; LOCAL.ai = null;
   game.mp = null;
   localPointers.clear();
   $('hud').classList.remove('local');
@@ -4608,8 +4650,8 @@ function localExit() {
 const localPointers = new Map();
 function localPress(p) { const c = curW; useWorld(p); press(); if (c >= 0) useWorld(c); }
 function localUnpress(p) { const c = curW; useWorld(p); unpress(); if (c >= 0) useWorld(c); }
-function localKey(code) { return code === 'Space' || code === 'KeyA' || code === 'KeyW' ? 0 : (code === 'ArrowUp' || code === 'ArrowDown' || code === 'Enter' || code === 'NumpadEnter' || code === 'KeyL') ? 1 : -1; }
-const localSide = (x, y) => (LOCAL.split === 'v' ? x > cssW / 2 : y > cssH / 2) ? 1 : 0;
+function localKey(code) { if (LOCAL.ai) return code === 'Space' || code === 'ArrowUp' || code === 'ArrowDown' || code === 'Enter' || code === 'NumpadEnter' ? 0 : -1; return code === 'Space' || code === 'KeyA' || code === 'KeyW' ? 0 : (code === 'ArrowUp' || code === 'ArrowDown' || code === 'Enter' || code === 'NumpadEnter' || code === 'KeyL') ? 1 : -1; }
+const localSide = (x, y) => LOCAL.ai ? 0 : (LOCAL.split === 'v' ? x > cssW / 2 : y > cssH / 2) ? 1 : 0;
 
 // wordt elk beeld aangeroepen in plaats van de gewone lus
 function localLoop(dt) {
@@ -4634,7 +4676,7 @@ function localLoop(dt) {
     renderAlpha = acc / STEP;
     for (const i of [0, 1]) {
       useWorld(i);
-      for (let k = 0; k < n; k++) step(DT);
+      for (let k = 0; k < n; k++) { if (LOCAL.ai && i === 1) aiThink(); step(DT); }
       updateEffects(gdt);
       const oy = camY;
       interpBegin(true); updateCamera(gdt); interpEnd();
@@ -4652,7 +4694,7 @@ function localLoop(dt) {
   // tekenen: eerst een donkere scheidingslijn, dan beide beelden
   mainCtx.setTransform(1, 0, 0, 1, 0, 0);
   mainCtx.fillStyle = '#10261a'; mainCtx.fillRect(0, 0, canvas.width, canvas.height);
-  for (const i of [0, 1]) {
+  for (const i of LOCAL.ai ? [0] : [0, 1]) { // tegen Kiwi: alleen jouw beeld, schermvullend
     useWorld(i);
     VOX = i && LOCAL.split === 'v' ? canvas.width - RW : 0;
     VOY = i && LOCAL.split === 'h' ? canvas.height - RH : 0;
@@ -4660,6 +4702,83 @@ function localLoop(dt) {
   }
   VOX = VOY = 0;
 }
+// =====================================================================
+//  Kiwi: de AI-tegenstander (speelt in zijn eigen wereld met dezelfde seed)
+// =====================================================================
+// Kiwi "drukt" net als een speler: vasthouden aan een liaan, loslaten om te springen, en in de lucht
+// ingedrukt houden om een liaan te grijpen. Om te beslissen wanneer hij loslaat, rekent hij vooruit waar
+// hij terecht zou komen als hij nú loslaat, en springt hij op het moment dat dat het verst oplevert.
+// De niveaus verschillen in reactietijd, timing, fouten en hoe goed hij vaart opbouwt.
+const AI_LV = [
+  { name: 'Makkelijk', react: 0.2,  late: [0.06, 0.32], oops: 0.16, grab: 0.72, patience: 0 },
+  { name: 'Normaal',   react: 0.1,  late: [0.02, 0.16], oops: 0.06, grab: 0.88, patience: 0.5 },
+  { name: 'Moeilijk',  react: 0.04, late: [0, 0.07],    oops: 0.02, grab: 1,    patience: 0.8 },
+  { name: 'Expert',    react: 0,    late: [0, 0.02],    oops: 0,    grab: 1,    patience: 1 },
+];
+function aiSet(down) { if (down && !input.down) press(); else if (!down && input.down) unpress(); }
+// waar komt Kiwi uit als hij nu loslaat? (vooruitgerekende vlucht; 0 = nergens te grijpen)
+function aiScore(L) {
+  const m = launchM(0);
+  let vx = G.vx * m + (G.vx > 0 ? 60 : 0), vy = G.vy * m - 50, x = G.x, y = G.y;
+  const R = gripR(0) * L.grab, R2 = R * R, h = 1 / 30;
+  const cand = vines.filter(v => v !== G.vine && v.anchored && v.x > G.x + 40 && v.x < G.x + 1700);
+  if (!cand.length) return 0;
+  for (let i = 0; i < 80; i++) {
+    vy = Math.min(vy + AIR_G * h, MAX_FALL); vx += 55 * h; x += vx * h; y += vy * h;
+    if (y > HAZARD_Y - 40) return 0;
+    for (const v of cand) {
+      if (Math.abs(v.rest[0] - x) > 520) continue;
+      const p = v.pts;
+      for (let j = 3; j < p.length; j += 2) { const dx = p[j].x - x, dy = p[j].y - y; if (dx * dx + dy * dy < R2) return Math.max(1, x - G.x + (j / p.length) * 60); }
+    }
+  }
+  return 0;
+}
+function aiThink() {
+  const A = LOCAL.ai, L = AI_LV[A.lvl];
+  if (!G || game.mode !== 'playing' || G.state === 'dead') { A.relAt = 0; if (input.down && game.mode === 'playing') aiSet(false); return; }
+  A.t = (A.t || 0) + DT;
+  if (G.state === 'stand') { aiSet(!input.down); return; }  // springen van de rots
+  if (G.state === 'rocket') return;
+  if (G.state === 'hang') {
+    A.air = 0;
+    if (!input.down) { if (A.t - (A.lastRel || 0) > 0.05) aiSet(true); return; }
+    if (A.relAt) { if (A.t >= A.relAt) { A.relAt = 0; A.lastRel = A.t; aiSet(false); } return; }
+    const fwd = G.vx > 60;
+    if (!fwd) { A.prev = 0; A.swing = 0; return; }
+    if (!A.swing) { // begin van een voorwaartse zwaai
+      A.swing = 1; A.prev = 0;
+      if (Math.random() < L.oops) { A.relAt = A.t + rand(0.05, 0.25); return; } // foutje: te vroeg los
+    }
+    if ((A.k = (A.k || 0) + 1) % 3) return;
+    const sc = aiScore(L), sp = Math.hypot(G.vx, G.vy);
+    // voorbij het beste moment van deze zwaai: loslaten (met een beetje vertraging, afhankelijk van het niveau)
+    if (A.prev > 0 && sc < A.prev * 0.97) {
+      // goede spelers bouwen eerst meer vaart op als de sprong kort is
+      const short = A.prev < 420 && sp < swingCap() * 0.85 && Math.random() < L.patience;
+      if (!short) A.relAt = A.t + L.react * 0.5 + rand(L.late[0], L.late[1]);
+      A.prev = 0;
+      return;
+    }
+    // niets binnen bereik, maar wel volle vaart: dan maar blind een mooie sprong (rond 40°)
+    if (!sc && !A.prev && sp > swingCap() * 0.9 && G.vy < 0 && Math.abs(G.vy) > G.vx * 0.7) A.relAt = A.t + rand(L.late[0], L.late[1]);
+    if (sc > 0) A.prev = Math.max(A.prev, sc);
+    return;
+  }
+  // in de lucht: ingedrukt houden zodra er een liaan binnen grijpbereik komt (na zijn reactietijd)
+  A.air = (A.air || 0) + DT;
+  const R = gripR(0) + 30;
+  let near = false;
+  for (const v of vines) {
+    if (!v.anchored || Math.abs(v.x - G.x) > 650 || (v === G.lastVine && G.releaseT > 0)) continue;
+    const p = v.pts;
+    for (let j = 2; j < p.length && !near; j += 2) { const dx = p[j].x - G.x, dy = p[j].y - G.y; near = dx * dx + dy * dy < R * R; }
+    if (near) break;
+  }
+  if (near) { A.nearT = (A.nearT || 0) + DT; if (A.nearT >= L.react) aiSet(true); }
+  else { A.nearT = 0; if (A.air > 0.15) aiSet(false); }
+}
+
 // hangt de andere speler aan een liaan, dan buigt die liaan in jouw wereld ook mee
 function localPin(i) {
   const o = LOCAL.worlds[1 - i].G;
@@ -4687,9 +4806,10 @@ function localEnd(w) {
   M.endT = M.t;
   if (w >= 0) LOCAL.score[w]++;
   const race = M.mode === 'race';
-  const why = w < 0 ? (race ? 'Tegelijk over de finish!' : 'Tegelijk gevallen!') : race ? `Speler ${w + 1} was als eerste bij de finish.` : `Speler ${w + 1} hield het langst vol.`;
+  const nm = localName(w), jij = LOCAL.ai && w === 0;
+  const why = w < 0 ? (race ? 'Tegelijk over de finish!' : 'Tegelijk gevallen!') : race ? `${nm} ${jij ? 'was' : 'was'} als eerste bij de finish.` : `${nm} hield het langst vol.`;
   LOCAL.why = why;
-  showBanner(w < 0 ? 'Gelijkspel!' : `Speler ${w + 1} wint!`, why);
+  showBanner(w < 0 ? 'Gelijkspel!' : jij ? 'Gewonnen!' : `${nm} wint!`, why);
   Sfx.jingle(2);
   const c = curW;
   if (w >= 0) { useWorld(w); confetti(G.x + 60, G.y - 160, 140); flashT = 0.3; }
@@ -4700,14 +4820,14 @@ function localEnd(w) {
 function localShowResult() {
   const w = LOCAL.result, race = LOCAL.cfg.mode === 'race';
   $('mpCount').textContent = '';
-  $('mpResTitle').textContent = w < 0 ? 'Gelijkspel!' : `Speler ${w + 1} wint!`;
-  $('mpResSub').textContent = LOCAL.why;
-  $('mpResMe').textContent = 'Speler 1';
-  $('mpResOpp').textContent = 'Speler 2';
+  $('mpResTitle').textContent = w < 0 ? 'Gelijkspel!' : LOCAL.ai && w === 0 ? 'Gewonnen!' : `${localName(w)} wint!`;
+  $('mpResSub').textContent = LOCAL.why + (LOCAL.ai ? ` (Kiwi: ${AI_LV[LOCAL.ai.lvl].name.toLowerCase()})` : '');
+  $('mpResMe').textContent = localName(0);
+  $('mpResOpp').textContent = localName(1);
   const P = [0, 1].map(i => { const W = i === curW ? grabWorld() : LOCAL.worlds[i]; return { M: W.mp, run: W.run }; });
   const row = (label, a, b) => `<div><span style="flex:1">${label}</span><b style="color:#e8322b;min-width:80px;text-align:right">${a}</b><b style="color:#2f7fe0;min-width:90px;text-align:right">${b}</b></div>`;
   const fmt = t => t == null ? '—' : fmtTime(t);
-  let h = row('', 'Speler 1', 'Speler 2');
+  let h = row('', localName(0), localName(1));
   const d = p => Math.floor(race ? Math.min(p.M.len, p.run.dist) : p.run.dist) + ' m';
   if (race) {
     h += row('Finishtijd', fmt(P[0].M.myEv && P[0].M.myEv.t), fmt(P[1].M.myEv && P[1].M.myEv.t));
@@ -4719,7 +4839,7 @@ function localShowResult() {
   }
   h += row('Appels', Math.max(0, Math.floor(P[0].run.earned)), Math.max(0, Math.floor(P[1].run.earned)));
   $('mpResTable').innerHTML = h;
-  $('mpResScore').textContent = `Stand: Speler 1 ${LOCAL.score[0]} – ${LOCAL.score[1]} Speler 2`;
+  $('mpResScore').textContent = `Stand: ${localName(0)} ${LOCAL.score[0]} – ${LOCAL.score[1]} ${localName(1)}`;
   mpAgainRender();
   showScreen('mpRes');
 }
@@ -4735,7 +4855,7 @@ function drawLocalHud() {
   let extra = '⏱ ' + t;
   if (M.mode === 'endurance') extra += G.state === 'dead' ? ' · af' : ` · 🌩️ ${Math.max(0, Math.floor((G.x - M.stormX) / PX_PER_M))} m`;
   ctx.font = `900 ${18 * u}px Trebuchet MS, sans-serif`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
-  const label = `Speler ${M.idx + 1}`, lw = ctx.measureText(label).width;
+  const label = localName(M.idx), lw = ctx.measureText(label).width;
   const pill = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(x + h / 2, y); ctx.arcTo(x + w, y, x + w, y + h, h / 2); ctx.arcTo(x + w, y + h, x, y + h, h / 2); ctx.arcTo(x, y + h, x, y, h / 2); ctx.arcTo(x, y, x + w, y, h / 2); ctx.fill(); };
   const x0 = 12 * u, y0 = 12 * u, h = 30 * u;
   pill(x0, y0, lw + 22 * u, h, col);
@@ -5280,16 +5400,19 @@ on('btnMpHost', () => { MP.local = false; mpLobbyHost(); });
 on('btnMpShare', mpShare);
 on('btnMpManualHost', () => { MP.local = false; mpHost(); });
 on('btnMpJoin', () => { MP.local = false; mpJoinStart(); });
-on('btnMpLocal', () => { mpClose(false); MP.local = true; mpMsg(''); mpRender(); });
+on('btnMpLocal', () => { mpClose(false); MP.local = true; MP.aiLvl = null; mpMsg(''); mpRender(); });
+const AI_KEY = 'andyApples.aiLevel';
+on('btnMpAi', () => { mpClose(false); MP.local = true; let l = 1; try { l = clamp(+(localStorage.getItem(AI_KEY) || 1), 0, 3); } catch (e) { /* */ } MP.aiLvl = l; mpMsg(''); mpRender(); });
+for (const b of document.querySelectorAll('[data-ai]')) on(b, () => { MP.aiLvl = +b.dataset.ai; try { localStorage.setItem(AI_KEY, MP.aiLvl); } catch (e) { /* */ } mpRender(); });
 on('btnMpConnect', mpConnect);
 on('btnMpMakeAnswer', mpMakeAnswer);
 on('btnMpCopyOffer', () => mpCopy('mpOffer'));
 on('btnMpCopyAnswer', () => mpCopy('mpAnswer'));
-on('btnMpCancel', () => { if (MP.local) MP.local = false; else mpClose(MP.connected); mpMsg(''); mpRender(); });
+on('btnMpCancel', () => { if (MP.local) { MP.local = false; MP.aiLvl = null; } else mpClose(MP.connected); mpMsg(''); mpRender(); });
 on('mpModeRace', () => mpSelect('race'));
 on('mpModeEnd', () => mpSelect('endurance'));
 for (const b of document.querySelectorAll('.mp-len')) on(b, () => mpSelect(null, +b.dataset.len));
-on('btnMpStart', () => MP.local ? localStart(MP.sel) : mpHostStart(MP.sel));
+on('btnMpStart', () => MP.local ? localStart(MP.sel, MP.aiLvl) : mpHostStart(MP.sel));
 on('btnMpAgain', mpAgain);
 on('btnMpLobby', () => { mpLeaveMatch(); openMp(); });
 on('btnMpLeave', toMenu);
@@ -5478,7 +5601,7 @@ function updateHud() {
   if (!run) return;
   const M = game.mp;
   if (M && M.local) {
-    setText('hint', game.mode === 'mpcount' ? 'Speler 1: SPATIE (of links tikken) · Speler 2: ↑ of ENTER (of rechts tikken)' : '');
+    setText('hint', game.mode === 'mpcount' ? (LOCAL.ai ? 'Houd bij GO! ingedrukt om meteen te springen' : 'Speler 1: SPATIE (of links tikken) · Speler 2: ↑ of ENTER (of rechts tikken)') : '');
     $('hint').classList.toggle('pulse', game.mode === 'mpcount');
     return;
   }
