@@ -456,8 +456,10 @@ function updateGorilla(dt, holdHang, holdAir) {
     G.diving = G.dive > 0.25;
     const falling = G.vy > 0 && G.dive < 0.1, wing = lvl('wingsuit');
     const glide = falling ? 1 - 0.07 * wing : 1;
-    const space = run.space && G.y < SPACE_Y;
-    G.vy += AIR_G * glide * (space ? 0.45 : 1) * (1 + 2.8 * G.dive) * dt;
+    // in de ruimte: bijna gewichtloos, en een zachte kracht houdt je in de ruimteband (tot je duikt of de tijd op is)
+    const space = run.space && G.y < SPACE_Y + 600, float = space && run.spaceT < SPACE_TIME && G.dive < 0.25;
+    G.vy += AIR_G * glide * (space ? 0.16 : 1) * (1 + 2.8 * G.dive) * dt;
+    if (float && G.y > SPACE_Y - 250) G.vy -= Math.min(900, (G.y - (SPACE_Y - 250)) * 1.6) * dt + G.vy * Math.min(1, dt * 1.2) * (G.vy > 0 ? 1 : 0);
     // ook zonder wingsuit-upgrade drijft Andy een klein beetje naar voren: zo kom je nooit hulpeloos
     // recht naar beneden vast te zitten tussen twee lianen in
     G.vx += 55 * dt;
@@ -554,7 +556,7 @@ function updateGorilla(dt, holdHang, holdAir) {
       confetti(G.x, G.y - 40, 30);
       Sfx.milestone();
       run.nextMile += 100;
-      const rain = lvl('rain');
+      const rain = Math.round(lvl('rain') * 3) / 3;
       if (rain) { // appelregen
         const gc = goldChance(lvl('golden'));
         for (let i = 0; i < 3 + rain * 3; i++) apples.push({ x: G.x + rand(120, 620), y: camY - rand(20, 260), rel: rand(120, 620), vy: rand(40, 140), rain: true, gold: Math.random() < gc, t: 0 });
@@ -607,8 +609,8 @@ function updateFoes(dt) {
 
 function updateApples(dt) {
   // op hoge snelheid reikt de magneet verder (tot 2× bij 1500 px/s), anders vlieg je er in een paar frames langs
-  const sm = powOn('magnet'), ml = sm ? 5 : lvl('magnet'); // power-up supermagneet: even de sterkste magneet
-  const mr = magnetR(ml) * (sm ? 1.3 : 1) * (1 + clamp(Math.hypot(G.vx, G.vy) / 1500, 0, 1)), pull = magnetPull(ml);
+  const sm = powOn('magnet'), ml = sm ? 5 : lvl('magnet'); // power-up supermagneet: even de sterkste magneet, extra ver
+  const mr = magnetR(ml) * (sm ? 1.8 : 1) * (1 + 0.5 * clamp(Math.hypot(G.vx, G.vy) / 1600, 0, 1)), pull = magnetPull(ml) * (sm ? 1.6 : 1);
   const alive = game.mode === 'playing' && (G.state === 'hang' || G.state === 'air' || G.state === 'rocket' || G.state === 'swim');
   for (let i = apples.length - 1; i >= 0; i--) {
     const a = apples[i];
@@ -853,9 +855,11 @@ function spawnJet() {
 }
 
 // ---- Ruimte ----
-// Een ballonpad (SPACE_PATH gouden ballonnen op volgorde) lanceert Andy de ruimte in. Daar is bijna geen zwaartekracht,
-// hangen sterrenlianen aan zwevende planetoïden, kun je van losse planetoïden stuiteren en vliegt er een ufo rond.
-const SPACE_PATH = 3, SPACE_Y = -3000, SPACE_G = 0.6;
+// Een ballonpad (SPACE_PATH gouden ballonnen op volgorde) lanceert Andy de ruimte in; wie zonder ballonnen heel hoog
+// komt (boven SPACE_ENTER_Y) wordt er ook in getrokken. Daar is bijna geen zwaartekracht en houdt een zachte kracht
+// je in de ruimteband (SPACE_Y), tot SPACE_TIME seconden om zijn of tot je duikt. Er hangen steeds nieuwe
+// sterrenlianen aan zwevende planetoïden, je kunt van losse planetoïden stuiteren en er vliegt een ufo rond.
+const SPACE_PATH = 3, SPACE_Y = -3000, SPACE_G = 0.35, SPACE_ENTER_Y = -1900, SPACE_TIME = 35;
 function checkSpaceLaunch(v) {
   const b = v.balloon;
   // alleen als alle ballonnen van dit pad op volgorde zijn gepakt
@@ -879,12 +883,19 @@ function addSpaceVine(x, ay) {
 function spawnSpace() {
   const x0 = G.x, y0 = G.y;
   // sterrenlianen aan zwevende planetoïden, in een golvend spoor vooruit
-  for (let i = 0; i < 12; i++) addSpaceVine(x0 + 350 + i * 430 + rand(-40, 40), y0 - 330 - Math.sin(i * 0.9) * 180 - rand(0, 120));
-  // losse planetoïden om van te stuiteren
-  for (let i = 0; i < 7; i++) spaceObjs.push({ type: 'rock', x: x0 + 600 + i * 700 + rand(-100, 100), y: y0 - rand(0, 900), r: rand(34, 56), ph: rand(0, 6), spin: rand(-0.6, 0.6), cd: 0 });
-  // een ufo die met je meevliegt (aanraken = bonus) en een paar satellieten
+  run.spaceX = x0 + 350;
+  spaceMore(Math.min(y0, SPACE_Y - 300));
+  // een ufo die met je meevliegt (aanraken = bonus)
   spaceObjs.push({ type: 'ufo', x: x0 + 900, y: y0 - 500, t: 0, done: false });
-  for (let i = 0; i < 3; i++) spaceObjs.push({ type: 'sat', x: x0 + 1200 + i * 1500 + rand(-200, 200), y: y0 - rand(200, 800), ph: rand(0, 6) });
+}
+// het volgende stuk ruimte vooruit: sterrenlianen, planetoïden, een satelliet en sterappels
+function spaceMore(yc) {
+  const x0 = run.spaceX;
+  for (let i = 0; i < 8; i++) addSpaceVine(x0 + i * 430 + rand(-40, 40), yc - Math.sin((x0 / 430 + i) * 0.9) * 200 - rand(0, 120));
+  for (let i = 0; i < 4; i++) spaceObjs.push({ type: 'rock', x: x0 + 250 + i * 850 + rand(-100, 100), y: yc + rand(-500, 400), r: rand(34, 56), ph: rand(0, 6), spin: rand(-0.6, 0.6), cd: 0 });
+  spaceObjs.push({ type: 'sat', x: x0 + 1600 + rand(-300, 300), y: yc - rand(200, 700), ph: rand(0, 6) });
+  for (let i = 0; i < 10; i++) { const t = i / 9; apples.push({ x: x0 + 300 + t * 2800, y: yc + 150 - Math.sin(t * Math.PI) * 450, gold: true, t: Math.random() * 6 }); }
+  run.spaceX = x0 + 8 * 430;
 }
 function updateSpace(dt) {
   for (let i = spaceObjs.length - 1; i >= 0; i--) { // opruimen wat ver achter je ligt
@@ -893,19 +904,29 @@ function updateSpace(dt) {
   }
   if (game.mode !== 'playing') return;
   run.launchT = (run.launchT || 0) - dt;
+  // heel hoog gekomen zonder ballonpad: de ruimte trekt je de rest van de weg omhoog
+  if (!run.space && !run.under && G.state === 'air' && G.y < SPACE_ENTER_Y && G.vy < 0 && run.launchT <= 0) {
+    G.vy = Math.min(G.vy, -1600); G.noDive = true; run.launchT = 4;
+    floatText(G.x, G.y - 70, 'Zó hoog! De ruimte trekt je omhoog! 🌌', '#e2d6ff', 26);
+    shake(5, 0.3); Sfx.rocket();
+  }
   const inSpace = G.y < SPACE_Y - 200;
+  if (run.space) run.spaceT += dt;
   if (inSpace && !run.space && run.launchT > 0) {
-    run.space = true; run.spaceVisits++;
+    run.space = true; run.spaceVisits++; run.spaceT = 0;
     run.earned += 25;
     showBanner('🚀 In de ruimte!', 'Slinger aan de sterrenlianen, stuiter op planetoïden en pak de sterappels! +25 🍎');
     confetti(G.x + 150, G.y - 100, 80); flashT = 0.4; Sfx.jingle(5);
     // sterappels (goud) in een grote boog vooruit
     for (let i = 0; i < 24; i++) { const t = i / 23; apples.push({ x: G.x + 250 + t * 2000, y: G.y - 250 - Math.sin(t * Math.PI) * 900 + t * 900, gold: true, t: Math.random() * 6 }); }
     spawnSpace();
-  } else if (run.space && G.y > SPACE_Y + 400) {
+  } else if (run.space && G.y > SPACE_Y + 1100) {
     run.space = false;
-    floatText(G.x, G.y - 60, 'Terug naar de jungle!', '#ffffff', 24);
+    floatText(G.x, G.y - 60, 'Terug naar beneden!', '#ffffff', 24);
   }
+  if (run.space && run.spaceT < SPACE_TIME && run.spaceX < G.x + 2600) spaceMore(SPACE_Y - 350); // steeds meer ruimte vooruit
+  if (run.space && run.spaceT >= SPACE_TIME && !run.spaceBye) { run.spaceBye = true; floatText(G.x, G.y - 70, 'Je zuurstof is op! Terug naar beneden 🪂', '#ffffff', 24); }
+  if (!run.space) run.spaceBye = false;
   const alive = G.state === 'air' || G.state === 'hang';
   for (const o of spaceObjs) {
     if (o.type === 'rock') {

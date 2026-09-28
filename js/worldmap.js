@@ -9,6 +9,7 @@
 const MAP = {
   w: 0, at: 1, startW: null, sel: 1, cam: { x: 0, z: 0 }, zoom: 1, t: 0, walk: null, cine: null, go: null, load: null,
   cv: null, g: null, W: 0, H: 0, dpr: 1, F: 1, cy: 0, hits: [], pop: {}, fill: null, yaw: Math.PI - 0.4, cheer: false,
+  free: null, uz: 1, ptr: new Map(), drag: null, // zelf rondkijken: vrije camera, eigen zoom, aanrakingen
 };
 const MAP_SPAN = 3300, MAP_GAP = 1900;      // breedte van een eiland en de zee tussen twee eilanden
 const MAP_PITCH = Math.atan2(400, 700);     // hoe schuin de camera naar beneden kijkt
@@ -482,10 +483,13 @@ function mapUpdate(dt) {
   let dy = ((ty - MAP.yaw) % (Math.PI * 2) + Math.PI * 3) % (Math.PI * 2) - Math.PI;
   MAP.yaw += dy * Math.min(1, dt * 10);
   // camera volgt Andy (of het filmpje); bij een overtocht zoomt hij uit, bij het kiezen van een level in
-  const C = MAP.cine, tgt = C && C.cam ? C.cam : { x: A.x + 60, z: 280 + (A.z - 280) * 0.7 };
-  const k = Math.min(1, dt * (C && C.fast ? 1.3 : 3.2));
+  // zelf rondkijken (slepen) geldt tot Andy weer gaat lopen, een filmpje begint of je een level kiest
+  const C = MAP.cine;
+  if (MAP.walk || C || MAP.go || MAP.fill) MAP.free = null;
+  const tgt = C && C.cam ? C.cam : MAP.free || { x: A.x + 60, z: 280 + (A.z - 280) * 0.7 };
+  const k = Math.min(1, dt * (C && C.fast ? 1.3 : MAP.free ? 14 : 3.2));
   MAP.cam.x += (tgt.x - MAP.cam.x) * k; MAP.cam.z += (tgt.z - MAP.cam.z) * k;
-  const zt = MAP.go ? 2.6 : C && C.fast ? 0.72 : 1;
+  const zt = MAP.go ? 2.6 : C && C.fast ? 0.72 : MAP.uz; // uz: zelf in- of uitgezoomd (scrollwiel, knijpen)
   MAP.zoom += (zt - MAP.zoom) * Math.min(1, dt * (MAP.go ? 2.2 : 2.5));
   if (C) { C.t += dt; if (C.t >= C.dur) { MAP.cine = null; if (C.cb) C.cb(); } } // de knoppen komen pas terug na het hele filmpje (finish)
   // level gekozen: inzoomen, cirkel sluit zich rond Andy, dan het laadscherm
@@ -523,7 +527,7 @@ function drawMapGo(g) {
 function openCareer() {
   if (!MAP.cv) { MAP.cv = $('mapCanvas'); MAP.g = MAP.cv.getContext('2d'); mapResize(); }
   const C = save.career, target = C.unlocked;
-  MAP.walk = null; MAP.fill = null; MAP.cine = null; MAP.startW = null; MAP.go = null; MAP.load = null; MAP.cheer = false; MAP.zoom = 1;
+  MAP.walk = null; MAP.fill = null; MAP.cine = null; MAP.startW = null; MAP.go = null; MAP.load = null; MAP.cheer = false; MAP.zoom = MAP.uz; MAP.free = null;
   MAP.at = clamp(C.at || 1, 1, target); if (C.anim < target && C.anim >= 1) MAP.at = C.anim;
   if (C.anim < 1) { MAP.at = 0; MAP.startW = 0; }
   MAP.sel = Math.max(1, MAP.at);
@@ -589,7 +593,7 @@ function mapGo(n) {
   if (mapBusy() || MAP.walk) return;
   n = clamp(n, 1, save.career.unlocked);
   const cur = Math.max(1, MAP.at);
-  MAP.sel = n; mapRenderUi();
+  MAP.sel = n; mapRenderUi(); MAP.free = null;
   if (worldOf(n) !== worldOf(cur)) { MAP.at = n; MAP.startW = null; const A = mapAndyPos(); MAP.cam.x = A.x + 60; MAP.cam.z = 280 + (A.z - 280) * 0.7; save.career.at = n; return; } // andere wereld: er meteen heen
   mapWalk(cur, n, () => { save.career.at = n; });
 }
@@ -706,7 +710,49 @@ function careerInit() {
   const wj = d => { const w = clamp(worldOf(Math.max(1, MAP.sel)) + d, 0, worldOf(save.career.unlocked)); mapGo(Math.min(save.career.unlocked, mapLevelAt(w, 0))); };
   on('btnMapPrevW', () => wj(-1));
   on('btnMapNextW', () => wj(1));
-  $('mapCanvas').addEventListener('pointerdown', e => { e.preventDefault(); Sfx.init(); const [x, y] = toGame(e.clientX, e.clientY); mapTap(x, y); });
+  // Kaart: tikken/klikken = naar een level lopen of spelen; slepen (linkermuisknop of vinger) = rondkijken;
+  // scrollwiel of knijpen met twee vingers = in- en uitzoomen
+  const cv = $('mapCanvas');
+  cv.addEventListener('pointerdown', e => {
+    e.preventDefault(); Sfx.init();
+    if (e.button > 0) return;
+    try { cv.setPointerCapture(e.pointerId); } catch (er) { /* niet nodig */ }
+    MAP.ptr.set(e.pointerId, toGame(e.clientX, e.clientY));
+    if (MAP.ptr.size === 1) MAP.drag = { p: toGame(e.clientX, e.clientY), moved: 0 };
+    else { MAP.drag = null; MAP.pinch = mapPinchDist(); MAP.pinchZ = MAP.uz; }
+  });
+  cv.addEventListener('pointermove', e => {
+    if (!MAP.ptr.has(e.pointerId)) return;
+    const p = toGame(e.clientX, e.clientY);
+    MAP.ptr.set(e.pointerId, p);
+    if (MAP.ptr.size >= 2 && MAP.pinch) { mapSetZoom(MAP.pinchZ * mapPinchDist() / MAP.pinch); return; }
+    const D = MAP.drag;
+    if (!D) return;
+    const dx = p[0] - D.p[0], dy = p[1] - D.p[1];
+    D.moved += Math.abs(dx) + Math.abs(dy); D.p = p;
+    if (D.moved > 8 && !mapBusy() && !MAP.walk) mapPan(dx, dy);
+  });
+  const up = e => {
+    if (!MAP.ptr.has(e.pointerId)) return;
+    const p = MAP.ptr.get(e.pointerId);
+    MAP.ptr.delete(e.pointerId);
+    if (MAP.ptr.size < 2) MAP.pinch = 0;
+    const D = MAP.drag;
+    MAP.drag = null;
+    if (D && D.moved <= 8 && e.type === 'pointerup') mapTap(p[0], p[1]); // geen sleep: gewoon een tik
+  };
+  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+  cv.addEventListener('wheel', e => { e.preventDefault(); if (!mapBusy()) mapSetZoom(MAP.uz * Math.exp(-e.deltaY * 0.0015)); }, { passive: false });
+}
+function mapPinchDist() { const [a, b] = [...MAP.ptr.values()]; return Math.max(1, Math.hypot(a[0] - b[0], a[1] - b[1])); }
+function mapSetZoom(z) { MAP.uz = clamp(z, 0.55, 2.2); }
+// de camera verschuiven met een sleep (dx, dy in schermpixels), binnen de vrijgespeelde eilanden
+function mapPan(dx, dy) {
+  const k = MAP.F / MAP_DIST, F = MAP.free || (MAP.free = { x: MAP.cam.x, z: MAP.cam.z });
+  F.x -= dx / k; F.z += dy / (k * 0.55);
+  const wu = worldOf(save.career.unlocked);
+  F.x = clamp(F.x, worldX0(0) - 300, worldX0(wu) + MAP_SPAN + 300); F.z = clamp(F.z, -100, 1300);
+  MAP.cam.x = F.x; MAP.cam.z = F.z;
 }
 // toetsen op de kaart (vanuit de algemene toetsenafhandeling in game.js)
 function mapKey(code) {

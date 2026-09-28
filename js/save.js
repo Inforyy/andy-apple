@@ -7,7 +7,7 @@
 // =====================================================================
 const SAVE_KEY = 'andyApples.save.v1';
 function defaultSave() {
-  return { version:3, apples:0, xp:0, upgrades:{}, best:0, totalApples:0, totalDistance:0, runs:0, maxBiome:0, sound:true, music:true, sfxVol:0.8, musicVol:0.8, lbBest:0, mpGames:0, mpWins:0, chaseBest:0, boxes:0, cosm:{ own:[], color:'', hat:'', suit:'' }, career:{ lpw:LEVELS_PER_WORLD, unlocked:1, anim:0, at:1, stars:Array.from({ length: LEVELS }, () => 0) } };
+  return { version:3, upt:1, apples:0, xp:0, upgrades:{}, best:0, totalApples:0, totalDistance:0, runs:0, maxBiome:0, sound:true, music:true, sfxVol:0.8, musicVol:0.8, lbBest:0, mpGames:0, mpWins:0, chaseBest:0, boxes:0, cosm:{ own:[], color:'', hat:'', suit:'' }, career:{ lpw:LEVELS_PER_WORLD, unlocked:1, anim:0, at:1, stars:Array.from({ length: LEVELS }, () => 0) } };
 }
 // Oude carrière (5 levels per wereld, het 5e was de baas) omzetten naar LEVELS_PER_WORLD per wereld:
 // levels 1-4 blijven, de baas wordt het kasteel (laatste level); de nieuwe levels ertussen moet je nog spelen.
@@ -64,7 +64,9 @@ function normalizeSave(o) {
   s.career.at = clamp(num(c.at) || s.career.unlocked, 1, s.career.unlocked);
   s.career.lpw = LEVELS_PER_WORLD;
   const up = (o.upgrades && typeof o.upgrades === 'object') ? o.upgrades : {};
-  for (const u of UPGRADES) s.upgrades[u.id] = clamp(num(up[u.id]), 0, u.max);
+  // upt: upgrades staan in stapjes (tiers). Oudere saves telden hele niveaus: die worden omgerekend.
+  const oldLv = !('upt' in o);
+  for (const u of UPGRADES) s.upgrades[u.id] = clamp(num(up[u.id]) * (oldLv ? u.tiers : 1), 0, u.steps);
   return s;
 }
 function loadSave() {
@@ -80,7 +82,15 @@ function persist() {
 }
 let save = loadSave();
 // tijdens multiplayer staan alle upgrades uit: iedereen speelt met een gewone Andy
-const lvl = id => game.mp ? 0 : (save.upgrades[id] || 0);
+// upSteps: hoeveel stapjes (tiers) van een upgrade gekocht zijn. lvl: het effectieve niveau (0..max, met tussenstapjes),
+// 0 in multiplayer en veel zwakker in de carrière (CAREER_UP; tellers zoals ballonnen blijven hele getallen).
+const upSteps = id => save.upgrades[id] || 0;
+const UP_BY_ID = Object.fromEntries(UPGRADES.map(u => [u.id, u]));
+function lvl(id) {
+  if (game.mp) return 0;
+  const u = UP_BY_ID[id], l = upSteps(id) / u.tiers * (game.career ? CAREER_UP : 1);
+  return u.whole ? Math.floor(l + 1e-9) : l;
+}
 
 function checksum(str) { // FNV-1a
   let h = 0x811c9dc5;

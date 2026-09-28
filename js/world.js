@@ -197,7 +197,7 @@ function genNext() {
   // eindeloze modus: hoe sneller Andy gaat, hoe ruimer de lianen staan (anders wordt het te druk)
   const fast = !game.career && !game.mp && G ? clamp((Math.abs(G.vx) - 700) / 900, 0, 1) : 0;
   // meer upgrades = grotere gaten en vaker een ontbrekende liaan; rond een biomegrens juist even rustig (buffer)
-  const up = upgradePower(), calm = inBiomeBuffer(m);
+  const up = upgradePower() * (game.career ? CAREER_UP : 1), calm = inBiomeBuffer(m); // carrière: upgrades tellen maar voor een deel
   const x = gen.x + grand(470, 520) + dx * grand(40, 140) + fast * grand(140, 260) + (calm ? 0 : up * grand(60, 170));
   const vbi = biomeIndexAt((x - START_X) / PX_PER_M);
   gen.col++;
@@ -273,7 +273,7 @@ function genNext() {
   if (calm) { gen.x = x; gen.low = low; gen.tips = laneTips; return; } // buffer rond een biomegrens: geen vijanden
   // carrière: tijdelijke power-ups (vaste plekken per level: hash, geen genRandom, zodat de wereld gelijk blijft)
   if (C && m > 40 && x < C.finishX - 400 && hash(gen.col * 7.31 + C.n * 13.7) < (C.boss ? 0.16 : 0.1)) {
-    const types = C.boss ? ['star', 'star', 'wings', 'clock', 'magnet'] : ['star', 'magnet', 'wings', 'turbo', 'clock'];
+    const types = C.boss ? ['star', 'star', 'wings', 'clock', 'magnet', 'slow', 'slow'] : ['star', 'magnet', 'wings', 'turbo', 'clock', 'slow'];
     pups.push({ x: mid, y: clamp(LANES[(hash(gen.col * 3.7) * 3) | 0] + 330, CEIL_Y + 100, HAZARD_Y - 180), type: types[(hash(gen.col * 1.9 + C.n) * types.length) | 0], t: 0 });
   }
   const fk = (1 + 0.6 * d) * (C && C.ch.includes('swarm') ? 2.5 : 1);

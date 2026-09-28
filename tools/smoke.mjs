@@ -221,7 +221,7 @@ async function main() {
   // oude carrière (5 levels per wereld) wordt omgezet
   check(await js(`(() => { const s = normalizeSave({ career: { unlocked: 13, anim: 13, at: 12, stars: [3, 3, 3, 3, 2, 1, 1, 1, 1, 1, 1, 1] } }).career; return s.unlocked === 19 && s.stars[7] === 2 && s.stars[4] === 0 && s.stars[8] === 1 && s.lpw === LEVELS_PER_WORLD; })()`), 'oude carrière-voortgang omgezet naar 8 levels per wereld');
   // moeilijkheid schaalt mee met de upgrades
-  check(await js(`(() => { const u = __andy.save.upgrades, keep = Object.assign({}, u); const a = levelInfo(20); for (const x of UPGRADES) u[x.id] = x.max; const b = levelInfo(20); Object.assign(u, keep); return b.diff > a.diff + 0.5 && b.time < a.time; })()`), 'met alle upgrades is een level zwaarder en krapper');
+  check(await js(`(() => { const u = __andy.save.upgrades, keep = Object.assign({}, u); const a = levelInfo(20); for (const x of UPGRADES) u[x.id] = x.steps; const b = levelInfo(20); Object.assign(u, keep); return b.diff > a.diff + 0.2 && b.time < a.time; })()`), 'met alle upgrades is een level zwaarder en krapper');
   // baasgevecht met tijdslimiet en harten
   await js('__andy.startReady(16)');
   check(await js('!!__andy.run.boss && __andy.run.hearts === 3 && __andy.run.timeLeft > 0'), 'baasgevecht: baas, 3 harten en een tijdslimiet');

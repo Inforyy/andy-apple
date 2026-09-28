@@ -94,8 +94,8 @@ function features(bi) {
 const gripR      = l => 34 + 7 * l;
 const pumpA      = l => 600 * (1 + 0.22 * l);
 const launchM    = l => 1.16 + 0.07 * l;
-const magnetR    = l => l ? 130 + 70 * l : 0;   // bereik in rust (level 5: 480); groeit mee met je snelheid, zie updateApples
-const magnetPull = l => 1500 + 250 * l;         // hoe hard de magneet trekt
+const magnetR    = l => l ? 70 + 34 * l : 0;    // bereik in rust (level 5: 240); groeit iets mee met je snelheid, zie updateApples
+const magnetPull = l => 900 + 160 * l;          // hoe hard de magneet trekt
 const appleVal   = l => 1 + 0.5 * l;
 const goldChance = l => 0.03 + 0.025 * l;
 const rocketDist = l => 150 * l;
@@ -107,23 +107,31 @@ const comboWin   = l => 0.8 + 0.3 * l;
 const applesPerPick = (bi, m) => appleVal(lvl('value')) + Math.max(BIOMES[bi].bonus, !game.career && m >= CYCLE_START ? BIOMES[BIOMES.length - 1].bonus : 0);
 const fmtNum = n => (Math.round(n * 10) / 10).toString().replace('.', ',');
 
+// Elke upgrade heeft max niveaus, en elk niveau is opgedeeld in tiers kleinere stapjes (standaard 3). Een stapje
+// kost ongeveer wat vroeger een heel niveau kostte (zie upCost), dus alles maximaal duurt veel langer zonder
+// dat een aankoop duurder wordt. whole: alleen hele niveaus (tellers zoals ballonnen en helmen).
+const R0 = n => Math.round(n);
 const UPGRADES = [
-  { id:'grip',    icon:'✋', name:'Lange armen',    info:'Grijp lianen van verder weg.',                          max:5, base:25,  growth:1.8,  fx:l => `${gripR(l)} bereik` },
-  { id:'swing',   icon:'🌀', name:'Zwaaikracht',    info:'Zwaai harder en sneller.',              max:5, base:30,  growth:1.8,  fx:l => `+${l * 22}% zwaai, max ${1250 + 120 * l}` },
-  { id:'launch',  icon:'💨', name:'Lanceerkracht',  info:'Meer vaart bij het loslaten.',                        max:5, base:40,  growth:1.85, fx:l => `+${l * 7}% vaart, top ${1600 + 130 * l}` },
-  { id:'magnet',  icon:'🧲', name:'Appelmagneet',   info:'Trekt appels naar je toe.',                 max:5, base:35,  growth:1.8,  fx:l => l ? `${magnetR(l)} bereik` : 'geen' },
+  { id:'grip',    icon:'✋', name:'Lange armen',    info:'Grijp lianen van verder weg.',                          max:5, base:25,  growth:1.8,  fx:l => `${R0(gripR(l))} bereik` },
+  { id:'swing',   icon:'🌀', name:'Zwaaikracht',    info:'Zwaai harder en sneller.',              max:5, base:30,  growth:1.8,  fx:l => `+${R0(l * 22)}% zwaai, max ${R0(1250 + 120 * l)}` },
+  { id:'launch',  icon:'💨', name:'Lanceerkracht',  info:'Meer vaart bij het loslaten.',                        max:5, base:40,  growth:1.85, fx:l => `+${R0(l * 7)}% vaart, top ${R0(1600 + 130 * l)}` },
+  { id:'magnet',  icon:'🧲', name:'Appelmagneet',   info:'Trekt appels naar je toe.',                 max:5, base:35,  growth:1.8,  fx:l => l ? `${R0(magnetR(l))} bereik` : 'geen' },
   { id:'value',   icon:'🧺', name:'Appeloogst',     info:'Elke appel telt voor meer.', max:5, base:50, growth:1.9, fx:l => `×${fmtNum(appleVal(l))} per appel` },
-  { id:'golden',  icon:'✨', name:'Gouden appels',  info:'Meer gouden appels (5 waard).',                  unlock:4, max:4, base:45,  growth:1.9,  fx:l => `${Math.round(goldChance(l) * 100)}% kans` },
-  { id:'balloon', icon:'🎈', name:'Reddingsballon', info:'Redt je als je valt.',                     max:3, base:80,  growth:2.2,  fx:l => `${l}× per run` },
-  { id:'helmet',  icon:'⛑️', name:'Helm',           info:'Vijanden stelen geen appels.',         unlock:6, max:3, base:70,  growth:2.2,  fx:l => `${l}× per run` },
-  { id:'rocket',  icon:'🚀', name:'Raketstart',     info:'Begin met een raketvlucht.',                   unlock:20, max:4, base:120, growth:2.0,  fx:l => l ? `${rocketDist(l)} m` : 'geen' },
+  { id:'golden',  icon:'✨', name:'Gouden appels',  info:'Meer gouden appels (5 waard).',                  unlock:4, max:4, base:45,  growth:1.9,  fx:l => `${fmtNum(goldChance(l) * 100)}% kans` },
+  { id:'balloon', icon:'🎈', name:'Reddingsballon', info:'Redt je als je valt.',                     max:3, base:80,  growth:2.2,  whole:true, fx:l => `${l}× per run` },
+  { id:'helmet',  icon:'⛑️', name:'Helm',           info:'Vijanden stelen geen appels.',         unlock:6, max:3, base:70,  growth:2.2,  whole:true, fx:l => `${l}× per run` },
+  { id:'rocket',  icon:'🚀', name:'Raketstart',     info:'Begin met een raketvlucht.',                   unlock:20, max:4, base:120, growth:2.0,  fx:l => l ? `${R0(rocketDist(l))} m` : 'geen' },
   { id:'parrot',  icon:'🦜', name:'Papegaaimaatje', info:'Een papegaai plukt appels voor je.',  unlock:14, max:4, base:90,  growth:2.0,  fx:l => l ? `elke ${fmtNum(parrotCd(l))} s een appel` : 'geen' },
-  { id:'rain',    icon:'🌧️', name:'Appelregen',     info:'Appelregen bij elke 100 m.',        unlock:16, max:3, base:60,  growth:2.0,  fx:l => l ? `${3 + l * 3} appels per 100 m` : 'geen' },
-  { id:'combo',   icon:'🔥', name:'Comboketting',   info:'Langere combo\'s, meer bonus.',  unlock:8, max:3, base:55,  growth:2.0,  fx:l => `${fmtNum(comboWin(l))} s · bonus ×${1 + l}` },
-  { id:'vinewise',icon:'🌿', name:'Liaankenner',    info:'Sterkere rotte lianen, minder glad ijs.', unlock:12, max:3, base:50, growth:2.0, fx:l => l ? `+${l * 40}% grip` : 'geen' },
-  { id:'wingsuit',icon:'🦸', name:'Wingsuit',       info:'Glijd veel verder door de lucht.', max:4, base:110, growth:2.0, fx:l => l ? `+${l * 25}% glijvlucht` : 'geen' },
-  { id:'shroom',  icon:'🍄', name:'Stuiterzwam',    info:'Meer en sterkere paddenstoelen.',  unlock:10, max:3, base:40,  growth:1.9,  fx:l => l ? `+${l * 40}% paddenstoelen` : 'geen' },
+  { id:'rain',    icon:'🌧️', name:'Appelregen',     info:'Appelregen bij elke 100 m.',        unlock:16, max:3, base:60,  growth:2.0,  fx:l => l ? `${R0(3 + l * 3)} appels per 100 m` : 'geen' },
+  { id:'combo',   icon:'🔥', name:'Comboketting',   info:'Langere combo\'s, meer bonus.',  unlock:8, max:3, base:55,  growth:2.0,  fx:l => `${fmtNum(comboWin(l))} s · bonus ×${fmtNum(1 + l)}` },
+  { id:'vinewise',icon:'🌿', name:'Liaankenner',    info:'Sterkere rotte lianen, minder glad ijs.', unlock:12, max:3, base:50, growth:2.0, fx:l => l ? `+${R0(l * 40)}% grip` : 'geen' },
+  { id:'wingsuit',icon:'🦸', name:'Wingsuit',       info:'Glijd veel verder door de lucht.', max:4, base:110, growth:2.0, fx:l => l ? `+${R0(l * 25)}% glijvlucht` : 'geen' },
+  { id:'shroom',  icon:'🍄', name:'Stuiterzwam',    info:'Meer en sterkere paddenstoelen.',  unlock:10, max:3, base:40,  growth:1.9,  fx:l => l ? `+${R0(l * 40)}% paddenstoelen` : 'geen' },
 ];
+for (const u of UPGRADES) { u.tiers = u.whole ? 1 : 3; u.steps = u.max * u.tiers; }
+// In de carrière tellen upgrades veel minder mee (anders is een volledig ge-upgradede Andy niet te stoppen);
+// de levels worden daar dan ook maar een beetje zwaarder van (zie levelInfo).
+const CAREER_UP = 0.35;
 // ---- XP: hoe verder je komt, hoe meer XP; met spelerslevels ontgrendel je nieuwe upgrades ----
 const xpNeed = L => Math.round(260 * Math.pow(L, 1.6)); // XP nodig om van level L naar L+1 te gaan
 function playerLevel(xp) { let L = 1; while (xp >= xpNeed(L)) { xp -= xpNeed(L); L++; } return { L, into: xp, need: xpNeed(L) }; }
@@ -163,6 +171,7 @@ const POWERUPS = {
   wings:  { icon: '🪽', name: 'Vleugels',      dur: 10, col: '#9fe3ff' },
   turbo:  { icon: '🚀', name: 'Turbo',         dur: 3,  col: '#ff9a2a' },
   clock:  { icon: '⏰', name: '+20 seconden',  dur: 0,  col: '#7dff8a' },
+  slow:   { icon: '⏳', name: 'Slowmotion',    dur: 7,  col: '#b8a4ff' }, // alles gaat half zo snel, ook de klok
 };
 function levelInfo(n) {
   const w = Math.min(WORLDS - 1, Math.floor((n - 1) / LEVELS_PER_WORLD)), idx = (n - 1) % LEVELS_PER_WORLD;
@@ -172,24 +181,25 @@ function levelInfo(n) {
   const L = Math.round(260 + p * 1900 + idx * 25 + (boss ? 150 : 0));
   // uitdagingen: niet in de eerste twee levels en niet bij een baas; in een toren (en later, of met veel upgrades) twee
   const ch = [];
-  if (!boss && n > 2 && (idx > 0 || up > 0.3)) {
+  if (!boss && n > 2 && (idx > 0 || up > 0.5)) {
     ch.push(CHALLENGE_ORDER[(w * 3 + idx) % CHALLENGE_ORDER.length]);
-    if (tower || (w >= 5 && idx === 6) || (up > 0.6 && idx >= 4)) {
+    if (tower || (w >= 5 && idx === 6) || (up > 0.8 && idx >= 4)) {
       const b = CHALLENGE_ORDER[(w * 3 + idx + 2) % CHALLENGE_ORDER.length];
       if (!ch.includes(b)) ch.push(b);
     }
   }
   // tijdslimiet (echte seconden): hoe verder en hoe sterker je bent, hoe sneller je moet gaan
-  const pace = 6 + 8 * p + 6 * up; // verwachte gemiddelde snelheid (m/s)
+  const pace = 6 + 8 * p + 2.5 * up; // verwachte gemiddelde snelheid (m/s); upgrades tellen in de carrière maar voor een deel mee (CAREER_UP)
   let time = Math.round(L / pace + 14);
   if (ch.includes('rush')) time = Math.round(time * 0.72);
   if (tower) time = Math.round(time * 0.9);
-  const diff = clamp(0.2 + p * 1.6 + (tower ? 0.15 : 0) + (boss ? 0.1 : 0), 0, 2) + 0.9 * up;
-  return { n, bi: w, world: w + 1, idx, boss, tower, L, p, up, ch, time, need: ch.includes('apples') ? Math.round(L / 11 * (1 + 0.35 * up)) : 0, diff };
+  const diff = clamp(0.2 + p * 1.6 + (tower ? 0.15 : 0) + (boss ? 0.1 : 0), 0, 2) + 0.35 * up;
+  return { n, bi: w, world: w + 1, idx, boss, tower, L, p, up, ch, time, need: ch.includes('apples') ? Math.round(L / 11 * (1 + 0.15 * up)) : 0, diff };
 }
 // hoe zwaar een level is, in 1..5 bolletjes (voor de kaart)
 const levelPips = I => clamp(Math.round(I.diff / 2.9 * 5 + 0.4), 1, 5);
-const upCost = (u, l) => Math.round(u.base * 1.5 * Math.pow(u.growth, l) / 5) * 5;
+// prijs van stapje s (0..steps-1): van de oude prijs van niveau 1 tot die van het laatste niveau, verdeeld over alle stapjes
+const upCost = (u, s) => Math.round(u.base * 1.5 * Math.pow(u.growth, u.steps > 1 ? s * (u.max - 1) / (u.steps - 1) : 0) / 5) * 5;
 // =====================================================================
 //  Kisten (loot-boxes) en uiterlijk van Andy
 // =====================================================================
@@ -209,8 +219,8 @@ const RARITY = {
 const LOOT = [
   { id: 'apples30',  r: 'common', kind: 'apples', n: 30,  name: '30 appels',  icon: '🍎' },
   { id: 'apples75',  r: 'common', kind: 'apples', n: 75,  name: '75 appels',  icon: '🍎' },
-  { id: 'xp100',     r: 'common', kind: 'xp',     n: 100, name: '100 XP',     icon: '⭐' },
-  { id: 'xp250',     r: 'common', kind: 'xp',     n: 250, name: '250 XP',     icon: '⭐' },
+  { id: 'xp100',     r: 'common', kind: 'xp',     n: 220, name: '220 XP',     icon: '⭐' },
+  { id: 'xp250',     r: 'common', kind: 'xp',     n: 500, name: '500 XP',     icon: '⭐' },
   { id: 'fur_brown', r: 'uncommon', kind: 'color', name: 'Bruine vacht', icon: '🟤', fur: '#6b4a2e', furD: '#46301c', furL: '#9a7350' },
   { id: 'fur_grey',  r: 'uncommon', kind: 'color', name: 'Zilverrug',    icon: '⚪', fur: '#6e6e78', furD: '#48484f', furL: '#a6a6b2' },
   { id: 'hat_cap',   r: 'uncommon', kind: 'hat',   name: 'Petje',        icon: '🧢' },
@@ -227,6 +237,7 @@ const LOOT = [
 ];
 const LOOT_BY_ID = Object.fromEntries(LOOT.map(l => [l.id, l]));
 const DUPE_APPLES = { uncommon: 40, rare: 90, epic: 180, legendary: 400 };
+const CRATE_PRICE = 250; // een kist kopen met appels (in het kistenscherm)
 // kiest een willekeurige buit: eerst de zeldzaamheid (op gewicht), dan een item daarbinnen
 function rollLoot(rnd = Math.random) {
   let r = rnd() * Object.values(RARITY).reduce((a, x) => a + x.w, 0), rar = 'common';
@@ -270,7 +281,8 @@ function inBiomeBuffer(m) {
 // grotere gaten, vaker ontbrekende lianen en meer vijanden. In multiplayer staan upgrades uit (lvl = 0), dus dan 0.
 function upgradePower() {
   let have = 0, max = 0;
-  for (const u of UPGRADES) { have += lvl(u.id); max += u.max; }
+  if (game.mp) return 0;
+  for (const u of UPGRADES) { have += upSteps(u.id) / u.tiers; max += u.max; }
   return max ? have / max : 0;
 }
 // Eindeloos (en multiplayer): de moeilijkheid loopt geleidelijk op en vlakt af naar een plafond,
@@ -284,6 +296,7 @@ function diffAt(m) {
 }
 // Eindeloos: het tempo gaat ook iets omhoog naarmate je verder komt, tot maximaal +12%% (bij 4000 m).
 // Debug-snelheid telt overal mee, behalve online (dan moeten beide spelers gelijk zijn).
+const SLOWMO = 0.5; // tempo tijdens de slowmotion-power-up
 const TEMPO_MAX = 0.12, TEMPO_DIST = 4000;
 // Standaardtempo van het spel (100% in het debugmenu).
 // Werkt als tijdschaal: de physics-stappen blijven gelijk, er gaan er alleen minder per seconde.
@@ -291,7 +304,8 @@ const BASE_SPEED = 0.65; // met GAME_SPEED 1,2: de simulatie loopt op ~0,78× ec
 function timeScale() {
   let k = BASE_SPEED * (game.mp && !game.mp.local ? 1 : DBG.speed);
   if (!game.career && !game.mp && run) { const t = clamp(run.dist / TEMPO_DIST, 0, 1); k *= 1 + TEMPO_MAX * t * t * (3 - 2 * t); }
-  if (game.career) k *= 1 + 0.25 * game.career.p + 0.12 * game.career.up; // carrière: latere levels (en een sterke Andy) lopen sneller
+  if (game.career) k *= 1 + 0.25 * game.career.p + 0.05 * game.career.up;
+  if (game.career && run && run.pow && run.pow.type === 'slow' && run.pow.t > 0) k *= SLOWMO; // power-up slowmotion // carrière: latere levels (en een sterke Andy) lopen sneller
   if (!game.mp && run && run.cine) k *= cineSlow(); // slow motion bij een nieuwe biome
   return k;
 }

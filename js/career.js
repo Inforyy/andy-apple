@@ -30,7 +30,7 @@ function updateCareer(dt) {
   for (const p of pups) p.t += dt;
   if (game.mode !== 'playing' || !alive) return;
   // tijdslimiet
-  run.timeLeft -= rdt;
+  run.timeLeft -= rdt * (powOn('slow') ? SLOWMO : 1); // in slowmotion loopt de klok ook trager
   if (!run.hurry && run.timeLeft < 20) { run.hurry = true; showBanner('Schiet op!', 'Nog 20 seconden'); Sfx.arp(880, [0, 4, 7, 12], 0.07, 0.07); }
   if (run.timeLeft <= 0) { run.timeLeft = 0; careerFail('Tijd op!', 'Je haalde de finish niet op tijd.'); return; }
   // power-ups oppakken en aflopen
@@ -41,6 +41,7 @@ function updateCareer(dt) {
   }
   if (run.pow && (run.pow.t -= rdt) <= 0) { floatText(G.x, G.y - 60, `${POWERUPS[run.pow.type].icon} op`, '#ffffff', 20); run.pow = null; }
   if (powOn('wings') && G.state === 'air' && G.vy > 260) G.vy = 260; // vleugels: rustig zweven
+  if (powOn('slow') && Math.random() < 0.35) addPart({ type: 'ring', x: G.x, y: G.y, vx: 0, vy: 0, life: 0.5, max: 0.5, col: 'rgba(184,164,255,.5)', r: 14, grow: 60, g: 0 }); // slowmotion: golfjes om Andy
   if (powOn('star') && Math.random() < 0.5) addPart({ type: 'star', x: G.x + rand(-20, 20), y: G.y + rand(-20, 20), vx: rand(-40, 40), vy: rand(-60, 0), life: 0.4, max: 0.4, col: '#ffd23f', r: 3, rot: 0, vr: 6, g: 0 });
   // uitdaging: tegenwind
   if (C.ch.includes('wind') && G.state === 'air' && G.vx > 180) G.vx -= 200 * dt;
@@ -53,6 +54,7 @@ function givePow(type, x, y) {
   floatText(x, y - 40, `${P.icon} ${P.name}!`, P.col, 24);
   if (type === 'clock') { run.timeLeft += 20; return; }
   run.pow = { type, t: P.dur, max: P.dur };
+  if (type === 'slow') { Sfx.whoosh(0.9, 1400, 180, 0.12); flashT = 0.2; }
   if (type === 'turbo') { G.turboT = P.dur; if (G.state === 'air') { G.vx = Math.max(G.vx, 1300) + 500; G.vy = Math.min(G.vy, -200); } Sfx.turbo(); }
 }
 // geraakt door de baas of een projectiel
@@ -188,6 +190,11 @@ function drawCareerHud() {
   const C = game.career;
   if (!C || !run || run.timeLeft === undefined) return;
   const u = 1 / scale, W = viewW, H = viewH;
+  if (powOn('slow')) { // slowmotion: paarsige randen en een tikkende klok
+    const k = Math.min(1, run.pow.t / 0.6, (run.pow.max - run.pow.t) / 0.4), g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
+    g.addColorStop(0, 'rgba(120,90,220,0)'); g.addColorStop(1, `rgba(90,60,200,${0.42 * clamp(k, 0, 1)})`);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  }
   if (C.ch.includes('fog')) { // mist: alleen rond Andy is het helder
     const sx = G.x - camX, sy = G.y - camY, r = Math.min(W, H) * 0.34;
     const g = ctx.createRadialGradient(sx, sy, r * 0.35, sx, sy, r * 1.25);
