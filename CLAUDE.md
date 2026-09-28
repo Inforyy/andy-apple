@@ -60,7 +60,10 @@ Top-level `let`/`const`/`function` in these classic scripts share the global lex
 - `game.js` holds game flow, screens, the debug screen, `uiInit` (all menu buttons), input and HUD.
 - `career.js` holds what runs inside a career level: time limit, challenges (`CHALLENGES` in `data.js`), power-ups (`pups`, `run.pow`) and boss fights (`run.boss`, `run.projs`).
 - `worldmap.js` holds the career world map: a 3D island per world (8 levels: a tower at `TOWER_IDX`, the boss castle last) drawn on `#mapCanvas` with a perspective camera (`mp(x, y, z)`), replacing the game view while `curScreen === 'career'`. It also has `openCareer`, `mapFrame`, the unlock/world-clear cutscenes driven by `save.career.anim`, and the zoom-in plus fake loading screen (`MAP.go`, `MAP.load`) before `startReady`.
-- `model3d.js` is a tiny 3D renderer for a 2D canvas: meshes made of spheres, cylinders, cones and boxes, flat-shaded, with an inverted-hull ink outline. Triangles are depth-sorted in `R3.list` and drawn in same-colour batches by `r3Flush`. `andyParts`/`drawAndy3D` build Andy from `myLook()`; the map buildings are built in `worldmap.js`.
+- `model3d.js` is a tiny 3D renderer for a 2D canvas:
+  - Buildings and hats are triangle meshes (spheres, cylinders, cones, boxes), flat-shaded, with an inverted-hull ink outline (`r3Tris`/`drawTris`, same-colour batches).
+  - `drawAndy3D` draws Andy from `myLook()` as smooth, gradient-shaded ellipsoids and capsules with ink outlines, posed and animated from a `pose` object.
+  - Every model is one entry in `R3.list`, sorted on its foot point by `r3Flush`, so models never cut through each other. Map buildings are built in `worldmap.js`.
 - `levelInfo(n)` in `data.js` defines each level: world, tower/boss, length, time, challenges and difficulty. It also scales with `upgradePower()`, so the career gets harder with more upgrades.
 - Old saves with 5 levels per world are remapped by `migrateCareer` in `save.js` (`save.career.lpw`).
 

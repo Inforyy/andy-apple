@@ -392,12 +392,14 @@ function mapNodeItem(g, w, i, prog) {
 }
 // Andy in 3D, met schaduw
 function mapAndyItem(g) {
-  const A = mapAndyPos(), W = MAP.walk, sh = gEll(A.x, A.z, 26);
-  r3Item(sh.d + 20, () => { g.fillStyle = 'rgba(0,0,0,.3)'; fillEll(g, sh, 1 - Math.min(0.5, (A.h || 0) / 80)); });
-  const pose = { t: MAP.t, walk: W ? W.t * 13 : 0, walkAmt: W ? 1 : 0, cheer: MAP.cheer || (MAP.go && MAP.go.t < 0.6), cape: lvl('wingsuit') > 0 };
+  const A = mapAndyPos(), W = MAP.walk, sh = gEll(A.x, A.z, 26), h = A.h || 0;
+  r3Item(sh.d + 20, () => { g.fillStyle = 'rgba(0,0,0,.3)'; fillEll(g, sh, 1 - Math.min(0.5, h / 120)); });
+  const pose = { t: MAP.t, walk: W ? W.t * 13 : 0, walkAmt: W ? 1 : 0, cheer: MAP.cheer, cape: lvl('wingsuit') > 0 };
+  if (W) pose.squash = Math.max(0, 1 - h / 4) * 0.7; // even inveren bij elke landing
+  if (MAP.go) { const t = MAP.go.t; if (t < 0.16) pose.crouch = t / 0.16; else if (h > 2) { pose.air = true; pose.cheer = t < 0.5; } else pose.squash = 0.6; }
   const idle = MAP.t % 7;
   if (!W && !MAP.cheer && !MAP.go) { if (idle > 5.6) pose.wave = true; else if (idle > 3 && idle < 3.8) pose.beat = true; }
-  drawAndy3D(mp, A.x, A.h || 0, A.z, MAP.yaw, 1.8, myLook(), pose, -5);
+  drawAndy3D(mp, A.x, h, A.z, MAP.yaw, 1.9, myLook(), pose, -5);
 }
 function mapBirds(g, w) {
   const { birds } = mapDeco(w), I = ISL(w);
@@ -451,7 +453,7 @@ function mapAndyPos() {
     const a = W.pts[i], b = W.pts[i + 1];
     return { x: a.x + (b.x - a.x) * r, z: a.z + (b.z - a.z) * r, h: Math.abs(Math.sin(k * Math.PI * W.hops)) * 16, dx: b.x - a.x, dz: b.z - a.z };
   }
-  const G0 = MAP.go ? { h: Math.max(0, Math.sin(Math.min(1, MAP.go.t / 0.55) * Math.PI)) * 60 } : {};
+  const G0 = MAP.go ? { h: Math.max(0, Math.sin(clamp((MAP.go.t - 0.16) / 0.5, 0, 1) * Math.PI)) * 70 } : {}; // eerst inzakken, dan springen
   if (MAP.startW !== null) return Object.assign({}, mapNode(MAP.startW, -1), G0); // op het beginpunt van een (nieuwe) wereld
   const n = MAP.at, w = worldOf(n);
   return Object.assign({}, n < 1 ? mapNode(0, -1) : mapNode(w, (n - 1) % LEVELS_PER_WORLD), G0);
@@ -659,8 +661,8 @@ function drawMapLoad(g, L) {
   g.fillStyle = shade(c.canopy2, 0.1); g.beginPath(); g.ellipse(ax, ay, 55 * sc, 15 * sc, 0, 0, 6.3); g.fill();
   const tilt = 0.28, proj = (x, y, z) => { const q = rotX([x, y, z], -tilt), zc = q[2] + 600; return [ax + q[0] * sc * 600 / zc, ay - q[1] * sc * 600 / zc, zc]; };
   r3Begin();
-  const pose = { t: t + 1, walk: t * 10, walkAmt: 0.35, wave: (t % 2.4) > 1.5, cape: lvl('wingsuit') > 0 };
-  drawAndy3D(proj, 0, Math.abs(Math.sin(t * 5)) * 4, 0, Math.PI + t * 1.6, 1, myLook(), pose, 0);
+  const pose = { t: t + 1, walk: t * 11, walkAmt: 0.7, cape: lvl('wingsuit') > 0 };
+  drawAndy3D(proj, 0, Math.abs(Math.sin(t * 5.5)) * 3, 0, Math.PI + t * 1.6, 1, myLook(), pose, 0);
   r3Flush(g);
   // tekst
   const tx = port ? W / 2 : W * 0.66, fs = Math.min(port ? W * 0.1 : W * 0.055, H * 0.09);
