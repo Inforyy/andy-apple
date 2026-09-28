@@ -27,7 +27,7 @@ function findChrome() {
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const profile = mkdtempSync(join(tmpdir(), 'andy-smoke-'));
 const chrome = spawn(findChrome(), ['--headless=new', '--mute-audio', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run',
-  '--no-default-browser-check', '--autoplay-policy=no-user-gesture-required', '--window-size=1280,720',
+  '--no-default-browser-check', '--autoplay-policy=no-user-gesture-required', '--window-size=1024,640',
   // als root (bijv. in een container) start Chromium alleen zonder sandbox
   ...(process.getuid && process.getuid() === 0 ? ['--no-sandbox'] : []), 'about:blank'], { stdio: 'ignore' });
 
@@ -45,6 +45,18 @@ async function js(expr) {
   if (r.exceptionDetails) throw new Error(`${expr}\n  -> ${r.exceptionDetails.exception?.description || r.exceptionDetails.text}`);
   return r.result.value;
 }
+// Wacht tot een voorwaarde in de pagina waar is (peilt elke 50 ms) in plaats van een vaste tijd: zo gaat de test
+// meteen door zodra het spel zover is. Geeft false na de timeout (de check erna faalt dan met een duidelijke melding).
+async function until(expr, ms = 5000) {
+  const end = Date.now() + ms;
+  while (Date.now() < end) { if (await js(`!!(${expr})`)) return true; await sleep(50); }
+  return false;
+}
+const esc = () => js(`window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }))`);
+// spel-tijd versnellen (debug-snelheid, max 2,5×) voor stukken waar de test op het spel moet wachten
+const speed = k => js(`DBG.speed = ${k}`);
+// aftellen (3, 2, 1, GO!) in de lokale modi overslaan
+const skipCount = async () => { await until('__andy.LOCAL.on', 2000); await js('__andy.LOCAL.count = 0.4'); return until(`__andy.game.mode === 'playing'`, 3000); };
 function check(ok, what) {
   if (!ok) throw new Error('Mislukt: ' + what);
   console.log('  ok  ' + what);
@@ -73,33 +85,34 @@ async function main() {
   await send('Log.enable');
   await send('Page.enable');
   await send('Page.navigate', { url: PAGE });
-  await sleep(1500);
+  await until('typeof window.__andy === "object" && __andy.curScreen === "menu"', 8000);
 
   console.log('Opstarten');
   check(await js('typeof window.__andy === "object"'), '__andy-haak bestaat');
   check(await js('__andy.curScreen') === 'menu', 'hoofdmenu staat open');
 
   console.log('Menu\'s');
+  // de schermen wisselen direct bij een klik: geen wachttijd nodig
   for (const [open, back, screen] of [['btnShop', 'btnShopBack', 'shop'],
     ['btnSettings', 'btnSettingsBack', 'settings'], ['btnCareer', 'btnCareerBack', 'career'], ['btnMulti', 'btnModesBack', 'modes']]) {
-    await js(`document.getElementById('${open}').click()`); await sleep(150);
+    await js(`document.getElementById('${open}').click()`);
     check(await js('__andy.curScreen') === screen, `${open} opent '${screen}'`);
-    await js(`document.getElementById('${back}').click()`); await sleep(100);
+    await js(`document.getElementById('${back}').click()`);
   }
   // Spelmodi: elk blok opent de juiste kamer, terug gaat naar Spelmodi en daarna naar het menu
   for (const [btn, title, modes] of [['btnModeOnline', 'Multiplayer', null], ['btnModeDuo', 'Duel', 'mpModeRace,mpModeEnd'],
     ['btnModeKiwi', 'Tegen Kiwi', ''], ['btnModeChase', 'Achtervolging', 'mpModeChase']]) {
-    await js(`document.getElementById('btnMulti').click(); document.getElementById('${btn}').click()`); await sleep(200);
+    await js(`document.getElementById('btnMulti').click(); document.getElementById('${btn}').click()`); await sleep(50);
     const got = await js(`[__andy.curScreen, document.getElementById('mpTitle').textContent,
       ['mpModeRace', 'mpModeEnd', 'mpModeChase'].filter(id => !document.getElementById(id).classList.contains('hidden')).join(',')].join('|')`);
     const [scr, t, shown] = got.split('|');
     check(scr === 'mp' && t === title && (modes === null || shown === modes), `${btn}: '${title}'${modes === null ? '' : ` met modi [${modes}]`}`);
-    await js(`document.getElementById('btnMpBack').click()`); await sleep(150);
-    check(await js('__andy.curScreen') === 'modes', `${btn}: terug naar Spelmodi`);
-    await js(`document.getElementById('btnModesBack').click()`); await sleep(100);
+    await js(`document.getElementById('btnMpBack').click()`);
+    check(await until(`__andy.curScreen === 'modes'`, 1000), `${btn}: terug naar Spelmodi`);
+    await js(`document.getElementById('btnModesBack').click()`);
   }
   check(await js('__andy.curScreen') === 'menu', 'Spelmodi: terug naar het menu');
-  await js(`document.getElementById('btnSettings').click(); document.getElementById('btnDebug').click()`); await sleep(100);
+  await js(`document.getElementById('btnSettings').click(); document.getElementById('btnDebug').click()`);
   check(await js('__andy.curScreen') === 'debug', 'debugscherm opent');
   await js(`document.getElementById('btnDebugBack').click(); document.getElementById('btnSettingsBack').click()`);
 
@@ -131,97 +144,100 @@ async function main() {
   })()`);
 
   console.log('Eindeloos');
-  await js('__andy.startReady(null)'); await sleep(300);
-  await js('__andy.press()'); await sleep(300);
-  await js(`window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }))`); await sleep(150);
+  await js('__andy.startReady(null)'); await sleep(100);
+  await js('__andy.press()'); await sleep(150);
+  await esc();
   check(await js('__andy.game.paused === true'), 'Esc pauzeert');
-  await js(`document.getElementById('btnResume').click()`); await sleep(100);
+  await js(`document.getElementById('btnResume').click()`);
   check(await js('__andy.game.paused === false'), 'verder spelen');
   await js('__andy.unpress()');
-  await swing('__andy.press()', '__andy.unpress()', 4);
+  await speed(2);
+  await swing('__andy.press()', '__andy.unpress()', 2);
+  await speed(1);
   check(await js('__andy.run && __andy.run.dist > 0'), `Andy komt vooruit (${Math.round(await js('__andy.run ? __andy.run.dist : 0'))} m)`);
   check(await js('__andy.vines.length > 5'), 'lianen worden gegenereerd');
-  // nog onderweg: via pauze stoppen; al gevallen: het eindscherm staat er al
-  if (await js('__andy.curScreen') !== 'over') {
-    await js(`window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }))`); await sleep(150);
-    await js(`document.getElementById('btnQuit').click()`);
-  }
-  await sleep(2500); // eindscherm verschijnt na de valanimatie
-  check(await js('__andy.curScreen') === 'over', 'eindscherm na de run');
-  await js(`document.getElementById('btnOverMenu').click()`); await sleep(150);
+  // nog onderweg: via pauze stoppen; al gevallen: het eindscherm komt na de valanimatie
+  if (await js('__andy.curScreen') !== 'over' && await js(`__andy.game.mode !== 'dying'`)) { await esc(); await js(`document.getElementById('btnQuit').click()`); }
+  check(await until(`__andy.curScreen === 'over'`, 5000), 'eindscherm na de run');
+  await js(`document.getElementById('btnOverMenu').click()`);
   check(await js('__andy.curScreen') === 'menu', 'terug naar het menu');
 
   console.log('Head-start');
-  await js('__andy.save.apples = 100; __andy.startReady(null)'); await sleep(300);
-  check(await js(`!document.getElementById('headStart').classList.contains('hidden')`), 'head-start-knoppen staan klaar');
-  await js(`document.querySelector('[data-hs="0"]').click()`); await sleep(1500);
-  check(await js('__andy.G.state === "rocket" && __andy.save.apples === 40'), 'head-start gekocht: Andy vliegt');
+  await js('__andy.save.apples = 100; __andy.startReady(null)');
+  check(await until(`!document.getElementById('headStart').classList.contains('hidden')`, 2000), 'head-start-knoppen staan klaar');
+  await js(`document.querySelector('[data-hs="0"]').click()`);
+  check(await until('__andy.G.state === "rocket" && __andy.save.apples === 40', 2000), 'head-start gekocht: Andy vliegt');
+  await sleep(300); // even raketvlucht tekenen
   console.log('Ruimte');
-  await js(`(() => { const G = __andy.G; G.state = 'air'; G.vine = null; G.y = -3300; G.vy = -1250; G.vx = 700; __andy.run.launchT = 6; })()`); await sleep(1000);
-  check(await js('__andy.run.space && __andy.vines.some(v => v.space) && __andy.spaceObjs.length > 0'), 'in de ruimte: sterrenlianen en planetoïden');
-  await swing('__andy.press()', '__andy.unpress()', 2);
-  await js(`window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }))`); await sleep(150);
-  await js(`document.getElementById('btnQuit').click()`); await sleep(300);
+  await js(`(() => { const G = __andy.G; G.state = 'air'; G.vine = null; G.y = -3300; G.vy = -1250; G.vx = 700; __andy.run.launchT = 6; })()`);
+  check(await until('__andy.run.space && __andy.vines.some(v => v.space) && __andy.spaceObjs.length > 0', 3000), 'in de ruimte: sterrenlianen en planetoïden');
+  await swing('__andy.press()', '__andy.unpress()', 1);
+  await esc(); await js(`document.getElementById('btnQuit').click()`);
 
   console.log('Straaljager');
-  await js('__andy.startReady(null)'); await sleep(200);
-  await js('__andy.press()'); await sleep(1500);
-  await js('__andy.spawnJet()'); await sleep(400);
+  await js('__andy.startReady(null)'); await sleep(100);
+  await js('__andy.press()'); await sleep(1500); // eerst een stuk van de rots af slingeren
+  await js('__andy.spawnJet()');
+  await until('__andy.vines.some(v => v.jet)', 2000); await sleep(400); // het touw van de straaljager moet eerst uithangen
   check(await js(`(() => { const v = __andy.vines.find(v => v.jet); const G = __andy.G; if (!v) return false; if (G.state === 'hang') __andy.release(); const q = v.pts[22]; G.x = q.x; G.y = q.y + 5; G.vx = 800; G.vy = 0; G.state = 'air'; G.releaseT = 0; __andy.press(); return true; })()`), 'straaljager vliegt langs');
-  await sleep(800);
-  check(await js('!!(__andy.G.vine && __andy.G.vine.jet)'), 'aan de straaljager gegrepen');
-  await sleep(5500);
-  check(await js('__andy.vines.some(v => v.jet && v.jetDone)'), 'straaljager laat je na ~5 s los');
+  check(await until('!!(__andy.G.vine && __andy.G.vine.jet)', 2000), 'aan de straaljager gegrepen');
+  await speed(2.5);
+  check(await until('__andy.vines.some(v => v.jet && v.jetDone)', 9000), 'straaljager laat je na ~5 s los');
+  await speed(1);
   await js('__andy.unpress()');
-  await js(`window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }))`); await sleep(150);
-  await js(`document.getElementById('btnQuit').click()`); await sleep(300);
+  await esc(); await js(`document.getElementById('btnQuit').click()`);
 
   console.log('Nieuwe biome, onder water en kisten');
-  await js('__andy.startReady(null)'); await sleep(200);
-  await js('__andy.press()'); await sleep(800);
-  await js(`(() => { const G = __andy.G; __andy.release(); G.state = 'air'; G.x = START_X + 1095 * PX_PER_M; G.y = -100; G.vx = 900; G.vy = -500; })()`); await sleep(600);
-  check(await js('!!__andy.run.cine && __andy.run.biome === 2'), 'filmische overgang naar de Savanne');
+  await js('__andy.startReady(null)'); await sleep(100);
+  await js('__andy.press()');
+  await until(`__andy.G.state === 'hang'`, 3000);
+  await js(`(() => { const G = __andy.G; __andy.release(); G.state = 'air'; G.x = START_X + 1095 * PX_PER_M; G.y = -100; G.vx = 900; G.vy = -500; })()`);
+  check(await until('!!__andy.run.cine && __andy.run.biome === 2', 3000), 'filmische overgang naar de Savanne');
   check(await js('biomeSeg(11500).i !== biomeSeg(12700).i && biomeSeg(11500).i < BIOMES.length'), 'na de laatste biome komen de biomes terug');
-  await js(`(() => { const G = __andy.G; G.state = 'air'; G.x = START_X + 1500 * PX_PER_M; G.y = HAZARD_Y + 20; G.vy = 300; enterUnder(); loot.push({ x: G.x + 4, y: G.y, t: 0 }); })()`); await sleep(1500);
-  check(await js(`__andy.G.state === 'swim' && __andy.run.under && __andy.run.loot === 1`), 'onder water, kist opgepakt');
-  // naar het luchtgat zetten (een paar keer: de zwemstap kan Andy er net naast laten drijven)
-  for (let i = 0; i < 6 && await js('!!__andy.run.under'); i++) { await js(`(() => { const G = __andy.G, U = __andy.run.under; G.x = U.exits[0]; G.y = UNDER_TOP + 40; G.vx = 0; })()`); await sleep(250); }
-  check(await js(`__andy.G.state === 'air' && !__andy.run.under`), 'via een luchtgat weer boven water');
-  await js(`window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }))`); await sleep(150);
-  await js(`document.getElementById('btnQuit').click()`); await sleep(300);
-  check(await js('__andy.save.boxes >= 1'), 'kist na de run bewaard');
-  await js(`document.getElementById('btnOverCrates').click()`); await sleep(200);
-  await js(`document.getElementById('btnCrOpen').click()`); await sleep(6200);
-  check(await js(`__andy.crate.spinning === false && document.querySelector('.cr-card.win') !== null`), 'kist geopend');
-  await js(`document.getElementById('btnCrBack').click()`); await sleep(200);
+  await js(`(() => { const G = __andy.G; G.state = 'air'; G.x = START_X + 1500 * PX_PER_M; G.y = HAZARD_Y + 20; G.vy = 300; enterUnder(); loot.push({ x: G.x + 4, y: G.y, t: 0 }); })()`);
+  check(await until(`__andy.G.state === 'swim' && __andy.run.under && __andy.run.loot === 1`, 3000), 'onder water, kist opgepakt');
+  // naar het luchtgat zetten (een paar keer: de zwemstap kan Andy er net naast laten drijven); eerst moet er een zijn
+  await until('__andy.run.under && __andy.run.under.exits.length > 0', 3000);
+  for (let i = 0; i < 6 && await js('!!__andy.run.under'); i++) { await js(`(() => { const G = __andy.G, U = __andy.run.under; G.x = U.exits[0]; G.y = UNDER_TOP + 40; G.vx = 0; })()`); await until('!__andy.run.under', 300); }
+  check(await until(`__andy.G.state === 'air' && !__andy.run.under`, 1000), 'via een luchtgat weer boven water');
+  await esc(); await js(`document.getElementById('btnQuit').click()`);
+  check(await until('__andy.save.boxes >= 1', 1000), 'kist na de run bewaard');
+  await js(`document.getElementById('btnOverCrates').click()`); await sleep(100);
+  await js(`document.getElementById('btnCrOpen').click()`); await sleep(100);
+  check(await until(`__andy.crate.spinning === false && document.querySelector('.cr-card.win') !== null`, 9000), 'kist geopend');
+  await js(`document.getElementById('btnCrBack').click()`);
 
   console.log('Carrière');
-  await js('__andy.startReady(1)'); await sleep(300);
-  check(await js('__andy.game.career && __andy.game.career.n === 1'), 'level 1 start');
-  await swing('__andy.press()', '__andy.unpress()', 2);
+  await js('__andy.startReady(1)');
+  check(await until('__andy.game.career && __andy.game.career.n === 1', 1000), 'level 1 start');
+  await swing('__andy.press()', '__andy.unpress()', 1);
   for (const n of [36, 41, 46, 51]) { // de stijl-biomes (blokjes, Paint, 3D, snoep)
-    await js(`__andy.startReady(${n})`); await sleep(200);
-    await swing('__andy.press()', '__andy.unpress()', 1);
+    await js(`__andy.startReady(${n})`);
+    await swing('__andy.press()', '__andy.unpress()', 0.6);
     check(await js(`__andy.game.career.n === ${n}`), `level ${n} (${await js(`BIOMES[__andy.game.career.bi].name`)}) tekent zonder fouten`);
   }
 
   console.log('Op één scherm');
-  await js(`__andy.localStart({ mode: 'race', len: 500 }, null)`); await sleep(4200); // aftellen
-  await swing('__andy.localPress(0); __andy.localPress(1)', '__andy.localUnpress(0); __andy.localUnpress(1)', 3);
+  await js(`__andy.localStart({ mode: 'race', len: 500 }, null)`); await skipCount();
+  await swing('__andy.localPress(0); __andy.localPress(1)', '__andy.localUnpress(0); __andy.localUnpress(1)', 1.5);
   check(await js('__andy.LOCAL.on && __andy.LOCAL.worlds.length === 2'), 'twee werelden actief');
   check(await js(`(() => { const [a, b] = __andy.LOCAL.worlds; __andy.useWorld(0); return a.vines !== b.vines && a.G !== b.G && a.gen !== b.gen && __andy.G && __andy.G !== b.G; })()`), 'de werelden zijn los van elkaar');
 
   console.log('Tegen Kiwi');
-  await js(`__andy.localStart({ mode: 'endurance' }, 3)`); await sleep(4200);
-  await swing('__andy.localPress(0)', '__andy.localUnpress(0)', 5);
+  await js(`__andy.localStart({ mode: 'endurance' }, 3)`); await skipCount();
+  await speed(2.5);
+  await swing('__andy.localPress(0)', '__andy.localUnpress(0)', 1);
+  await until('__andy.LOCAL.worlds[1].G && __andy.LOCAL.worlds[1].G.x > 700', 6000);
+  await speed(1);
   check(await js('!!__andy.LOCAL.ai && __andy.LOCAL.worlds[1].G.x > 700'), `Kiwi komt vooruit (x = ${Math.round(await js('__andy.LOCAL.worlds[1].G ? __andy.LOCAL.worlds[1].G.x : 0'))})`);
   console.log('Achtervolging');
-  await js(`__andy.localStart({ mode: 'chase' }, 3)`); await sleep(4200);
+  await js(`__andy.localStart({ mode: 'chase' }, 3)`); await skipCount();
   check(await js(`__andy.LOCAL.cfg.mode === 'chase'`), 'achtervolging start');
-  await sleep(12000); // Kiwi (Expert) haalt een stilstaande Andy in
-  check(await js(`__andy.LOCAL.result === 1`), 'Kiwi pakt je');
-  await js(`document.getElementById('btnMpLeave').click()`); await sleep(200);
-  await js('__andy.startReady(null)'); await sleep(200);
+  await speed(2.5);
+  check(await until('__andy.LOCAL.result === 1', 15000), 'Kiwi pakt je'); // Kiwi (Expert) haalt een stilstaande Andy in
+  await speed(1);
+  await js(`document.getElementById('btnMpLeave').click()`); await sleep(100);
+  await js('__andy.startReady(null)'); await sleep(100);
   check(await js('!__andy.LOCAL.on'), 'terug naar één speler');
 
   if (errors.length) throw new Error('JavaScript-fouten:\n  ' + errors.join('\n  '));
