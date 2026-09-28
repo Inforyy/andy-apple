@@ -34,6 +34,7 @@ const VINE_TILT = -900;       // constante kracht naar links: lianen hangen schu
 const VINE_SLANT = Math.atan2(-VINE_TILT, GRAVITY);   // rusthoek (~31°)
 const TIP_F = Math.cos(VINE_SLANT);                   // hoe hoog het uiteinde hangt t.o.v. de lengte
 const ELASTIC_STRETCH = 1.45; // hoe ver een elastieken liaan mag uitrekken
+const APPLE_SC = 0.9, APPLE_PICK = 22, LOOT_SC = 1.45; // grootte van appels en kisten in de wereld (en hoe ver je ze pakt)
 const SPR_RES = 1.25;         // resolutie van voorgetekende sprites
 // Hoe ver achter de camera lianen, paddenstoelen en trampolines blijven bestaan (ruim één scherm): vlieg je
 // terug, dan staan ze er nog. Kost vrijwel niets, want buiten beeld worden ze niet gesimuleerd of getekend.
@@ -137,9 +138,8 @@ const upCost = (u, l) => Math.round(u.base * 1.5 * Math.pow(u.growth, l) / 5) * 
 //  Kisten (loot-boxes) en uiterlijk van Andy
 // =====================================================================
 // Kans per kolom lianen dat er een kist hangt (Eindeloos en carrière, niet in multiplayer)
-const LOOT_CHANCE = 0.075;
-// Hoe groot een kist getekend wordt, en hoe dichtbij Andy moet komen om hem te pakken (pixels vanaf zijn midden)
-const LOOT_SCALE = 1.6, LOOT_REACH = G_R + 58;
+const LOOT_CHANCE = 0.045;
+const LOOT_GAP = 4000; // minimale afstand tussen twee kisten (wereld-eenheden)
 // Zeldzaamheid: kleur, naam en gewicht (kans) bij het openen van een kist
 const RARITY = {
   common:    { name: 'Gewoon',       col: '#9aa4b1', w: 55 },

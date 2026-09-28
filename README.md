@@ -129,10 +129,9 @@ Instellingen open je met het tandwiel rechtsboven in het hoofdmenu, of in het pa
 ## Voortgang en saves
 
 - Je voortgang wordt automatisch in de browser bewaard.
-- Via **Opslaan** exporteer je een `.json`-bestand, of kopieer je een save-code (handig op een telefoon). Met **Importeer** laad je die weer in. Saves hebben een checksum, zodat je een waarschuwing krijgt als er met de hand aan is gezeten.
 - Met een **account** wordt je voortgang ook online bewaard en kun je op een ander apparaat verder. Heb je op beide plekken voortgang, dan vraagt het spel welke je wilt houden.
 - Bij **Account** kies je ook een **gebruikersnaam** (uniek, 3–16 tekens: letters, cijfers en `_`). Die zie je op de ranglijst en in multiplayer. Zonder account krijg je in multiplayer een willekeurige naam, die je zelf kunt aanpassen.
-- De Android-app heeft een eigen voortgang, los van de browser. Zet die over met exporteren en importeren.
+- De Android-app heeft een eigen voortgang, los van de browser. Log in met hetzelfde account om die gelijk te houden.
 
 ## Voor ontwikkelaars
 

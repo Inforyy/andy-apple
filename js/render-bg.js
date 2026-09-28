@@ -14,7 +14,7 @@ function starPath(c, x, y, r, rot) {
   c.closePath();
 }
 function layerY(worldY, f) { const bt = baseTop(); return worldY - bt - (camY - bt) * f; }
-function makeCanvas(w, h) { const c = document.createElement('canvas'); c.width = Math.ceil(w * SPR_RES); c.height = Math.ceil(h * SPR_RES); const g = c.getContext('2d'); g.scale(SPR_RES, SPR_RES); return [c, g]; }
+function makeCanvas(w, h, r = SPR_RES) { const c = document.createElement('canvas'); c.width = Math.ceil(w * r); c.height = Math.ceil(h * r); const g = c.getContext('2d'); g.scale(r, r); return [c, g]; }
 function blob(g, x, y, r) { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); }
 // Tekent iets per biome-stijl; tijdens een overgang worden de twee stijlen in elkaar overgevloeid
 function crossfade(P, fn) {
@@ -141,7 +141,7 @@ function sprite(key, make) { let s = spriteCache.get(key); if (!s) { s = make();
 
 function appleSprite(gold) {
   return sprite('apple' + gold, () => {
-    const [c, g] = makeCanvas(40, 44);
+    const [c, g] = makeCanvas(40, 44, 2.2); // extra scherp: appels worden flink groot getekend
     const body = g.createRadialGradient(15, 20, 2, 20, 26, 17);
     body.addColorStop(0, gold ? '#fff3b0' : '#ff8a7a'); body.addColorStop(0.45, gold ? '#f5c518' : '#e8322b'); body.addColorStop(1, gold ? '#b8860b' : '#9e1b16');
     g.fillStyle = body;

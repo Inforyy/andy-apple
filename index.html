@@ -22,12 +22,13 @@
   <symbol id="i-cart" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.3"/><circle cx="18" cy="20" r="1.3"/><path d="M2 3h2.5l2.4 11.4a2 2 0 0 0 2 1.6h8.4a2 2 0 0 0 2-1.5L21 7H5.3"/></symbol>
   <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 21h8"/><path d="M12 16v5"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/></symbol>
   <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
-  <symbol id="i-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></symbol>
   <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 22V3"/><path d="M5 4h13l-2.5 4.5L18 13H5"/></symbol>
   <symbol id="i-infinity" viewBox="0 0 24 24"><path d="M12 12c-2-2.7-4-4-6-4a4 4 0 0 0 0 8c2 0 4-1.3 6-4zm0 0c2 2.7 4 4 6 4a4 4 0 0 0 0-8c-2 0-4 1.3-6 4z"/></symbol>
   <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
   <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5z"/></symbol>
   <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/><path d="M7.5 5.5l9 5"/></symbol>
+  <symbol id="i-none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M6.5 17.5l11-11"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
   <symbol id="i-retry" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></symbol>
 </svg>
 <canvas id="game"></canvas>
@@ -80,12 +81,10 @@
       </button>
     </div>
     <nav class="mm-bar">
+      <button class="ib" id="btnAccount"><span class="ib-ic"><svg class="ico" aria-hidden="true"><use href="#i-user"/></svg></span><small id="mmAcc">Account</small></button>
+      <button class="ib" id="btnLb"><span class="ib-ic"><svg class="ico" aria-hidden="true"><use href="#i-trophy"/></svg></span><small>Ranglijst</small></button>
       <button class="ib" id="btnShop"><span class="ib-ic"><svg class="ico" aria-hidden="true"><use href="#i-cart"/></svg></span><small>Upgrades</small></button>
       <button class="ib" id="btnCrates"><span class="ib-ic"><svg class="ico" aria-hidden="true"><use href="#i-box"/></svg></span><small>Kisten</small></button>
-      <button class="ib" id="btnLb"><span class="ib-ic"><svg class="ico" aria-hidden="true"><use href="#i-trophy"/></svg></span><small>Ranglijst</small></button>
-      <button class="ib" id="btnAccount"><span class="ib-ic"><svg class="ico" aria-hidden="true"><use href="#i-user"/></svg></span><small id="mmAcc">Account</small></button>
-      <button class="ib" id="btnSaves"><span class="ib-ic"><svg class="ico" aria-hidden="true"><use href="#i-save"/></svg></span><small>Opslaan</small></button>
-      <button class="ib" id="btnHelp"><span class="ib-ic"><svg class="ico" aria-hidden="true"><use href="#i-help"/></svg></span><small>Uitleg</small></button>
     </nav>
   </div>
 </div>
@@ -305,37 +304,6 @@
   </div>
 </div>
 
-<!-- Uitleg -->
-<div id="help" class="screen">
-  <div class="panel help">
-    <div class="p-head"><button class="ic-btn" id="btnHelpBack" aria-label="Terug" title="Terug"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg></button><h2>Hoe speel je?</h2><span></span></div>
-    <ul>
-      <li>Houd <kbd>SPATIE</kbd>, de muis of het scherm <b>ingedrukt</b> om te springen en aan een liaan te hangen.</li>
-      <li><b>Laat los</b> als Andy naar voren zwaait om weg te springen.</li>
-      <li>Houd in de lucht ingedrukt om te <b>duiken</b>; raak je dan een liaan, dan grijp je hem.</li>
-      <li>Alleen <b>naar beneden vallen</b> is game over. Paddenstoelen en trampolines lanceren je.</li>
-      <li>Pak appels (goud = 5). Snel achter elkaar geeft een <b>combo</b>. Vijanden stelen appels, een helm beschermt je.</li>
-      <li>Koop met appels <b>upgrades</b>; met XP ontgrendel je er meer.</li>
-      <li>Hoe verder je komt, hoe iets lastiger en sneller het wordt.</li>
-      <li>Blauw portaal in, oranje portaal uit. De drie gouden ballonnen (1, 2, 3) achter elkaar pakken: de ruimte in!</li>
-      <li>In Eindeloos kun je vóór je eerste sprong een <b>head-start</b> kopen: Andy vliegt dan meteen een stuk vooruit.</li>
-      <li>Val je in het water, dan ga je soms <b>onder water</b>: zwem (ingedrukt houden) naar een luchtgat binnen 30 seconden.</li>
-      <li>Pak <b>kisten 📦</b> op tijdens het spelen en open ze na afloop voor appels, XP, hoeden en kostuums.</li>
-      <li><kbd>P</kbd> of <kbd>Esc</kbd>: pauze.</li>
-    </ul>
-    <h3>Speciale lianen</h3>
-    <div class="biomes">
-      <div><b>Turbo</b><br><small>Goud: extra vaart.</small></div>
-      <div><b>Elastiek</b><br><small>Roze: rekt en veert.</small></div>
-      <div><b>Fruit</b><br><small>Vol appels.</small></div>
-      <div><b>Rot</b><br><small>Bruin: breekt.</small></div>
-      <div><b>IJs</b><br><small>Blauw: je glijdt.</small></div>
-    </div>
-    <h3>Biomes</h3>
-    <div class="biomes" id="helpBiomes"></div>
-  </div>
-</div>
-
 <!-- Winkel -->
 <div id="shop" class="screen">
   <div class="panel wide shop">
@@ -346,30 +314,6 @@
       <div id="shopLocks" class="locks"></div>
     </div>
     <div class="p-foot shop-foot"><button class="btn big green" id="btnShopPlay"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>Spelen</button></div>
-  </div>
-</div>
-
-<!-- Opslaan -->
-<div id="saves" class="screen">
-  <div class="panel">
-    <div class="p-head"><button class="ic-btn" id="btnSavesBack" aria-label="Terug" title="Terug"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg></button><h2>Voortgang</h2><span></span></div>
-    <p class="sub">Wordt automatisch bewaard in deze browser. Exporteer voor een back-up of een ander apparaat.</p>
-    <div class="stats" id="saveStats"></div>
-    <div class="row">
-      <button class="btn green" id="btnExport">Exporteer</button>
-      <button class="btn" id="btnImport">Importeer</button>
-    </div>
-    <input type="file" id="fileImport" accept=".json,application/json,text/plain" hidden>
-    <details>
-      <summary>Save-code (tekst)</summary>
-      <textarea id="saveCode" placeholder="Plak hier een save-code…" spellcheck="false"></textarea>
-      <div class="row">
-        <button class="btn" id="btnCopyCode">Kopieer mijn code</button>
-        <button class="btn" id="btnLoadCode">Laad code</button>
-      </div>
-    </details>
-    <div id="saveMsg" class="msg"></div>
-    <button class="link red" id="btnReset">Voortgang wissen</button>
   </div>
 </div>
 
@@ -406,11 +350,14 @@
   <div class="panel wide crate">
     <div class="p-head"><button class="ic-btn" id="btnCrBack" aria-label="Terug" title="Terug"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg></button><h2>Kisten</h2><div class="bank"><svg class="ico" aria-hidden="true"><use href="#i-box"/></svg><span id="crBoxes">0</span></div></div>
     <div class="cr-reel" id="crReel"><div class="cr-strip" id="crStrip"></div><div class="cr-mark"></div></div>
-    <div id="crResult" class="cr-result">Pak kisten op tijdens het spelen en open ze hier.</div>
-    <p class="sub cr-odds" id="crOdds"></p>
+    <div id="crResult" class="cr-result"><small>Pak kisten op tijdens het spelen en open ze hier.</small></div>
+    <div class="cr-odds" id="crOdds"></div>
     <div class="cr-bottom">
-      <canvas id="crPreview" width="170" height="190"></canvas>
-      <div class="wardrobe" id="crWardrobe"></div>
+      <div class="cr-look"><canvas id="crPreview" width="340" height="380"></canvas><small id="crCount"></small></div>
+      <div class="wardrobe">
+        <div class="wd-tabs" id="crTabs" role="tablist"></div>
+        <div class="wd-grid" id="crWardrobe"></div>
+      </div>
     </div>
     <div class="p-foot"><button class="btn big green" id="btnCrOpen">Open een kist</button></div>
   </div>

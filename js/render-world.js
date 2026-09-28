@@ -417,19 +417,19 @@ function drawBranch(v) {
   ctx.restore();
 }
 function drawApple(a) {
-  const bob = a.vine || a.loose ? 0 : Math.sin(a.t * 3) * 3;
+  const bob = a.vine || a.loose ? 0 : Math.sin(a.t * 3) * 4;
   if (a.pearl) { // parel onder water
     const y = a.y + bob;
-    ctx.fillStyle = a.gold ? '#ffe08a' : '#f4eefa'; circ(a.x, y, 9);
-    ctx.fillStyle = a.gold ? '#c9971a' : '#c9b6dc'; circ(a.x + 2, y + 2, 5);
-    ctx.fillStyle = '#ffffff'; circ(a.x - 3, y - 3, 3);
+    ctx.fillStyle = a.gold ? '#ffe08a' : '#f4eefa'; circ(a.x, y, 13);
+    ctx.fillStyle = a.gold ? '#c9971a' : '#c9b6dc'; circ(a.x + 3, y + 3, 7);
+    ctx.fillStyle = '#ffffff'; circ(a.x - 4, y - 4, 4);
     return;
   }
   const x = a.x, y = a.y + bob, s = appleSprite(a.gold);
-  if (a.gold && !Q.lite) ctx.drawImage(glowSprite('255,230,120').c, x - 28, y - 28, 56, 56);
-  const sc = 0.62 * (1 + Math.sin(a.t * 4) * 0.04);
-  ctx.drawImage(s.c, x - s.w * sc / 2, y - s.h * sc / 2 - 2, s.w * sc, s.h * sc);
-  if (a.gold && Math.sin(a.t * 5) > 0.6) { ctx.fillStyle = '#fff'; starPath(ctx, x + 8, y - 6, 4, a.t); ctx.fill(); }
+  if (a.gold && !Q.lite) ctx.drawImage(glowSprite('255,230,120').c, x - 40, y - 40, 80, 80);
+  const sc = APPLE_SC * (1 + Math.sin(a.t * 4) * 0.04);
+  ctx.drawImage(s.c, x - s.w * sc / 2, y - s.h * sc / 2 - 3, s.w * sc, s.h * sc);
+  if (a.gold && Math.sin(a.t * 5) > 0.6) { ctx.fillStyle = '#fff'; starPath(ctx, x + 12, y - 9, 5, a.t); ctx.fill(); }
 }
 function drawSkyBirds() {
   for (const b of life.sky) {
@@ -1025,9 +1025,14 @@ function drawUnderHud() {
 function drawLoot() {
   for (const L of loot) {
     if (L.x < camX - 90 || L.x > camX + viewW + 90 || L.y < camY - 90 || L.y > camY + viewH + 90) continue;
-    const y = L.y + Math.sin(L.t * 2.5) * 6;
-    if (!Q.lite) { ctx.globalAlpha = 0.6 + 0.2 * Math.sin(L.t * 4); ctx.drawImage(glowSprite('255,210,90').c, L.x - 72, y - 72, 144, 144); ctx.globalAlpha = 1; }
-    ctx.save(); ctx.translate(L.x, y); ctx.rotate(Math.sin(L.t * 1.7) * 0.08); ctx.scale(LOOT_SCALE, LOOT_SCALE);
+    const y = L.y + Math.sin(L.t * 2.5) * 8;
+    if (!Q.lite) { ctx.globalAlpha = 0.6 + 0.2 * Math.sin(L.t * 4); ctx.drawImage(glowSprite('255,210,90').c, L.x - 64, y - 64, 128, 128); ctx.globalAlpha = 1; }
+    // draaiende lichtstralen erachter, zodat je hem van ver ziet
+    ctx.save(); ctx.translate(L.x, y - 4); ctx.rotate(L.t * 0.6);
+    ctx.fillStyle = '#ffe680'; ctx.globalAlpha = 0.28 + 0.1 * Math.sin(L.t * 3); ctx.beginPath();
+    for (let k = 0; k < 10; k++) { const a = k * Math.PI / 5; ctx.moveTo(0, 0); ctx.arc(0, 0, 78, a - 0.11, a + 0.11); }
+    ctx.fill(); ctx.restore();
+    ctx.save(); ctx.translate(L.x, y); ctx.rotate(Math.sin(L.t * 1.7) * 0.08); ctx.scale(LOOT_SC, LOOT_SC);
     ctx.fillStyle = '#3a220f'; ctx.fillRect(-19, -9, 38, 24);
     ctx.fillStyle = '#8a5a2e'; ctx.fillRect(-17, -7, 34, 20);
     ctx.fillStyle = '#3a220f'; ctx.beginPath(); ctx.moveTo(-19, -8); ctx.quadraticCurveTo(0, -26, 19, -8); ctx.closePath(); ctx.fill();
@@ -1035,7 +1040,12 @@ function drawLoot() {
     ctx.fillStyle = '#f5c518'; ctx.fillRect(-19, -10, 38, 3.5); ctx.fillRect(-12, -18, 3.5, 33); ctx.fillRect(8.5, -18, 3.5, 33);
     ctx.fillStyle = '#ffe680'; ctx.fillRect(-4, -4, 8, 9); ctx.fillStyle = '#3a220f'; ctx.fillRect(-1, -1, 2, 4);
     ctx.restore();
-    if (Math.sin(L.t * 3) > 0.7) { ctx.fillStyle = '#fff'; starPath(ctx, L.x + 26, y - 32, 7, L.t); ctx.fill(); }
+    // drie fonkelende sterretjes die om de kist heen draaien
+    ctx.fillStyle = '#fff';
+    for (let k = 0; k < 3; k++) {
+      const a = L.t * 1.3 + k * 2.094, tw = 0.5 + 0.5 * Math.sin(L.t * 5 + k * 2);
+      starPath(ctx, L.x + Math.cos(a) * 46, y - 6 + Math.sin(a) * 34, 3 + tw * 5, L.t * 2 + k); ctx.fill();
+    }
   }
 }
 function drawJelly(f) {
@@ -1201,7 +1211,7 @@ function renderScene() {
   for (const v of vines) if (v.x > vx0 && v.rest[2] - 200 < vx1 && v.ay < vy1 && v.rest[3] + 150 > vy0) drawVine(v);
   for (const v of vines) if (v.x > camX - 80 && v.x < camX + viewW + 80 && v.ay > camY - 220 && v.ay < camY + viewH + 60) drawBranch(v);
   drawPortals(true);
-  for (const a of apples) if (a.x > camX - 30 && a.x < camX + viewW + 30 && a.y > camY - 30 && a.y < camY + viewH + 30) drawApple(a);
+  for (const a of apples) if (a.x > camX - 50 && a.x < camX + viewW + 50 && a.y > camY - 50 && a.y < camY + viewH + 50) drawApple(a);
   if (loot.length) drawLoot();
   drawFoes();
   drawFish();

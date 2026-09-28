@@ -608,7 +608,7 @@ function updateApples(dt) {
     }
     if (!alive) continue;
     const dx = G.x - a.x, dy = G.y - a.y, d = Math.hypot(dx, dy);
-    if (d < G_R + 16) { collect(a); apples.splice(i, 1); continue; }
+    if (d < G_R + APPLE_PICK) { collect(a); apples.splice(i, 1); continue; }
     if (mr && d < mr) { const s = Math.min(d, (520 + (mr - d) * 6) * dt); a.x += dx / d * s; a.y += dy / d * s; if (a.vine) a.vine = null; }
   }
 }
@@ -703,7 +703,7 @@ function updateLoot(dt) {
     const L = loot[i];
     L.t += dt;
     if (L.x < camX - 400) { loot.splice(i, 1); continue; }
-    if (alive && Math.hypot(G.x - L.x, G.y - L.y) < LOOT_REACH) {
+    if (alive && Math.hypot(G.x - L.x, G.y - L.y) < G_R + 42) {
       loot.splice(i, 1);
       run.loot++;
       floatText(L.x, L.y - 30, '📦 Kist!', '#ffd76b', 26);
@@ -742,9 +742,13 @@ function genUnder(U, xMax) {
       const fromTop = Math.random() < 0.45, gap = rand(300, 420);
       U.walls.push(fromTop ? { x, w: rand(60, 110), y0: UNDER_TOP - 60, y1: UNDER_FLOOR - gap - rand(0, 250) } : { x, w: rand(60, 110), y0: UNDER_TOP + gap + rand(0, 250), y1: UNDER_FLOOR + 40 });
     }
-    for (let k = 0; k < 3; k++) apples.push({ x: x + rand(80, 460), y: rand(UNDER_TOP + 90, UNDER_FLOOR - 90), gold: Math.random() < 0.35, pearl: true, t: Math.random() * 6 });
+    { // parels in een groepje: een golvend rijtje of een bosje
+      const cx = x + rand(180, 360), cy = rand(UNDER_TOP + 140, UNDER_FLOOR - 140), row = Math.random() < 0.6;
+      const pts = row ? [0, 1, 2, 3, 4].map(i => [(i - 2) * 42, Math.sin(i * 1.2) * 18]) : [[0, 0], ...[0, 1, 2, 3, 4].map(k => [Math.cos(k * 1.257) * 34, Math.sin(k * 1.257) * 34])];
+      for (const [ox, oy] of pts) apples.push({ x: cx + ox, y: cy + oy, gold: Math.random() < 0.12, pearl: true, t: Math.random() * 6 });
+    }
     if (Math.random() < 0.55) { const y = rand(UNDER_TOP + 150, UNDER_FLOOR - 150), jx = x + rand(200, 380); foes.push({ type: 'jelly', x0: jx, y0: y, x: jx, y, t: rand(0, 6), r: 20, bi: 0, hue: rand(260, 340) }); }
-    if (!game.mp && Math.random() < 0.14) loot.push({ x: x + rand(150, 400), y: rand(UNDER_TOP + 150, UNDER_FLOOR - 120), t: 0 });
+    if (!game.mp && Math.random() < 0.05) addLoot(x + rand(150, 400), rand(UNDER_TOP + 150, UNDER_FLOOR - 120));
     U.genX += rand(480, 600);
   }
 }
