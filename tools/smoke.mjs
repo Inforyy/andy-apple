@@ -213,12 +213,17 @@ async function main() {
   check(await until(`__andy.curScreen === 'career' && !!__andy.MAP.cine`, 1500), 'wereldkaart opent met het intro-filmpje');
   check(await until('__andy.save.career.anim === 1 && !__andy.MAP.cine && !__andy.MAP.walk', 9000), 'pad naar level 1 gevuld, Andy staat erbij');
   // wereld voltooid: filmpje met de overtocht naar wereld 2
-  await js(`(() => { const c = __andy.save.career; c.unlocked = 6; c.anim = 5; c.at = 5; __andy.openCareer(); })()`);
-  check(await until('__andy.save.career.anim === 6 && __andy.MAP.at === 6', 12000), 'wereld 1 voltooid: overtocht naar wereld 2');
+  await js(`(() => { const c = __andy.save.career; c.unlocked = 9; c.anim = 8; c.at = 8; __andy.openCareer(); })()`);
+  check(await until('__andy.save.career.anim === 9 && __andy.MAP.at === 9', 12000), 'wereld 1 voltooid: overtocht naar wereld 2');
   await js(`document.getElementById('btnMapPlay').click()`);
-  check(await until('__andy.game.career && __andy.game.career.n === 6 && __andy.curScreen === null', 1000), 'level 2-1 start vanaf de kaart');
+  check(await until('!!__andy.MAP.load', 2500), 'level gekozen: inzoomen, dan het laadscherm');
+  check(await until('__andy.game.career && __andy.game.career.n === 9 && __andy.curScreen === null', 5000), 'level 2-1 start na het laadscherm');
+  // oude carrière (5 levels per wereld) wordt omgezet
+  check(await js(`(() => { const s = normalizeSave({ career: { unlocked: 13, anim: 13, at: 12, stars: [3, 3, 3, 3, 2, 1, 1, 1, 1, 1, 1, 1] } }).career; return s.unlocked === 19 && s.stars[7] === 2 && s.stars[4] === 0 && s.stars[8] === 1 && s.lpw === LEVELS_PER_WORLD; })()`), 'oude carrière-voortgang omgezet naar 8 levels per wereld');
+  // moeilijkheid schaalt mee met de upgrades
+  check(await js(`(() => { const u = __andy.save.upgrades, keep = Object.assign({}, u); const a = levelInfo(20); for (const x of UPGRADES) u[x.id] = x.max; const b = levelInfo(20); Object.assign(u, keep); return b.diff > a.diff + 0.5 && b.time < a.time; })()`), 'met alle upgrades is een level zwaarder en krapper');
   // baasgevecht met tijdslimiet en harten
-  await js('__andy.startReady(10)');
+  await js('__andy.startReady(16)');
   check(await js('!!__andy.run.boss && __andy.run.hearts === 3 && __andy.run.timeLeft > 0'), 'baasgevecht: baas, 3 harten en een tijdslimiet');
   await swing('__andy.press()', '__andy.unpress()', 1.5);
   await js(`__andy.careerFail('Tijd op!', 'test')`);
@@ -226,7 +231,7 @@ async function main() {
   await js('__andy.startReady(1)');
   check(await until('__andy.game.career && __andy.game.career.n === 1', 1000), 'level 1 start');
   await swing('__andy.press()', '__andy.unpress()', 1);
-  for (const n of [36, 41, 46, 51]) { // de stijl-biomes (blokjes, Paint, 3D, snoep)
+  for (const n of [57, 65, 73, 81]) { // de stijl-biomes (blokjes, Paint, 3D, snoep)
     await js(`__andy.startReady(${n})`);
     await swing('__andy.press()', '__andy.unpress()', 0.6);
     check(await js(`__andy.game.career.n === ${n}`), `level ${n} (${await js(`BIOMES[__andy.game.career.bi].name`)}) tekent zonder fouten`);

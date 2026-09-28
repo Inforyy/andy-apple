@@ -20,7 +20,7 @@ GitHub Pages deploys from `main` root. Work happens on `claude/*` branches that 
 
 - **Run**: open `index.html` in a browser. It must keep working via `file://`, which is why there are no ES modules.
 - **Smoke test**: `node tools/smoke.mjs` (Node 18+, finds `chromium`/`google-chrome` itself or uses `CHROME=...`). It needs no npm packages; it drives headless Chromium over the DevTools protocol.
-  - It clicks through the menus and plays Endless (with a head-start, a trip to space, a biome transition, going underwater and opening a loot box), the career (world map with the unlock and world-clear cutscenes, a boss level and a failed level) and career levels (including the four style biomes), split-screen, Kiwi and the chase mode.
+  - It clicks through the menus and plays Endless (with a head-start, a trip to space, a biome transition, going underwater and opening a loot box), the career (world map with the unlock and world-clear cutscenes, the loading screen, save migration, upgrade scaling, a boss level and a failed level) and career levels (including the four style biomes), split-screen, Kiwi and the chase mode.
   - It fails on any JS exception or `console.error`.
   - `ANDY_URL=http://localhost:8000/ node tools/smoke.mjs` runs the same test against a server, as GitHub Pages would serve it.
 - **Benchmark**: `node tools/perf.mjs` (same setup as the smoke test) prints fps, p95, simulation/render time and the cost of the background buffer per quality level and biome, plus the tile-cache size after 30 s. Headless Chromium usually renders in software (SwiftShader), so compare before/after on the same machine rather than reading the absolute numbers.
@@ -38,7 +38,7 @@ GitHub Pages deploys from `main` root. Work happens on `claude/*` branches that 
 ### Script loading: classic scripts sharing one global scope
 `index.html` loads the scripts in this fixed order:
 
-`config, util, data, save, audio, view, world, physics, effects, render-bg, render-world, online, mp-online, mp-local, career, game, main`
+`config, util, data, save, audio, view, world, physics, effects, render-bg, render-world, model3d, online, mp-online, mp-local, career, worldmap, game, main`
 
 Top-level `let`/`const`/`function` in these classic scripts share the global lexical scope. Any file can therefore read **and reassign** another file's `let` (e.g. `camX`, `G`, `vines`, `save`), which the code relies on heavily. This is why the code does not use ES modules: imported bindings are read-only, and `type="module"` doesn't work on `file://`. Consequences:
 
@@ -58,7 +58,14 @@ Top-level `let`/`const`/`function` in these classic scripts share the global lex
   - `RARITY`/`LOOT`/`rollLoot` (loot boxes and cosmetics; opening and the wardrobe live in `game.js`, drawing in `render-world.js`)
 - `online.js` holds the Supabase client (`getSb`, `sbOn`), leaderboard (`lbOn`) and accounts. `mp-online.js` uses the same client for lobbies.
 - `game.js` holds game flow, screens, the debug screen, `uiInit` (all menu buttons), input and HUD.
-- `career.js` holds the career mode: the world map (a pseudo-3D island per world drawn on `#mapCanvas`, replacing the game view while `curScreen === 'career'`; `openCareer`, `mapFrame`, the unlock/world-clear cutscenes driven by `save.career.anim`), and what runs inside a career level: time limit, challenges (`CHALLENGES` in `data.js`), power-ups (`pups`, `run.pow`) and boss fights (`run.boss`, `run.projs`). `levelInfo(n)` in `data.js` defines each level (world, boss, length, time, challenges, difficulty).
+- `career.js` holds what runs inside a career level: time limit, challenges (`CHALLENGES` in `data.js`), power-ups (`pups`, `run.pow`) and boss fights (`run.boss`, `run.projs`).
+- `worldmap.js` holds the career world map: a 3D island per world (8 levels: a tower at `TOWER_IDX`, the boss castle last) drawn on `#mapCanvas` with a perspective camera (`mp(x, y, z)`), replacing the game view while `curScreen === 'career'`. It also has `openCareer`, `mapFrame`, the unlock/world-clear cutscenes driven by `save.career.anim`, and the zoom-in plus fake loading screen (`MAP.go`, `MAP.load`) before `startReady`.
+- `model3d.js` is a tiny 3D renderer for a 2D canvas:
+  - Buildings and hats are triangle meshes (spheres, cylinders, cones, boxes), flat-shaded, with an inverted-hull ink outline (`r3Tris`/`drawTris`, same-colour batches).
+  - `drawAndy3D` draws Andy from `myLook()` as smooth, gradient-shaded ellipsoids and capsules with ink outlines, posed and animated from a `pose` object.
+  - Every model is one entry in `R3.list`, sorted on its foot point by `r3Flush`, so models never cut through each other. Map buildings are built in `worldmap.js`.
+- `levelInfo(n)` in `data.js` defines each level: world, tower/boss, length, time, challenges and difficulty. It also scales with `upgradePower()`, so the career gets harder with more upgrades.
+- Old saves with 5 levels per world are remapped by `migrateCareer` in `save.js` (`save.career.lpw`).
 
 ### Core ideas
 - **Fixed-step simulation with interpolated rendering.**
