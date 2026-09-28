@@ -9,7 +9,7 @@
 3. Tik op **Installeren**. Play Protect kan waarschuwen dat de app onbekend is (hij komt niet uit de Play Store): kies **Toch installeren**.
 4. Andy Apples staat nu tussen je apps.
 
-Werkt vanaf **Android 7.0**. Je voortgang wordt in de app zelf bewaard. Die staat los van je voortgang in de browser: zet hem eventueel over met **💾 Opslaan → Exporteer save** (browser) en **Importeer save** (app).
+Werkt vanaf **Android 7.0**. Je voortgang wordt in de app zelf bewaard. Die staat los van je voortgang in de browser: zet hem eventueel over met **Opslaan → Exporteer** (browser) en **Importeer** (app).
 
 ## Zelf opnieuw bouwen
 
