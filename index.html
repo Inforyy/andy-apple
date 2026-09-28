@@ -100,6 +100,7 @@
         <button class="ic-btn mm-cog" id="btnSettings" aria-label="Instellingen" title="Instellingen"><svg class="ico" aria-hidden="true"><use href="#i-cog"/></svg></button>
       </div>
     </header>
+    <div class="mm-intro" aria-hidden="true">Eindeloos!</div>
     <div class="mm-modes">
       <button class="mode career" id="btnCareer">
         <span class="mode-ic"><svg class="ico" aria-hidden="true"><use href="#i-flag"/></svg></span>
@@ -113,7 +114,7 @@
       </button>
       <button class="mode multi" id="btnMulti">
         <span class="mode-ic"><svg class="ico" aria-hidden="true"><use href="#i-users"/></svg></span>
-        <span class="mode-txt"><span class="mode-t">Spelmodi</span><span class="mode-s" id="mmMulti">Online, samen of tegen Kiwi</span></span>
+        <span class="mode-txt"><span class="mode-t">Gamemodes</span><span class="mode-s" id="mmMulti">Online, samen of tegen Kiwi</span></span>
         <span class="mode-go"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg></span>
       </button>
     </div>
@@ -128,10 +129,10 @@
 </div>
 
 
-<!-- Spelmodi -->
+<!-- Gamemodes -->
 <div id="modes" class="screen">
   <div class="panel modes">
-    <div class="p-head"><button class="ic-btn" id="btnModesBack" aria-label="Menu" title="Menu"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg></button><h2>Spelmodi</h2><span></span></div>
+    <div class="p-head"><button class="ic-btn" id="btnModesBack" aria-label="Menu" title="Menu"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg></button><h2>Gamemodes</h2><span></span></div>
     <div class="modes-grid">
       <button class="mode multi" id="btnModeOnline">
         <span class="mode-ic"><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg></span>
@@ -222,7 +223,7 @@
     <div class="tip">Laat het spel in beeld: wie tijdens een potje een paar seconden wegklikt, geeft op. Twee tabbladen in één venster werkt niet; gebruik twee aparte vensters.</div>
     <h3>Op één apparaat</h3>
     <p>Kies <b>Op één scherm</b>. <b style="color:#e8322b">Speler 1</b>: <kbd>SPATIE</kbd> of de linker/bovenste helft. <b style="color:#2f7fe0">Speler 2</b>: <kbd>↑</kbd> / <kbd>ENTER</kbd> of de rechter/onderste helft.</p>
-    <h3>Spelmodi</h3>
+    <h3>Gamemodes</h3>
     <ul>
       <li><b>Race</b>: eerst bij de finish wint. Val je, dan kom je na een tel terug op een liaan.</li>
       <li><b>Endurance</b>: wie het langst volhoudt, wint. Een storm jaagt je steeds sneller op.</li>
@@ -312,6 +313,14 @@
         <div class="qual-ticks"><span data-q="0">AI</span><span data-q="1">Laag</span><span data-q="2">Normaal</span><span data-q="3">Hoog</span></div>
       </div>
     </section>
+    <section class="set-group">
+      <h3>Resetten</h3>
+      <div class="set-card">
+        <div class="set-row"><span class="set-ic s6">🏁</span><span class="set-lbl">Carrière<small>alle levels, sterren en de kaart</small></span><button class="btn rst" data-reset="career">Reset</button></div>
+        <div class="set-row"><span class="set-ic s6">🎩</span><span class="set-lbl">Cosmetics<small>vachtkleuren, hoeden en kostuums</small></span><button class="btn rst" data-reset="cosm">Reset</button></div>
+        <div class="set-row"><span class="set-ic s6">🛒</span><span class="set-lbl">Upgrades<small>alles terug naar 0 (zonder appels terug)</small></span><button class="btn rst" data-reset="upgrades">Reset</button></div>
+      </div>
+    </section>
     <button class="link" id="btnDebug">Debug</button>
   </div>
 </div>
@@ -394,7 +403,7 @@
         <div class="wd-grid" id="crWardrobe"></div>
       </div>
     </div>
-    <div class="p-foot"><button class="btn big green" id="btnCrOpen">Open een kist</button></div>
+    <div class="p-foot cr-foot"><button class="btn big green" id="btnCrOpen">Open een kist</button><button class="btn big" id="btnCrBuy">Koop een kist</button></div>
   </div>
 </div>
 

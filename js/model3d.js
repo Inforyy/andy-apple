@@ -339,6 +339,14 @@ function drawAndy3D(proj, X, Y, Z, yaw, sc, pal, pose, bias = 0) {
     ball([5, 77.5, 0], [5, 1.4, 3], '#4caf50', head, { inkK: 0.6 });
   }
   if (pal.hat) { const H = []; andyHat(pal.hat, 60, H); mesh(H, head, [0, 76, 0]); }
+  if (pal.svHood) { // Syntaxis-hoodie: het logo op de borst (alleen als de borst naar de camera kijkt)
+    const c0 = P(body([0, 36, 13.5])), cb = P(body([0, 36, 0]))[2];
+    if (c0[2] < cb) items.push({ d: c0[2] - 30 * sc, draw: g => { const s2 = k * 6; g.fillStyle = INK; g.fillRect(c0[0] - s2 * 1.6, c0[1] - s2 * 0.75, s2 * 3.2, s2 * 1.5); g.fillStyle = '#79c143'; g.font = `900 ${s2 * 1.1}px Courier New, monospace`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('S.V.', c0[0], c0[1] + s2 * 0.05); } });
+  }
+  if (pal.astro) { // astronautenhelm: een glazen bol om het hoofd
+    const hc2 = P(head([0, 61, 0])), r = 20 * k;
+    items.push({ d: hc2[2] - 60 * sc, draw: g => { g.fillStyle = 'rgba(170,215,255,.18)'; g.strokeStyle = 'rgba(210,235,255,.9)'; g.lineWidth = Math.max(1, 1.6 * k); g.beginPath(); g.arc(hc2[0], hc2[1], r, 0, 6.2832); g.fill(); g.stroke(); g.fillStyle = 'rgba(255,255,255,.5)'; g.beginPath(); g.ellipse(hc2[0] - r * 0.4, hc2[1] - r * 0.45, r * 0.18, r * 0.32, -0.5, 0, 6.2832); g.fill(); } });
+  }
   // alles van Andy is één geheel in de tekenlijst, gesorteerd op zijn voetpunt
   items.sort((p, q) => q.d - p.d);
   R3.list.push({ d: o0[2] + bias, fn: g => { for (const it of items) it.draw(g); } });
@@ -360,6 +368,24 @@ function andyHat(id, hy, P) {
     add(shapeCyl(10, 1, false), p => [p[0] * 12, top - 3 + p[1] * 7, p[2] * 12], '#ffcc33', [0, top + 1, 0]);
     for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; add(shapeCyl(5, 0), p => [p[0] * 2.6 + Math.sin(a) * 11, top + 4 + p[1] * 7, p[2] * 2.6 + Math.cos(a) * 11], '#ffcc33', [Math.sin(a) * 11, top + 7, Math.cos(a) * 11]); }
     add(shapeSphere(6, 4), p => [p[0] * 2.2, top + 1 + p[1] * 2.2, 12 + p[2]], '#e8322b', [0, top + 1, 12]);
+  } else if (id === 'hat_party') {
+    add(shapeCyl(10, 0), p => [p[0] * 8, top - 2 + p[1] * 26, p[2] * 8 + 2], '#ff4fa3', [0, top + 8, 2]);
+    add(shapeSphere(6, 4), p => [p[0] * 3, top + 25 + p[1] * 3, 2 + p[2] * 3], '#4fd0ff', [0, top + 25, 2]);
+  } else if (id === 'hat_tophat') {
+    add(shapeCyl(16), p => [p[0] * 19, top - 3 + p[1] * 2, p[2] * 18], '#1d1d24', [0, top, 0]);
+    add(shapeCyl(12), p => [p[0] * 10.5, top - 2 + p[1] * 24, p[2] * 10], '#1d1d24', [0, top + 10, 0]);
+    add(shapeCyl(12, 1, false), p => [p[0] * 10.8, top + 1 + p[1] * 4, p[2] * 10.3], '#c81e3a', [0, top + 3, 0]);
+  } else if (id === 'hat_chef') {
+    add(shapeCyl(12), p => [p[0] * 11, top - 3 + p[1] * 10, p[2] * 11], '#ffffff', [0, top + 2, 0]);
+    add(shapeSphere(10, 6), p => [p[0] * 14, top + 12 + p[1] * 9, p[2] * 13], '#ffffff', [0, top + 12, 0]);
+  } else if (id === 'hat_viking') {
+    add(shapeSphere(12, 6), p => [p[0] * 13.5, top - 3 + Math.max(0, p[1]) * 12, p[2] * 13], '#8a939e', [0, top + 2, 0]);
+    for (const sd of [-1, 1]) add(shapeCyl(6, 0), p => { const q = rotZ([p[0] * 3.5, p[1] * 16, p[2] * 3.5], sd * -0.9); return [q[0] + sd * 11, q[1] + top + 2, q[2]]; }, '#e7dcc0', [sd * 16, top + 8, 0]);
+  } else if (id === 'hat_halo') {
+    add(shapeCyl(16, 1, false), p => [p[0] * 12, top + 16 + p[1] * 2, p[2] * 12], '#ffe14f', [0, top + 17, 0]);
+  } else if (id === 'hat_syntaxis') {
+    add(shapeSphere(12, 6), p => [p[0] * 14, top - 3 + Math.max(0, p[1]) * 10, p[2] * 14], '#2e3236', [0, top, 0]);
+    add(shapeCyl(12), p => [p[0] * 9, top - 2 + p[1] * 1.5, p[2] * 7 + 14], '#79c143', [0, top, 13]);
   } else if (id === 'hat_wizard') {
     add(shapeCyl(16), p => [p[0] * 20, top - 3 + p[1] * 2, p[2] * 20], '#4b2a8c', [0, top, 0]);
     add(shapeCyl(12, 0), p => { const h = p[1]; return [p[0] * 12 - h * h * 6, top - 1 + h * 30, p[2] * 12]; }, '#5a34a8', [0, top + 10, 0]);

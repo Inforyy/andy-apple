@@ -9,6 +9,7 @@
 const MAP = {
   w: 0, at: 1, startW: null, sel: 1, cam: { x: 0, z: 0 }, zoom: 1, t: 0, walk: null, cine: null, go: null, load: null,
   cv: null, g: null, W: 0, H: 0, dpr: 1, F: 1, cy: 0, hits: [], pop: {}, fill: null, yaw: Math.PI - 0.4, cheer: false,
+  free: null, uz: 1, ptr: new Map(), drag: null, // zelf rondkijken: vrije camera, eigen zoom, aanrakingen
 };
 const MAP_SPAN = 3300, MAP_GAP = 1900;      // breedte van een eiland en de zee tussen twee eilanden
 const MAP_PITCH = Math.atan2(400, 700);     // hoe schuin de camera naar beneden kijkt
@@ -100,7 +101,7 @@ function mapDeco(w) {
     // een meer (bevroren, lava of moeras, per biome)
     place(1, 80, 190, () => ({ kind: 'lake', solid: true, v: rnd() }), I.cz - 200, I.cz + 380);
     // bergen achteraan (en in sommige werelden een vulkaan of blokkenberg)
-    const mk = st === 'volcano' ? 'volcano' : st === 'blocky' ? 'blockhill' : st === 'poly3d' ? 'pyramid' : st === 'candy' ? 'gumdrop' : 'mount';
+    const mk = st === 'volcano' ? 'volcano' : st === 'blocky' ? 'blockhill' : st === 'poly3d' || st === 'desert' ? 'pyramid' : st === 'candy' ? 'gumdrop' : st === 'cloud' ? 'cloudhill' : st === 'neon' ? 'tower' : st === 'shroom' ? 'mushroom' : 'mount';
     place(st === 'volcano' ? 1 : 3, 60, () => 140 + rnd() * 90, r => ({ kind: mk, solid: true, h: r * (1.1 + rnd() * 0.5), v: rnd() }), I.cz + 420, I.cz + I.rz - 60);
     if (st === 'volcano') place(2, 60, () => 130 + rnd() * 60, r => ({ kind: 'mount', solid: true, h: r * 1.2, v: rnd() }), I.cz + 300, I.cz + I.rz - 60);
     // een huisje bij het begin (Andy's huis) en eentje ergens op het eiland
@@ -108,7 +109,7 @@ function mapDeco(w) {
     D.push({ kind: 'hut', x: S.x - 60, z: S.z + 190, r: 50, solid: true, main: true });
     place(1, 60, 50, () => ({ kind: 'hut', solid: true }));
     // biome-specifiek
-    const special = { savanne: 'mesa', ice: 'crystal', night: 'crystal', candy: 'lolly', paint: 'blob', swamp: 'stump', blocky: 'cube', poly3d: 'gem' }[st];
+    const special = { savanne: 'mesa', ice: 'crystal', night: 'crystal', candy: 'lolly', paint: 'blob', swamp: 'stump', blocky: 'cube', poly3d: 'gem', desert: 'cactus', shroom: 'mushroom', cloud: 'cloudpuff', neon: 'neonpillar' }[st];
     if (special) place(7, 120, () => 40 + rnd() * 40, r => ({ kind: special, solid: true, h: r * (1.2 + rnd()), v: rnd() }));
     if (B.name === 'Portaalwoud') place(2, 80, 60, () => ({ kind: 'portal', solid: true, v: rnd() }));
     // rotsen, bomen en struiken
@@ -180,7 +181,7 @@ function drawMapIsland(g, w, locked) {
   const foam = I.map(p => { const I2 = ISL(w); return mp(I2.cx + (p.x - I2.cx) * 1.03, SEA_Y, I2.cz + (p.z - I2.cz) * 1.05); });
   g.strokeStyle = `rgba(255,255,255,${0.35 + 0.15 * Math.sin(MAP.t * 2)})`; g.lineWidth = Math.max(2, 5 * mpScale(foam[18][2])); poly(foam); g.stroke();
   // klif: per stukje kust een vlak, met licht van links
-  const rockA = shade(c.canopy, -0.55), dirt = B.style === 'candy' ? '#f7c6dc' : B.style === 'ice' ? '#cfe8f5' : B.style === 'volcano' ? '#4a3028' : '#8a6a44';
+  const rockA = shade(c.canopy, -0.55), dirt = B.style === 'candy' ? '#f7c6dc' : B.style === 'ice' ? '#cfe8f5' : B.style === 'volcano' ? '#4a3028' : B.style === 'desert' ? '#c9985a' : B.style === 'neon' ? '#2a1048' : B.style === 'cloud' ? '#dfe9f3' : B.style === 'shroom' ? '#6a4a8a' : '#8a6a44';
   for (let i = 0; i < n; i++) {
     const j = (i + 1) % n, a = I[i], b = I[j], nx = b.z - a.z, lit = clamp(0.5 - nx / 120 * 0.25, 0.2, 0.8);
     g.fillStyle = shade(dirt, (lit - 0.5) * 0.8 - 0.1);
@@ -190,7 +191,7 @@ function drawMapIsland(g, w, locked) {
   g.fillStyle = rockA; poly(top); g.fill();
   // grond met strepen (zoals de kaart van Mario)
   g.save(); poly(top); g.clip();
-  const g1 = shade(c.canopy2, 0.12), g2 = shade(c.canopy2, -0.04), I2 = ISL(w);
+  const neon = B.style === 'neon', g1 = neon ? '#2a1048' : shade(c.canopy2, 0.12), g2 = neon ? '#1c0834' : shade(c.canopy2, -0.04), I2 = ISL(w); // neon: donkere grond
   for (let z = I2.cz + I2.rz + 60, k = 0; z > I2.cz - I2.rz - 60; z -= 120, k++) {
     const a = mp(I2.cx - I2.rx - 200, 0, z), b = mp(I2.cx + I2.rx + 200, 0, z), cc = mp(I2.cx + I2.rx + 200, 0, z - 120), d = mp(I2.cx - I2.rx - 200, 0, z - 120);
     g.fillStyle = k % 2 ? g1 : g2; g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineTo(cc[0], cc[1]); g.lineTo(d[0], d[1]); g.closePath(); g.fill();
@@ -225,7 +226,7 @@ function drawMapLake(g, d, st) {
   const pts = [], N = 28;
   for (let k = 0; k < N; k++) { const a = k / N * Math.PI * 2, r = d.r * (1 + (noise1(k * 0.6 + d.v * 9) - 0.5) * 0.3); pts.push(mp(d.x + Math.cos(a) * r * 1.3, 0, d.z + Math.sin(a) * r)); }
   const shape = () => { g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.closePath(); };
-  const col = st === 'volcano' ? ['#ff7a1a', '#ffcf3a'] : st === 'ice' ? ['#bfe9ff', '#ffffff'] : st === 'swamp' ? ['#4e6b3a', '#7e9a5a'] : st === 'candy' ? ['#ff9ad0', '#ffe0f0'] : ['#3fa7e0', '#bfeaff'];
+  const col = st === 'volcano' ? ['#ff7a1a', '#ffcf3a'] : st === 'ice' ? ['#bfe9ff', '#ffffff'] : st === 'swamp' ? ['#4e6b3a', '#7e9a5a'] : st === 'candy' ? ['#ff9ad0', '#ffe0f0'] : st === 'desert' ? ['#d9a45a', '#f6d8a0'] : st === 'shroom' ? ['#3fb89a', '#a0ffe0'] : st === 'cloud' ? ['#6a7898', '#ffffff'] : st === 'neon' ? ['#ff2bd6', '#9ff6ff'] : ['#3fa7e0', '#bfeaff'];
   g.fillStyle = shade(col[0], -0.35); shape(); g.fill();
   g.save(); shape(); g.clip();
   const c = mp(d.x, 0, d.z);
@@ -342,7 +343,16 @@ function mapDecoItem(g, w, d) {
       }); break;
     }
     case 'blockhill': { const P = [], k = d.r / 3; for (let i = 0; i < 3; i++) P.push(boxPart([0, k * (i + 0.5) * 1.3, 0], [d.r - i * k * 0.9, k * 0.65, d.r - i * k * 0.9], i === 2 ? '#5aa532' : '#8a6238')); mapMesh(P, d.x, d.z); break; }
-    case 'pyramid': mapMesh([cylPart([0, 0, 0], d.r, d.h, d.v < 0.5 ? '#ff4fb4' : '#39d5ff', 4, 0)], d.x, d.z); break;
+    case 'pyramid': mapMesh([cylPart([0, 0, 0], d.r, d.h, st === 'desert' ? '#e2b06a' : d.v < 0.5 ? '#ff4fb4' : '#39d5ff', 4, 0)], d.x, d.z); break;
+    case 'cloudhill': mapMesh([ballPart([0, d.h * 0.2, 0], [d.r, d.h * 0.55, d.r * 0.8], '#ffffff', 10), ballPart([d.r * 0.5, d.h * 0.45, -10], [d.r * 0.55, d.h * 0.4, d.r * 0.5], '#f2f8ff', 8)], d.x, d.z); break;
+    case 'cloudpuff': mapMesh([ballPart([0, d.r * 0.5, 0], [d.r, d.r * 0.6, d.r * 0.8], '#ffffff', 8), ballPart([d.r * 0.5, d.r * 0.8, 0], [d.r * 0.55, d.r * 0.45, d.r * 0.5], '#eef6ff', 6)], d.x, d.z); break;
+    case 'mushroom': { const s = d.kind === 'mushroom' && d.h > 120 ? 1 : 0.6, hh = d.h * s;
+      mapMesh([cylPart([0, 0, 0], d.r * 0.25, hh, '#f3ead8', 8), Object.assign(ballPart([0, hh, 0], [d.r * 0.9, d.r * 0.55, d.r * 0.9], ['#c9425e', '#6a8cff', '#ffb02e'][(d.v * 3) | 0], 10), {})], d.x, d.z); break; }
+    case 'cactus': mapMesh([cylPart([0, 0, 0], d.r * 0.3, d.h, '#5f8f34', 7, 0.9), cylPart([d.r * 0.3, d.h * 0.45, 0], d.r * 0.18, d.h * 0.35, '#6fa03e', 6, 0.9)], d.x, d.z); break;
+    case 'neonpillar': case 'tower': { const hh = d.kind === 'tower' ? d.h * 1.4 : d.h * 1.2, w = d.kind === 'tower' ? d.r * 0.45 : d.r * 0.3;
+      mapMesh([boxPart([0, hh / 2, 0], [w, hh / 2, w], '#1a0a36')], d.x, d.z);
+      r3Item(p[2] - 1, () => { const a = mp(d.x - w, hh, d.z - w), b = mp(d.x - w, 0, d.z - w), c2 = mp(d.x + w, hh, d.z - w); g.strokeStyle = d.v < 0.5 ? '#00e5ff' : '#ff2bd6'; g.lineWidth = Math.max(1.5, 3 * s); g.shadowColor = g.strokeStyle; g.shadowBlur = 8; g.beginPath(); g.moveTo(b[0], b[1]); g.lineTo(a[0], a[1]); g.lineTo(c2[0], c2[1]); g.stroke(); g.shadowBlur = 0; });
+      break; }
     case 'gumdrop': mapMesh([ballPart([0, 0, 0], [d.r, d.h * 0.7, d.r], ['#ff7eb9', '#7ee0ff', '#b7ff7e', '#ffe07e'][(d.v * 4) | 0], 10)], d.x, d.z); break;
     case 'mesa': mapMesh([cylPart([0, 0, 0], d.r, d.h * 0.7, '#c46a3a', 7, 0.8), cylPart([0, d.h * 0.7, 0], d.r * 0.8, 4, '#d98a4a', 7)], d.x, d.z); break;
     case 'crystal': mapMesh([cylPart([0, 0, 0], d.r * 0.35, d.h * 1.2, d.v < 0.5 ? '#7ad7ff' : '#c79bff', 5, 0), cylPart([d.r * 0.4, 0, 6], d.r * 0.22, d.h * 0.7, '#a8e8ff', 5, 0)], d.x, d.z); break;
@@ -482,10 +492,13 @@ function mapUpdate(dt) {
   let dy = ((ty - MAP.yaw) % (Math.PI * 2) + Math.PI * 3) % (Math.PI * 2) - Math.PI;
   MAP.yaw += dy * Math.min(1, dt * 10);
   // camera volgt Andy (of het filmpje); bij een overtocht zoomt hij uit, bij het kiezen van een level in
-  const C = MAP.cine, tgt = C && C.cam ? C.cam : { x: A.x + 60, z: 280 + (A.z - 280) * 0.7 };
-  const k = Math.min(1, dt * (C && C.fast ? 1.3 : 3.2));
+  // zelf rondkijken (slepen) geldt tot Andy weer gaat lopen, een filmpje begint of je een level kiest
+  const C = MAP.cine;
+  if (MAP.walk || C || MAP.go || MAP.fill) MAP.free = null;
+  const tgt = C && C.cam ? C.cam : MAP.free || { x: A.x + 60, z: 280 + (A.z - 280) * 0.7 };
+  const k = Math.min(1, dt * (C && C.fast ? 1.3 : MAP.free ? 14 : 3.2));
   MAP.cam.x += (tgt.x - MAP.cam.x) * k; MAP.cam.z += (tgt.z - MAP.cam.z) * k;
-  const zt = MAP.go ? 2.6 : C && C.fast ? 0.72 : 1;
+  const zt = MAP.go ? 2.6 : C && C.fast ? 0.72 : MAP.uz; // uz: zelf in- of uitgezoomd (scrollwiel, knijpen)
   MAP.zoom += (zt - MAP.zoom) * Math.min(1, dt * (MAP.go ? 2.2 : 2.5));
   if (C) { C.t += dt; if (C.t >= C.dur) { MAP.cine = null; if (C.cb) C.cb(); } } // de knoppen komen pas terug na het hele filmpje (finish)
   // level gekozen: inzoomen, cirkel sluit zich rond Andy, dan het laadscherm
@@ -523,7 +536,7 @@ function drawMapGo(g) {
 function openCareer() {
   if (!MAP.cv) { MAP.cv = $('mapCanvas'); MAP.g = MAP.cv.getContext('2d'); mapResize(); }
   const C = save.career, target = C.unlocked;
-  MAP.walk = null; MAP.fill = null; MAP.cine = null; MAP.startW = null; MAP.go = null; MAP.load = null; MAP.cheer = false; MAP.zoom = 1;
+  MAP.walk = null; MAP.fill = null; MAP.cine = null; MAP.startW = null; MAP.go = null; MAP.load = null; MAP.cheer = false; MAP.zoom = MAP.uz; MAP.free = null;
   MAP.at = clamp(C.at || 1, 1, target); if (C.anim < target && C.anim >= 1) MAP.at = C.anim;
   if (C.anim < 1) { MAP.at = 0; MAP.startW = 0; }
   MAP.sel = Math.max(1, MAP.at);
@@ -589,7 +602,7 @@ function mapGo(n) {
   if (mapBusy() || MAP.walk) return;
   n = clamp(n, 1, save.career.unlocked);
   const cur = Math.max(1, MAP.at);
-  MAP.sel = n; mapRenderUi();
+  MAP.sel = n; mapRenderUi(); MAP.free = null;
   if (worldOf(n) !== worldOf(cur)) { MAP.at = n; MAP.startW = null; const A = mapAndyPos(); MAP.cam.x = A.x + 60; MAP.cam.z = 280 + (A.z - 280) * 0.7; save.career.at = n; return; } // andere wereld: er meteen heen
   mapWalk(cur, n, () => { save.career.at = n; });
 }
@@ -706,7 +719,49 @@ function careerInit() {
   const wj = d => { const w = clamp(worldOf(Math.max(1, MAP.sel)) + d, 0, worldOf(save.career.unlocked)); mapGo(Math.min(save.career.unlocked, mapLevelAt(w, 0))); };
   on('btnMapPrevW', () => wj(-1));
   on('btnMapNextW', () => wj(1));
-  $('mapCanvas').addEventListener('pointerdown', e => { e.preventDefault(); Sfx.init(); const [x, y] = toGame(e.clientX, e.clientY); mapTap(x, y); });
+  // Kaart: tikken/klikken = naar een level lopen of spelen; slepen (linkermuisknop of vinger) = rondkijken;
+  // scrollwiel of knijpen met twee vingers = in- en uitzoomen
+  const cv = $('mapCanvas');
+  cv.addEventListener('pointerdown', e => {
+    e.preventDefault(); Sfx.init();
+    if (e.button > 0) return;
+    try { cv.setPointerCapture(e.pointerId); } catch (er) { /* niet nodig */ }
+    MAP.ptr.set(e.pointerId, toGame(e.clientX, e.clientY));
+    if (MAP.ptr.size === 1) MAP.drag = { p: toGame(e.clientX, e.clientY), moved: 0 };
+    else { MAP.drag = null; MAP.pinch = mapPinchDist(); MAP.pinchZ = MAP.uz; }
+  });
+  cv.addEventListener('pointermove', e => {
+    if (!MAP.ptr.has(e.pointerId)) return;
+    const p = toGame(e.clientX, e.clientY);
+    MAP.ptr.set(e.pointerId, p);
+    if (MAP.ptr.size >= 2 && MAP.pinch) { mapSetZoom(MAP.pinchZ * mapPinchDist() / MAP.pinch); return; }
+    const D = MAP.drag;
+    if (!D) return;
+    const dx = p[0] - D.p[0], dy = p[1] - D.p[1];
+    D.moved += Math.abs(dx) + Math.abs(dy); D.p = p;
+    if (D.moved > 8 && !mapBusy() && !MAP.walk) mapPan(dx, dy);
+  });
+  const up = e => {
+    if (!MAP.ptr.has(e.pointerId)) return;
+    const p = MAP.ptr.get(e.pointerId);
+    MAP.ptr.delete(e.pointerId);
+    if (MAP.ptr.size < 2) MAP.pinch = 0;
+    const D = MAP.drag;
+    MAP.drag = null;
+    if (D && D.moved <= 8 && e.type === 'pointerup') mapTap(p[0], p[1]); // geen sleep: gewoon een tik
+  };
+  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+  cv.addEventListener('wheel', e => { e.preventDefault(); if (!mapBusy()) mapSetZoom(MAP.uz * Math.exp(-e.deltaY * 0.0015)); }, { passive: false });
+}
+function mapPinchDist() { const [a, b] = [...MAP.ptr.values()]; return Math.max(1, Math.hypot(a[0] - b[0], a[1] - b[1])); }
+function mapSetZoom(z) { MAP.uz = clamp(z, 0.55, 2.2); }
+// de camera verschuiven met een sleep (dx, dy in schermpixels), binnen de vrijgespeelde eilanden
+function mapPan(dx, dy) {
+  const k = MAP.F / MAP_DIST, F = MAP.free || (MAP.free = { x: MAP.cam.x, z: MAP.cam.z });
+  F.x -= dx / k; F.z += dy / (k * 0.55);
+  const wu = worldOf(save.career.unlocked);
+  F.x = clamp(F.x, worldX0(0) - 300, worldX0(wu) + MAP_SPAN + 300); F.z = clamp(F.z, -100, 1300);
+  MAP.cam.x = F.x; MAP.cam.z = F.z;
 }
 // toetsen op de kaart (vanuit de algemene toetsenafhandeling in game.js)
 function mapKey(code) {

@@ -23,10 +23,12 @@ canvas{display:block;position:fixed;inset:0;touch-action:none;cursor:pointer}
 #hint{position:absolute;bottom:max(9%,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:rgba(0,0,0,.45);
   padding:10px 18px;border-radius:16px;font-weight:800;font-size:clamp(14px,2.4vw,20px);text-align:center;max-width:92%;transition:opacity .3s}
 #hint:empty{opacity:0}
+body.matrix #hud{visibility:hidden}
 /* ---------- Carrière: de wereldkaart ---------- */
 #career.screen{padding:0;background:#000;display:none}
 #career.screen.show{display:block}
-#mapCanvas{position:absolute;inset:0;width:100%;height:100%;cursor:pointer;touch-action:none}
+#mapCanvas{position:absolute;inset:0;width:100%;height:100%;cursor:grab;touch-action:none}
+#mapCanvas:active{cursor:grabbing}
 .map-top{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:10px;padding:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 0 max(12px,env(safe-area-inset-left));pointer-events:none}
 .map-top>*{pointer-events:auto}
 .map-plate{background:linear-gradient(#d9a86a,#a0703c);border:4px solid #5a3410;border-radius:16px;padding:4px 14px;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35);display:flex;flex-direction:column;line-height:1.1;box-shadow:0 4px 0 #3a220f}
@@ -144,8 +146,9 @@ h2{font-size:32px;font-weight:900;color:#c2410c;margin-bottom:4px}
 .card-mid b{font-size:16px;line-height:1.1}
 .card-mid small{font-size:12.5px;color:#7a5a3a;line-height:1.2}
 .pips{display:flex;gap:3px;max-width:120px}
-.pips i{flex:1;height:6px;border-radius:3px;background:#ecdcb8}
+.pips i{flex:1;height:6px;border-radius:3px;background:linear-gradient(90deg,#f59e0b calc(var(--f,0)*100%),#ecdcb8 0)}
 .pips i.on{background:#f59e0b}
+.card b .tier{font-style:normal;font-size:11px;font-weight:800;color:#a0703c;margin-left:4px}
 .card.maxed .pips i.on{background:#22c55e}
 .buy{font-size:16px;padding:8px 10px;flex:none;min-width:78px;box-shadow:0 4px 0 #92400e}
 .locks{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 6px}
@@ -202,6 +205,17 @@ h2{font-size:32px;font-weight:900;color:#c2410c;margin-bottom:4px}
 .ring b{width:34px;height:34px;border-radius:50%;background:#2a1f3d;display:grid;place-items:center;font-size:17px}
 .lvl-txt{display:flex;flex-direction:column;line-height:1.1}
 .lvl-txt b{font-size:16px}.lvl-txt small{font-size:12px;font-weight:700;opacity:.85}
+/* start-animatie van Eindeloos: alles vliegt weg, de titel knalt in beeld */
+.mm-intro{display:none}
+#menu.leaving .mm-intro{display:block;position:absolute;left:50%;top:26%;transform:translate(-50%,-50%);font-size:clamp(42px,9vw,96px);font-weight:900;color:#fff;letter-spacing:2px;
+  text-shadow:0 6px 0 #1d6b2e,0 10px 24px rgba(0,0,0,.5);animation:introPop .95s cubic-bezier(.2,1.4,.4,1) both;pointer-events:none;z-index:5;white-space:nowrap}
+@keyframes introPop{0%{transform:translate(-50%,-50%) scale(.2) rotate(-8deg);opacity:0}35%{transform:translate(-50%,-50%) scale(1.12) rotate(2deg);opacity:1}75%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-80%) scale(1.3);opacity:0}}
+#menu.leaving{background:transparent;transition:background .5s}
+#menu.leaving .mode{transform:translateX(130%) rotate(4deg);opacity:0;transition:transform .5s cubic-bezier(.6,-.3,.8,.5),opacity .5s}
+#menu.leaving .mode:nth-child(2){transition-delay:.06s}#menu.leaving .mode:nth-child(3){transition-delay:.12s}#menu.leaving .mode:nth-child(4){transition-delay:.18s}
+#menu.leaving .mm-top{transform:translateY(-140%);opacity:0;transition:transform .45s ease-in,opacity .45s}
+#menu.leaving .mm-bar{transform:translateY(160%);opacity:0;transition:transform .45s ease-in,opacity .45s}
+#menu.leaving *{pointer-events:none}
 .mm-modes{grid-area:modes;display:flex;flex-direction:column;justify-content:center;gap:16px}
 .mode{font:inherit;display:flex;align-items:center;gap:14px;width:100%;border:none;border-radius:24px;padding:18px 20px;cursor:pointer;
   color:#fff;text-align:left;box-shadow:0 7px 0 rgba(0,0,0,.28),0 16px 30px rgba(0,0,0,.25);transition:transform .12s,box-shadow .12s;
@@ -371,6 +385,10 @@ kbd{background:#fff;border:2px solid #d6b77a;border-bottom-width:4px;border-radi
 .ic-btn:active{transform:translateY(2px)}
 .p-foot{display:flex;flex-direction:column;gap:10px;margin-top:2px}
 .p-foot .row{margin:0}
+.p-foot.cr-foot{flex-direction:row}.cr-foot .btn{flex:1}
+#btnCrBuy{background:#ffe9b0;color:#7a4a1c;border-color:#e0b35a;box-shadow:0 4px 0 #c08a2a}
+#btnCrBuy:disabled{opacity:.5}
+#btnCrBuy small{display:block;font-size:12px;font-weight:700;opacity:.8}
 .p-foot .btn.big{width:100%}
 .link{align-self:center;background:none;border:none;padding:4px 8px;font:inherit;font-size:14px;font-weight:700;color:#7a5a3a;
   text-decoration:underline;cursor:pointer}
@@ -407,6 +425,12 @@ html.short .btn.big{font-size:22px;padding:10px 18px}
 .set-row:first-child{border-top:none}
 .set-ic{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:18px;background:#fff1d6}
 .set-lbl{flex:1;font-weight:800;font-size:16px;color:#4a2c12}
+.svx{font-style:normal;font-family:'Courier New',monospace;font-weight:900;color:#79c143;letter-spacing:-1px;text-shadow:0 0 6px rgba(121,193,67,.6),2px 2px 0 #1c1f22;background:#2e3236;border-radius:6px;padding:0 4px}
+.set-lbl small{display:block;font-size:12px;font-weight:700;color:#a0703c}
+.set-ic.s6{background:#fde7e7;font-size:20px}
+.btn.rst{padding:7px 14px;font-size:15px;background:#fff;color:#c62828;border:2px solid #f3b8b8;box-shadow:0 3px 0 #f3b8b8}
+.btn.rst.sure{background:#e53935;color:#fff;border-color:#b71c1c;box-shadow:0 3px 0 #8e1515}
+.btn.rst.done{background:#e8f5e9;color:#2e7d32;border-color:#a5d6a7;box-shadow:0 3px 0 #a5d6a7}
 /* schakelaar: baan met een schuivend bolletje (de tekst Aan/Uit is er voor schermlezers) */
 .tgl{flex:none;position:relative;width:54px;height:32px;border:none;border-radius:999px;padding:0;cursor:pointer;
   font-size:0;color:transparent;background:#dccaa6;transition:background .15s}

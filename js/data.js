@@ -47,44 +47,54 @@ const KEEP_BEHIND = 2400;
 const BIOMES = [
   { name:'Jungle', bonus:0, icon:'🌿', start:0, tip:'Gouden turbolianen geven extra vaart!', style:'jungle', particle:'leaf', hazardName:'de rivier', shroom:'#e8322b',
     c:{ skyTop:'#4fb8ef', skyMid:'#9fdcf2', skyBot:'#e2f7d2', sun:'#fff3a0', far:'#86bfa0', far2:'#5a9d6c', mid:'#2f7d45', canopy:'#1f6b33', canopy2:'#3f9a45', hazTop:'#46b6e2', hazBot:'#155489', vine:'#4f8f2a', leaf:'#6fc04a' } },
-  { name:'Moeras', bonus:0.5, icon:'🐸', start:450, tip:'Rotte lianen breken! Wespen stelen appels.', style:'swamp', particle:'firefly', hazardName:'het moeras', shroom:'#8a5bd1',
+  { name:'Moeras', bonus:0.5, icon:'🐸', start:600, tip:'Rotte lianen breken! Wespen stelen appels.', style:'swamp', particle:'firefly', hazardName:'het moeras', shroom:'#8a5bd1',
     c:{ skyTop:'#6f8c70', skyMid:'#a9b98e', skyBot:'#dcdca6', sun:'#f0f0b0', far:'#72876a', far2:'#556b48', mid:'#3a4d2e', canopy:'#2e4524', canopy2:'#4d6a33', hazTop:'#6b8a3a', hazBot:'#26331a', vine:'#5f7d2c', leaf:'#8aa04a' } },
-  { name:'Savanne', bonus:1, icon:'🦒', start:1100, tip:'Roze elastieken lianen veren mee!', style:'savanne', particle:'dust', hazardName:'het drijfzand', shroom:'#e07a1f',
+  { name:'Savanne', bonus:1, icon:'🦒', start:1450, tip:'Roze elastieken lianen veren mee!', style:'savanne', particle:'dust', hazardName:'het drijfzand', shroom:'#e07a1f',
     c:{ skyTop:'#ef8a3c', skyMid:'#f7b86a', skyBot:'#fde7aa', sun:'#fff0c0', far:'#d9925a', far2:'#b9783f', mid:'#6e5320', canopy:'#5f7a22', canopy2:'#90a83a', hazTop:'#d9a45a', hazBot:'#7a4e1e', vine:'#7d8a2a', leaf:'#a8b84a' } },
-  { name:'IJsbergen', bonus:1.5, icon:'❄️', start:1900, tip:'IJslianen zijn glad – je glijdt omlaag!', style:'ice', particle:'snow', hazardName:'het ijswater', shroom:'#4aa3df',
+  { name:'IJsbergen', bonus:1.5, icon:'❄️', start:2450, tip:'IJslianen zijn glad – je glijdt omlaag!', style:'ice', particle:'snow', hazardName:'het ijswater', shroom:'#4aa3df',
     c:{ skyTop:'#7cbbea', skyMid:'#b4dcf5', skyBot:'#f0f9ff', sun:'#ffffff', far:'#c3d8ec', far2:'#94b4d2', mid:'#2f5d62', canopy:'#d4e7f5', canopy2:'#f4fbff', hazTop:'#8fd0f0', hazBot:'#205d8e', vine:'#5c9aa8', leaf:'#d8f0ff' } },
-  { name:'Vulkaan', bonus:2, icon:'🌋', start:2900, tip:'Vuurballen verbranden je appels!', style:'volcano', particle:'ember', hazardName:'de lava', shroom:'#b83b2b',
+  { name:'Vulkaan', bonus:2, icon:'🌋', start:3700, tip:'Vuurballen verbranden je appels!', style:'volcano', particle:'ember', hazardName:'de lava', shroom:'#b83b2b',
     c:{ skyTop:'#1e0a0e', skyMid:'#5a1c18', skyBot:'#c2481c', sun:'#ffb060', far:'#4a1d1a', far2:'#331311', mid:'#1f0c0c', canopy:'#2e2016', canopy2:'#4d3320', hazTop:'#ffae2a', hazBot:'#a81c0a', vine:'#6b5230', leaf:'#8a6a3a' } },
-  { name:'Sterrennacht', bonus:3, icon:'🌙', start:4100, tip:'Alles komt samen… succes!', style:'night', particle:'star', hazardName:'het nachtmeer', shroom:'#c04ad8',
+  { name:'Sterrennacht', bonus:3, icon:'🌙', start:5200, tip:'Alles komt samen… succes!', style:'night', particle:'star', hazardName:'het nachtmeer', shroom:'#c04ad8',
     c:{ skyTop:'#050822', skyMid:'#171a4a', skyBot:'#3b2c70', sun:'#f4f1d8', far:'#1c2152', far2:'#141a40', mid:'#101842', canopy:'#12302e', canopy2:'#1e4a42', hazTop:'#4046b8', hazBot:'#0c1036', vine:'#3c8a6a', leaf:'#5ac08a' } },
-  { name:'Portaalwoud', bonus:4, icon:'🌀', start:5200, tip:'Vlieg door een blauw portaal: je komt met al je vaart uit het oranje!', style:'jungle', particle:'firefly', hazardName:'de energiestroom', shroom:'#ff8a1a',
+  { name:'Portaalwoud', bonus:4, icon:'🌀', start:6600, tip:'Vlieg door een blauw portaal: je komt met al je vaart uit het oranje!', style:'jungle', particle:'firefly', hazardName:'de energiestroom', shroom:'#ff8a1a',
     c:{ skyTop:'#161a45', skyMid:'#3b3b8f', skyBot:'#8fcfe0', sun:'#e6fbff', far:'#4a57a3', far2:'#384385', mid:'#26306c', canopy:'#26586a', canopy2:'#3a9a98', hazTop:'#63e2ff', hazBot:'#1c2a78', vine:'#3f8f86', leaf:'#7fe0c8' } },
   // Vier stijl-biomes: alles wordt anders getekend (blokjes, Paint, 3D, snoep), zie de stijlen in render-bg.js/render-world.js
-  { name:'Kubuswoud', bonus:5, icon:'🟩', start:6300, tip:'Alles is van blokjes, net als in Minecraft!', style:'blocky', particle:'pixel', hazardName:'het blokwater', shroom:'#c0392b',
+  { name:'Kubuswoud', bonus:5, icon:'🟩', start:8000, tip:'Alles is van blokjes, net als in Minecraft!', style:'blocky', particle:'pixel', hazardName:'het blokwater', shroom:'#c0392b',
     c:{ skyTop:'#6f9ff7', skyMid:'#8fb6fa', skyBot:'#c3d8fb', sun:'#fffbe0', far:'#7e9a6a', far2:'#5f8a4a', mid:'#3f7a2a', canopy:'#3a7d24', canopy2:'#5aa532', hazTop:'#3f76e4', hazBot:'#1d3f9a', vine:'#4a8a2a', leaf:'#60b538' } },
-  { name:'Tekenland', bonus:6, icon:'🖍️', start:7400, tip:'Alles is getekend in Paint. Pas op voor de verfpot!', style:'paint', particle:'paint', hazardName:'de verfpot', shroom:'#ed1c24',
+  { name:'Tekenland', bonus:6, icon:'🖍️', start:9400, tip:'Alles is getekend in Paint. Pas op voor de verfpot!', style:'paint', particle:'paint', hazardName:'de verfpot', shroom:'#ed1c24',
     c:{ skyTop:'#99d9ea', skyMid:'#a8def0', skyBot:'#d4f1f9', sun:'#fff200', far:'#b5e61d', far2:'#22b14c', mid:'#22b14c', canopy:'#22b14c', canopy2:'#b5e61d', hazTop:'#00a2e8', hazBot:'#3f48cc', vine:'#22b14c', leaf:'#b5e61d' } },
-  { name:'3D-wereld', bonus:7, icon:'🧊', start:8500, tip:'Welkom in de derde dimensie!', style:'poly3d', particle:'cube', hazardName:'de rasterzee', shroom:'#ff3d7f',
+  { name:'3D-wereld', bonus:7, icon:'🧊', start:10800, tip:'Welkom in de derde dimensie!', style:'poly3d', particle:'cube', hazardName:'de rasterzee', shroom:'#ff3d7f',
     c:{ skyTop:'#1a1f5c', skyMid:'#5a4fcf', skyBot:'#ff9ecf', sun:'#ffe066', far:'#6a4bc7', far2:'#4a3aa0', mid:'#2e2a6e', canopy:'#3fd0c9', canopy2:'#7af0e0', hazTop:'#ff4fb4', hazBot:'#20124d', vine:'#3fc9b8', leaf:'#8ff5e5' } },
-  { name:'Snoepland', bonus:8, icon:'🍭', start:9700, tip:'Zoete lianen en een rivier van chocola!', style:'candy', particle:'sprinkle', hazardName:'de chocoladerivier', shroom:'#ff5fa2',
+  { name:'Snoepland', bonus:8, icon:'🍭', start:12300, tip:'Zoete lianen en een rivier van chocola!', style:'candy', particle:'sprinkle', hazardName:'de chocoladerivier', shroom:'#ff5fa2',
     c:{ skyTop:'#ffb3d9', skyMid:'#ffd1e8', skyBot:'#fff0f7', sun:'#fff6b0', far:'#f7a8cf', far2:'#e58bbd', mid:'#c76a9f', canopy:'#ff7eb9', canopy2:'#ffc2e0', hazTop:'#8a4b2a', hazBot:'#4a2412', vine:'#e84a8a', leaf:'#7fdc9a' } },
+  // Vier nieuwe biomes: woestijn, paddenstoelen, wolken en neon
+  { name:'Woestijn', bonus:9, icon:'🏜️', start:13800, tip:'Cactussen prikken niet, maar de gieren wel!', style:'desert', particle:'dust', hazardName:'het drijfzand', shroom:'#e0703a',
+    c:{ skyTop:'#f39c4a', skyMid:'#f9c784', skyBot:'#fff0cf', sun:'#fff7c2', far:'#e8b27a', far2:'#d99a5c', mid:'#c28448', canopy:'#5f8f34', canopy2:'#86b046', hazTop:'#d9a45a', hazBot:'#8a5a2a', vine:'#8a6a3a', leaf:'#a8c060' } },
+  { name:'Paddenstoelenbos', bonus:10, icon:'🍄', start:15300, tip:'Reuzenpaddenstoelen: stuiter er hoog op!', style:'shroom', particle:'spore', hazardName:'de sporenpoel', shroom:'#ff5a8a',
+    c:{ skyTop:'#2a1e5c', skyMid:'#6a4a9a', skyBot:'#e3b8ff', sun:'#fff0b0', far:'#7a5aa8', far2:'#5e4490', mid:'#4a3478', canopy:'#c9425e', canopy2:'#f59ac0', hazTop:'#7affc4', hazBot:'#1e5a4a', vine:'#6ac48a', leaf:'#b8f0a0' } },
+  { name:'Wolkenrijk', bonus:11, icon:'☁️', start:16800, tip:'Gouden lianen hangen hier aan de wolken. Pas op voor het onweer!', style:'cloud', particle:'fluff', hazardName:'de onweerswolken', shroom:'#ffb0d8',
+    c:{ skyTop:'#5cb8ff', skyMid:'#9fd6ff', skyBot:'#eef8ff', sun:'#fffbe0', far:'#ffffff', far2:'#e3eefa', mid:'#c7ddf2', canopy:'#9ccbee', canopy2:'#ffffff', hazTop:'#5a6788', hazBot:'#232840', vine:'#e8b84a', leaf:'#fff1b8' } },
+  { name:'Neonstad', bonus:12, icon:'🌃', start:18300, tip:'Alles gloeit! Pas op voor de neonzee.', style:'neon', particle:'neon', hazardName:'de neonzee', shroom:'#00e5ff',
+    c:{ skyTop:'#06021a', skyMid:'#2a0845', skyBot:'#ff4fa0', sun:'#ffd84a', far:'#3a0a5a', far2:'#27074a', mid:'#150333', canopy:'#00e5ff', canopy2:'#ff2bd6', hazTop:'#ff2bd6', hazBot:'#1a0030', vine:'#00e5ff', leaf:'#7dffea' } },
 ];
 // Muziek per biome: toonsoort (halve tonen) en of hij in mineur klinkt (ook voor het riedeltje bij een nieuwe biome)
-BIOMES.forEach((b, i) => { b.key = [0, -3, 2, 5, -2, -5, 3, -1, 4, 1, 6][i]; b.minor = [4, 5, 6, 9].includes(i); });
+BIOMES.forEach((b, i) => { b.key = [0, -3, 2, 5, -2, -5, 3, -1, 4, 1, 6, -4, 2, 7, 0][i]; b.minor = [4, 5, 6, 9, 12, 14].includes(i); });
 for (const b of BIOMES) { b.rgb = {}; for (const k in b.c) b.rgb[k] = hexToRgb(b.c[k]); }
 
 // Kansen per kolom lianen: vijanden en speciale lianen, per biome
 function features(bi) {
   return {
-    wasps:   [0, .30, .14, .10, .10, .16, .10, .12, .12, .14, .12][bi],
-    fire:    [0, 0, 0, 0, .45, .20, 0, 0, 0, .15, 0][bi],
-    birds:   [0, 0, 0, .22, .06, .20, .10, .15, .18, .20, .15][bi],
-    rotten:  [0, .12, .28, .06, .20, .16, .10, .12, .12, .14, .12][bi],
-    icy:     [0, 0, .05, .40, 0, .16, .06, .06, .06, .10, .06][bi],
-    turbo:   [.08, .07, .07, .07, .10, .08, .08, .08, .08, .09, .10][bi],
-    elastic: [.05, .06, .10, .05, .06, .08, .07, .07, .08, .08, .12][bi],
-    fruit:   [.08, .07, .06, .06, .05, .06, .06, .06, .07, .06, .10][bi],
-    portals: [0, 0, 0, 0, 0, 0, .45, 0, 0, .2, 0][bi],
+    wasps:   [0, .30, .14, .10, .10, .16, .10, .12, .12, .14, .12, .10, .14, .08, .14][bi],
+    fire:    [0, 0, 0, 0, .45, .20, 0, 0, 0, .15, 0, 0, 0, 0, .14][bi],
+    birds:   [0, 0, 0, .22, .06, .20, .10, .15, .18, .20, .15, .24, .10, .26, .18][bi],
+    rotten:  [0, .12, .28, .06, .20, .16, .10, .12, .12, .14, .12, .20, .14, .10, .12][bi],
+    icy:     [0, 0, .05, .40, 0, .16, .06, .06, .06, .10, .06, 0, .04, .14, .08][bi],
+    turbo:   [.08, .07, .07, .07, .10, .08, .08, .08, .08, .09, .10, .08, .09, .10, .13][bi],
+    elastic: [.05, .06, .10, .05, .06, .08, .07, .07, .08, .08, .12, .06, .16, .08, .10][bi],
+    fruit:   [.08, .07, .06, .06, .05, .06, .06, .06, .07, .06, .10, .06, .08, .07, .07][bi],
+    portals: [0, 0, 0, 0, 0, 0, .45, 0, 0, .2, 0, 0, 0, 0, .25][bi],
+    shrooms: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.6, 3.2, 1, 1][bi], // hoe vaak er paddenstoelen staan (Paddenstoelenbos: heel vaak)
   };
 }
 
@@ -94,8 +104,8 @@ function features(bi) {
 const gripR      = l => 34 + 7 * l;
 const pumpA      = l => 600 * (1 + 0.22 * l);
 const launchM    = l => 1.16 + 0.07 * l;
-const magnetR    = l => l ? 130 + 70 * l : 0;   // bereik in rust (level 5: 480); groeit mee met je snelheid, zie updateApples
-const magnetPull = l => 1500 + 250 * l;         // hoe hard de magneet trekt
+const magnetR    = l => l ? 70 + 34 * l : 0;    // bereik in rust (level 5: 240); groeit iets mee met je snelheid, zie updateApples
+const magnetPull = l => 900 + 160 * l;          // hoe hard de magneet trekt
 const appleVal   = l => 1 + 0.5 * l;
 const goldChance = l => 0.03 + 0.025 * l;
 const rocketDist = l => 150 * l;
@@ -107,23 +117,31 @@ const comboWin   = l => 0.8 + 0.3 * l;
 const applesPerPick = (bi, m) => appleVal(lvl('value')) + Math.max(BIOMES[bi].bonus, !game.career && m >= CYCLE_START ? BIOMES[BIOMES.length - 1].bonus : 0);
 const fmtNum = n => (Math.round(n * 10) / 10).toString().replace('.', ',');
 
+// Elke upgrade heeft max niveaus, en elk niveau is opgedeeld in tiers kleinere stapjes (standaard 3). Een stapje
+// kost ongeveer wat vroeger een heel niveau kostte (zie upCost), dus alles maximaal duurt veel langer zonder
+// dat een aankoop duurder wordt. whole: alleen hele niveaus (tellers zoals ballonnen en helmen).
+const R0 = n => Math.round(n);
 const UPGRADES = [
-  { id:'grip',    icon:'✋', name:'Lange armen',    info:'Grijp lianen van verder weg.',                          max:5, base:25,  growth:1.8,  fx:l => `${gripR(l)} bereik` },
-  { id:'swing',   icon:'🌀', name:'Zwaaikracht',    info:'Zwaai harder en sneller.',              max:5, base:30,  growth:1.8,  fx:l => `+${l * 22}% zwaai, max ${1250 + 120 * l}` },
-  { id:'launch',  icon:'💨', name:'Lanceerkracht',  info:'Meer vaart bij het loslaten.',                        max:5, base:40,  growth:1.85, fx:l => `+${l * 7}% vaart, top ${1600 + 130 * l}` },
-  { id:'magnet',  icon:'🧲', name:'Appelmagneet',   info:'Trekt appels naar je toe.',                 max:5, base:35,  growth:1.8,  fx:l => l ? `${magnetR(l)} bereik` : 'geen' },
+  { id:'grip',    icon:'✋', name:'Lange armen',    info:'Grijp lianen van verder weg.',                          max:5, base:25,  growth:1.8,  fx:l => `${R0(gripR(l))} bereik` },
+  { id:'swing',   icon:'🌀', name:'Zwaaikracht',    info:'Zwaai harder en sneller.',              max:5, base:30,  growth:1.8,  fx:l => `+${R0(l * 22)}% zwaai, max ${R0(1250 + 120 * l)}` },
+  { id:'launch',  icon:'💨', name:'Lanceerkracht',  info:'Meer vaart bij het loslaten.',                        max:5, base:40,  growth:1.85, fx:l => `+${R0(l * 7)}% vaart, top ${R0(1600 + 130 * l)}` },
+  { id:'magnet',  icon:'🧲', name:'Appelmagneet',   info:'Trekt appels naar je toe.',                 max:5, base:35,  growth:1.8,  fx:l => l ? `${R0(magnetR(l))} bereik` : 'geen' },
   { id:'value',   icon:'🧺', name:'Appeloogst',     info:'Elke appel telt voor meer.', max:5, base:50, growth:1.9, fx:l => `×${fmtNum(appleVal(l))} per appel` },
-  { id:'golden',  icon:'✨', name:'Gouden appels',  info:'Meer gouden appels (5 waard).',                  unlock:4, max:4, base:45,  growth:1.9,  fx:l => `${Math.round(goldChance(l) * 100)}% kans` },
-  { id:'balloon', icon:'🎈', name:'Reddingsballon', info:'Redt je als je valt.',                     max:3, base:80,  growth:2.2,  fx:l => `${l}× per run` },
-  { id:'helmet',  icon:'⛑️', name:'Helm',           info:'Vijanden stelen geen appels.',         unlock:6, max:3, base:70,  growth:2.2,  fx:l => `${l}× per run` },
-  { id:'rocket',  icon:'🚀', name:'Raketstart',     info:'Begin met een raketvlucht.',                   unlock:20, max:4, base:120, growth:2.0,  fx:l => l ? `${rocketDist(l)} m` : 'geen' },
+  { id:'golden',  icon:'✨', name:'Gouden appels',  info:'Meer gouden appels (5 waard).',                  unlock:4, max:4, base:45,  growth:1.9,  fx:l => `${fmtNum(goldChance(l) * 100)}% kans` },
+  { id:'balloon', icon:'🎈', name:'Reddingsballon', info:'Redt je als je valt.',                     max:3, base:80,  growth:2.2,  whole:true, fx:l => `${l}× per run` },
+  { id:'helmet',  icon:'⛑️', name:'Helm',           info:'Vijanden stelen geen appels.',         unlock:6, max:3, base:70,  growth:2.2,  whole:true, fx:l => `${l}× per run` },
+  { id:'rocket',  icon:'🚀', name:'Raketstart',     info:'Begin met een raketvlucht.',                   unlock:20, max:4, base:120, growth:2.0,  fx:l => l ? `${R0(rocketDist(l))} m` : 'geen' },
   { id:'parrot',  icon:'🦜', name:'Papegaaimaatje', info:'Een papegaai plukt appels voor je.',  unlock:14, max:4, base:90,  growth:2.0,  fx:l => l ? `elke ${fmtNum(parrotCd(l))} s een appel` : 'geen' },
-  { id:'rain',    icon:'🌧️', name:'Appelregen',     info:'Appelregen bij elke 100 m.',        unlock:16, max:3, base:60,  growth:2.0,  fx:l => l ? `${3 + l * 3} appels per 100 m` : 'geen' },
-  { id:'combo',   icon:'🔥', name:'Comboketting',   info:'Langere combo\'s, meer bonus.',  unlock:8, max:3, base:55,  growth:2.0,  fx:l => `${fmtNum(comboWin(l))} s · bonus ×${1 + l}` },
-  { id:'vinewise',icon:'🌿', name:'Liaankenner',    info:'Sterkere rotte lianen, minder glad ijs.', unlock:12, max:3, base:50, growth:2.0, fx:l => l ? `+${l * 40}% grip` : 'geen' },
-  { id:'wingsuit',icon:'🦸', name:'Wingsuit',       info:'Glijd veel verder door de lucht.', max:4, base:110, growth:2.0, fx:l => l ? `+${l * 25}% glijvlucht` : 'geen' },
-  { id:'shroom',  icon:'🍄', name:'Stuiterzwam',    info:'Meer en sterkere paddenstoelen.',  unlock:10, max:3, base:40,  growth:1.9,  fx:l => l ? `+${l * 40}% paddenstoelen` : 'geen' },
+  { id:'rain',    icon:'🌧️', name:'Appelregen',     info:'Appelregen bij elke 100 m.',        unlock:16, max:3, base:60,  growth:2.0,  fx:l => l ? `${R0(3 + l * 3)} appels per 100 m` : 'geen' },
+  { id:'combo',   icon:'🔥', name:'Comboketting',   info:'Langere combo\'s, meer bonus.',  unlock:8, max:3, base:55,  growth:2.0,  fx:l => `${fmtNum(comboWin(l))} s · bonus ×${fmtNum(1 + l)}` },
+  { id:'vinewise',icon:'🌿', name:'Liaankenner',    info:'Sterkere rotte lianen, minder glad ijs.', unlock:12, max:3, base:50, growth:2.0, fx:l => l ? `+${R0(l * 40)}% grip` : 'geen' },
+  { id:'wingsuit',icon:'🦸', name:'Wingsuit',       info:'Glijd veel verder door de lucht.', max:4, base:110, growth:2.0, fx:l => l ? `+${R0(l * 25)}% glijvlucht` : 'geen' },
+  { id:'shroom',  icon:'🍄', name:'Stuiterzwam',    info:'Meer en sterkere paddenstoelen.',  unlock:10, max:3, base:40,  growth:1.9,  fx:l => l ? `+${R0(l * 40)}% paddenstoelen` : 'geen' },
 ];
+for (const u of UPGRADES) { u.tiers = u.whole ? 1 : 3; u.steps = u.max * u.tiers; }
+// In de carrière tellen upgrades veel minder mee (anders is een volledig ge-upgradede Andy niet te stoppen);
+// de levels worden daar dan ook maar een beetje zwaarder van (zie levelInfo).
+const CAREER_UP = 0.35;
 // ---- XP: hoe verder je komt, hoe meer XP; met spelerslevels ontgrendel je nieuwe upgrades ----
 const xpNeed = L => Math.round(260 * Math.pow(L, 1.6)); // XP nodig om van level L naar L+1 te gaan
 function playerLevel(xp) { let L = 1; while (xp >= xpNeed(L)) { xp -= xpNeed(L); L++; } return { L, into: xp, need: xpNeed(L) }; }
@@ -155,6 +173,10 @@ const BOSSES = [
   { name: 'Gumgum',        col: '#ed1c24', proj: 'verf',   moves: ['dive', 'throw', 'rain'] },
   { name: 'Polygoon',      col: '#ff4fb4', proj: 'kubus',  moves: ['throw', 'dive', 'rain'] },
   { name: 'Suikerspinner', col: '#ff7eb9', proj: 'snoep',  moves: ['rain', 'dive', 'throw'] },
+  { name: 'Schorpioenkoning', col: '#c9853a', proj: 'zand', moves: ['throw', 'dive', 'rain'] },
+  { name: 'Sporenheks',    col: '#b04adf', proj: 'spore',  moves: ['rain', 'throw', 'dive'] },
+  { name: 'Donderwolk',    col: '#6a7aa0', proj: 'bliksem', moves: ['rain', 'dive', 'throw'] },
+  { name: 'Glitchbaas',    col: '#ff2bd6', proj: 'glitch', moves: ['throw', 'dive', 'rain'] },
 ];
 // Tijdelijke power-ups in carrièrelevels (seconden; clock geeft extra tijd)
 const POWERUPS = {
@@ -163,6 +185,7 @@ const POWERUPS = {
   wings:  { icon: '🪽', name: 'Vleugels',      dur: 10, col: '#9fe3ff' },
   turbo:  { icon: '🚀', name: 'Turbo',         dur: 3,  col: '#ff9a2a' },
   clock:  { icon: '⏰', name: '+20 seconden',  dur: 0,  col: '#7dff8a' },
+  slow:   { icon: '⏳', name: 'Slowmotion',    dur: 7,  col: '#b8a4ff' }, // alles gaat half zo snel, ook de klok
 };
 function levelInfo(n) {
   const w = Math.min(WORLDS - 1, Math.floor((n - 1) / LEVELS_PER_WORLD)), idx = (n - 1) % LEVELS_PER_WORLD;
@@ -172,24 +195,25 @@ function levelInfo(n) {
   const L = Math.round(260 + p * 1900 + idx * 25 + (boss ? 150 : 0));
   // uitdagingen: niet in de eerste twee levels en niet bij een baas; in een toren (en later, of met veel upgrades) twee
   const ch = [];
-  if (!boss && n > 2 && (idx > 0 || up > 0.3)) {
+  if (!boss && n > 2 && (idx > 0 || up > 0.5)) {
     ch.push(CHALLENGE_ORDER[(w * 3 + idx) % CHALLENGE_ORDER.length]);
-    if (tower || (w >= 5 && idx === 6) || (up > 0.6 && idx >= 4)) {
+    if (tower || (w >= 5 && idx === 6) || (up > 0.8 && idx >= 4)) {
       const b = CHALLENGE_ORDER[(w * 3 + idx + 2) % CHALLENGE_ORDER.length];
       if (!ch.includes(b)) ch.push(b);
     }
   }
   // tijdslimiet (echte seconden): hoe verder en hoe sterker je bent, hoe sneller je moet gaan
-  const pace = 6 + 8 * p + 6 * up; // verwachte gemiddelde snelheid (m/s)
+  const pace = 6 + 8 * p + 2.5 * up; // verwachte gemiddelde snelheid (m/s); upgrades tellen in de carrière maar voor een deel mee (CAREER_UP)
   let time = Math.round(L / pace + 14);
   if (ch.includes('rush')) time = Math.round(time * 0.72);
   if (tower) time = Math.round(time * 0.9);
-  const diff = clamp(0.2 + p * 1.6 + (tower ? 0.15 : 0) + (boss ? 0.1 : 0), 0, 2) + 0.9 * up;
-  return { n, bi: w, world: w + 1, idx, boss, tower, L, p, up, ch, time, need: ch.includes('apples') ? Math.round(L / 11 * (1 + 0.35 * up)) : 0, diff };
+  const diff = clamp(0.2 + p * 1.6 + (tower ? 0.15 : 0) + (boss ? 0.1 : 0), 0, 2) + 0.35 * up;
+  return { n, bi: w, world: w + 1, idx, boss, tower, L, p, up, ch, time, need: ch.includes('apples') ? Math.round(L / 11 * (1 + 0.15 * up)) : 0, diff };
 }
 // hoe zwaar een level is, in 1..5 bolletjes (voor de kaart)
 const levelPips = I => clamp(Math.round(I.diff / 2.9 * 5 + 0.4), 1, 5);
-const upCost = (u, l) => Math.round(u.base * 1.5 * Math.pow(u.growth, l) / 5) * 5;
+// prijs van stapje s (0..steps-1): van de oude prijs van niveau 1 tot die van het laatste niveau, verdeeld over alle stapjes
+const upCost = (u, s) => Math.round(u.base * 1.5 * Math.pow(u.growth, u.steps > 1 ? s * (u.max - 1) / (u.steps - 1) : 0) / 5) * 5;
 // =====================================================================
 //  Kisten (loot-boxes) en uiterlijk van Andy
 // =====================================================================
@@ -209,8 +233,8 @@ const RARITY = {
 const LOOT = [
   { id: 'apples30',  r: 'common', kind: 'apples', n: 30,  name: '30 appels',  icon: '🍎' },
   { id: 'apples75',  r: 'common', kind: 'apples', n: 75,  name: '75 appels',  icon: '🍎' },
-  { id: 'xp100',     r: 'common', kind: 'xp',     n: 100, name: '100 XP',     icon: '⭐' },
-  { id: 'xp250',     r: 'common', kind: 'xp',     n: 250, name: '250 XP',     icon: '⭐' },
+  { id: 'xp100',     r: 'common', kind: 'xp',     n: 220, name: '220 XP',     icon: '⭐' },
+  { id: 'xp250',     r: 'common', kind: 'xp',     n: 500, name: '500 XP',     icon: '⭐' },
   { id: 'fur_brown', r: 'uncommon', kind: 'color', name: 'Bruine vacht', icon: '🟤', fur: '#6b4a2e', furD: '#46301c', furL: '#9a7350' },
   { id: 'fur_grey',  r: 'uncommon', kind: 'color', name: 'Zilverrug',    icon: '⚪', fur: '#6e6e78', furD: '#48484f', furL: '#a6a6b2' },
   { id: 'hat_cap',   r: 'uncommon', kind: 'hat',   name: 'Petje',        icon: '🧢' },
@@ -224,9 +248,30 @@ const LOOT = [
   { id: 'hat_wizard',r: 'epic', kind: 'hat',   name: 'Tovenaarshoed', icon: '🧙' },
   { id: 'suit_apple',r: 'legendary', kind: 'suit',  name: 'Appelkostuum',   icon: '🍎' },
   { id: 'fur_rainbow',r:'legendary', kind: 'color', name: 'Regenboogvacht', icon: '🌈', rainbow: true },
+  // meer uiterlijk: vachten, hoeden, kostuums en sporen (een spoor volgt je als je hard gaat)
+  { id: 'fur_white',  r: 'uncommon', kind: 'color', name: 'Sneeuwvacht',  icon: '⚪', fur: '#d9d4ca', furD: '#a8a197', furL: '#ffffff' },
+  { id: 'hat_party',  r: 'uncommon', kind: 'hat',   name: 'Feesthoedje', icon: '🥳' },
+  { id: 'trail_hearts', r: 'uncommon', kind: 'trail', name: 'Hartjesspoor', icon: '💗' },
+  { id: 'fur_green',  r: 'rare', kind: 'color', name: 'Junglegroen',   icon: '🟢', fur: '#3f7a3a', furD: '#26502a', furL: '#78b865' },
+  { id: 'hat_tophat', r: 'rare', kind: 'hat',   name: 'Hoge hoed',     icon: '🎩' },
+  { id: 'hat_chef',   r: 'rare', kind: 'hat',   name: 'Koksmuts',      icon: '👨‍🍳' },
+  { id: 'trail_stars',r: 'rare', kind: 'trail', name: 'Sterrenspoor',  icon: '⭐' },
+  { id: 'fur_purple', r: 'epic', kind: 'color', name: 'Paarse vacht',  icon: '🟣', fur: '#6b3fa0', furD: '#442468', furL: '#a57ad8' },
+  { id: 'hat_viking', r: 'epic', kind: 'hat',   name: 'Vikinghelm',    icon: '🪖' },
+  { id: 'trail_fire', r: 'epic', kind: 'trail', name: 'Vuurspoor',     icon: '🔥' },
+  { id: 'suit_astro', r: 'epic', kind: 'suit',  name: 'Astronautenpak', icon: '🧑‍🚀' },
+  { id: 'hat_halo',   r: 'legendary', kind: 'hat',   name: 'Aureool',        icon: '😇' },
+  { id: 'trail_rainbow', r: 'legendary', kind: 'trail', name: 'Regenboogspoor', icon: '🌈' },
+  // S.V. Syntaxis: een setje met het groene logo en binaire code
+  { id: 'fur_syntaxis',  r: 'rare', kind: 'color', name: 'Syntaxis-vacht', icon: '<i class="svx">S.V.</i>', fur: '#2e3236', furD: '#1c1f22', furL: '#79c143', syntaxis: true },
+  { id: 'hat_syntaxis',  r: 'rare', kind: 'hat',   name: 'Syntaxis-pet',   icon: '<i class="svx">S.V.</i>', syntaxis: true },
+  { id: 'trail_binary',  r: 'epic', kind: 'trail', name: 'Binair spoor',   icon: '<i class="svx">01</i>', syntaxis: true },
+  { id: 'suit_syntaxis', r: 'legendary', kind: 'suit', name: 'Syntaxis-hoodie', icon: '<i class="svx">S.V.</i>', syntaxis: true },
 ];
 const LOOT_BY_ID = Object.fromEntries(LOOT.map(l => [l.id, l]));
+const COSM_KINDS = ['color', 'hat', 'suit', 'trail']; // soorten uiterlijk in de garderobe
 const DUPE_APPLES = { uncommon: 40, rare: 90, epic: 180, legendary: 400 };
+const CRATE_PRICE = 250; // een kist kopen met appels (in het kistenscherm)
 // kiest een willekeurige buit: eerst de zeldzaamheid (op gewicht), dan een item daarbinnen
 function rollLoot(rnd = Math.random) {
   let r = rnd() * Object.values(RARITY).reduce((a, x) => a + x.w, 0), rar = 'common';
@@ -244,7 +289,7 @@ const HEADSTARTS = [{ m: 250, cost: 60 }, { m: 500, cost: 150 }, { m: 1000, cost
 
 // De wereld is een rij biome-stukken. Na de laatste biome (Snoepland) komen de biomes steeds opnieuw terug,
 // elk CYCLE_LEN meter lang, in een vaste, door elkaar gehusselde volgorde: zo blijf je nooit in dezelfde biome.
-const CYCLE_START = 11000, CYCLE_LEN = 1100, CYCLE_ORDER = [3, 8, 5, 10, 1, 7, 4, 9, 2, 6];
+const CYCLE_START = 19800, CYCLE_LEN = 1400, CYCLE_ORDER = [3, 8, 12, 5, 10, 1, 14, 7, 4, 11, 9, 2, 13, 6];
 // het biome-stuk op afstand m: { i: biome, start, n: volgnummer (hoeveelste stuk), next: volgende biome, nextStart }
 function biomeSeg(m) {
   if (game.career) { const i = game.career.bi; return { i, start: -1e9, n: 0, next: i, nextStart: 1e12 }; }
@@ -270,7 +315,8 @@ function inBiomeBuffer(m) {
 // grotere gaten, vaker ontbrekende lianen en meer vijanden. In multiplayer staan upgrades uit (lvl = 0), dus dan 0.
 function upgradePower() {
   let have = 0, max = 0;
-  for (const u of UPGRADES) { have += lvl(u.id); max += u.max; }
+  if (game.mp) return 0;
+  for (const u of UPGRADES) { have += upSteps(u.id) / u.tiers; max += u.max; }
   return max ? have / max : 0;
 }
 // Eindeloos (en multiplayer): de moeilijkheid loopt geleidelijk op en vlakt af naar een plafond,
@@ -284,6 +330,7 @@ function diffAt(m) {
 }
 // Eindeloos: het tempo gaat ook iets omhoog naarmate je verder komt, tot maximaal +12%% (bij 4000 m).
 // Debug-snelheid telt overal mee, behalve online (dan moeten beide spelers gelijk zijn).
+const SLOWMO = 0.5; // tempo tijdens de slowmotion-power-up
 const TEMPO_MAX = 0.12, TEMPO_DIST = 4000;
 // Standaardtempo van het spel (100% in het debugmenu).
 // Werkt als tijdschaal: de physics-stappen blijven gelijk, er gaan er alleen minder per seconde.
@@ -291,7 +338,8 @@ const BASE_SPEED = 0.65; // met GAME_SPEED 1,2: de simulatie loopt op ~0,78× ec
 function timeScale() {
   let k = BASE_SPEED * (game.mp && !game.mp.local ? 1 : DBG.speed);
   if (!game.career && !game.mp && run) { const t = clamp(run.dist / TEMPO_DIST, 0, 1); k *= 1 + TEMPO_MAX * t * t * (3 - 2 * t); }
-  if (game.career) k *= 1 + 0.25 * game.career.p + 0.12 * game.career.up; // carrière: latere levels (en een sterke Andy) lopen sneller
+  if (game.career) k *= 1 + 0.25 * game.career.p + 0.05 * game.career.up;
+  if (game.career && run && run.pow && run.pow.type === 'slow' && run.pow.t > 0) k *= SLOWMO; // power-up slowmotion // carrière: latere levels (en een sterke Andy) lopen sneller
   if (!game.mp && run && run.cine) k *= cineSlow(); // slow motion bij een nieuwe biome
   return k;
 }

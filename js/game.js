@@ -60,6 +60,7 @@ function mpLeaveMatch() {
   $('mpHud').classList.add('hidden'); $('mpCount').textContent = '';
 }
 function toMenu() {
+  document.body.classList.remove('matrix');
   game.paused = false; Music.duck();
   game.career = null;
   localExit(); MP.local = false;
@@ -73,6 +74,7 @@ function toMenu() {
 }
 // level = null: eindeloze modus; anders een carrière-level
 function startReady(level) {
+  document.body.classList.remove('matrix');
   // Eindeloos vanuit het hoofdmenu: achter het menu staat al een verse Eindeloos-wereld. Die houden we
   // (alleen Andy en de run beginnen opnieuw), anders verspringt alles bij de start naar een andere wereld.
   const keepWorld = typeof level !== 'number' && game.mode === 'menu' && !game.career && !game.mp && !LOCAL.on
@@ -97,6 +99,30 @@ function startReady(level) {
   else if (save.runs < 3) showBanner('Jungle', 'Houd ingedrukt om te springen');
 }
 function retry() { startReady(game.career ? game.career.n : null); }
+// Eindeloos vanuit het hoofdmenu: eerst een korte start-animatie. De knoppen vliegen weg, de camera zoomt in op
+// Andy, die op zijn borst trommelt en brult, en de titel knalt in beeld; daarna begint de run.
+const INTRO = { on: false, t: 0, dur: 0.95 };
+function playEndless() {
+  if (INTRO.on || curScreen !== 'menu') { if (!INTRO.on) startReady(null); return; }
+  INTRO.on = true; INTRO.t = 0;
+  $('menu').classList.add('leaving');
+  Sfx.init(); Sfx.whoosh(0.5, 300, 1800, 0.12); Sfx.tarzan();
+  let last = performance.now();
+  const tick = now => {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    INTRO.t += dt;
+    const k = clamp(INTRO.t / INTRO.dur, 0, 1);
+    introZoom = 1 + 0.4 * k * k * (3 - 2 * k);
+    if (k < 1) { requestAnimationFrame(tick); return; }
+    INTRO.on = false;
+    $('menu').classList.remove('leaving');
+    startReady(null);
+    // en weer rustig terug naar de normale zoom
+    const back = now2 => { introZoom += (1 - introZoom) * 0.12; if (Math.abs(introZoom - 1) > 0.002) requestAnimationFrame(back); else introZoom = 1; };
+    requestAnimationFrame(back);
+  };
+  requestAnimationFrame(tick);
+}
 function begin() {
   game.mode = 'playing';
   renderHeadStart();
@@ -230,7 +256,7 @@ function resumeGame() {
 // =====================================================================
 function affordableCount() {
   let n = 0;
-  for (const u of UPGRADES) { const l = lvl(u.id); if (unlocked(u) && l < u.max && save.apples >= upCost(u, l)) n++; }
+  for (const u of UPGRADES) { const s = upSteps(u.id); if (unlocked(u) && s < u.steps && save.apples >= upCost(u, s)) n++; }
   return n;
 }
 function setBadge(btn, n) {
@@ -284,13 +310,14 @@ function renderShop() {
   const locked = [];
   for (const u of UPGRADES) {
     if (!unlocked(u)) { locked.push(u); continue; }
-    const l = lvl(u.id), maxed = l >= u.max, cost = maxed ? 0 : upCost(u, l);
+    // s: gekochte stapjes; een niveau (bolletje) bestaat uit u.tiers stapjes en vult zich per stapje
+    const s = upSteps(u.id), l = s / u.tiers, maxed = s >= u.steps, cost = maxed ? 0 : upCost(u, s);
     const card = document.createElement('div');
     card.className = 'card' + (maxed ? ' maxed' : '');
-    card.title = `${u.info}\n${u.fx(l)}${maxed ? '' : ' → ' + u.fx(l + 1)}`;
+    card.title = `${u.info}\n${u.fx(l)}${maxed ? '' : ' → ' + u.fx((s + 1) / u.tiers)}`;
     let pips = '';
-    for (let i = 0; i < u.max; i++) pips += `<i class="${i < l ? 'on' : ''}"></i>`;
-    card.innerHTML = `<span class="ic">${u.icon}</span><div class="card-mid"><b>${u.name}</b><small>${u.info}</small><div class="pips">${pips}</div></div>`;
+    for (let i = 0; i < u.max; i++) pips += `<i class="${i < Math.floor(l) ? 'on' : ''}" style="--f:${clamp(l - i, 0, 1)}"></i>`;
+    card.innerHTML = `<span class="ic">${u.icon}</span><div class="card-mid"><b>${u.name} <em class="tier">${s}/${u.steps}</em></b><small>${u.fx(l)}${maxed ? '' : ' → ' + u.fx((s + 1) / u.tiers)}</small><div class="pips">${pips}</div></div>`;
     const b = document.createElement('button');
     const can = !maxed && save.apples >= cost;
     b.className = 'btn buy' + (can ? ' green' : '');
@@ -303,20 +330,31 @@ function renderShop() {
   locked.sort((x, y) => x.unlock - y.unlock);
   $('shopLocks').innerHTML = locked.map(u => `<span title="${escHtml(u.info)}">🔒 Level ${u.unlock}: ${u.name}</span>`).join('');
 }
+// een deel van de voortgang wissen (vanuit Instellingen → Resetten)
+function resetPart(what) {
+  const d = defaultSave();
+  if (what === 'career') save.career = d.career;
+  else if (what === 'cosm') save.cosm = d.cosm;
+  else if (what === 'upgrades') for (const u of UPGRADES) save.upgrades[u.id] = 0;
+  save = normalizeSave(save);
+  persist();
+  refreshMenu();
+  Sfx.crack();
+}
 function buy(u) {
-  const l = lvl(u.id);
-  if (l >= u.max || !unlocked(u)) return;
-  const c = upCost(u, l);
+  const s = upSteps(u.id);
+  if (s >= u.steps || !unlocked(u)) return;
+  const c = upCost(u, s);
   if (save.apples < c) return;
   save.apples -= c;
-  save.upgrades[u.id] = l + 1;
+  save.upgrades[u.id] = s + 1;
   persist();
   Sfx.buy();
   renderShop();
   refreshMenu();
   if (game.mode === 'over') setBadge($('btnOverShop'), affordableCount());
 }
-// Spelmodi: Multiplayer (online), Duel (op één scherm), Tegen Kiwi (race) en Achtervolging
+// Gamemodes: Multiplayer (online), Duel (op één scherm), Tegen Kiwi (race) en Achtervolging
 function openModes() { showScreen('modes'); }
 function openShop(from) { shopReturn = from; renderShop(); showScreen('shop'); }
 function on(id, fn) {
@@ -346,12 +384,15 @@ function openCrate(from) {
   previewLoop();
 }
 const crateCard = (it, win) => `<div class="cr-card${win ? ' win' : ''}" style="--rc:${RARITY[it.r].col}"><span>${it.icon}</span><small>${escHtml(it.name)}</small></div>`;
-const WD_TABS = [['color', 'Vacht'], ['hat', 'Hoed'], ['suit', 'Kostuum']];
+const WD_TABS = [['color', 'Vacht'], ['hat', 'Hoed'], ['suit', 'Kostuum'], ['trail', 'Spoor']];
 function renderCrate() {
   $('crBoxes').textContent = save.boxes;
   const b = $('btnCrOpen');
   b.disabled = CRATE.spinning || save.boxes < 1;
   b.textContent = CRATE.spinning ? 'Draaien…' : save.boxes ? `Open een kist (${save.boxes})` : 'Geen kisten';
+  const kb = $('btnCrBuy');
+  kb.disabled = CRATE.spinning || save.apples < CRATE_PRICE;
+  kb.innerHTML = `Koop een kist · 🍎 ${CRATE_PRICE}<small class="cr-have">je hebt 🍎 ${save.apples}</small>`;
   // garderobe: per soort alle items, wat je nog niet hebt staat er op slot bij
   const owned = id => save.cosm.own.includes(id), cosm = LOOT.filter(it => WD_TABS.some(([k]) => k === it.kind));
   $('crCount').textContent = `${cosm.filter(it => owned(it.id)).length}/${cosm.length} verzameld`;
@@ -485,10 +526,10 @@ function uiInit() {
   sel.addEventListener('change', playSfx);
   $('btnDbgSfx').addEventListener('click', e => { e.currentTarget.blur(); playSfx(); });
 
-  on('btnPlay', () => startReady(null));
+  on('btnPlay', playEndless);
   on('btnMulti', openModes);
   on('btnModesBack', toMenu);
-  // terug uit het multiplayerscherm: naar Spelmodi (toMenu sluit ook een lobby of een lokaal potje af)
+  // terug uit het multiplayerscherm: naar Gamemodes (toMenu sluit ook een lobby of een lokaal potje af)
   const backToModes = () => { MP.local = false; MP.aiLvl = null; toMenu(); openModes(); };
   on('btnMpBack', backToModes);
   on('btnMpSetup', () => showScreen('mpSetup'));
@@ -532,9 +573,26 @@ function uiInit() {
   on('btnDoneCrates', () => openCrate('done'));
   on('btnCrBack', () => { refreshMenu(); showScreen(CRATE.ret); });
   on('btnCrOpen', spinCrate);
+  on('btnCrBuy', () => { // een kist kopen met appels
+    if (CRATE.spinning || save.apples < CRATE_PRICE) return;
+    save.apples -= CRATE_PRICE; save.boxes++; persist();
+    Sfx.buy(); renderCrate(); refreshMenu();
+  });
   on('btnSettings', () => openSettings('menu'));
   on('btnPauseSettings', () => openSettings('pause'));
   on('btnSettingsBack', () => showScreen(settingsReturn));
+  // Resetten: eerst tikken maakt de knop rood ("Zeker?"), nog een keer tikken binnen 3 s voert het uit
+  for (const b of document.querySelectorAll('[data-reset]')) b.addEventListener('click', () => {
+    if (!b.classList.contains('sure')) {
+      b.classList.add('sure'); b.textContent = 'Zeker?';
+      clearTimeout(b._t); b._t = setTimeout(() => { b.classList.remove('sure'); b.textContent = 'Reset'; }, 3000);
+      return;
+    }
+    clearTimeout(b._t); b.classList.remove('sure');
+    resetPart(b.dataset.reset);
+    b.classList.add('done'); b.textContent = 'Gereset ✓';
+    b._t = setTimeout(() => { b.classList.remove('done'); b.textContent = 'Reset'; }, 2000);
+  });
   on('btnFullscreen', () => { toggleFullscreen().then(refreshMenu); refreshMenu(); });
   on('btnRotate', () => { toggleRotate().then(refreshMenu); refreshMenu(); });
   document.addEventListener('fullscreenchange', refreshMenu);

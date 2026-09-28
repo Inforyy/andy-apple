@@ -2,7 +2,7 @@
 
 # 🍎 Andy Apples
 
-Een 2D-slingerspel in de browser. Andy de gorilla zwaait aan lianen door elf werelden, verzamelt appels en probeert zo ver mogelijk te komen. Alles (graphics, muziek, geluid en physics) wordt in code gemaakt: geen plaatjes, geen geluidsbestanden, geen installatie.
+Een 2D-slingerspel in de browser. Andy de gorilla zwaait aan lianen door vijftien werelden, verzamelt appels en probeert zo ver mogelijk te komen. Alles (graphics, muziek, geluid en physics) wordt in code gemaakt: geen plaatjes, geen geluidsbestanden, geen installatie.
 
 **[▶ Speel online](https://stijnbarendse.nl/appel)**
 
@@ -10,7 +10,7 @@ Een 2D-slingerspel in de browser. Andy de gorilla zwaait aan lianen door elf wer
 
 - [Spelen](#spelen)
 - [Besturing](#besturing)
-- [Spelmodi](#spelmodi)
+- [Gamemodes](#gamemodes)
 - [Het spel](#het-spel)
 - [Multiplayer](#multiplayer)
 - [Instellingen](#instellingen)
@@ -38,24 +38,24 @@ Het hele spel werkt met één knop.
 
 Laat los als Andy naar voren zwaait. Alleen in het water (of de lava, …) vallen is game over.
 
-## Spelmodi
+## Gamemodes
 
-- 🏁 **Carrière**: 11 werelden (één per biome) met elk 8 levels op een **3D-wereldkaart**, zoals in *New Super Mario Bros.* Zie [Carrière](#carrière).
-- ♾️ **Eindeloos**: kom zo ver mogelijk. Het wordt geleidelijk lastiger en iets sneller (tot een plafond). Met een account kom je met je gebruikersnaam op de online ranglijst.
-- 👥 **Spelmodi**: Multiplayer (online tot 20 spelers), Duel (met z'n tweeën op één scherm), Tegen Kiwi en Achtervolging. Zie [Multiplayer](#multiplayer).
+- 🏁 **Carrière**: 15 werelden (één per biome) met elk 8 levels op een **3D-wereldkaart**, zoals in *New Super Mario Bros.* Zie [Carrière](#carrière).
+- ♾️ **Eindeloos**: kom zo ver mogelijk. Na een korte start-animatie (de knoppen vliegen weg, Andy trommelt en brult) begint de run. Het wordt geleidelijk lastiger en iets sneller (tot een plafond). Met een account kom je met je gebruikersnaam op de online ranglijst.
+- 👥 **Gamemodes**: Multiplayer (online tot 20 spelers), Duel (met z'n tweeën op één scherm), Tegen Kiwi en Achtervolging. Zie [Multiplayer](#multiplayer).
 
 ## Carrière
 
-- **Wereldkaart**: elke wereld is een groot 3D-eiland in de stijl van zijn biome, schuin van boven gezien, met een kronkelend pad langs de levels, halverwege een **toren** en aan het eind het **kasteel** van de baas. Op het eiland staan bomen, bergen (of een vulkaan, blokkenbergen, piramides, snoepheuvels), een meer, rotsen, bloemen, huisjes, kristallen, lolly's of portalen, en er vliegen vogels over. Andy is op de kaart een 3D-model (met je vachtkleur, hoed of kostuum) dat loopt, huppelt, zwaait en juicht. Andy loopt over het pad: tik op een stip (of gebruik ◀ ▶) om erheen te lopen, en op **Spelen** (of nog eens op de stip) om het level te starten. Met ◀ Wereld ▶ spring je naar een eerdere wereld. Op een telefoon werkt alles met tikken.
+- **Wereldkaart**: elke wereld is een groot 3D-eiland in de stijl van zijn biome, schuin van boven gezien, met een kronkelend pad langs de levels, halverwege een **toren** en aan het eind het **kasteel** van de baas. Op het eiland staan bomen, bergen (of een vulkaan, blokkenbergen, piramides, snoepheuvels), een meer, rotsen, bloemen, huisjes, kristallen, lolly's of portalen, en er vliegen vogels over. Andy is op de kaart een 3D-model (met je vachtkleur, hoed of kostuum) dat loopt, huppelt, zwaait en juicht. Andy loopt over het pad: tik op een stip (of gebruik ◀ ▶) om erheen te lopen, en op **Spelen** (of nog eens op de stip) om het level te starten. Met ◀ Wereld ▶ spring je naar een eerdere wereld. **Rondkijken**: sleep met de linkermuisknop (of je vinger) over de kaart; in- en uitzoomen met het scrollwiel of door te knijpen. Op een telefoon werkt alles met tikken.
 - **Filmpjes**: haal je een level, dan vult het pad zich op de kaart tot het volgende level en loopt Andy erheen. Versla je de baas, dan krijg je *Wereld voltooid!*, vaar je over zee naar het volgende eiland en verschijnt de nieuwe wereld met zijn naam.
 - **Laadscherm**: kies je een level, dan springt Andy, zoomt de camera in en sluit een cirkel zich rond hem. Daarna komt een laadscherm met een ronddraaiende 3D-Andy, de gegevens van het level, een tip en een voortgangsbalk.
 - **Tijdslimiet**: elk level heeft een maximale tijd (bovenin beeld, rood in de laatste 20 seconden). Tijd op = level mislukt.
 - **Steeds lastiger**: latere levels zijn langer, hebben grotere gaten, meer vijanden en lastige lianen, lopen tot 25% sneller en geven relatief minder tijd.
-- **Schaalt mee met je upgrades**: hoe meer upgrades je hebt, hoe zwaarder elk level: nog grotere gaten en meer vijanden, minder tijd (een sterke Andy is sneller), iets hoger tempo, meer appels nodig bij Appeljacht, eerder en vaker uitdagingen, snellere bazen, en met bijna alles gekocht maar 2 harten tegen de baas. Op de kaart zie je hoe zwaar een level is (●●●○○).
+- **Upgrades tellen maar voor een deel**: in de carrière zijn je upgrades veel zwakker (ongeveer een derde van hun kracht), zodat een volledig ge-upgradede Andy niet door de levels heen walst. De levels schalen daar een beetje op mee: iets grotere gaten, iets minder tijd, snellere bazen en met bijna alles gekocht maar 2 harten tegen de baas. Op de kaart zie je hoe zwaar een level is (●●●○○).
 - **Toren** (level 4 van elke wereld): extra zwaar en altijd twee uitdagingen tegelijk.
 - **Uitdagingen** (vanaf level 3; in torens, latere werelden en met veel upgrades vaak twee tegelijk): 🍎 *Appeljacht* (pak genoeg appels vóór de finish), 💨 *Tegenwind*, 🌫️ *Mist* (je ziet maar een klein stukje), 🪵 *Rotte boel*, 🐝 *Wespennest* en ⏱️ *Tijdrit* (veel minder tijd).
-- **Baasgevechten**: het laatste level van elke wereld. De baas (van de Kokosbaron in de jungle tot de Suikerspinner in Snoepland) vliegt vóór je uit en gooit dingen naar waar je straks bent, laat een regen vallen (rode strepen waarschuwen) of duikt op je af (een rode baan waarschuwt). Je hebt 3 harten; haal de finish om hem te verslaan. Latere bazen vallen vaker en harder aan.
-- **Power-ups** zweven in de levels, in bellen: ⭐ *Onkwetsbaar* (8 s, niets kan je raken), 🧲 *Supermagneet* (12 s), 🪽 *Vleugels* (10 s: je zweeft, en van het water stuiter je terug omhoog), 🚀 *Turbo* en ⏰ *+20 seconden*.
+- **Baasgevechten**: het laatste level van elke wereld. De baas (van de Kokosbaron in de jungle tot de Glitchbaas in Neonstad) vliegt vóór je uit en gooit dingen naar waar je straks bent, laat een regen vallen (rode strepen waarschuwen) of duikt op je af (een rode baan waarschuwt). Je hebt 3 harten; haal de finish om hem te verslaan. Latere bazen vallen vaker en harder aan.
+- **Power-ups** zweven in de levels, in bellen: ⭐ *Onkwetsbaar* (8 s, niets kan je raken), 🧲 *Supermagneet* (12 s), 🪽 *Vleugels* (10 s: je zweeft, en van het water stuiter je terug omhoog), 🚀 *Turbo*, ⏳ *Slowmotion* (7 s: alles, ook de klok, gaat half zo snel) en ⏰ *+20 seconden*.
 
 ## Het spel
 
@@ -66,49 +66,53 @@ Hoe verder je komt, hoe meer gaten tussen de lianen, hoe meer vijanden en hoe mi
 | | Wereld | Vanaf | Wat is er anders | Appelbonus |
 | --- | --- | --- | --- | --- |
 | 1 | 🌿 Jungle | 0 m | het begin | — |
-| 2 | 🐸 Moeras | 450 m | wespen, rotte lianen | +0,5 |
-| 3 | 🦒 Savanne | 1100 m | meer rotte en elastieken lianen | +1 |
-| 4 | ❄️ IJsbergen | 1900 m | gladde ijslianen, eksters | +1,5 |
-| 5 | 🌋 Vulkaan | 2900 m | vuurballen uit de lava | +2 |
-| 6 | 🌙 Sterrennacht | 4100 m | alles door elkaar | +3 |
-| 7 | 🌀 Portaalwoud | 5200 m | portalen: blauw in, oranje uit, met al je vaart | +4 |
-| 8 | 🟩 Kubuswoud | 6300 m | alles van blokjes, zoals *Minecraft* | +5 |
-| 9 | 🖍️ Tekenland | 7400 m | alles getekend, zoals in *Paint* | +6 |
-| 10 | 🧊 3D-wereld | 8500 m | low-poly bergen, neonraster, retrozon | +7 |
-| 11 | 🍭 Snoepland | 9700 m | lollybomen, zuurstoklianen, een chocoladerivier | +8 |
+| 2 | 🐸 Moeras | 600 m | wespen, rotte lianen | +0,5 |
+| 3 | 🦒 Savanne | 1450 m | meer rotte en elastieken lianen | +1 |
+| 4 | ❄️ IJsbergen | 2450 m | gladde ijslianen, eksters | +1,5 |
+| 5 | 🌋 Vulkaan | 3700 m | vuurballen uit de lava | +2 |
+| 6 | 🌙 Sterrennacht | 5200 m | alles door elkaar | +3 |
+| 7 | 🌀 Portaalwoud | 6600 m | portalen: blauw in, oranje uit, met al je vaart | +4 |
+| 8 | 🟩 Kubuswoud | 8000 m | alles van blokjes, zoals *Minecraft* | +5 |
+| 9 | 🖍️ Tekenland | 9400 m | alles getekend, zoals in *Paint* | +6 |
+| 10 | 🧊 3D-wereld | 10800 m | low-poly bergen, neonraster, retrozon | +7 |
+| 11 | 🍭 Snoepland | 12300 m | lollybomen, zuurstoklianen, een chocoladerivier | +8 |
+| 12 | 🏜️ Woestijn | 13800 m | cactussen, piramides, drijfzand, gieren | +9 |
+| 13 | 🍄 Paddenstoelenbos | 15300 m | reuzenpaddenstoelen, heel veel stuiterzwammen, gloeiende sporen | +10 |
+| 14 | ☁️ Wolkenrijk | 16800 m | wolkenbomen, gouden lianen, onweer onder je | +11 |
+| 15 | 🌃 Neonstad | 18300 m | neonpalmen, een skyline, gloeiende lianen en een neonzee | +12 |
 
 De appelbonus komt bovenop de upgrade Appeloogst.
 
-- **Na Snoepland** komen de werelden steeds terug, elk 1100 m lang, in een vaste, door elkaar gehusselde volgorde (je blijft dus nooit in dezelfde wereld). Appels tellen daar minstens +8.
-- **Een nieuwe wereld** kondig je niet zomaar aan: op de grens staat een poort met de naam, en als je erdoor gaat krijg je slow motion, filmbalken, een grote titelkaart en een eigen geluid per wereld. Rond de grens is een korte, rustige buffer: geen vijanden, geen lastige lianen en alle drie de banen hangen er.
+- **Na Neonstad** komen de werelden steeds terug, elk 1400 m lang, in een vaste, door elkaar gehusselde volgorde (je blijft dus nooit in dezelfde wereld). Appels tellen daar minstens +12.
+- **Een nieuwe wereld**: op elke grens staat een klif met een naambord, en erboven hangt aan een reuzentak een enorme liaan. Andy grijpt die vanzelf, zwaait over de klif (met appels langs de boog) en wordt aan de andere kant met extra vaart de nieuwe wereld in geslingerd. Je hoeft niets te doen, en het duurt nog geen 3 seconden, met filmbalken, een titelkaart en een eigen geluid per wereld. Rond de grens is een korte, rustige buffer: geen vijanden en geen lastige lianen.
 
 ### Lianen en extra's
 
 - **Speciale lianen**: ✨ turbo (extra vaart), 🎀 elastiek (rekt en veert), 🍎 fruit (vol appels), 🪵 rot (breekt na even hangen), 🧊 ijs (je glijdt omlaag).
 - **Trampolines en stuiterzwammen** lanceren je omhoog.
-- **Trucs**: blijf je lang in de lucht, dan doet Andy salto's en andere kunstjes voor bonusappels.
+- **Trucs**: blijf je lang in de lucht, dan doet Andy salto's en andere kunstjes voor bonusappels, met een zwiepende boog, spiraal, gloeiende ster of snelheidslijnen erachter. Andy rekt en krimpt bij grijpen, loslaten en landen, knippert, ademt en zijn benen slingeren mee met de zwaai.
 - **Combo's**: pak snel achter elkaar appels voor extra bonus. Elke 100 m is er een mijlpaal met confetti.
 - **Vijanden** (wespen, eksters, vuurballen) laten Andy nooit vallen, maar stelen appels. Die kun je terugpakken. Een helm beschermt je.
 - **Luchtballonnen** drijven boven het plafond, met een liaan eronder (+5 🍎).
 - **Straaljager**: heel af en toe (Eindeloos, vanaf 150 m) scheurt er een straaljager van achteren over je heen, met een lange liaan die ver naar achteren wappert. Grijp hem (+8 🍎) en je wordt zo'n 5 seconden meegesleurd; daarna laat hij je met flinke vaart los.
-- **De ruimte**: in Eindeloos hangt er vanaf 150 m geregeld een pad van drie gouden ballonnen hoog in de lucht. Pak ze achter elkaar en laat bij de laatste los: dan word je de ruimte in gelanceerd (+25 🍎), met weinig zwaartekracht, sterrenlianen, planetoïden en een ufo (+15 🍎).
+- **De ruimte**: in Eindeloos hangt er vanaf 150 m geregeld een pad van drie gouden ballonnen hoog in de lucht. Pak ze achter elkaar en laat bij de laatste los: dan word je de ruimte in gelanceerd (+25 🍎). Kom je zonder ballonnen heel hoog (bijvoorbeeld van een trampoline), dan trekt de ruimte je ook omhoog. Daar is bijna geen zwaartekracht en houdt een zachte kracht je 35 seconden boven, met steeds nieuwe sterrenlianen, planetoïden, sterappels en een ufo (+15 🍎). Duiken brengt je eerder terug naar beneden.
 - **Head-start**: vóór je eerste sprong in Eindeloos koop je met appels een raketvlucht vooruit (250 tot 2000 m).
-- **Onder water**: val je in het water (niet in lava, niet in multiplayer), dan is er 20% kans dat Andy niet verdrinkt maar ondergaat. Je zwemt dan verder door een onderwaterwereld met rotswanden, kwallen (die appels stelen) en parels. Een stroming houdt je onder water, behalve bij een **luchtgat** (een bellenzuil). Haal je er binnen 30 seconden een, dan schiet je omhoog (+10 🍎 en een bonus per seconde lucht over); anders verdrinkt Andy.
-- **Kisten**: tijdens het spelen hangen er soms kisten 📦 in de lucht (en onder water). Kom je in de buurt, dan vliegt hij naar je toe (je hoeft hem niet precies te raken) en krijg je hem na de run. Open ze via **📦 Kisten** in het menu of op het eindscherm: een rij prijzen rolt voorbij (zoals in *Counter-Strike*) en stopt op je buit.
+- **Onder water (een tweede kans)**: val je in het water (niet in lava, niet in multiplayer), dan is er 20% kans dat Andy niet verdrinkt maar ondergaat. Die tweede kans moet je verdienen: je hebt 22 seconden lucht, de **luchtgaten** (bellenzuilen) liggen ver uit elkaar, de rotswanden laten maar een krappe doorgang (sommige schuiven op en neer), tegenstromingen duwen je terug, en kwallen en kogelvissen kosten je 3 seconden lucht. Haal je een luchtgat, dan schiet je omhoog (+15 🍎 en 2 per seconde lucht over); anders verdrinkt Andy.
+- **Kisten**: tijdens het spelen hangen er soms kisten 📦 in de lucht (en onder water). Kom je in de buurt, dan vliegt hij naar je toe (je hoeft hem niet precies te raken) en krijg je hem na de run. Je kunt ook een kist **kopen voor 250 🍎** in het kistenscherm. Open ze via **📦 Kisten** in het menu of op het eindscherm: een rij prijzen rolt voorbij (zoals in *Counter-Strike*) en stopt op je buit.
 
   | Zeldzaamheid | Kans | Wat |
   | --- | --- | --- |
-  | Gewoon | 55% | appels of XP |
-  | Ongewoon | 26% | bruine of grijze vacht, petje, **kiwikostuum** (je ziet eruit als Kiwi) |
-  | Zeldzaam | 12,5% | blauwe of roze vacht, cowboyhoed, piratenhoed |
-  | Episch | 5% | gouden vacht, kroon, tovenaarshoed |
-  | Legendarisch | 1,5% | **appelkostuum**, regenboogvacht |
+  | Gewoon | 55% | appels of XP (220 of 500) |
+  | Ongewoon | 26% | bruine, grijze of witte vacht, petje, feesthoedje, hartjesspoor, **kiwikostuum** (je ziet eruit als Kiwi) |
+  | Zeldzaam | 12,5% | blauwe, roze of groene vacht, cowboyhoed, piratenhoed, hoge hoed, koksmuts, sterrenspoor, **Syntaxis-vacht**, **Syntaxis-pet** |
+  | Episch | 5% | gouden of paarse vacht, kroon, tovenaarshoed, vikinghelm, vuurspoor, astronautenpak, **binair spoor** |
+  | Legendarisch | 1,5% | **appelkostuum**, regenboogvacht, aureool, regenboogspoor, **Syntaxis-hoodie** |
 
-  In de **garderobe** (onder de kisten) kies je vachtkleur, hoed en kostuum, met een voorbeeld van Andy. Heb je iets al, dan krijg je in plaats daarvan appels. Online zien anderen je gewone uiterlijk.
+  De **S.V. Syntaxis-set** heeft het groene S.V.-logo: een donkere vacht met binaire plukjes, een pet met het logo, een hoodie met het logo op de borst en een spoor van groene nullen en enen. Een **spoor** volgt je als je hard gaat. In de **garderobe** (onder de kisten) kies je vachtkleur, hoed, kostuum en spoor, met een voorbeeld van Andy. Heb je iets al, dan krijg je in plaats daarvan appels. Online zien anderen je gewone uiterlijk.
 
 ### Upgrades en levels
 
-Met appels koop je 15 permanente upgrades. Met XP (vooral voor afstand) stijg je in level en ontgrendel je er meer.
+Met appels koop je 15 permanente upgrades. Met XP (vooral voor afstand) stijg je in level en ontgrendel je er meer. Elk niveau van een upgrade is opgedeeld in **3 kleinere stapjes** (behalve de tellers Reddingsballon en Helm): een stapje kost ongeveer wat vroeger een heel niveau kostte, dus alles maximaal duurt veel langer zonder dat een aankoop duurder wordt. Oude voortgang wordt omgerekend. De **Appelmagneet** is afgezwakt: hij trekt appels in de buurt aan, maar is geen stofzuiger meer.
 
 | Direct te koop | Ontgrendel je later |
 | --- | --- |
@@ -121,7 +125,7 @@ Zwaaikracht en Lanceerkracht verhogen ook je topsnelheid: snelheid moet je verdi
 In multiplayer staan upgrades uit, en appels en XP tellen niet mee voor je save. Iedereen speelt in dezelfde wereld en ziet de anderen als extra gorilla's.
 
 **Manieren van spelen**
-- **Online lobbies (tot 20 spelers)**: kies **Spelmodi → Multiplayer → + Nieuwe lobby**. Je lobby verschijnt in de lijst van anderen, of je stuurt een uitnodigingslink. De host kiest de spelmodus en start vanaf 2 spelers. Na afloop start de host een nieuwe ronde.
+- **Online lobbies (tot 20 spelers)**: kies **Gamemodes → Multiplayer → + Nieuwe lobby**. Je lobby verschijnt in de lijst van anderen, of je stuurt een uitnodigingslink. De host kiest de spelmodus en start vanaf 2 spelers. Na afloop start de host een nieuwe ronde.
 - **Duel** (2 spelers, één scherm): speler 1 speelt met `Spatie` (of de linker/bovenste helft van het scherm), speler 2 met `↑` of `Enter` (of de rechter/onderste helft). Geen internet nodig.
 - **Tegen Kiwi (AI)**: een race naar de finish tegen een orang-oetan op niveau *Makkelijk*, *Normaal*, *Moeilijk* of *Expert*.
 
@@ -139,6 +143,7 @@ Instellingen open je met het tandwiel rechtsboven in het hoofdmenu, of in het pa
 - **Grafische kwaliteit**: een schuifje met *AI* (standaard: het spel meet de framerate en kiest zelf), *Laag*, *Normaal* en *Hoog*. *AI* schakelt alleen terug als dat echt helpt: een telefoon in energiebesparing (vast op 30 fps) houdt dus gewoon mooi beeld. Tekent je browser zonder grafische versnelling, of moet het spel naar de laagste stand, dan krijg je in het menu een melding met een tip.
 - **Liggend spelen**: op telefoons standaard aan. Waar het kan wordt het scherm liggend vastgezet; anders draait het spel het beeld zelf een kwartslag.
 - **Volledig scherm**, **geluid** en **muziek**: los aan en uit te zetten. Geluidseffecten en muziek hebben elk een eigen volumeschuifje.
+- **Resetten**: zet de carrière, je cosmetics of je upgrades (zonder appels terug) apart terug naar het begin. Tik eerst op *Reset*, dan nog een keer op *Zeker?* om het te bevestigen.
 
 ### Geluid
 

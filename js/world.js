@@ -109,6 +109,7 @@ function resetWorld() {
   vineSeq = 0;
   // Andy staat op de startrots; de eerste liaan hangt binnen springbereik
   const v0 = makeVine(FIRST_VINE.x, FIRST_VINE.ay, FIRST_VINE.len, 'normal', 0);
+  v0.first = true; // de allereerste liaan (zie het Matrix-geheim in physics.js)
   vines.push(v0);
   gen = { x: FIRST_VINE.x, lastPortal: -1e9, lastPath: 0, special: 0, col: 0, low: FIRST_VINE.ay + FIRST_VINE.len, tips: [null, null, FIRST_VINE.ay + FIRST_VINE.len * TIP_F] };
   resetRunner();
@@ -188,6 +189,16 @@ function addVine(x, ay, len, type, bi, force) {
 // op logische sprongafstand van elkaar. Hoe verder je komt, hoe groter de afstand en hoe vaker er
 // een bovenste baan ontbreekt; de laagste baan is er altijd, zodat je nooit vastloopt.
 const LANES = [-1000, -540, -80];
+// Rond een biomegrens (bx) hangen geen gewone lianen: van bx - GAP_BEFORE tot bx + GAP_AFTER staat de klif met de
+// reuzenliaan (zie TRANS in physics.js). Geeft de grens terug als x in zo'n gat valt, anders null.
+const GAP_BEFORE = 850, GAP_AFTER = 960;
+function gapBoundary(x) {
+  if (game.career) return null;
+  const S = biomeSeg((x - START_X) / PX_PER_M), bn = START_X + S.nextStart * PX_PER_M, bs = START_X + S.start * PX_PER_M;
+  if (x > bn - GAP_BEFORE && x < bn + GAP_AFTER) return bn;
+  if (S.start > 0 && x > bs - GAP_BEFORE && x < bs + GAP_AFTER) return bs;
+  return null;
+}
 function genNext() {
   const m = (gen.x - START_X) / PX_PER_M;
   const d = diffAt(m), dc = Math.min(1, d), dx = Math.min(1.8, d); // dx: carrière gaat verder dan 1 (zie levelInfo)
@@ -197,8 +208,21 @@ function genNext() {
   // eindeloze modus: hoe sneller Andy gaat, hoe ruimer de lianen staan (anders wordt het te druk)
   const fast = !game.career && !game.mp && G ? clamp((Math.abs(G.vx) - 700) / 900, 0, 1) : 0;
   // meer upgrades = grotere gaten en vaker een ontbrekende liaan; rond een biomegrens juist even rustig (buffer)
-  const up = upgradePower(), calm = inBiomeBuffer(m);
-  const x = gen.x + grand(470, 520) + dx * grand(40, 140) + fast * grand(140, 260) + (calm ? 0 : up * grand(60, 170));
+  const up = upgradePower() * (game.career ? CAREER_UP : 1), calm = inBiomeBuffer(m); // carrière: upgrades tellen maar voor een deel
+  let x = gen.x + grand(470, 520) + dx * grand(40, 140) + fast * grand(140, 260) + (calm ? 0 : up * grand(60, 170));
+  // biomegrens: daar staat een klif met de reuzenliaan (zie TRANS in physics.js). Geen gewone lianen boven de klif:
+  // de eerste kolom komt pas voorbij de plek waar Andy wordt losgelaten. Langs de zwaaiboog hangen appels.
+  const gapB = gapBoundary(x), gapCol = gapB !== null;
+  if (gapCol) {
+    x = gapB + GAP_AFTER + grand(0, 40);
+    if (gapB !== gen.lastGap) {
+      gen.lastGap = gapB;
+      for (let i = 0; i < 10; i++) {
+        const th = -0.7 + i * 0.17, r = TRANS.L + TRANS.hang;
+        apples.push({ x: gapB + Math.sin(th) * r, y: TRANS.ay + Math.cos(th) * r, gold: i % 3 === 2, t: i * 0.6 });
+      }
+    }
+  }
   const vbi = biomeIndexAt((x - START_X) / PX_PER_M);
   gen.col++;
 
@@ -223,7 +247,7 @@ function genNext() {
 
   // Geregeld een ballonpad naar de ruimte: een trapje van gouden ballonlianen die steeds hoger hangen.
   // Wie ze achter elkaar pakt en van de laatste loslaat, wordt de ruimte in gelanceerd.
-  if (!game.career && m > 150 && m - gen.lastPath > 450 && genRandom() < 0.35) {
+  if (!game.career && m > 150 && m - gen.lastPath > 450 && !gapCol && gapBoundary(x + 1400) === null && genRandom() < 0.35) {
     gen.lastPath = m;
     const pid = genRandom();
     for (let i = 0; i < SPACE_PATH; i++) {
@@ -232,7 +256,7 @@ function genNext() {
     }
       }
   // Heel af en toe: een luchtballon boven het plafond met een liaan eronder
-  else if (m > 40 && genRandom() < 0.07 && !vines.some(v => v.balloon && v.rest[0] > x - 1500)) { // rest[0]: zie vineFits
+  else if (m > 40 && !gapCol && genRandom() < 0.07 && !vines.some(v => v.balloon && v.rest[0] > x - 1500)) { // rest[0]: zie vineFits
     const bv = addVine(x + grand(0, 100), CEIL_Y - 190, 300, 'balloon', vbi);
     if (bv) bv.balloon = { vx: grand(60, 90), hue: (genRandom() * 360) | 0, bob: grand(0, 6) };
   }
@@ -249,6 +273,7 @@ function genNext() {
       break;
     }
   }
+  if (gapCol) { gen.x = x; gen.low = low; gen.tips = laneTips; return; } // net over de klif: alleen de nieuwe lianen
   const x0 = gen.x, x1 = x - 250 * Math.sin(VINE_SLANT);
   // lucht-trampolines tussen de kolommen, op een plek waar geen liaan hangt
   if (m > 25 && genRandom() < 0.2 + 0.1 * lvl('shroom')) {
@@ -257,7 +282,7 @@ function genNext() {
       if (vines.every(v => Math.abs(v.rest[0] - tx) > 700 || segDist(seg, v.rest) > 70) && portals.every(P => Math.hypot(P.bx - tx, P.by - ty) > 220 && Math.hypot(P.ox - tx, P.oy - ty) > 220)) { tramps.push({ x: tx, y: ty, w: 120, sq: 0, bi: vbi, ph: grand(0, 6) }); break; }
     }
   }
-  if (m > 20 && genRandom() < 0.16 * (1 - 0.6 * dc) * (1 + 0.4 * lvl('shroom'))) shrooms.push({ x: (gen.x + x) / 2 + grand(-40, 40), w: 180, bi: vbi, sq: 0 });
+  if (m > 20 && genRandom() < 0.16 * (1 - 0.6 * dc) * (1 + 0.4 * lvl('shroom')) * F.shrooms) shrooms.push({ x: (gen.x + x) / 2 + grand(-40, 40), w: 180, bi: vbi, sq: 0 });
   if (game.career && gen.x > game.career.finishX) { gen.x = x; gen.low = low; gen.tips = laneTips; return; } // voorbij de finish: alleen lianen
   // appels langs de banen: een boog van de ene liaan naar de volgende in dezelfde baan
   // liever duidelijke groepjes met af en toe een leeg stuk dan overal een paar losse appels
@@ -273,7 +298,7 @@ function genNext() {
   if (calm) { gen.x = x; gen.low = low; gen.tips = laneTips; return; } // buffer rond een biomegrens: geen vijanden
   // carrière: tijdelijke power-ups (vaste plekken per level: hash, geen genRandom, zodat de wereld gelijk blijft)
   if (C && m > 40 && x < C.finishX - 400 && hash(gen.col * 7.31 + C.n * 13.7) < (C.boss ? 0.16 : 0.1)) {
-    const types = C.boss ? ['star', 'star', 'wings', 'clock', 'magnet'] : ['star', 'magnet', 'wings', 'turbo', 'clock'];
+    const types = C.boss ? ['star', 'star', 'wings', 'clock', 'magnet', 'slow', 'slow'] : ['star', 'magnet', 'wings', 'turbo', 'clock', 'slow'];
     pups.push({ x: mid, y: clamp(LANES[(hash(gen.col * 3.7) * 3) | 0] + 330, CEIL_Y + 100, HAZARD_Y - 180), type: types[(hash(gen.col * 1.9 + C.n) * types.length) | 0], t: 0 });
   }
   const fk = (1 + 0.6 * d) * (C && C.ch.includes('swarm') ? 2.5 : 1);

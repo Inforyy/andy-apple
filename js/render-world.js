@@ -257,6 +257,7 @@ function drawVine(v) {
   if (st === 'blocky' || st === 'paint' || st === 'poly3d' || st === 'candy') { drawStyledVine(v, st, path, shakeX); return; }
   if (v.type === 'turbo') { ctx.strokeStyle = `rgba(255,215,70,${0.25 + 0.15 * Math.sin(time * 6)})`; ctx.lineWidth = 16; path(); ctx.stroke(); }
   if (v.type === 'space') { ctx.strokeStyle = `rgba(190,160,255,${0.25 + 0.12 * Math.sin(time * 4 + v.phase)})`; ctx.lineWidth = 15; path(); ctx.stroke(); }
+  if (st === 'neon') { ctx.strokeStyle = `rgba(0,229,255,${0.22 + 0.1 * Math.sin(time * 3 + v.phase)})`; ctx.lineWidth = 14; path(); ctx.stroke(); } // neon: gloeiende lianen
   ctx.strokeStyle = v.dark; ctx.lineWidth = v.type === 'balloon' ? 5 : 7.5; path(); ctx.stroke();
   ctx.strokeStyle = v.col; ctx.lineWidth = v.type === 'balloon' ? 3 : 4.5; path(); ctx.stroke();
   if (qLevel >= 3) { ctx.strokeStyle = v.light; ctx.lineWidth = 1.4; ctx.save(); ctx.translate(-1.2, -0.5); path(); ctx.stroke(); ctx.restore(); }
@@ -471,6 +472,7 @@ function drawFoes() {
     if (f.type === 'wasp') drawWasp(f);
     else if (f.type === 'fire') drawFire(f);
     else if (f.type === 'jelly') drawJelly(f);
+    else if (f.type === 'puffer') drawPuffer(f);
     else drawBird(f);
   }
 }
@@ -583,11 +585,37 @@ function drawCape(len, spread) {
 const ANTICS = ['wave', 'dance', 'salto', 'juggle'], ANTIC_EVERY = 14, ANTIC_DUR = 2.6, ANTIC_FIRST = 4;
 function menuAntic() {
   if (game.mode !== 'menu' || !G || G.state !== 'stand') return null;
+  if (INTRO.on) return { kind: 'intro', u: INTRO.t, p: INTRO.t / INTRO.dur }; // start van Eindeloos: trommelen en brullen
   const t = G.standT - ANTIC_FIRST;
   if (t < 0) return null;
   const u = t % ANTIC_EVERY;
   if (u > ANTIC_DUR) return null;
   return { kind: ANTICS[Math.floor(t / ANTIC_EVERY) % ANTICS.length], u, p: u / ANTIC_DUR };
+}
+// effecten achter Andy tijdens een truc (in de gedraaide ruimte van Andy, vóór zijn eigen draaiing)
+function drawTrickFx(tr, tk) {
+  const a = Math.min(1, Math.sin(tk * Math.PI) * 1.6), R = 36 * G_DRAW;
+  ctx.save();
+  if (tr.id === 'salto' || tr.id === 'back') { // een zwiepende boog achter de draaiing aan
+    const rot = G.angle + (G.trickRot || 0), dir = Math.sign(tr.rot);
+    ctx.lineCap = 'round';
+    for (let k = 0; k < 3; k++) {
+      ctx.strokeStyle = `rgba(255,${240 - k * 30},${160 - k * 40},${(0.8 - k * 0.2) * a})`; ctx.lineWidth = (11 - k * 3) * G_DRAW / 1.4;
+      ctx.beginPath(); ctx.arc(0, 0, R + k * 6, rot - Math.PI / 2 - dir * (0.2 + k * 0.5), rot - Math.PI / 2 - dir * (1.4 + k * 0.5), dir > 0); ctx.stroke();
+    }
+  } else if (tr.id === 'screw') { // spiraalstrepen om hem heen
+    ctx.strokeStyle = `rgba(200,240,255,${0.85 * a})`; ctx.lineWidth = 4;
+    for (let k = 0; k < 4; k++) { const y = -30 + k * 18, ph = tk * 20 + k; ctx.beginPath(); ctx.ellipse(0, y, R * 0.9, 6, 0, ph, ph + 2.2); ctx.stroke(); }
+  } else if (tr.id === 'star') { // een gloeiende ster erachter
+    ctx.globalAlpha = 0.75 * a; ctx.fillStyle = '#ffe46b'; starPath(ctx, 0, -4, R * 1.6 * (0.6 + a * 0.5), tk * 3); ctx.fill();
+    ctx.globalAlpha = 0.5 * a; ctx.fillStyle = '#fff'; starPath(ctx, 0, -4, R * 0.9 * (0.6 + a * 0.5), tk * 3); ctx.fill();
+    ctx.globalAlpha = 0.9 * a; ctx.fillStyle = '#fff'; for (let k = 0; k < 5; k++) { const an2 = tk * 6 + k * 1.257; circ(Math.cos(an2) * R * 1.2, -4 + Math.sin(an2) * R * 1.2, 2.5); }
+  } else if (tr.id === 'super') { // snelheidslijnen achter hem
+    const d = Math.hypot(G.vx, G.vy) || 1, ux = -G.vx / d, uy = -G.vy / d;
+    ctx.strokeStyle = `rgba(255,255,255,${0.85 * a})`; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    for (let k = -2; k <= 2; k++) { const ox = -uy * k * 13, oy = ux * k * 13, L = 80 + (k % 2 ? 30 : 70); line(ox + ux * 34, oy + uy * 34, ox + ux * (34 + L), oy + uy * (34 + L)); }
+  }
+  ctx.restore();
 }
 function drawGorilla() {
   if (G.state === 'dead' && G.y > HAZARD_Y + 60 && !(run && run.under)) return; // onder water blijf je zichtbaar
@@ -611,22 +639,30 @@ function drawGorilla() {
   const tr = G.trick, tk = tr ? Math.min(1, G.trickT / tr.dur) : 0;
   const an = menuAntic();
   if (an && an.kind === 'dance') { const b = Math.sin(an.u * 9); ctx.translate(b * 4, -Math.abs(Math.cos(an.u * 9)) * 4); ctx.rotate(b * 0.14); }
+  if (an && an.kind === 'intro') { const b = Math.min(1, an.p * 3); ctx.translate(0, -Math.abs(Math.sin(an.u * 18)) * 3 * b); ctx.scale(1 + 0.06 * b, 1 + 0.06 * b); }
   if (an && an.kind === 'salto') { // een sprongetje met een achterwaartse salto, en weer netjes op de rots
     const e = clamp((an.p - 0.15) / 0.7, 0, 1), s = e * e * (3 - 2 * e);
     ctx.translate(0, -Math.sin(e * Math.PI) * 55); ctx.rotate(-s * Math.PI * 2);
   }
+  if (tr) drawTrickFx(tr, tk);
   ctx.rotate(G.angle + (G.trickRot || 0));
   ctx.scale(G_DRAW, G_DRAW);
+  const sq = clamp(G.sq || 0, -0.4, 0.4); // rek en krimp (vanuit de voeten)
+  if (sq) { ctx.translate(0, 24); ctx.scale(1 - sq * 0.55, 1 + sq); ctx.translate(0, -24); }
+  if (G.state === 'stand' && !an) { const br = Math.sin(G.standT * 2.4) * 0.02; ctx.translate(0, 24); ctx.scale(1 - br * 0.5, 1 + br); ctx.translate(0, -24); } // ademen
   if (tr && tr.id === 'screw') ctx.scale(Math.cos(tk * Math.PI * 4) || 0.05, 1);
   if (G.invuln > 0 && ((time * 16) | 0) % 2) ctx.globalAlpha = 0.5;
 
   // ---- houding bepalen: handen (h1, h2) en voeten (f1, f2) ----
   let h1, h2, f1 = [-8, 25], f2 = [8, 25], mouth = 'smile';
   const sw = Math.sin(time * 10);
-  if (G.state === 'hang') {
-    const d = Math.min(Math.hypot(G.hx - G.x, G.hy - G.y) / G_DRAW, 42); // nooit een uitgerekte arm tekenen
-    h1 = [-3, -d]; h2 = [3, -d + 3];
-    f1 = [-7 + sw * 2, 26]; f2 = [8 - sw * 2, 25]; mouth = Math.abs(G.om * G.R) > 700 ? 'open' : 'smile';
+  if (G.state === 'hang' || G.auto) { // G.auto: aan de reuzenliaan bij een biomegrens (zie autoSwing)
+    const d = G.auto ? 38 : Math.min(Math.hypot(G.hx - G.x, G.hy - G.y) / G_DRAW, 42); // nooit een uitgerekte arm tekenen
+    // de benen slingeren achter de zwaai aan en trekken in op het hoogste punt
+    const om = G.auto ? 0.6 : clamp((G.om || 0) * 0.4, -1, 1), tuck = 1 - Math.min(1, Math.abs(om) * 1.4);
+    h1 = [-3, -d]; h2 = [3, -d + 3 + Math.abs(om) * 2];
+    f1 = [-7 - om * 10 + sw * 1.5, 26 - tuck * 7 - Math.abs(om) * 2]; f2 = [8 - om * 10 - sw * 1.5, 25 - tuck * 5 - Math.abs(om) * 2];
+    mouth = G.auto || Math.abs(G.om * G.R) > 700 ? 'open' : tuck > 0.6 ? 'grin' : 'smile';
   } else if (G.state === 'stand') {
     const beat = (G.standT % 3.5) > 2.8; // af en toe op de borst trommelen
     if (beat) { const b = Math.sin(G.standT * 30); h1 = [-5, -3 + b * 3]; h2 = [5, -3 - b * 3]; mouth = 'open'; }
@@ -637,6 +673,7 @@ function drawGorilla() {
       if (an.kind === 'wave') { h1 = [-15, 12]; h2 = [21 + w * 5, -27 + Math.abs(w) * 2]; mouth = 'grin'; }
       else if (an.kind === 'dance') { h1 = [-18, -18 + b * 9]; h2 = [18, -18 - b * 9]; f1 = [-9, 26 - Math.max(0, b) * 5]; f2 = [9, 26 - Math.max(0, -b) * 5]; mouth = 'grin'; }
       else if (an.kind === 'salto') { h1 = [-9, 4]; h2 = [9, 4]; f1 = [-6, 20]; f2 = [6, 20]; mouth = 'open'; if (an.p < 0.15 || an.p > 0.85) { h1 = [-20, -20]; h2 = [20, -20]; f1 = [-9, 26]; f2 = [9, 26]; mouth = 'grin'; } }
+      else if (an.kind === 'intro') { const b = Math.sin(an.u * 30); if (an.p < 0.6) { h1 = [-5, -3 + b * 4]; h2 = [5, -3 - b * 4]; } else { h1 = [-22, -30]; h2 = [22, -30]; } mouth = 'open'; }
       else if (an.kind === 'juggle') { const j = Math.sin(an.u * 12); h1 = [-11, -4 + j * 5]; h2 = [11, -4 - j * 5]; mouth = 'grin'; }
     }
   } else if (G.state === 'rocket') { h1 = [14, 6]; h2 = [20, 8]; mouth = 'open'; }
@@ -646,10 +683,16 @@ function drawGorilla() {
   else if (tr) { h1 = [-9, 4]; h2 = [9, 4]; f1 = [-6, 18]; f2 = [6, 18]; mouth = 'grin'; } // ingedoken voor een salto
   else if (G.diving) { h1 = [-10, 20]; h2 = [-2, 22]; f1 = [-5, 27]; f2 = [5, 27]; mouth = 'o'; }
   else if (G.state === 'swim') { const s = Math.sin(time * 7); h1 = [-8 + s * 14, -20 - s * 6]; h2 = [8 - s * 14, -18 + s * 6]; f1 = [-8 - s * 5, 26]; f2 = [8 + s * 5, 26]; mouth = 'o'; } // zwemslag
-  else { h1 = [-22, -22 + sw * 4]; h2 = [22, -24 - sw * 4]; f1 = [-10, 24]; f2 = [10, 24]; mouth = G.vy < -200 ? 'open' : 'smile'; }
+  else { // in de lucht: omhoog = armen hoog en benen ingetrokken; omlaag = armen wijd en benen die trappelen
+    const up = clamp(-G.vy / 800, -1, 1), a = (up + 1) / 2, fl = Math.sin(time * 14);
+    h1 = [-24 + a * 8, -12 - a * 16 + fl * (1 - a) * 6]; h2 = [24 - a * 8, -14 - a * 16 - fl * (1 - a) * 6];
+    f1 = [-10 + fl * (1 - a) * 3, 25 - a * 6]; f2 = [10 - fl * (1 - a) * 3, 24 - a * 6];
+    mouth = G.vy < -300 ? 'open' : G.vy > 700 ? 'o' : Math.hypot(G.vx, G.vy) > 1300 ? 'grin' : 'smile';
+  }
 
-  // cape (wingsuit)
+  // cape (wingsuit, en altijd tijdens de Superaap)
   const wing = lvl('wingsuit');
+  if (tr && tr.id === 'super' && !wing) drawCape(32, 10);
   if (wing) drawCape(G.state === 'air' && G.vy > 0 && !G.diving ? 30 + wing * 5 : 24, G.state === 'air' && !G.diving ? 9 + wing : 7);
   // bandana-slierten
   const vw = Math.sin(time * 16) * 3, tl = 12 + Math.min(10, Math.hypot(G.vx, G.vy) / 150);
@@ -675,6 +718,13 @@ function drawGorilla() {
     ctx.fillStyle = cachedGrad('applesuit', () => { const g = ctx.createRadialGradient(-6, -4, 2, 0, 3, 20); g.addColorStop(0, '#ff8a7a'); g.addColorStop(0.5, '#e8322b'); g.addColorStop(1, '#9e1b16'); return g; });
     ell(0, 3, 18.5, 16.5);
   }
+  if (GC.svHood) { // Syntaxis-hoodie: groen logo op de borst en een koordje
+    ctx.fillStyle = GC.ink; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(-10.5, -2.5, 21, 11, 2.5) : ctx.rect(-10.5, -2.5, 21, 11); ctx.fill();
+    ctx.fillStyle = '#79c143'; ctx.font = '900 8px Courier New, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('S.V.', 0, 3.2);
+    ctx.fillStyle = 'rgba(121,193,67,.7)'; ctx.font = '700 3.2px Courier New, monospace'; ctx.fillText('0101 1001', 0, 10.8);
+    ctx.strokeStyle = '#79c143'; ctx.lineWidth = 1; line(-3, -6, -4, 0); line(3, -6, 4, 0);
+  }
+  if (GC.svFur) { ctx.fillStyle = 'rgba(121,193,67,.85)'; ctx.font = '700 4px Courier New, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('10', -9, 10); ctx.fillText('01', 9, 11); } // Syntaxis-vacht: binaire plukjes
   ctx.strokeStyle = GC.furL; ctx.lineWidth = 1.3; ctx.lineCap = 'round'; // vachtplukjes op de schouders
   line(-14, -6, -17, -9); line(-12, -8, -14, -12); line(14, -6, 17, -9); line(12, -8, 14, -12);
   // hoofd met kuif en oren (eerst de contour, dan de vulling)
@@ -696,6 +746,11 @@ function drawGorilla() {
     for (const ex of [-4.2, 4.2]) { line(ex - 2, -19, ex + 2, -15); line(ex + 2, -19, ex - 2, -15); }
   } else {
     ctx.fillStyle = GC.ink; ell(-4.2, -17, 3.6, 4); ell(4.2, -17, 3.6, 4);
+  }
+  if (G.state !== 'dead' && ((time + (G.x || 0) * 0.001) % 3.6) < 0.12) { // knipperen: even de ogen dicht
+    ctx.fillStyle = GC.skin; ell(-4.2, -17, 2.9, 3.3); ell(4.2, -17, 2.9, 3.3);
+    ctx.strokeStyle = GC.ink; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.arc(-4.2, -18, 2.6, 0.3, Math.PI - 0.3); ctx.moveTo(6.8, -17.3); ctx.arc(4.2, -18, 2.6, 0.3, Math.PI - 0.3); ctx.stroke();
+  } else if (G.state !== 'dead') {
     ctx.fillStyle = '#ffffff'; ell(-4.2, -17, 2.9, 3.3); ell(4.2, -17, 2.9, 3.3);
     ctx.fillStyle = '#3a2416'; circ(-4.2 + look, -16.6 + lookY, 2); circ(4.2 + look, -16.6 + lookY, 2);
     ctx.fillStyle = '#000'; circ(-4.2 + look, -16.6 + lookY, 1.1); circ(4.2 + look, -16.6 + lookY, 1.1);
@@ -731,6 +786,11 @@ function drawGorilla() {
   }
   if (GC.appleSuit) drawAppleSuitTop();
   if (GC.hat) drawHat(GC.hat);
+  if (GC.astro) { // astronautenpak: een glazen helm om het hoofd
+    ctx.strokeStyle = 'rgba(210,235,255,.9)'; ctx.lineWidth = 2; ctx.fillStyle = 'rgba(170,215,255,.18)'; ctx.beginPath(); ctx.arc(0, -19, 19, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.55)'; ell(-8, -28, 4, 7, -0.5);
+    ctx.fillStyle = '#c9ced6'; ctx.fillRect(-12, -3, 24, 4); ctx.fillStyle = '#e8322b'; circ(7, 3, 1.6); ctx.fillStyle = '#2f7fe0'; circ(3, 3, 1.6);
+  }
   if (an && an.kind === 'juggle') { // drie appels in een boogje boven de handen
     for (let i = 0; i < 3; i++) {
       const ph = an.u * 5 + i * Math.PI * 2 / 3, x = Math.cos(ph) * 12, y = -40 - Math.abs(Math.sin(ph)) * 22;
@@ -769,6 +829,7 @@ function drawParts() {
       case 'confetti': ctx.fillStyle = p.col; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillRect(-p.r, -p.r * 0.5, p.r * 2, p.r * Math.abs(Math.cos(p.rot * 1.7))); ctx.restore(); break;
       case 'leaf': ctx.fillStyle = p.col; ell(p.x, p.y, p.r * 1.6, p.r * 0.75, p.rot); break;
       case 'streak': ctx.strokeStyle = p.col; ctx.lineWidth = p.r; line(p.x, p.y, p.x - p.vx * 0.12, p.y - p.vy * 0.12); break;
+      case 'glyph': ctx.fillStyle = p.col; ctx.font = `900 ${p.r}px Courier New, monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(p.ch, p.x, p.y); break; // tekentje (hartje, 0 of 1)
       default: ctx.fillStyle = p.col; circ(p.x, p.y, p.r);
     }
   }
@@ -808,11 +869,24 @@ function drawHazard(P) {
   ctx.stroke();
   // voorwerpen op het oppervlak, per biome
   const st = P.t < 0.5 ? P.a.style : P.b.style;
-  if (st === 'poly3d') { // neon-raster in perspectief: de rasterzee
-    ctx.strokeStyle = 'rgba(255,120,230,.55)'; ctx.lineWidth = 1.6;
+  if (st === 'poly3d' || st === 'neon') { // neon-raster in perspectief: de rasterzee / neonzee
+    ctx.strokeStyle = st === 'neon' ? 'rgba(0,229,255,.6)' : 'rgba(255,120,230,.55)'; ctx.lineWidth = 1.6;
     const vx = camX + viewW / 2;
     for (let k = 0; k < 7; k++) { const y = HAZARD_Y + 6 + k * k * 6 + ((time * 20) % 12) * (k / 7); line(x0, y, x1, y); }
     for (let i = Math.floor((x0 - vx) / 90) - 6; i <= Math.ceil((x1 - vx) / 90) + 6; i++) { const x = vx + i * 90 - (camX % 90); line(x, HAZARD_Y + 4, vx + (x - vx) * 2.4, bottom); }
+  } else if (st === 'cloud') { // onweerswolken: bolle toppen en af en toe een bliksemschicht
+    ctx.fillStyle = 'rgba(120,130,160,.8)';
+    for (let i = Math.floor(x0 / 70); i < x1 / 70 + 1; i++) circ(i * 70 + 35, HAZARD_Y + 14 + Math.sin(i * 1.7 + time) * 4, 30 + hash(i * 2.9) * 12);
+    const fl = Math.floor(time * 1.3);
+    if (hash(fl * 5.3) < 0.35 && (time * 1.3) % 1 < 0.12) {
+      const bx = camX + hash(fl * 7.1) * viewW; ctx.strokeStyle = '#fff7a0'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(bx, HAZARD_Y + 20);
+      for (let k = 1; k < 6; k++) ctx.lineTo(bx + (hash(fl + k) - 0.5) * 40, HAZARD_Y + 20 + k * 30); ctx.stroke();
+    }
+  } else if (st === 'desert') { // drijfzand: kolkjes die ronddraaien
+    ctx.strokeStyle = 'rgba(120,80,30,.45)'; ctx.lineWidth = 2;
+    for (let i = Math.floor(x0 / 200); i < x1 / 200 + 1; i++) { const x = i * 200 + hash(i * 3.1) * 100, y = HAZARD_Y + 30; ctx.beginPath(); ctx.ellipse(x, y, 34, 8, 0, time * 2 + i, time * 2 + i + 4.5); ctx.stroke(); ctx.beginPath(); ctx.ellipse(x, y, 16, 4, 0, -time * 3, -time * 3 + 4); ctx.stroke(); }
+  } else if (st === 'shroom') { // sporenpoel: gloeiende belletjes
+    for (let i = Math.floor(x0 / 60); i < x1 / 60 + 1; i++) { const ph = (time * 0.6 + hash(i * 2.3)) % 1; ctx.fillStyle = `rgba(160,255,210,${0.6 * (1 - ph)})`; circ(i * 60 + hash(i) * 40, HAZARD_Y + 40 - ph * 30, 3 + hash(i * 5) * 3); }
   } else if (st === 'paint') { ctx.strokeStyle = '#000'; ctx.lineWidth = 4; ctx.beginPath(); for (let x = sx; x <= x1 + 14; x += 14) { const y = waveY(x); x === sx ? ctx.moveTo(x, y) : ctx.lineTo(x, y); } ctx.stroke(); }
   else if (st === 'blocky') { // blokwater: vierkantjes met lichte en donkere tinten
     for (let i = Math.floor(x0 / 24); i < x1 / 24 + 1; i++) for (let j = 0; j < 4; j++) {
@@ -869,7 +943,7 @@ function drawTexts() {
   }
   ctx.globalAlpha = 1;
 }
-const PAINT_COLS = ['#ed1c24', '#ffc90e', '#22b14c', '#00a2e8', '#a349a4'], SPRINKLE_COLS = ['#ff4f8b', '#4fb0ff', '#ffe14f', '#6fe07a', '#b69cff'];
+const PAINT_COLS = ['#ed1c24', '#ffc90e', '#22b14c', '#00a2e8', '#a349a4'], SPRINKLE_COLS = ['#ff4f8b', '#4fb0ff', '#ffe14f', '#6fe07a', '#b69cff'], NEON_COLS = ['#00e5ff', '#ff2bd6', '#ffe14f', '#7dff8a'];
 function drawAmbient(P) {
   const type = P.t < 0.5 ? P.a.particle : P.b.particle, ga = ctx.globalAlpha;
   // wisselende doorzichtigheid via globalAlpha: geen nieuwe kleurstring per deeltje per beeld
@@ -892,6 +966,16 @@ function drawAmbient(P) {
         ctx.globalAlpha = ga * a * 0.2; ctx.fillStyle = 'rgb(170,210,255)'; circ(p.x, p.y, 6 * p.s);
         ctx.globalAlpha = ga * a; ctx.fillStyle = 'rgb(210,235,255)'; circ(p.x, p.y, 1.6 * p.s); break;
       }
+      case 'spore': { // zwevende gloeiende sporen
+        const a = 0.4 + 0.6 * Math.abs(Math.sin(time * 1.5 + p.ph));
+        ctx.globalAlpha = ga * a * 0.3; ctx.fillStyle = p.s > 1.1 ? 'rgb(255,150,210)' : 'rgb(140,255,210)'; circ(p.x, p.y, 6 * p.s);
+        ctx.globalAlpha = ga * a; circ(p.x, p.y, 1.8 * p.s); break;
+      }
+      case 'fluff': ctx.fillStyle = 'rgba(255,255,255,.75)'; circ(p.x, p.y, 3 * p.s); circ(p.x + 3 * p.s, p.y - 1, 2.2 * p.s); break;
+      case 'neon': {
+        ctx.globalAlpha = ga * (0.5 + 0.5 * Math.sin(time * 4 + p.ph));
+        ctx.fillStyle = NEON_COLS[(p.ph * 10 | 0) % NEON_COLS.length]; ctx.fillRect(p.x, p.y, 2.2 * p.s, 7 * p.s); break;
+      }
       case 'pixel': ctx.fillStyle = p.s > 1 ? 'rgba(96,181,56,.85)' : 'rgba(255,255,255,.85)'; ctx.fillRect(Math.round(p.x / 4) * 4, Math.round(p.y / 4) * 4, 5 * p.s, 5 * p.s); break;
       case 'paint':
         ctx.fillStyle = PAINT_COLS[(p.ph * 10 | 0) % PAINT_COLS.length]; ctx.globalAlpha = ga * 0.8;
@@ -911,6 +995,59 @@ function drawAmbient(P) {
   }
   ctx.globalAlpha = ga;
 }
+// ---- De Matrix (geheim, zie checkMatrix in physics.js): vallende code, zwevende Andy en een pratende Kiwi ----
+const MATRIX_GLYPHS = '01アイウエオカキクケコサシスセソタチツテト0110ナニヌネノ10ハヒフヘホマミムメモ';
+function drawMatrix(M) {
+  const c = mainCtx, W = cssW, H = cssH;
+  c.setTransform(pr, 0, 0, pr, 0, 0);
+  c.fillStyle = '#000'; c.fillRect(0, 0, W, H);
+  // vallende groene code
+  const cw = 18, cols = Math.ceil(W / cw) + 1;
+  c.font = `700 ${cw - 2}px monospace`; c.textAlign = 'center'; c.textBaseline = 'top';
+  for (let i = 0; i < cols; i++) {
+    const sp = 90 + hash(i * 3.7) * 160, len = 8 + ((hash(i * 1.3) * 18) | 0), head = ((M.t * sp + hash(i * 9.1) * H * 2) % (H + len * cw * 2)) - len * cw;
+    for (let k = 0; k < len; k++) {
+      const y = head - k * cw; if (y < -cw || y > H) continue;
+      const ch = MATRIX_GLYPHS[((hash(i * 7 + k * 13 + Math.floor(M.t * 6 + k)) * MATRIX_GLYPHS.length) | 0)];
+      c.fillStyle = k === 0 ? '#d8ffe0' : `rgba(0,255,90,${(1 - k / len) * 0.85})`;
+      c.fillText(ch, i * cw, y);
+    }
+  }
+  const fade = M.out ? 1 - M.out / 0.6 : Math.min(1, M.t / 0.5);
+  // Andy zweeft links, Kiwi staat rechts (in groene tinten, als in de Matrix)
+  const sc = Math.min(W / 420, H / 260) * 1.2, ay = H * 0.6;
+  const gor = (x, y, pal, state, flip, extra) => {
+    const s0 = ctx, G0 = G, GC0 = GC;
+    ctx = c;
+    c.save(); c.translate(x, y); c.scale(flip * sc, sc);
+    G = Object.assign({ x: 0, y: 0, state, standT: M.t, angle: 0, trickRot: 0, balloonT: 0, turboT: 0, invuln: 0, vx: 0, vy: 0, trick: null, diving: false }, extra);
+    try { GC = pal; drawGorilla(); } finally { ctx = s0; G = G0; GC = GC0; c.restore(); }
+  };
+  c.globalAlpha = fade;
+  c.fillStyle = 'rgba(0,255,90,.12)'; c.beginPath(); c.ellipse(W * 0.3, ay + 40 * sc, 60 * sc, 12 * sc, 0, 0, 7); c.fill(); c.beginPath(); c.ellipse(W * 0.7, ay + 40 * sc, 60 * sc, 12 * sc, 0, 0, 7); c.fill();
+  gor(W * 0.3, ay - 10 * sc + Math.sin(M.t * 2) * 8 * sc, myLook(), 'air', 1, { vx: 200, vy: 400 * Math.sin(M.t * 2), angle: Math.sin(M.t * 1.3) * 0.2 });
+  gor(W * 0.7, ay, GCK, 'stand', -1, { standT: 2.9 + (M.lineT < MATRIX_LINES[M.line].length / 28 ? (M.t % 0.6) : 0) }); // praat: trommelt zachtjes (mond open)
+  // tekstballon boven Kiwi, letter voor letter
+  const txt = MATRIX_LINES[M.line].slice(0, Math.floor(M.lineT * 28)), fs = Math.max(14, Math.min(22, W / 34));
+  c.font = `800 ${fs}px Trebuchet MS, sans-serif`; c.textAlign = 'left'; c.textBaseline = 'top';
+  const maxW = Math.min(W * 0.62, 460), words = MATRIX_LINES[M.line].split(' '), lines = [];
+  let cur = '';
+  for (const w of words) { const t = cur ? cur + ' ' + w : w; if (c.measureText(t).width > maxW - 28 && cur) { lines.push(cur); cur = w; } else cur = t; }
+  lines.push(cur);
+  const bw = maxW, bh = lines.length * fs * 1.3 + 26, bx = Math.min(W - bw - 12, Math.max(12, W * 0.7 - bw * 0.7)), by = Math.max(12, ay - 70 * sc - bh);
+  c.fillStyle = 'rgba(0,20,6,.92)'; c.strokeStyle = '#00ff5a'; c.lineWidth = 2.5;
+  c.beginPath(); c.roundRect ? c.roundRect(bx, by, bw, bh, 14) : c.rect(bx, by, bw, bh); c.fill(); c.stroke();
+  c.beginPath(); c.moveTo(W * 0.7 - 10, by + bh); c.lineTo(W * 0.7 + 4, by + bh + 20); c.lineTo(W * 0.7 + 12, by + bh); c.fill(); c.stroke();
+  c.fillStyle = '#c8ffd4'; let n = txt.length;
+  lines.forEach((l, i) => { const part = l.slice(0, Math.max(0, n)); n -= l.length + 1; c.fillText(part, bx + 14, by + 13 + i * fs * 1.3); });
+  c.font = `700 ${Math.max(11, fs * 0.6)}px Trebuchet MS, sans-serif`; c.fillStyle = 'rgba(0,255,90,.8)'; c.textAlign = 'right';
+  c.fillText(`${M.line + 1}/${MATRIX_LINES.length} · tik om verder te gaan ▸`, bx + bw - 12, by + bh - fs * 0.75);
+  c.textAlign = 'center'; c.font = `900 ${Math.max(16, fs * 1.1)}px monospace`; c.fillStyle = 'rgba(0,255,90,.9)';
+  c.fillText('K I W I', W * 0.7, ay + 52 * sc); c.fillText('A N D Y', W * 0.3, ay + 52 * sc);
+  c.globalAlpha = 1;
+  if (M.out) { c.fillStyle = `rgba(255,255,255,${M.out / 0.6})`; c.fillRect(0, 0, W, H); }
+  else if (M.t < 0.4) { c.fillStyle = `rgba(255,255,255,${1 - M.t / 0.4})`; c.fillRect(0, 0, W, H); }
+}
 function drawFlash() {
   if (flashT > 0) { ctx.fillStyle = `rgba(255,255,255,${flashT})`; ctx.fillRect(0, 0, viewW, viewH); }
 }
@@ -919,36 +1056,80 @@ function drawFlash() {
 // =====================================================================
 //  Biome-overgang, onder water, kisten en het uiterlijk van Andy
 // =====================================================================
-// Een poort op elke biomegrens (Eindeloos): twee pilaren, een glinsterend gordijn en een bord met de naam
-function drawBiomeGates() {
+// Op elke biomegrens (Eindeloos): een klif die uit het water steekt, met erboven aan een reuzentak de enorme liaan
+// waarmee Andy vanzelf naar de nieuwe biome zwaait (zie TRANS en autoSwing in physics.js)
+function drawBiomeCliffs() {
   if (game.career) return;
-  const m0 = (camX - 300 - START_X) / PX_PER_M, m1 = (camX + viewW + 300 - START_X) / PX_PER_M;
+  const m0 = (camX - 1500 - START_X) / PX_PER_M, m1 = (camX + viewW + 1500 - START_X) / PX_PER_M;
   const S = biomeSeg(m0), bounds = [];
   if (S.start > 0) bounds.push(S.start);
   for (let b = S.nextStart, k = 0; b <= m1 && k < 3; k++) { bounds.push(b); b = biomeSeg(b + 0.01).nextStart; }
   for (const b of bounds) {
-    const x = START_X + b * PX_PER_M;
-    if (x < camX - 300 || x > camX + viewW + 300) continue;
-    const B = BIOMES[biomeSeg(b + 0.01).i], y0 = Math.max(camY - 60, CEIL_Y - 1200), y1 = HAZARD_Y + 20;
-    // gordijn van licht in de kleuren van de nieuwe biome
-    ctx.fillStyle = cachedGrad('gate' + B.name, () => { const g = ctx.createLinearGradient(-70, 0, 70, 0); g.addColorStop(0, rgbStr(B.rgb.skyTop, 0)); g.addColorStop(0.5, rgbStr(B.rgb.sun, 0.22)); g.addColorStop(1, rgbStr(B.rgb.skyTop, 0)); return g; });
-    ctx.save(); ctx.translate(x, 0); ctx.fillRect(-70, y0, 140, y1 - y0); ctx.restore();
-    ctx.fillStyle = rgbStr(B.rgb.sun, 0.55);
-    for (let k = 0; k < 8; k++) { const yy = y1 - ((time * 90 + k * 130) % (y1 - y0)); circ(x + Math.sin(time * 2 + k) * 40, yy, 2.5); }
-    for (const sd of [-1, 1]) { // pilaren
-      const px = x + sd * 78;
-      ctx.fillStyle = '#5b5560'; ctx.fillRect(px - 14, y0, 28, y1 - y0);
-      ctx.fillStyle = '#7d7684'; ctx.fillRect(px - 14, y0, 9, y1 - y0);
-      ctx.fillStyle = B.c.vine; for (let yy = Math.floor(y0 / 90) * 90; yy < y1; yy += 90) { ctx.fillRect(px - 14, yy, 28, 6); }
-    }
-    // bord met de naam, altijd in beeld zolang de poort er is
-    const by = clamp(camY + viewH * 0.18, y0 + 60, y1 - 120);
-    ctx.font = '900 26px Trebuchet MS, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    const txt = `${B.icon} ${B.name.toUpperCase()}`, w = ctx.measureText(txt).width + 40;
-    ctx.fillStyle = 'rgba(20,14,30,.85)'; ctx.fillRect(x - w / 2, by - 24, w, 48);
-    ctx.fillStyle = B.c.sun; ctx.fillRect(x - w / 2, by + 20, w, 4);
-    ctx.fillStyle = '#ffffff'; ctx.fillText(txt, x, by + 1);
+    const bx = START_X + b * PX_PER_M;
+    if (bx < camX - 1400 || bx > camX + viewW + 1400) continue;
+    const A = BIOMES[biomeSeg(b - 0.01).i], B = BIOMES[biomeSeg(b + 0.01).i];
+    drawCliff(bx, A, B);
+    drawGiantVine(bx, A, B);
   }
+}
+// de klif: links in de kleuren van de oude biome, rechts in die van de nieuwe, met een waterval en een naambord
+const CLIFF = [[-600, 760], [-520, 330], [-470, 150], [-380, 90], [-300, 40], [-230, 55], [-150, -20], [-90, -60], [-30, -35], [40, -70], [120, -10], [200, 30], [290, 20], [380, 80], [460, 170], [520, 360], [600, 760]];
+function drawCliff(bx, A, B) {
+  const shape = () => { ctx.beginPath(); CLIFF.forEach(([x, y], i) => i ? ctx.lineTo(bx + x, y) : ctx.moveTo(bx + x, y)); ctx.closePath(); };
+  ctx.save();
+  shape(); ctx.clip();
+  const rock = cachedGrad('cliff' + A.name + B.name, () => { const g = ctx.createLinearGradient(-600, 0, 600, 0); g.addColorStop(0, shade(A.c.mid, -0.35)); g.addColorStop(0.48, '#7a6d60'); g.addColorStop(0.52, '#7a6d60'); g.addColorStop(1, shade(B.c.mid, -0.35)); return g; });
+  ctx.translate(bx, 0); ctx.fillStyle = rock; ctx.fillRect(-620, -120, 1240, 900); ctx.translate(-bx, 0);
+  // lichte kant en gesteentelagen
+  ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.fillRect(bx - 600, -120, 260, 900);
+  ctx.strokeStyle = 'rgba(0,0,0,.18)'; ctx.lineWidth = 6;
+  for (let k = 0; k < 7; k++) { const y = 60 + k * 95; ctx.beginPath(); for (let x = -600; x <= 600; x += 60) ctx.lineTo(bx + x, y + Math.sin(x * 0.02 + k) * 14); ctx.stroke(); }
+  // waterval aan de kant van de nieuwe biome
+  const wx = bx + 330;
+  ctx.fillStyle = rgbStr(B.rgb.hazTop, 0.85); ctx.fillRect(wx - 26, 60, 52, 720);
+  ctx.fillStyle = 'rgba(255,255,255,.55)';
+  for (let k = 0; k < 9; k++) { const y = 60 + ((time * 260 + k * 83) % 700); ctx.fillRect(wx - 20 + (k % 3) * 14, y, 5, 46); }
+  ctx.restore();
+  // mos/gras op de rand, per kant in de kleur van zijn biome
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  for (const [col, from, to] of [[A.c.canopy2, 1, 9], [B.c.canopy2, 8, CLIFF.length - 2]]) {
+    ctx.strokeStyle = col; ctx.lineWidth = 16; ctx.beginPath();
+    for (let i = from; i <= to; i++) { const [x, y] = CLIFF[i]; i === from ? ctx.moveTo(bx + x, y) : ctx.lineTo(bx + x, y); }
+    ctx.stroke();
+  }
+  ctx.strokeStyle = 'rgba(20,14,24,.55)'; ctx.lineWidth = 4; shape(); ctx.stroke();
+  // naambord van de nieuwe biome op de top
+  const px = bx + 150, py = CLIFF[12][1] + 10;
+  ctx.fillStyle = '#5a3a1c'; ctx.fillRect(px - 5, py - 130, 10, 130);
+  ctx.font = '900 30px Trebuchet MS, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const txt = `${B.icon} ${B.name.toUpperCase()} ➜`, w = ctx.measureText(txt).width + 40;
+  ctx.fillStyle = 'rgba(20,14,30,.88)'; ctx.fillRect(px - w / 2, py - 184, w, 56);
+  ctx.fillStyle = B.c.sun; ctx.fillRect(px - w / 2, py - 132, w, 5);
+  ctx.fillStyle = '#ffffff'; ctx.fillText(txt, px, py - 155);
+}
+// de reuzentak met de enorme liaan; hangt Andy eraan, dan loopt de liaan naar zijn handen
+function drawGiantVine(bx, A) {
+  const ay = TRANS.ay;
+  // de tak komt van linksboven (uit de oude biome)
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#3a2614'; ctx.lineWidth = 64; ctx.beginPath(); ctx.moveTo(bx - 1300, ay - 520); ctx.quadraticCurveTo(bx - 500, ay - 60, bx + 160, ay); ctx.stroke();
+  ctx.strokeStyle = '#6b4423'; ctx.lineWidth = 50; ctx.beginPath(); ctx.moveTo(bx - 1300, ay - 520); ctx.quadraticCurveTo(bx - 500, ay - 60, bx + 160, ay); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 12; ctx.beginPath(); ctx.moveTo(bx - 1280, ay - 535); ctx.quadraticCurveTo(bx - 500, ay - 80, bx + 150, ay - 16); ctx.stroke();
+  ctx.fillStyle = A.c.leaf;
+  for (let k = 0; k < 9; k++) { const t = k / 8, x = bx - 1200 + t * 1330, y = ay - 470 * (1 - t) * (1 - t) - 40 + Math.sin(k * 2.1) * 20; ell(x, y - 30, 70, 40, 0.3 * Math.sin(k)); }
+  // de liaan zelf
+  const Au = G && G.auto && G.auto.bx === bx;
+  let ex, ey;
+  if (Au) { ex = G.x + Math.sin(G.angle) * TRANS.hang; ey = G.y - Math.cos(G.angle) * TRANS.hang; }
+  else { const th = -0.25 + Math.sin(time * 0.9 + bx) * 0.06; ex = bx + Math.sin(th) * TRANS.L; ey = ay + Math.cos(th) * TRANS.L; }
+  const mx = (bx + ex) / 2 + (Au ? 0 : 30), my = (ay + ey) / 2 + (Au ? 20 : 40);
+  for (const [col, w] of [['#1f3a12', 26], [A.c.vine, 20], ['rgba(255,255,255,.18)', 5]]) {
+    ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(bx, ay); ctx.quadraticCurveTo(mx, my, ex, ey); ctx.stroke();
+  }
+  // bladeren langs de liaan en een lus aan het eind
+  ctx.fillStyle = A.c.leaf;
+  for (let k = 1; k < 10; k++) { const t = k / 10, u = 1 - t, x = u * u * bx + 2 * u * t * mx + t * t * ex, y = u * u * ay + 2 * u * t * my + t * t * ey; ell(x + (k % 2 ? 16 : -16), y, 16, 8, k % 2 ? 0.5 : -0.5); }
+  if (!Au) { ctx.strokeStyle = A.c.vine; ctx.lineWidth = 10; ctx.beginPath(); ctx.ellipse(ex, ey + 22, 18, 26, 0, 0, Math.PI * 2); ctx.stroke(); }
 }
 // Filmische titelkaart bij een nieuwe biome (in beeldcoördinaten)
 function drawCinematic() {
@@ -1019,6 +1200,13 @@ function drawUnderwater(P) {
     ctx.font = '900 24px Trebuchet MS, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.strokeText('⬆ LUCHT', e, UNDER_TOP + 70 + Math.sin(time * 4) * 5);
     ctx.fillStyle = '#e6fbff'; ctx.fillText('⬆ LUCHT', e, UNDER_TOP + 70 + Math.sin(time * 4) * 5);
+  }
+  // tegenstromingen: pijltjes die naar links schuiven
+  ctx.strokeStyle = 'rgba(160,220,255,.45)'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+  for (const c of U.currents) {
+    if (c.x1 < x0 || c.x0 > x1) continue;
+    ctx.fillStyle = 'rgba(120,190,255,.1)'; ctx.fillRect(c.x0, c.y0, c.x1 - c.x0, c.y1 - c.y0);
+    for (let yy = c.y0 + 25; yy < c.y1; yy += 45) for (let xx = c.x0 + ((-time * 220) % 70 + 70) % 70; xx < c.x1; xx += 70) { ctx.beginPath(); ctx.moveTo(xx + 14, yy - 8); ctx.lineTo(xx, yy); ctx.lineTo(xx + 14, yy + 8); ctx.stroke(); }
   }
   // rotswanden
   for (const w of U.walls) {
@@ -1093,6 +1281,20 @@ function drawLoot() {
     }
   }
 }
+// kogelvis: rond en stekelig als hij zich opblaast
+function drawPuffer(f) {
+  const r = f.r, d = Math.sign(G.x - f.x) || 1;
+  ctx.save(); ctx.translate(f.x, f.y); ctx.scale(d, 1);
+  ctx.fillStyle = '#e0a53a'; ctx.beginPath(); ctx.moveTo(-r * 0.9, 0); ctx.lineTo(-r * 1.5, -r * 0.5); ctx.lineTo(-r * 1.5, r * 0.5); ctx.fill(); // staart
+  ctx.strokeStyle = '#8a5a1a'; ctx.lineWidth = 2;
+  if (r > 22) for (let k = 0; k < 14; k++) { const a = k / 14 * Math.PI * 2; line(Math.cos(a) * r * 0.9, Math.sin(a) * r * 0.9, Math.cos(a) * (r + 7), Math.sin(a) * (r + 7)); } // stekels
+  ctx.fillStyle = '#f4c95a'; circ(0, 0, r);
+  ctx.fillStyle = '#fff2c8'; ell(0, r * 0.35, r * 0.75, r * 0.45);
+  ctx.fillStyle = '#6a4a1a'; for (let k = 0; k < 5; k++) circ(-r * 0.4 + k * r * 0.2, -r * 0.45 + (k % 2) * 4, 2.2);
+  ctx.fillStyle = '#fff'; circ(r * 0.45, -r * 0.2, r * 0.26); ctx.fillStyle = '#111'; circ(r * 0.52, -r * 0.2, r * 0.13);
+  ctx.fillStyle = '#c0394b'; ell(r * 0.85, r * 0.12, 3, 2.5);
+  ctx.restore();
+}
 function drawJelly(f) {
   const p = 1 + Math.sin(f.t * 3) * 0.08;
   ctx.save(); ctx.translate(f.x, f.y);
@@ -1105,6 +1307,8 @@ function drawJelly(f) {
 }
 // ---- Uiterlijk van Andy (uit kisten, zie game.js) ----
 const APPLE_SUIT = { fur: '#e8322b', furD: '#a8141c', furL: '#ff8a7a', band: '#4caf50', bandD: '#2e7d32', appleSuit: true };
+const ASTRO_SUIT = { fur: '#eef1f6', furD: '#b8c0cc', furL: '#ffffff', band: '#2f7fe0', bandD: '#1d5bb0', cape: '#2f7fe0', capeD: '#1d5bb0', astro: true };
+const SV_SUIT = { fur: '#2e3236', furD: '#1c1f22', furL: '#79c143', band: '#79c143', bandD: '#4a8a25', cape: '#79c143', capeD: '#4a8a25', svHood: true }; // Syntaxis-hoodie
 let lookKey = '', lookPal = null;
 // het palet voor jouw eigen gorilla, met je gekozen vachtkleur, hoed en kostuum
 function myLook() {
@@ -1117,7 +1321,8 @@ function myLook() {
   const key = c.color + '|' + c.hat + '|' + c.suit;
   if (key !== lookKey || !lookPal) {
     lookKey = key;
-    const base = c.suit === 'suit_kiwi' ? GCK : c.suit === 'suit_apple' ? Object.assign({}, GC, APPLE_SUIT) : col ? Object.assign({}, GC, { fur: col.fur, furD: col.furD, furL: col.furL }) : GC;
+    const base = c.suit === 'suit_kiwi' ? GCK : c.suit === 'suit_apple' ? Object.assign({}, GC, APPLE_SUIT) : c.suit === 'suit_astro' ? Object.assign({}, GC, ASTRO_SUIT)
+      : c.suit === 'suit_syntaxis' ? Object.assign({}, GC, SV_SUIT) : col ? Object.assign({}, GC, { fur: col.fur, furD: col.furD, furL: col.furL, svFur: !!col.syntaxis }) : GC;
     lookPal = Object.assign({}, base, { hat: c.suit === 'suit_apple' ? '' : c.hat });
   }
   return lookPal;
@@ -1140,6 +1345,29 @@ function drawHat(id) {
   } else if (id === 'hat_crown') {
     shape('#f5c518', () => { ctx.moveTo(-12, -25); ctx.lineTo(-13, -38); ctx.lineTo(-6, -31); ctx.lineTo(0, -41); ctx.lineTo(6, -31); ctx.lineTo(13, -38); ctx.lineTo(12, -25); });
     ctx.fillStyle = '#e8322b'; circ(0, -29, 2.2); ctx.fillStyle = '#2f7fe0'; circ(-7, -28.5, 1.8); circ(7, -28.5, 1.8);
+  } else if (id === 'hat_party') {
+    shape('#ff4fa3', () => { ctx.moveTo(-9, -27); ctx.lineTo(1, -52); ctx.lineTo(10, -27); });
+    ctx.strokeStyle = '#ffe14f'; ctx.lineWidth = 2; line(-6, -33, 6, -36); line(-3, -41, 4, -43);
+    ctx.fillStyle = '#4fd0ff'; circ(1, -53, 3.2);
+  } else if (id === 'hat_tophat') {
+    shape('#1d1d24', () => { ctx.ellipse(0, -27, 19, 4, 0, 0, Math.PI * 2); });
+    shape('#1d1d24', () => { ctx.rect(-10, -52, 20, 25); });
+    ctx.fillStyle = '#c81e3a'; ctx.fillRect(-10, -33, 20, 4);
+  } else if (id === 'hat_chef') {
+    shape('#ffffff', () => { ctx.rect(-10, -36, 20, 10); });
+    shape('#ffffff', () => { ctx.arc(-6, -40, 7, 0, Math.PI * 2); ctx.moveTo(13, -42); ctx.arc(6, -42, 7, 0, Math.PI * 2); ctx.moveTo(7, -47); ctx.arc(0, -47, 7, 0, Math.PI * 2); });
+  } else if (id === 'hat_viking') {
+    shape('#e7dcc0', () => { ctx.moveTo(-12, -30); ctx.quadraticCurveTo(-24, -34, -22, -48); ctx.quadraticCurveTo(-17, -38, -9, -36); });
+    shape('#e7dcc0', () => { ctx.moveTo(12, -30); ctx.quadraticCurveTo(24, -34, 22, -48); ctx.quadraticCurveTo(17, -38, 9, -36); });
+    shape('#8a939e', () => { ctx.arc(0, -26, 13, Math.PI, 0); });
+    ctx.fillStyle = '#c9a45a'; ctx.fillRect(-13, -28, 26, 3.5); ctx.fillRect(-1.5, -39, 3, 12);
+  } else if (id === 'hat_halo') {
+    ctx.strokeStyle = '#ffe14f'; ctx.lineWidth = 3; ctx.shadowColor = '#fff39a'; ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.ellipse(0, -44 + Math.sin(time * 2) * 1.5, 12, 3.5, 0, 0, Math.PI * 2); ctx.stroke(); ctx.shadowBlur = 0;
+  } else if (id === 'hat_syntaxis') { // groene pet met het S.V.-logo
+    shape('#2e3236', () => { ctx.arc(0, -25, 12.5, Math.PI, 0); });
+    shape('#79c143', () => { ctx.ellipse(10, -25, 11, 3, 0, 0, Math.PI * 2); });
+    ctx.fillStyle = '#79c143'; ctx.font = '900 6.5px Courier New, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('S.V.', 0, -30);
   } else if (id === 'hat_wizard') {
     shape('#5b2fa8', () => { ctx.moveTo(-13, -27); ctx.quadraticCurveTo(-2, -45, 6, -60); ctx.quadraticCurveTo(4, -42, 13, -27); });
     shape('#5b2fa8', () => { ctx.ellipse(0, -27, 18, 4.5, 0, 0, Math.PI * 2); });
@@ -1198,6 +1426,7 @@ function render() {
   try { renderScene(); } finally { interpEnd(); }
 }
 function renderScene() {
+  if (run && run.matrix && !LOCAL.on) { drawMatrix(run.matrix); return; }
   const mid = (camX + viewW * 0.5 - START_X) / PX_PER_M, P = paletteAt(mid);
   const S = scale * pr;
   // achtergrondtegels: per beeld maar een paar nieuwe; komt de volgende biome eraan, dan die alvast vooruit tekenen
@@ -1246,7 +1475,7 @@ function renderScene() {
   drawRock();
   drawSkyBirds();
   drawMarkers();
-  drawBiomeGates();
+  drawBiomeCliffs();
   drawFinish();
   drawShrooms();
   drawTramps();

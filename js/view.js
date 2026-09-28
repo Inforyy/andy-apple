@@ -137,8 +137,8 @@ const BASE_ZOOM_OUT = 1.25; // standaard-zoomniveau (was 1,5: het beeld staat nu
 // Hoe sneller Andy gaat, hoe verder uitgezoomd (meer overzicht bij hoge snelheid).
 // De zoom volgt NIET de directe snelheid (die schommelt bij elke zwaai sterk), maar de gemiddelde
 // voorwaartse snelheid over ruim een seconde, en beweegt daar dan ook nog rustig naartoe.
-// bij zoomK=1 is er 35% meer wereld te zien; helemaal uitgezoomd pas op topsnelheid (meer uitzoomen = trager ogen)
-const ZOOM_LO = 450, ZOOM_HI = 1550, ZOOM_OUT = 0.35;
+// bij zoomK=1 is er 55% meer wereld te zien; helemaal uitgezoomd pas op topsnelheid (meer uitzoomen = trager ogen)
+const ZOOM_LO = 420, ZOOM_HI = 1550, ZOOM_OUT = 0.55;
 function updateZoom(dt) {
   let target = 0;
   if (G && G.state !== 'dead') {
@@ -149,8 +149,9 @@ function updateZoom(dt) {
   zoomK += (target - zoomK) * Math.min(1, dt * 0.7);
   applyZoom();
 }
+let introZoom = 1; // even inzoomen op Andy bij de start van Eindeloos (zie playEndless in game.js)
 function applyZoom() {
-  scale = baseScale / (1 + zoomK * ZOOM_OUT);
+  scale = baseScale / (1 + zoomK * ZOOM_OUT) * introZoom;
   const vw = LOCAL.vw || cssW, vh = LOCAL.vh || cssH;
   viewW = vw / scale; viewH = vh / scale;
 }
