@@ -137,7 +137,8 @@ async function main() {
   check(await js('biomeSeg(11500).i !== biomeSeg(12700).i && biomeSeg(11500).i < BIOMES.length'), 'na de laatste biome komen de biomes terug');
   await js(`(() => { const G = __andy.G; G.state = 'air'; G.x = START_X + 1500 * PX_PER_M; G.y = HAZARD_Y + 20; G.vy = 300; enterUnder(); loot.push({ x: G.x + 4, y: G.y, t: 0 }); })()`); await sleep(1500);
   check(await js(`__andy.G.state === 'swim' && __andy.run.under && __andy.run.loot === 1`), 'onder water, kist opgepakt');
-  await js(`(() => { const G = __andy.G, U = __andy.run.under; G.x = U.exits[0]; G.y = HAZARD_Y + 150; })()`); await sleep(500);
+  // naar het luchtgat zetten (een paar keer: de zwemstap kan Andy er net naast laten drijven)
+  for (let i = 0; i < 6 && await js('!!__andy.run.under'); i++) { await js(`(() => { const G = __andy.G, U = __andy.run.under; G.x = U.exits[0]; G.y = UNDER_TOP + 40; G.vx = 0; })()`); await sleep(250); }
   check(await js(`__andy.G.state === 'air' && !__andy.run.under`), 'via een luchtgat weer boven water');
   await js(`window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }))`); await sleep(150);
   await js(`document.getElementById('btnQuit').click()`); await sleep(300);

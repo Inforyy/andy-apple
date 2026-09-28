@@ -1024,10 +1024,10 @@ function drawUnderHud() {
 // Kisten om op te pakken
 function drawLoot() {
   for (const L of loot) {
-    if (L.x < camX - 60 || L.x > camX + viewW + 60 || L.y < camY - 60 || L.y > camY + viewH + 60) continue;
+    if (L.x < camX - 90 || L.x > camX + viewW + 90 || L.y < camY - 90 || L.y > camY + viewH + 90) continue;
     const y = L.y + Math.sin(L.t * 2.5) * 6;
-    if (!Q.lite) { ctx.globalAlpha = 0.6 + 0.2 * Math.sin(L.t * 4); ctx.drawImage(glowSprite('255,210,90').c, L.x - 45, y - 45, 90, 90); ctx.globalAlpha = 1; }
-    ctx.save(); ctx.translate(L.x, y); ctx.rotate(Math.sin(L.t * 1.7) * 0.08);
+    if (!Q.lite) { ctx.globalAlpha = 0.6 + 0.2 * Math.sin(L.t * 4); ctx.drawImage(glowSprite('255,210,90').c, L.x - 72, y - 72, 144, 144); ctx.globalAlpha = 1; }
+    ctx.save(); ctx.translate(L.x, y); ctx.rotate(Math.sin(L.t * 1.7) * 0.08); ctx.scale(LOOT_SCALE, LOOT_SCALE);
     ctx.fillStyle = '#3a220f'; ctx.fillRect(-19, -9, 38, 24);
     ctx.fillStyle = '#8a5a2e'; ctx.fillRect(-17, -7, 34, 20);
     ctx.fillStyle = '#3a220f'; ctx.beginPath(); ctx.moveTo(-19, -8); ctx.quadraticCurveTo(0, -26, 19, -8); ctx.closePath(); ctx.fill();
@@ -1035,7 +1035,7 @@ function drawLoot() {
     ctx.fillStyle = '#f5c518'; ctx.fillRect(-19, -10, 38, 3.5); ctx.fillRect(-12, -18, 3.5, 33); ctx.fillRect(8.5, -18, 3.5, 33);
     ctx.fillStyle = '#ffe680'; ctx.fillRect(-4, -4, 8, 9); ctx.fillStyle = '#3a220f'; ctx.fillRect(-1, -1, 2, 4);
     ctx.restore();
-    if (Math.sin(L.t * 3) > 0.7) { ctx.fillStyle = '#fff'; starPath(ctx, L.x + 16, y - 20, 5, L.t); ctx.fill(); }
+    if (Math.sin(L.t * 3) > 0.7) { ctx.fillStyle = '#fff'; starPath(ctx, L.x + 26, y - 32, 7, L.t); ctx.fill(); }
   }
 }
 function drawJelly(f) {

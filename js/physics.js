@@ -703,7 +703,7 @@ function updateLoot(dt) {
     const L = loot[i];
     L.t += dt;
     if (L.x < camX - 400) { loot.splice(i, 1); continue; }
-    if (alive && Math.hypot(G.x - L.x, G.y - L.y) < G_R + 30) {
+    if (alive && Math.hypot(G.x - L.x, G.y - L.y) < LOOT_REACH) {
       loot.splice(i, 1);
       run.loot++;
       floatText(L.x, L.y - 30, '📦 Kist!', '#ffd76b', 26);
@@ -744,7 +744,7 @@ function genUnder(U, xMax) {
     }
     for (let k = 0; k < 3; k++) apples.push({ x: x + rand(80, 460), y: rand(UNDER_TOP + 90, UNDER_FLOOR - 90), gold: Math.random() < 0.35, pearl: true, t: Math.random() * 6 });
     if (Math.random() < 0.55) { const y = rand(UNDER_TOP + 150, UNDER_FLOOR - 150), jx = x + rand(200, 380); foes.push({ type: 'jelly', x0: jx, y0: y, x: jx, y, t: rand(0, 6), r: 20, bi: 0, hue: rand(260, 340) }); }
-    if (!game.mp && Math.random() < 0.08) loot.push({ x: x + rand(150, 400), y: rand(UNDER_TOP + 150, UNDER_FLOOR - 120), t: 0 });
+    if (!game.mp && Math.random() < 0.14) loot.push({ x: x + rand(150, 400), y: rand(UNDER_TOP + 150, UNDER_FLOOR - 120), t: 0 });
     U.genX += rand(480, 600);
   }
 }
