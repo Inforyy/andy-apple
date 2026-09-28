@@ -1080,11 +1080,13 @@ let bgCtx = bgCanvas.getContext('2d', { alpha: false });
 // Eerst proberen we het echte scherm te draaien (volledig scherm + oriëntatie vastzetten, werkt op Android).
 // Lukt dat niet (bijv. iPhone), dan draaien we de hele pagina zelf een kwartslag.
 const IS_MOBILE = navigator.maxTouchPoints > 0 && Math.min(screen.width, screen.height) < 900;
+// In de Android-app (WebView) is er een brug naar Android voor opslaan/kopiëren; de app staat al liggend en schermvullend
+const IN_APP = /AndyApplesApp/.test(navigator.userAgent) && !!window.AndroidBridge;
 const ROT_KEY = 'andyApples.rotate';
 let rotPref = false, rotOn = false;
 try { rotPref = localStorage.getItem(ROT_KEY) === '1'; } catch (e) { /* geen voorkeur */ }
 function applyRot() {
-  rotOn = rotPref && window.innerHeight > window.innerWidth;
+  rotOn = rotPref && !IN_APP && window.innerHeight > window.innerWidth;
   const b = document.body;
   document.documentElement.classList.toggle('rot', rotOn);
   if (rotOn) { b.style.width = window.innerHeight + 'px'; b.style.height = window.innerWidth + 'px'; b.style.transform = `translateX(${window.innerWidth}px) rotate(90deg)`; }
@@ -3714,7 +3716,8 @@ function mpCopy(id) {
   if (!code) return;
   ta.focus(); ta.select();
   const done = () => mpMsg('✔ Gekopieerd! Plak de code in een bericht aan je vriend.', true);
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, () => { try { document.execCommand('copy'); done(); } catch (e) { mpMsg('Selecteer en kopieer de code handmatig.', true); } });
+  if (IN_APP) { AndroidBridge.copy(code); done(); }
+  else if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, () => { try { document.execCommand('copy'); done(); } catch (e) { mpMsg('Selecteer en kopieer de code handmatig.', true); } });
   else { try { document.execCommand('copy'); done(); } catch (e) { mpMsg('Selecteer en kopieer de code handmatig.', true); } }
 }
 
@@ -4533,7 +4536,8 @@ function refreshMenu() {
   $('menuStats').innerHTML = statsHtml();
   $('btnRotate').textContent = rotPref ? '🔄 Staand spelen' : '🔄 Liggend spelen';
   $('btnFullscreen').textContent = isFullscreen() ? '⛶ Volledig scherm uit' : '⛶ Volledig scherm';
-  $('btnFullscreen').classList.toggle('hidden', !canFullscreen);
+  $('btnFullscreen').classList.toggle('hidden', !canFullscreen || IN_APP);
+  $('btnRotate').classList.toggle('hidden', IN_APP);
   $('saveStats').innerHTML = statsHtml();
   setBadge($('btnShop'), affordableCount());
   const snd = save.sound ? '🔊 Geluid aan' : '🔇 Geluid uit';
@@ -4672,11 +4676,13 @@ $('btnPause').addEventListener('click', e => { e.currentTarget.blur(); pauseGame
 $('btnPause').addEventListener('pointerdown', e => e.stopPropagation());
 
 on('btnExport', () => {
+  const fname = `andy-apples-save-${new Date().toISOString().slice(0, 10)}.json`;
+  if (IN_APP) { AndroidBridge.saveFile(fname, JSON.stringify(makeExport(), null, 2)); saveMsg('Kies waar je het save-bestand wilt bewaren…', true); return; }
   try {
     const blob = new Blob([JSON.stringify(makeExport(), null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `andy-apples-save-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = fname;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     saveMsg('✔ Save-bestand gedownload.', true);
@@ -4700,7 +4706,8 @@ on('btnCopyCode', () => {
   const ta = $('saveCode');
   ta.value = code; ta.focus(); ta.select();
   const done = () => saveMsg('✔ Code gekopieerd! Bewaar hem goed.', true);
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, () => { document.execCommand('copy'); done(); });
+  if (IN_APP) { AndroidBridge.copy(code); done(); }
+  else if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, () => { document.execCommand('copy'); done(); });
   else { try { document.execCommand('copy'); done(); } catch (e) { saveMsg('Selecteer en kopieer de code handmatig.', true); } }
 });
 on('btnLoadCode', () => {
@@ -4895,6 +4902,16 @@ function frame(now) {
   render();
   requestAnimationFrame(frame);
 }
+
+// Android-app: terugknop (true = afgehandeld; false = app mag naar de achtergrond) en resultaat van opslaan
+window.__andyBack = () => {
+  if (curScreen === 'menu') return false;
+  if (curScreen === 'over' || curScreen === 'done') { toMenu(); return true; }
+  if (curScreen === 'mpRes') { $('btnMpLobby').click(); return true; }
+  window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }));
+  return true;
+};
+window.__andySaved = ok => saveMsg(ok ? '✔ Save-bestand opgeslagen.' : 'Opslaan geannuleerd.', ok);
 
 // Debug-/testhaak (handig voor automatische tests)
 window.__andy = { get G() { return G; }, get run() { return run; }, get game() { return game; }, get save() { return save; },

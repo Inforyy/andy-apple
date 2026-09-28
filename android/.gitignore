@@ -1,0 +1,4 @@
+# Handtekeningsleutels horen niet in de repo
+*.p12
+*.jks
+*.keystore
