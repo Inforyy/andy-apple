@@ -24,11 +24,11 @@ function simVine(v, dt) {
   if (v.balloon) { // de luchtballon drijft langzaam naar rechts en deint op en neer
     const b = v.balloon, a = p[0];
     a.x += b.vx * dt; v.x += b.vx * dt;
-    a.y = v.ay + Math.sin(time * 0.9 + b.bob) * 12;
+    a.y = v.ay + Math.sin(time * 0.9 + b.bob) * (v.jet ? 4 : 12);
     a.px = a.x; a.py = a.y;
   }
   // de scheefhang-kracht werkt niet op de liaan waar Andy aan hangt: die zou zijn zwaai afremmen
-  const wind = (Math.sin(time * 0.7 + v.phase) * 0.6 + Math.sin(time * 1.9 + v.phase * 2) * 0.4) * 60 + (hang ? 0 : VINE_TILT);
+  const wind = (Math.sin(time * 0.7 + v.phase) * 0.6 + Math.sin(time * 1.9 + v.phase * 2) * 0.4) * 60 + (hang ? 0 : v.jet ? JET_DRAG : VINE_TILT); // achter een straaljager wappert de liaan ver naar achteren
   const damp = hang ? 0.9995 : 0.996;
   for (let i = 0; i < n; i++) {
     const q = p[i]; if (q.im === 0) continue;
@@ -103,6 +103,7 @@ function swingStep(v, dt) {
     G.om *= Rold / G.R;
   }
   let alpha = -(g / G.R) * Math.sin(G.th);
+  if (v.jet) { alpha += (JET_DRAG * 0.8 / G.R) * Math.cos(G.th); G.om *= Math.pow(0.45, dt); } // fartwind: aan een straaljager hang je naar achteren
   if (game.mode !== 'dying') { // "pompen": Andy zwaait zelf mee
     const vt = G.om * G.R, c = Math.cos(G.th);
     if (c > 0.25 && Math.abs(vt) > 15 && Math.abs(vt) < swingCap()) {
@@ -126,6 +127,7 @@ function tryGrab() {
   for (const v of vines) {
     if (!v.anchored || Math.abs(v.x - G.x) > 640) continue;
     if (v === G.lastVine && G.releaseT > 0) continue;
+    if (v.jetDone) continue; // een straaljager die je al losliet, kun je niet opnieuw grijpen
     const p = v.pts;
     for (let i = 2; i < p.length; i++) {
       const dx = p[i].x - G.x, dy = p[i].y - G.y, d2 = dx * dx + dy * dy;
@@ -165,7 +167,8 @@ function attach(v, k) {
       const prev = vines.find(w => w.balloon && w.balloon.path === v.balloon.path && w.balloon.step === v.balloon.step - 1);
       if (v.balloon.step > 0 && !(prev && prev.balloon.visited)) v.balloon.visited = false; // niet op volgorde: telt niet
       else reward(G.x, G.y - 60, v.balloon.step === SPACE_PATH - 1 ? 'Laatste ballon! Laat los!' : `Ballonpad ${v.balloon.step + 1}/${SPACE_PATH}`, 3, '#ffe46b');
-    } else reward(G.x, G.y - 60, 'Luchtballon!', 5, '#ffe46b');
+    } else if (v.jet) { reward(G.x, G.y - 60, 'Straaljager! ✈️ Hou vast!', 8, '#bfe6ff'); Sfx.jet(); }
+    else reward(G.x, G.y - 60, 'Luchtballon!', 5, '#ffe46b');
   }
   // beloning voor een mooie sprong
   else if (game.mode === 'playing' && v !== G.lastVine) {
@@ -357,7 +360,7 @@ function step(dt) {
   const x0 = camX - 500, x1 = camX + viewW + 500, y0 = camY - 450, y1 = camY + viewH + 450;
   for (const v of vines) {
     // ook de liaan waar de tegenstander aan hangt (ghostPin): anders hangt die er buiten beeld bevroren bij
-    if (v === G.vine || v === ghostPin.v || (v.x > x0 && v.x < x1 && v.ay < y1 && v.rest[3] > y0 - 200)) simVine(v, dt);
+    if (v === G.vine || v === ghostPin.v || v.jet || (v.x > x0 && v.x < x1 && v.ay < y1 && v.rest[3] > y0 - 200)) simVine(v, dt);
   }
 
   updateGorilla(dt, holdHang, holdAir);
@@ -370,6 +373,7 @@ function step(dt) {
   if (tramps.length && tramps[0].x < camX - KEEP_BEHIND) tramps.shift();
   if (portals.length && portals[0].ox < camX - 700) portals.shift();
   updateSpace(dt);
+  updateJets(dt);
   if (game.mp) mpStep(dt);
 }
 
@@ -401,6 +405,10 @@ function updateGorilla(dt, holdHang, holdAir) {
       const side = Math.sign(Math.sin(G.th));
       if (side && G.swSide && side !== G.swSide && !G.slack && !aiWorld()) Sfx.swing(Math.abs(G.om * G.R), G.om > 0);
       if (side) G.swSide = side;
+      if (v.jet && G.hangT > JET_HOLD * GAME_SPEED * BASE_SPEED) { // JET_HOLD in (ongeveer) echte seconden // na een paar seconden laat de straaljager je los, met al zijn vaart
+        v.jetDone = true; release(false); G.vx = Math.max(G.vx, v.balloon.vx * 0.8); G.vy = Math.min(G.vy, -450);
+        floatText(G.x, G.y - 60, 'Losgelaten!', '#bfe6ff', 24);
+      } else if (v.jet && G.hangT > (JET_HOLD - 1.5) * GAME_SPEED * BASE_SPEED && Math.random() < 0.3) addPart({ x: G.hx, y: G.hy, vx: rand(-60, 60), vy: rand(-60, 20), life: 0.4, max: 0.4, col: '#bfe6ff', r: 2.5 });
       if (v.type === 'rotten') {
         if (G.hangT > v.snapAt) snapVine(v);
         else if (G.hangT > v.snapAt - 0.45 && Math.random() < 0.3) addPart({ x: p[1].x, y: p[1].y, vx: rand(-40, 40), vy: 0, life: 0.6, max: 0.6, col: '#7b5b36', r: 2.5 });
@@ -798,6 +806,39 @@ function leaveUnder(ex) {
   reward(G.x, G.y - 70, `Boven water! (${Math.max(0, Math.ceil(U.t))} s over)`, 10 + Math.ceil(Math.max(0, U.t)), '#bfefff');
   for (let i = foes.length - 1; i >= 0; i--) if (foes[i].type === 'jelly') foes.splice(i, 1);
   for (let i = apples.length - 1; i >= 0; i--) if (apples[i].pearl) apples.splice(i, 1);
+}
+
+// ---- Straaljager ----
+// Heel af en toe (Eindeloos, niet online) scheurt een straaljager van achteren over je heen, met een lange liaan die
+// ver naar achteren wappert. Grijp hem en je wordt JET_HOLD seconden meegesleurd, daarna laat hij je met vaart los.
+// Math.random en een eigen id: hij hoort niet bij de (gedeelde) wereld, net als de ruimtelianen.
+const JET_HOLD = 5, JET_DRAG = -3400, JET_EVERY = [35, 70];
+let jetId = -100000;
+function updateJets(dt) {
+  if (game.mode !== 'playing' || game.mp || game.career || !run) return;
+  for (let i = vines.length - 1; i >= 0; i--) { // weggevlogen straaljagers opruimen
+    const v = vines[i];
+    if (v.jet && v !== G.vine && v.x > camX + viewW + 3000) vines.splice(i, 1);
+  }
+  if (run.jetT === undefined) run.jetT = rand(JET_EVERY[0], JET_EVERY[1]);
+  if (run.dist < 150 || G.state === 'dead' || run.under || run.space) return;
+  run.jetT -= dt;
+  if (run.jetT > 0) return;
+  run.jetT = rand(JET_EVERY[0], JET_EVERY[1]);
+  if (Math.random() < 0.45) return; // lang niet elke keer
+  spawnJet();
+}
+function spawnJet() {
+  const sr = genRandom, sq = vineSeq;
+  genRandom = Math.random;
+  let v;
+  try { v = makeVine(camX - 700, clamp(G.y - 520, CEIL_Y - 200, 60), 560, 'balloon', run.biome); } finally { genRandom = sr; vineSeq = sq; }
+  v.id = jetId--; v.jet = true;
+  v.balloon = { vx: Math.max(1500, Math.abs(G.vx) + 650), hue: 210, bob: rand(0, 6) };
+  for (const q of v.pts) { q.x -= (q.y - v.ay) * 1.3; q.px = q.x; } // meteen al naar achteren wapperend
+  vines.push(v);
+  floatText(G.x, G.y - 90, '✈️ Straaljager!', '#bfe6ff', 26);
+  Sfx.jet();
 }
 
 // ---- Ruimte ----

@@ -142,6 +142,19 @@ async function main() {
   await js(`window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }))`); await sleep(150);
   await js(`document.getElementById('btnQuit').click()`); await sleep(300);
 
+  console.log('Straaljager');
+  await js('__andy.startReady(null)'); await sleep(200);
+  await js('__andy.press()'); await sleep(1500);
+  await js('__andy.spawnJet()'); await sleep(400);
+  check(await js(`(() => { const v = __andy.vines.find(v => v.jet); const G = __andy.G; if (!v) return false; if (G.state === 'hang') __andy.release(); const q = v.pts[22]; G.x = q.x; G.y = q.y + 5; G.vx = 800; G.vy = 0; G.state = 'air'; G.releaseT = 0; __andy.press(); return true; })()`), 'straaljager vliegt langs');
+  await sleep(800);
+  check(await js('!!(__andy.G.vine && __andy.G.vine.jet)'), 'aan de straaljager gegrepen');
+  await sleep(5500);
+  check(await js('__andy.vines.some(v => v.jet && v.jetDone)'), 'straaljager laat je na ~5 s los');
+  await js('__andy.unpress()');
+  await js(`window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }))`); await sleep(150);
+  await js(`document.getElementById('btnQuit').click()`); await sleep(300);
+
   console.log('Nieuwe biome, onder water en kisten');
   await js('__andy.startReady(null)'); await sleep(200);
   await js('__andy.press()'); await sleep(800);

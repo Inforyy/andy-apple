@@ -75,6 +75,7 @@ De appelbonus komt bovenop de upgrade Appeloogst.
 - **Combo's**: pak snel achter elkaar appels voor extra bonus. Elke 100 m is er een mijlpaal met confetti.
 - **Vijanden** (wespen, eksters, vuurballen) laten Andy nooit vallen, maar stelen appels. Die kun je terugpakken. Een helm beschermt je.
 - **Luchtballonnen** drijven boven het plafond, met een liaan eronder (+5 🍎).
+- **Straaljager**: heel af en toe (Eindeloos, vanaf 150 m) scheurt er een straaljager van achteren over je heen, met een lange liaan die ver naar achteren wappert. Grijp hem (+8 🍎) en je wordt zo'n 5 seconden meegesleurd; daarna laat hij je met flinke vaart los.
 - **De ruimte**: in Eindeloos hangt er vanaf 150 m geregeld een pad van drie gouden ballonnen hoog in de lucht. Pak ze achter elkaar en laat bij de laatste los: dan word je de ruimte in gelanceerd (+25 🍎), met weinig zwaartekracht, sterrenlianen, planetoïden en een ufo (+15 🍎).
 - **Head-start**: vóór je eerste sprong in Eindeloos koop je met appels een raketvlucht vooruit (250 tot 2000 m).
 - **Onder water**: val je in het water (niet in lava, niet in multiplayer), dan is er 20% kans dat Andy niet verdrinkt maar ondergaat. Je zwemt dan verder door een onderwaterwereld met rotswanden, kwallen (die appels stelen) en parels. Een stroming houdt je onder water, behalve bij een **luchtgat** (een bellenzuil). Haal je er binnen 30 seconden een, dan schiet je omhoog (+10 🍎 en een bonus per seconde lucht over); anders verdrinkt Andy.
