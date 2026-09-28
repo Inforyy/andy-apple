@@ -719,6 +719,7 @@ function cineSlow() {
 }
 
 // ---- Kisten (loot-boxes): oppakken tijdens het spelen, openen na afloop (zie game.js) ----
+const LOOT_REACH = 110, LOOT_PULL = 300; // oppakbereik (bovenop Andy's straal) en vanaf waar de kist naar je toe komt
 function updateLoot(dt) {
   if (!loot.length) return;
   const alive = game.mode === 'playing' && (G.state === 'hang' || G.state === 'air' || G.state === 'rocket' || G.state === 'swim');
@@ -726,7 +727,10 @@ function updateLoot(dt) {
     const L = loot[i];
     L.t += dt;
     if (L.x < camX - 400) { loot.splice(i, 1); continue; }
-    if (alive && Math.hypot(G.x - L.x, G.y - L.y) < G_R + 42) {
+    const d = Math.hypot(G.x - L.x, G.y - L.y);
+    // ruim oppakbereik; wie in de buurt komt trekt de kist naar zich toe
+    if (alive && d < LOOT_PULL && d > 1) { const k = Math.min(1, dt * (4 + 10 * (1 - d / LOOT_PULL))); L.x += (G.x - L.x) * k; L.y += (G.y - L.y) * k; }
+    if (alive && d < G_R + LOOT_REACH) {
       loot.splice(i, 1);
       run.loot++;
       floatText(L.x, L.y - 30, '📦 Kist!', '#ffd76b', 26);

@@ -94,7 +94,7 @@ De appelbonus komt bovenop de upgrade Appeloogst.
 - **De ruimte**: in Eindeloos hangt er vanaf 150 m geregeld een pad van drie gouden ballonnen hoog in de lucht. Pak ze achter elkaar en laat bij de laatste los: dan word je de ruimte in gelanceerd (+25 🍎), met weinig zwaartekracht, sterrenlianen, planetoïden en een ufo (+15 🍎).
 - **Head-start**: vóór je eerste sprong in Eindeloos koop je met appels een raketvlucht vooruit (250 tot 2000 m).
 - **Onder water**: val je in het water (niet in lava, niet in multiplayer), dan is er 20% kans dat Andy niet verdrinkt maar ondergaat. Je zwemt dan verder door een onderwaterwereld met rotswanden, kwallen (die appels stelen) en parels. Een stroming houdt je onder water, behalve bij een **luchtgat** (een bellenzuil). Haal je er binnen 30 seconden een, dan schiet je omhoog (+10 🍎 en een bonus per seconde lucht over); anders verdrinkt Andy.
-- **Kisten**: tijdens het spelen hangen er soms kisten 📦 in de lucht (en onder water). Raak je er een aan, dan krijg je hem na de run. Open ze via **📦 Kisten** in het menu of op het eindscherm: een rij prijzen rolt voorbij (zoals in *Counter-Strike*) en stopt op je buit.
+- **Kisten**: tijdens het spelen hangen er soms kisten 📦 in de lucht (en onder water). Kom je in de buurt, dan vliegt hij naar je toe (je hoeft hem niet precies te raken) en krijg je hem na de run. Open ze via **📦 Kisten** in het menu of op het eindscherm: een rij prijzen rolt voorbij (zoals in *Counter-Strike*) en stopt op je buit.
 
   | Zeldzaamheid | Kans | Wat |
   | --- | --- | --- |
