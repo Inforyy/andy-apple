@@ -230,10 +230,11 @@ function release(voluntary = true) {
   G.lastVine = v; G.releaseT = 0.3; G.vine = null; G.state = 'air'; G.airT = 0; G.airX = G.x; G.slack = false;
   if (playing && voluntary && v.balloon && v.balloon.path) checkSpaceLaunch(v);
   if (playing) {
-    Sfx.release();
+    Sfx.release(Math.hypot(vx, vy));
     for (let i = 0; i < 5; i++) addPart({ x: G.x, y: G.y + 10, vx: -vx * rand(0.05, 0.2) + rand(-40, 40), vy: rand(-40, 40), life: 0.4, max: 0.4, col: 'rgba(255,255,255,.6)', r: rand(3, 6), g: 0 });
     // WOOHOO! bij een flinke zwaai (niet vaker dan eens per 0,7 s)
-    if (voluntary && Math.hypot(vx, vy) > 380 && time - run.lastWoo > 0.7) { run.lastWoo = time; Sfx.woohoo(); }
+    // alleen bij een echt flinke zwaai, niet vaker dan eens per 4 s en ook dan niet altijd: zo blijft het leuk
+    if (voluntary && Math.hypot(vx, vy) > 750 && time - run.lastWoo > 4 && Math.random() < 0.5) { run.lastWoo = time; Sfx.woohoo(Math.hypot(vx, vy)); }
   }
 }
 // Sprong vanaf de startrots naar de eerste liaan
@@ -241,7 +242,7 @@ function jump() {
   G.state = 'air'; G.vx = 690; G.vy = -770; G.airT = 0; G.airX = G.x; G.noDive = true; G.lastVine = null;
   floatText(G.x, G.y - 60, 'Hup!', '#ffffff', 26);
   for (let i = 0; i < 10; i++) addPart({ x: G.x + rand(-14, 14), y: ROCK.top, vx: rand(-120, 60), vy: rand(-120, -20), life: 0.5, max: 0.5, col: 'rgba(210,190,160,.8)', r: rand(3, 6), g: 300 });
-  Sfx.jump();
+  Sfx.jump(); Sfx.hup();
 }
 // ---- Portalen (Portaalwoud) ----
 const PORTAL_RY = 78, PORTAL_RX = 24;
@@ -272,7 +273,7 @@ function snapVine(v) {
   const q = v.pts[1];
   for (let i = 0; i < 14; i++) addPart({ type: 'leaf', x: q.x, y: q.y, vx: rand(-200, 200), vy: rand(-250, 50), life: rand(0.6, 1), max: 1, col: i % 2 ? '#7b5b36' : '#9a7a4a', r: rand(3, 5), rot: rand(0, 6), vr: rand(-10, 10) });
   floatText(G.x, G.y - 50, 'Krak!', '#ffd6a0');
-  Sfx.crack();
+  Sfx.crack(); Sfx.whoa();
   release(false);
 }
 // extra = gekochte head-start in meters (bovenop de Raketstart-upgrade). Een lange vlucht gaat sneller,
@@ -296,7 +297,7 @@ function hitHazard() {
     G.balloonT = 1.4; G.invuln = Math.max(G.invuln, 0.8);
     splash(G.x, 14);
     floatText(G.x, G.y - 70, 'Gered! 🎈', '#ffffff', 24);
-    Sfx.balloon();
+    Sfx.balloon(); Sfx.phew();
   } else if (canGoUnder()) enterUnder();
   else die();
 }
@@ -319,7 +320,7 @@ function hitFoe(f) {
       for (let i = 0; i < lose; i++) apples.push({ x: G.x, y: G.y, vx: rand(-260, 260), vy: rand(-520, -220), loose: true, grace: 0.45, gold: false, t: 0 });
       floatText(G.x, G.y - 55, `-${lose} 🍎`, '#ff8080', 24);
     } else floatText(G.x, G.y - 55, 'Hé!', '#ff8080', 22);
-    Sfx.steal();
+    Sfx.steal(); Sfx.hey();
   }
   // de vijand maakt zich uit de voeten
   f.fleeT = 0;
@@ -330,7 +331,7 @@ function die() {
     if (G.state === 'hang') { freeHand(G.vine, G.k); G.vine = null; }
     G.state = 'dead'; G.deadT = 0; G.trick = null; G.trickRot = 0;
     G.vx *= 0.25; G.vy = Math.min(G.vy, 200);
-    splash(G.x, 30); Sfx.splash(); shake(7, 0.35);
+    splash(G.x, 30); Sfx.splash(G.x); Sfx.fall(); shake(7, 0.35);
     if (game.mode === 'playing') mpDied();
     return;
   }
@@ -341,7 +342,8 @@ function die() {
   if (G.state === 'hang') { freeHand(G.vine, G.k); G.vine = null; }
   G.state = 'dead'; game.mode = 'dying'; run.reason = run.reason || 'fall'; // 'drown' blijft staan G.deadT = 0;
   G.vx *= 0.25; G.vy = Math.min(G.vy, 200);
-  G.splashed = true; splash(G.x, 30); Sfx.splash(); shake(7, 0.35);
+  G.splashed = true; splash(G.x, 30); Sfx.splash(G.x); shake(7, 0.35);
+  if (run.reason === 'drown') Sfx.blub(); else Sfx.fall();
 }
 
 // =====================================================================
@@ -422,7 +424,7 @@ function updateGorilla(dt, holdHang, holdAir) {
             addPart({ type: 'star', x: G.hx, y: G.hy, vx: rand(-60, 60), vy: rand(-60, 0), life: 0.4, max: 0.4, col: '#ffffff', r: 3, rot: 0, vr: 5 });
           } else {
             release(false);
-            floatText(G.x, G.y - 50, 'Weggegleden!', '#d8f3ff');
+            floatText(G.x, G.y - 50, 'Weggegleden!', '#d8f3ff'); Sfx.whoa();
           }
         }
       } else if (v.type === 'turbo' && Math.random() < 0.3) {
@@ -644,13 +646,13 @@ function collect(a) {
   starBurst(a.x, a.y, a.gold ? 12 : 6, a.gold ? '#ffd23f' : '#ff6b5b');
   addPart({ type: 'ring', x: a.x, y: a.y, vx: 0, vy: 0, life: 0.3, max: 0.3, col: a.gold ? 'rgba(255,220,80,.9)' : 'rgba(255,255,255,.8)', r: 8, grow: 22, g: 0 });
   floatText(a.x, a.y - 16, '+' + fmtNum(val), a.gold ? '#ffe46b' : '#ffffff', a.gold ? 22 : 18);
-  Sfx.apple(a.gold, run.combo);
+  Sfx.apple(a.gold, run.combo, a.x);
   if (run.combo >= 10 && run.combo % 10 === 0) {
     const bonus = run.combo / 2 * (1 + lvl('combo'));
     run.earned += bonus;
     floatText(G.x, G.y - 70, `Combo ×${run.combo}! +${bonus}🍎`, '#ffe46b', 26);
     confetti(G.x, G.y - 30, 24);
-    Sfx.combo();
+    Sfx.combo(); Sfx.cheer();
   }
 }
 
@@ -745,7 +747,7 @@ function enterUnder() {
   G.state = 'swim'; G.vy = clamp(G.vy, 200, 500); G.vx = Math.max(200, Math.min(G.vx, 700));
   G.trick = null; G.trickRot = 0; G.dive = 0; G.diveT = 0; G.diving = false; G.airT = 0;
   genUnder(U, G.x + 2400);
-  splash(G.x, 30); Sfx.splash(); Sfx.underIn(); shake(5, 0.3);
+  splash(G.x, 30); Sfx.splash(G.x); Sfx.underIn(); shake(5, 0.3);
   showBanner('Onder water! 🫧', `Zoek binnen ${UNDER_TIME} s een luchtgat (bellenzuil) om boven te komen`);
 }
 // stukje onderwaterwereld erbij (Math.random: dit is alleen voor jou, geen gedeelde wereld)
@@ -852,7 +854,7 @@ function checkSpaceLaunch(v) {
   if (b.step !== SPACE_PATH - 1 || !path.every(w => w.balloon.visited)) return;
   G.vx = Math.max(G.vx, 700); G.vy = -1750; G.turboT = 1.5; G.noDive = true; G.airT = 0; run.launchT = 6;
   floatText(G.x, G.y - 70, 'LANCERING! 🚀', '#ffe46b', 30);
-  confetti(G.x, G.y, 60); shake(8, 0.4); Sfx.rocket(); Sfx.turbo();
+  confetti(G.x, G.y, 60); shake(8, 0.4); Sfx.rocket(); Sfx.turbo(); Sfx.tarzan();
 }
 // Ruimtelianen horen niet bij de (gedeelde) wereld: ze krijgen een negatief id, gebruiken Math.random en laten
 // vineSeq en genRandom ongemoeid, zodat de wereld van andere spelers met dezelfde seed gelijk blijft.

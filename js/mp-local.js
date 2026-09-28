@@ -68,8 +68,8 @@ function localExit() {
 }
 // invoer: elke speler zijn eigen knop / schermhelft
 const localPointers = new Map();
-function localPress(p) { const c = curW; useWorld(p); press(); if (c >= 0) useWorld(c); }
-function localUnpress(p) { const c = curW; useWorld(p); unpress(); if (c >= 0) useWorld(c); }
+function localPress(p) { const c = curW; useWorld(p); Sfx.player(p); press(); Sfx.player(-1); if (c >= 0) useWorld(c); }
+function localUnpress(p) { const c = curW; useWorld(p); Sfx.player(p); unpress(); Sfx.player(-1); if (c >= 0) useWorld(c); }
 function localKey(code) { if (LOCAL.ai) return code === 'Space' || code === 'ArrowUp' || code === 'ArrowDown' || code === 'Enter' || code === 'NumpadEnter' ? 0 : -1; return code === 'Space' || code === 'KeyA' || code === 'KeyW' ? 0 : (code === 'ArrowUp' || code === 'ArrowDown' || code === 'Enter' || code === 'NumpadEnter' || code === 'KeyL') ? 1 : -1; }
 const localSide = (x, y) => LOCAL.ai ? 0 : (LOCAL.split === 'v' ? x > cssW / 2 : y > cssH / 2) ? 1 : 0;
 
@@ -85,7 +85,7 @@ function localLoop(dt) {
         const el = $('mpCount');
         el.textContent = c > 0 ? c : 'GO!';
         el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
-        if (c > 0) Sfx.tone(520, 0.15, 'square', 0.07); else Sfx.tone(1040, 0.35, 'square', 0.08);
+        Sfx.countdown(c);
         if (c <= 0) { game.mode = 'playing'; setTimeout(() => { if ($('mpCount').textContent === 'GO!') $('mpCount').textContent = ''; }, 800); }
       }
     }
@@ -97,6 +97,7 @@ function localLoop(dt) {
     renderAlpha = acc / STEP;
     for (const i of [0, 1]) {
       useWorld(i);
+      Sfx.player(i); // stereo: speler 1 links, speler 2 (of Kiwi) rechts, met een eigen stem
       let m = n;
       if (i === 1 && game.mp.chase && game.mode === 'playing') { // achtervolging: Kiwi's tijd loopt steeds iets sneller
         LOCAL.kAcc += n * (chaseK() - 1); const x = Math.floor(LOCAL.kAcc); LOCAL.kAcc -= x; m += x;
@@ -114,6 +115,7 @@ function localLoop(dt) {
       lastCamX = camX;
       localPin(i);
     }
+    Sfx.player(-1);
     localCheck();
     updateHud();
   }
@@ -216,7 +218,7 @@ function chaseEnd(M) {
   LOCAL.why = `Kiwi had je na ${fmtTime(t)} te pakken.`;
   LOCAL.chaseRec = rec;
   showBanner('Gepakt!', rec ? 'Nieuw record!' : LOCAL.why);
-  Sfx.steal(); Sfx.tone(392, 0.25, 'triangle', 0.1, 0, 0.2); Sfx.tone(262, 0.5, 'triangle', 0.1, 0, 0.42);
+  Sfx.steal(); Sfx.lose(0.2);
   shake(8, 0.4); flashT = 0.3;
   const worlds = LOCAL.worlds;
   setTimeout(() => { if (LOCAL.on && LOCAL.worlds === worlds) localShowResult(); }, 2200);

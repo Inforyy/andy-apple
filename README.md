@@ -123,7 +123,18 @@ Instellingen open je met het tandwiel rechtsboven in het hoofdmenu, of in het pa
 
 - **Grafische kwaliteit**: een schuifje met *AI* (standaard: het spel meet de framerate en kiest zelf), *Laag*, *Normaal* en *Hoog*. Tekent je browser zonder grafische versnelling, of moet het spel naar de laagste stand, dan krijg je in het menu een melding met een tip.
 - **Liggend spelen**: op telefoons standaard aan. Waar het kan wordt het scherm liggend vastgezet; anders draait het spel het beeld zelf een kwartslag.
-- **Volledig scherm**, **geluid** en **muziek**: los aan en uit te zetten.
+- **Volledig scherm**, **geluid** en **muziek**: los aan en uit te zetten. Geluidseffecten en muziek hebben elk een eigen volumeschuifje.
+
+### Geluid
+
+Alle geluid wordt tijdens het spelen gemaakt met WebAudio (`js/audio.js`):
+- Elk effect is opgebouwd uit lagen (een tik, een lichaam en een staart) en klinkt elke keer een klein beetje anders van toonhoogte en volume. Zo wordt het niet eentonig.
+- Een limiter voorkomt gekraak als veel geluiden tegelijk klinken, en een gedeelde galm geeft wat ruimte.
+- Onder water klinkt alles gedempt, ook de muziek.
+- Op één scherm komt speler 1 links uit de luidsprekers en speler 2 (of Kiwi) rechts. Met één speler klinken appels en plonzen een beetje van de kant waar ze op het scherm gebeuren.
+- Andy heeft een eigen stem (formantsynthese: een stembron door vijf klinkerfilters, met adem en een ruw randje). Bij een flinke zwaai roept hij een van vijf roepen (*Hoe-hoe-WOE-HOE*, *Wie-HOE*, *Jie-HAA*, *Wa-HOE* of een chimpansee-roep), nooit twee keer dezelfde achter elkaar. Bij een lancering naar de ruimte klinkt een Tarzan-kreet. Verder zegt hij *Hup!* bij de afzet, *Hé!* als er appels gestolen worden, *Whoa!* als hij wegglijdt of een tak breekt, en gorgelt hij als hij verdrinkt. Speler 2 en Kiwi hebben een iets hogere stem.
+- In **Debug** staat een geluidsbord waarmee je elk geluid los kunt afspelen.
+- Menuknoppen tikken zacht. Een run eindigt met een kort loopje, of met een fanfaretje bij een nieuw record.
 - **Debug**: achter het wachtwoord `jungle-debug`. Hier stel je zoom en spelsnelheid in en zet je een FPS-meter aan. Runs met een andere snelheid tellen niet voor de ranglijst.
 
 ## Voortgang en saves

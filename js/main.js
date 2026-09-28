@@ -62,6 +62,7 @@ function frame(now) {
   adaptQuality(dt * 1000);
   if (dt < 0.25) stats.dts[stats.i++ % stats.dts.length] = dt * 1000;
   if (dt > 0.1) dt = 0.1;
+  Sfx.setUnder(!LOCAL.on && !!(run && run.under) && curScreen !== 'menu'); // onder water klinkt alles gedempt
   if (LOCAL.on) localLoop(dt);
   else frameSolo(dt);
   const t1 = performance.now();
