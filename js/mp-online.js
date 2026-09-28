@@ -614,7 +614,7 @@ function mpEnd(reason, kind) {
     if (M.result === 'win') { showBanner('Gewonnen!', M.reason); confetti(G.x + 60, G.y - 160, 140); Sfx.jingle(2); flashT = 0.3; }
     else {
       showBanner(n > 2 ? `${M.place}e van ${n}` : 'Verloren', M.reason);
-      Sfx.tone(392, 0.25, 'triangle', 0.1); Sfx.tone(330, 0.25, 'triangle', 0.1, 0, 0.22); Sfx.tone(262, 0.5, 'triangle', 0.1, 0, 0.44);
+      Sfx.lose();
     }
   }
   setTimeout(() => { if (MP.match === M && game.mp === M) mpShowResult(); }, kind === 'conn' ? 1200 : 2200);
@@ -698,7 +698,7 @@ function mpStep(dt) {
     M.bolt = Math.max(0, M.bolt - dt);
     if (M.bolt === 0 && M.stormX > camX - 200 && Math.random() < dt * 0.6) {
       M.bolt = 0.14; M.boltX = M.stormX - rand(40, 260); M.boltSeed = Math.random() * 1000;
-      if (G.x - M.stormX < 1400) { Sfx.noise(0.5, 0.18, 300); shake(2, 0.15); }
+      if (G.x - M.stormX < 1400) { Sfx.storm(); shake(2, 0.15); }
     }
   }
   mpCheck();
@@ -715,7 +715,7 @@ function mpFrame(realDt, gdt) {
       const el = $('mpCount');
       el.textContent = c > 0 ? c : 'GO!';
       el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
-      if (c > 0) Sfx.tone(520, 0.15, 'square', 0.07); else Sfx.tone(1040, 0.35, 'square', 0.08);
+      Sfx.countdown(c);
       if (c <= 0) { game.mode = 'playing'; setTimeout(() => { if ($('mpCount').textContent === 'GO!') $('mpCount').textContent = ''; }, 800); }
     }
   }

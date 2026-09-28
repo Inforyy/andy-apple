@@ -271,7 +271,9 @@
         <h3>Geluid</h3>
         <div class="set-card">
           <div class="set-row"><span class="set-ic s1"><svg class="ico" aria-hidden="true"><use href="#i-sound"/></svg></span><span class="set-lbl">Geluidseffecten</span><button class="tgl" id="btnSound" aria-label="Geluidseffecten">Aan</button></div>
+          <div class="set-vol"><input type="range" id="sfxVol" min="0" max="100" step="5" value="80" aria-label="Volume geluidseffecten"></div>
           <div class="set-row"><span class="set-ic s2"><svg class="ico" aria-hidden="true"><use href="#i-music"/></svg></span><span class="set-lbl">Muziek</span><button class="tgl" id="btnMusic" aria-label="Muziek">Aan</button></div>
+          <div class="set-vol"><input type="range" id="musicVol" min="0" max="100" step="5" value="80" aria-label="Volume muziek"></div>
         </div>
       </section>
       <section class="set-group">
@@ -309,6 +311,8 @@
       <input type="range" id="dbgSpeed" min="0.25" max="2.5" step="0.05" value="1">
       <p class="sub" style="margin-top:10px">Runs met een andere snelheid tellen niet voor de ranglijst. Online multiplayer speelt altijd op normale snelheid.</p>
       <div class="row"><button class="btn ghost" id="btnDbgFps">FPS-meter aan</button></div>
+      <label for="dbgSfx">Geluiden testen</label>
+      <div class="row dbg-sfx"><select id="dbgSfx"></select><button class="btn ghost" id="btnDbgSfx">Speel</button></div>
       <div class="row"><button class="btn ghost" id="btnDbgReset">Standaard</button><button class="btn ghost red" id="btnDbgLock">Vergrendel</button></div>
     </div>
     <div id="dbgMsg" class="msg"></div>

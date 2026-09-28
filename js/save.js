@@ -7,7 +7,7 @@
 // =====================================================================
 const SAVE_KEY = 'andyApples.save.v1';
 function defaultSave() {
-  return { version:3, apples:0, xp:0, upgrades:{}, best:0, totalApples:0, totalDistance:0, runs:0, maxBiome:0, sound:true, music:true, lbBest:0, mpGames:0, mpWins:0, chaseBest:0, boxes:0, cosm:{ own:[], color:'', hat:'', suit:'' }, career:{ unlocked:1, stars:Array.from({ length: LEVELS }, () => 0) } };
+  return { version:3, apples:0, xp:0, upgrades:{}, best:0, totalApples:0, totalDistance:0, runs:0, maxBiome:0, sound:true, music:true, sfxVol:0.8, musicVol:0.8, lbBest:0, mpGames:0, mpWins:0, chaseBest:0, boxes:0, cosm:{ own:[], color:'', hat:'', suit:'' }, career:{ unlocked:1, stars:Array.from({ length: LEVELS }, () => 0) } };
 }
 function normalizeSave(o) {
   const s = defaultSave();
@@ -23,6 +23,10 @@ function normalizeSave(o) {
   s.maxBiome = Math.min(num(o.maxBiome), BIOMES.length - 1);
   s.sound = o.sound !== false;
   s.music = o.music !== false;
+  // volume (0–1) van effecten en muziek
+  const vol = (v, d) => (typeof v === 'number' && isFinite(v)) ? clamp(v, 0, 1) : d;
+  s.sfxVol = vol(o.sfxVol, s.sfxVol);
+  s.musicVol = vol(o.musicVol, s.musicVol);
   s.xp = num(o.xp);
   s.lbBest = num('lbBest' in o ? o.lbBest : o.best); // beste afstand die meetelt voor de ranglijst (zonder debug-snelheid)
   s.mpGames = num(o.mpGames);

@@ -190,6 +190,7 @@ function gameOver(quit) {
   setBadge($('btnOverShop'), affordableCount());
   $('hint').textContent = '';
   showScreen('over');
+  if (record && dist >= 5) Sfx.record(); else if (!quit) Sfx.gameOver();
 }
 function pauseGame() {
   const multi = !!game.mp && !game.mp.local; // op één scherm mag je gewoon pauzeren
@@ -251,7 +252,11 @@ function refreshMenu() {
   $('btnAccount').classList.toggle('hidden', !sbOn());
   setToggle('btnSound', save.sound);
   setToggle('btnMusic', save.music);
+  setVol('sfxVol', save.sfxVol, save.sound);
+  setVol('musicVol', save.musicVol, save.music);
 }
+// volumeschuifje in Instellingen (gedimd als het geluid uit staat)
+function setVol(id, v, on) { const r = $(id), p = Math.round(v * 100); r.value = p; r.style.setProperty('--p', p); r.parentNode.classList.toggle('off', !on); }
 // aan/uit-schakelaar in Instellingen
 function setToggle(id, on) { const b = $(id); b.textContent = on ? 'Aan' : 'Uit'; b.classList.toggle('on', !!on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); }
 // Instellingen openen vanuit het menu of de pauze; ← gaat terug naar waar je vandaan kwam
@@ -323,7 +328,8 @@ function openModes() { showScreen('modes'); }
 function openCareer() { renderCareer(); showScreen('career'); }
 function openShop(from) { shopReturn = from; renderShop(); showScreen('shop'); }
 function on(id, fn) {
-  (typeof id === 'string' ? $(id) : id).addEventListener('click', e => { Sfx.init(); e.currentTarget.blur(); fn(e); });
+  // elke knop tikt zacht (terugknoppen iets lager); na fn, zodat 'geluid aan' zelf ook tikt
+  (typeof id === 'string' ? $(id) : id).addEventListener('click', e => { Sfx.init(); const b = e.currentTarget; b.blur(); fn(e); /Back$/.test(b.id) ? Sfx.back() : Sfx.click(); });
 }
 
 
@@ -441,6 +447,27 @@ function dbgUnlock() {
 }
 
 // Bij het opstarten (vanuit main.js): alle menuknoppen en schermen
+// het geluidsbord in Debug: [groep, [[naam, afspelen], …]]
+const DBG_SFX = [
+  ['Stem', [['Woohoo (willekeurig, hard)', () => Sfx.woohoo(1000)], ['Woohoo (willekeurig, zacht)', () => Sfx.woohoo(450)],
+    ['Hoe-hoe-WOE-HOE', () => Sfx.call('hoehoe')], ['Wie-HOE', () => Sfx.call('wiehoe')], ['Jie-HAA', () => Sfx.call('jiehaa')],
+    ['Wa-HOE', () => Sfx.call('wahoe')], ['Chimpansee-roep', () => Sfx.call('pant')],
+    ['Tarzan', () => Sfx.tarzan()], ['Hup!', () => Sfx.hup()], ['Hé!', () => Sfx.hey()], ['Whoa!', () => Sfx.whoa()], ['Pff (gered)', () => Sfx.phew()],
+    ['Oewaa (plons)', () => Sfx.fall()], ['Blub blub', () => Sfx.blub()], ['Juichen', () => Sfx.cheer()],
+    ['Kiwi / speler 2: woohoo', () => { Sfx.player(1); Sfx.woohoo(1000); Sfx.player(-1); }]]],
+  ['Slingeren', [['Vastpakken', () => Sfx.grab()], ['Loslaten', () => Sfx.release(900)], ['Zwaai', () => Sfx.swing(1300, true)],
+    ['Afzetten', () => Sfx.jump()], ['Grote sprong', () => Sfx.bigjump()], ['Wegglijden', () => Sfx.slide()], ['Tak breekt', () => Sfx.crack()],
+    ['Elastiek', () => Sfx.boingy()], ['Paddenstoel', () => Sfx.boing()], ['Trampoline', () => Sfx.tramp()], ['Duiken', () => Sfx.dive()]]],
+  ['Oppakken', [['Appel', () => Sfx.apple(false, 1)], ['Appel (combo 8)', () => Sfx.apple(false, 8)], ['Gouden appel', () => Sfx.apple(true, 3)],
+    ['Combo', () => Sfx.combo()], ['Mijlpaal', () => Sfx.milestone()], ['Trick', () => Sfx.trick(3)], ['Kist', () => Sfx.lootPick()],
+    ['Ballon', () => Sfx.balloon()], ['Schild', () => Sfx.shield()], ['Gestolen', () => Sfx.steal()]]],
+  ['Speciaal', [['Turbo opladen', () => Sfx.turboCharge()], ['Turbo', () => Sfx.turbo()], ['Raket', () => Sfx.rocket()], ['Portaal', () => Sfx.portal()],
+    ['Plons', () => Sfx.splash()], ['Onder water', () => Sfx.underIn()], ['Boven water', () => Sfx.underOut()], ['Lucht bijna op', () => Sfx.airBeep(1)],
+    ['Nieuwe wereld', () => Sfx.biome((Math.random() * BIOMES.length) | 0)], ['Gewonnen', () => Sfx.jingle(2)], ['Onweer', () => Sfx.storm()]]],
+  ['Menu', [['Klik', () => Sfx.click()], ['Terug', () => Sfx.back()], ['Gekocht', () => Sfx.buy()], ['Kist: tik', () => Sfx.crateTick()],
+    ['Kist: legendarisch', () => Sfx.crateReveal('legendary')], ['Aftellen', () => Sfx.countdown(2)], ['GO!', () => Sfx.countdown(0)],
+    ['Verloren', () => Sfx.lose()], ['Game over', () => Sfx.gameOver()], ['Nieuw record', () => Sfx.record()]]],
+];
 function uiInit() {
   on('btnDebug', () => { $('dbgPass').value = ''; $('dbgMsg').textContent = ''; renderDbg(); showScreen('debug'); if (!DBG.open) setTimeout(() => $('dbgPass').focus(), 50); });
   on('btnDbgUnlock', dbgUnlock);
@@ -455,6 +482,16 @@ function uiInit() {
   $('qualRange').addEventListener('input', e => { setQualityChoice(+e.target.value); renderQuality(); });
   for (const t of document.querySelectorAll('.qual-ticks [data-q]')) t.addEventListener('click', () => { setQualityChoice(+t.dataset.q); renderQuality(); });
   on('btnDebugBack', () => { refreshMenu(); showScreen('settings'); });
+  // geluidsbord: elk effect los afspelen (kiezen speelt het meteen af)
+  const sel = $('dbgSfx'), sfxList = [];
+  for (const [group, items] of DBG_SFX) {
+    const og = document.createElement('optgroup'); og.label = group;
+    for (const [label, fn] of items) { const op = document.createElement('option'); op.value = sfxList.length; op.textContent = label; og.appendChild(op); sfxList.push(fn); }
+    sel.appendChild(og);
+  }
+  const playSfx = () => { Sfx.init(); Sfx.voiceEnd = [0, 0]; sfxList[+sel.value](); };
+  sel.addEventListener('change', playSfx);
+  $('btnDbgSfx').addEventListener('click', e => { e.currentTarget.blur(); playSfx(); });
 
   on('btnPlay', () => startReady(null));
   on('btnMulti', openModes);
@@ -512,6 +549,11 @@ function uiInit() {
   const toggleMusic = () => { save.music = !save.music; persist(); refreshMenu(); if (save.music) Music.start(); else Music.stop(); };
   on('btnSound', toggleSound);
   on('btnMusic', toggleMusic);
+  // volume: meteen hoorbaar; bij loslaten van het effectenschuifje een proeftikje
+  for (const k of ['sfxVol', 'musicVol']) {
+    $(k).addEventListener('input', e => { Sfx.init(); save[k] = clamp(+e.target.value / 100, 0, 1); e.target.style.setProperty('--p', e.target.value); Sfx.setVolume(); });
+    $(k).addEventListener('change', () => { persist(); if (k === 'sfxVol') Sfx.click(); });
+  }
   on('btnShopBack', () => { if (shopReturn === 'done') $('dnBank').textContent = save.apples; if (shopReturn === 'over') setBadge($('btnOverShop'), affordableCount()); refreshMenu(); showScreen(shopReturn); });
   on('btnShopPlay', () => (shopReturn === 'done' || shopReturn === 'over') ? retry() : startReady(null));
   on('btnRetry', retry);
