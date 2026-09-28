@@ -204,7 +204,7 @@ function refreshMenu() {
   $('btnFullscreen').textContent = isFullscreen() ? 'Volledig scherm uit' : 'Volledig scherm';
   $('btnFullscreen').classList.toggle('hidden', !canFullscreen || IN_APP);
   $('btnRotate').classList.toggle('hidden', IN_APP);
-  $('btnQuality').textContent = qAuto ? `Grafisch: automatisch (${QUALITY_NAMES[qLevel]})` : `Grafisch: ${QUALITY_NAMES[qLevel]}`;
+  renderQuality();
   $('saveStats').innerHTML = statsHtml();
   setBadge($('btnShop'), affordableCount());
   $('btnLb').classList.toggle('hidden', !lbOn());
@@ -213,6 +213,13 @@ function refreshMenu() {
   const mus = save.music ? 'Muziek aan' : 'Muziek uit';
   $('btnSound').textContent = snd; $('btnPauseSound').textContent = snd;
   $('btnMusic').textContent = mus; $('btnPauseMusic').textContent = mus;
+}
+// schuifje grafische kwaliteit (Instellingen); bij Auto staat erbij welk niveau het spel nu gebruikt
+function renderQuality() {
+  const c = qualityChoice(), r = $('qualRange');
+  r.value = c; r.style.setProperty('--p', c / 3 * 100);
+  $('qualNow').textContent = qAuto ? `nu: ${QUALITY_NAMES[qLevel]}` : '';
+  for (const t of document.querySelectorAll('.qual-ticks [data-q]')) t.classList.toggle('on', +t.dataset.q === c);
 }
 function renderShop() {
   $('shopBank').textContent = save.apples;
@@ -308,7 +315,8 @@ function uiInit() {
   on('btnDbgReset', () => { DBG.zoom = 1; DBG.speed = 1; dbgPersist(); resize(); renderDbg(); });
   on('btnDbgFps', () => { DBG.fps = !DBG.fps; dbgPersist(); renderDbg(); });
   on('btnDbgLock', () => { DBG.open = false; DBG.zoom = 1; DBG.speed = 1; DBG.fps = false; dbgPersist(); resize(); renderDbg(); });
-  on('btnQuality', () => { cycleQuality(); refreshMenu(); });
+  $('qualRange').addEventListener('input', e => { setQualityChoice(+e.target.value); renderQuality(); });
+  for (const t of document.querySelectorAll('.qual-ticks [data-q]')) t.addEventListener('click', () => { setQualityChoice(+t.dataset.q); renderQuality(); });
   on('btnDebugBack', () => { refreshMenu(); showScreen('settings'); });
 
   on('btnPlay', () => startReady(null));

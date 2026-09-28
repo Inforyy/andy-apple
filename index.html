@@ -237,7 +237,11 @@
       <button class="btn big" id="btnMusic">Muziek aan</button>
       <button class="btn big" id="btnFullscreen">Volledig scherm</button>
       <button class="btn big" id="btnRotate">Liggend spelen</button>
-      <button class="btn big" id="btnQuality">Grafisch: automatisch</button>
+    </div>
+    <div class="qual">
+      <div class="qual-h"><label for="qualRange">Grafische kwaliteit</label><span id="qualNow"></span></div>
+      <input type="range" id="qualRange" min="0" max="3" step="1" value="0">
+      <div class="qual-ticks"><span data-q="0">Auto</span><span data-q="1">Laag</span><span data-q="2">Normaal</span><span data-q="3">Hoog</span></div>
     </div>
     <div class="stats" id="menuStats" style="margin-top:16px"></div>
     <div class="row"><button class="btn ghost" id="btnDebug">Debug</button><button class="btn" id="btnSettingsBack">← Terug</button></div>

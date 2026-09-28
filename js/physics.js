@@ -151,7 +151,9 @@ function attach(v, k) {
   const vt = (G.vx - (v.balloon ? v.balloon.vx : 0)) * c - G.vy * sn;
   let dir = Math.abs(c) > 0.2 ? Math.sign(c) : -Math.sign(sn) || 1;
   if (G.vx < -250 && Math.sign(vt) === -dir) dir = -dir;
-  G.om = dir * Math.max(speed, 480) / G.R;
+  // een overschot boven de topsnelheid (zie de air-state) gaat niet mee de zwaai in: anders stapelt het zich
+  // bij elke liaan op (loslaten vermenigvuldigt de vaart), en wordt het spel steeds sneller
+  G.om = dir * Math.max(Math.min(speed, G.maxS || maxSpeed()), 480) / G.R;
   setHand();
   Sfx.grab();
   if (v.type === 'turbo' && game.mode === 'playing') Sfx.turboCharge();
@@ -441,6 +443,7 @@ function updateGorilla(dt, holdHang, holdAir) {
     // Boven de topsnelheid: een overschot dat je meekreeg (goed getimede zwaai, turbo, trampoline) ebt snel
     // weg (~0,3 s) in plaats van er meteen af te gaan, zodat het heel even echt sneller voelt. Zwaartekracht
     // en duiken tijdens de vlucht kunnen het plafond niet verhogen: anders blijf je bij elke val te snel.
+    G.maxS = maxS;
     if (sp > maxS) {
       const to = Math.min(sp, maxS + Math.max(0, sp0 - maxS) * Math.exp(-3.5 * dt), maxS * 1.5);
       G.vx *= to / sp; G.vy *= to / sp;

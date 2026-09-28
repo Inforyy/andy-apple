@@ -162,11 +162,13 @@ function setQuality(l) {
   try { localStorage.setItem(QKEY, JSON.stringify({ l: qLevel, auto: qAuto })); } catch (e) { /* negeren */ }
   applyQuality();
 }
-// Instellingen: automatisch -> minimaal -> laag -> middel -> hoog -> maximaal -> automatisch
-function cycleQuality() {
-  if (qAuto) { qAuto = false; setQuality(0); }
-  else if (qLevel < 4) setQuality(qLevel + 1);
-  else { qAuto = true; qMax = 4; setQuality(3); }
+// Schuifje in Instellingen: 0 = automatisch (kiest zelf uit alle 5 niveaus), 1 = laag, 2 = normaal, 3 = hoog
+const QUALITY_CHOICES = [null, 1, 3, 4];
+const qualityChoice = () => qAuto ? 0 : qLevel >= 4 ? 3 : qLevel >= 2 ? 2 : 1;
+function setQualityChoice(i) {
+  if (i === qualityChoice()) return;
+  if (i === 0) { qAuto = true; qMax = 4; setQuality(Math.max(2, qLevel)); }
+  else { qAuto = false; setQuality(QUALITY_CHOICES[i]); }
 }
 const gradCache = new Map();
 function cachedGrad(key, make) { let g = gradCache.get(key); if (!g) { g = make(); gradCache.set(key, g); if (gradCache.size > 300) gradCache.clear(); } return g; }

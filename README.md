@@ -171,7 +171,7 @@ Accounts, online lobbies en de ranglijst gebruiken één gratis [Supabase](https
   node -e "let h=0x811c9dc5;for(const c of 'andy-debug:'+process.argv[1]){h^=c.charCodeAt(0);h=Math.imul(h,0x01000193)>>>0}console.log(h.toString(16).padStart(8,'0'))" NIEUW_WACHTWOORD
   ```
   Het is een drempel, geen echte beveiliging: alles draait in de browser.
-- **Soepel op elk apparaat**: Andy wordt tussen de physics-stappen door geïnterpoleerd, zodat hij ook op 75/90/144 Hz-schermen niet schokt of flikkert. het spel meet zelf de framerate en past resolutie en effecten automatisch aan (en onthoudt dat). Op trage machines schakelt het snel terug, tot een extra lichte stand. Op telefoons en tablets is het beeld iets verder uitgezoomd voor meer overzicht. De verre achtergrond wordt in een aparte buffer op lage resolutie getekend.
+- **Soepel op elk apparaat**: Andy wordt tussen de physics-stappen door geïnterpoleerd, zodat hij ook op 75/90/144 Hz-schermen niet schokt of flikkert. het spel meet zelf de framerate en past resolutie en effecten automatisch aan (en onthoudt dat). In **Instellingen** kun je met het schuifje **Grafische kwaliteit** ook zelf *Laag*, *Normaal* of *Hoog* kiezen (standaard *Auto*). De debugschermen hebben een **FPS-meter**. Op trage machines schakelt het snel terug, tot een extra lichte stand. Op telefoons en tablets is het beeld iets verder uitgezoomd voor meer overzicht. De verre achtergrond wordt in een aparte buffer op lage resolutie getekend.
 - **Save-systeem**:
   - De voortgang wordt automatisch opgeslagen in de `localStorage` van de browser.
   - **Exporteren** geeft een `.json`-save-bestand; **importeren** laadt zo'n bestand weer in.

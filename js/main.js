@@ -106,7 +106,7 @@ window.__andy = { get G() { return G; }, get run() { return run; }, get game() {
   get vines() { return vines; }, get apples() { return apples; }, get foes() { return foes; }, get quality() { return qLevel; }, get tramps() { return tramps; }, get portalsList() { return portals; }, attach, release, AIR_G, MAX_FALL, DT, Sfx, Music, press, unpress, startReady,
   MP, get ghostPin() { return ghostPin; }, mpStartMatch, localStart, get LOCAL() { return LOCAL; }, localPress, localUnpress, useWorld, mpHost, mpConnect, mpMakeAnswer, mpJoinStart, mpHostStart, mpSelect, mpAgain, mpForfeit, openMp, mpRender, get curScreen() { return curScreen; },
   get scale() { return scale; }, get viewW() { return viewW; }, get viewH() { return viewH; }, get zoomK() { return zoomK; }, get rotPref() { return rotPref; }, get texts() { return texts; }, resize, toggleFullscreen, toggleRotate,
-  get perf() { return { quality: qLevel, auto: qAuto, steps: stats.steps, work: stats.work, tiles: tileBuilds }; }, setQuality, cycleQuality };
+  get perf() { return { quality: qLevel, auto: qAuto, steps: stats.steps, work: stats.work, tiles: tileBuilds }; }, setQuality, setQualityChoice };
 
 // Opstarten. Alle bestanden zijn nu geladen: pas hier wordt de pagina bedraad (volgorde = volgorde van de listeners).
 viewInit();
