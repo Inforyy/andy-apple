@@ -195,6 +195,14 @@ function release(voluntary = true) {
   // uitschieter wordt teruggebogen naar een bruikbare, voorwaartse sprong. Een normale (ook steile)
   // sprong blijft ongemoeid.
   const sp0 = Math.hypot(G.vx, G.vy);
+  // Geheim: vanaf de allereerste liaan met volle vaart naar ACHTEREN loslaten (en ver genoeg vliegen, zie
+  // checkMatrix) brengt je in de Matrix. Zo'n harde zwaai naar achter gebeurt niet per ongeluk.
+  const matrixShot = voluntary && v.first && run.firstJump && G.vx < -MATRIX_VX && G.hangT > 1.2 && !game.career && !game.mp && !LOCAL.on;
+  if (matrixShot) {
+    G.vx *= m; G.vy = G.vy * m - 120; G.lastVine = v; G.releaseT = 0.3; G.vine = null; G.state = 'air'; G.airT = 0; G.airX = G.x; G.slack = false;
+    G.matrixShot = true; Sfx.release(sp0); Sfx.whoa();
+    return;
+  }
   if (sp0 > 70) {
     if (G.vx < 0) G.vx *= 0.4; // vol achteruit: fors afgezwakt
     const sp1 = Math.hypot(G.vx, G.vy);
@@ -236,6 +244,52 @@ function release(voluntary = true) {
     // alleen bij een echt flinke zwaai, niet vaker dan eens per 4 s en ook dan niet altijd: zo blijft het leuk
     if (voluntary && Math.hypot(vx, vy) > 750 && time - run.lastWoo > 4 && Math.random() < 0.5) { run.lastWoo = time; Sfx.woohoo(Math.hypot(vx, vy)); }
   }
+}
+// ---- Het Matrix-geheim ----
+// Wie vanaf de allereerste liaan hard naar achteren loslaat en tegen de wand achter de startrots vliegt, belandt in
+// de Matrix: vallende groene code, en Kiwi die in een paar tekstballonnen uitlegt dat je de verkeerde kant op ging.
+// Daarna sta je weer op de startrots. De wereld staat ondertussen stil.
+const MATRIX_VX = 820;
+const MATRIX_LINES = [
+  'Hé… jij daar. Wat doe jij hier?',
+  'Dit is de Matrix. Hier is niks. Alleen maar code.',
+  'Geen appels, geen lianen, geen avontuur. Die zitten allemaal díe kant op ➜',
+  'Je bent de verkeerde kant op gezwaaid, Andy.',
+  'Ik stuur je terug. En deze keer: naar vóren zwaaien, oké?',
+];
+function checkMatrix() {
+  if (!G.matrixShot) return;
+  if (G.state !== 'air') { G.matrixShot = false; return; }
+  if (G.x < WALL_X + 40 && G.y < ROCK.top - 60) {
+    G.matrixShot = false;
+    run.matrix = { t: 0, line: 0, lineT: 0, press: input.presses, out: 0 };
+    document.body.classList.add('matrix'); // HUD en hints even weg
+    flashT = 0.6; shake(8, 0.5); Sfx.portal();
+  }
+}
+function updateMatrix(dt) {
+  const M = run.matrix;
+  M.t += dt; M.lineT += dt;
+  if (M.out) { if ((M.out += dt) > 0.6) matrixDone(); return; }
+  const full = MATRIX_LINES[M.line].length / 28 + 0.3; // tijd om de regel uit te typen
+  // tikken: eerst de regel afmaken, dan de volgende
+  if (input.presses !== M.press && M.t > 0.6) { M.press = input.presses; if (M.lineT < full) M.lineT = full; else nextMatrixLine(M); }
+  if (M.lineT > full + 2.6) nextMatrixLine(M);
+  if (Math.random() < 0.25) Sfx.tick(1800 + Math.random() * 900, 0.015);
+}
+function nextMatrixLine(M) {
+  if (M.line < MATRIX_LINES.length - 1) { M.line++; M.lineT = 0; Sfx.tick(1200, 0.05); }
+  else { M.out = 0.001; Sfx.portal(); }
+}
+function matrixDone() {
+  run.matrix = null;
+  document.body.classList.remove('matrix');
+  G.state = 'stand'; G.x = 250; G.y = ROCK.top - FEET; G.vx = 0; G.vy = 0; G.angle = 0; G.standT = 0; G.standPress = input.presses;
+  run.firstJump = true;
+  flashT = 0.5; confetti(G.x, G.y - 40, 50);
+  if (!save.matrixSeen) { save.matrixSeen = 1; save.apples += 25; persist(); floatText(G.x, G.y - 80, 'Geheim gevonden! +25 🍎', '#7dff8a', 26); }
+  else floatText(G.x, G.y - 80, 'Terug uit de Matrix!', '#7dff8a', 24);
+  Sfx.cheer();
 }
 // Sprong vanaf de startrots naar de eerste liaan
 function jump() {
@@ -353,6 +407,7 @@ function die() {
 //  Update
 // =====================================================================
 function step(dt) {
+  if (run && run.matrix) { updateMatrix(dt); return; } // in de Matrix staat de wereld stil
   stepNo++;
   if (G) { G.is = stepNo; G.ix = G.x; G.iy = G.y; G.ihx = G.hx; G.ihy = G.hy; G.ihang = G.state === 'hang' ? G.vine : null; G.ia = G.angle; G.itr = G.trickRot || 0; }
   time += dt;
@@ -390,6 +445,7 @@ function updateGorilla(dt, holdHang, holdAir) {
   G.releaseT -= dt;
   const playing = game.mode === 'playing';
   if (!G.auto) checkTrans(); // biomegrens: vanzelf de reuzenliaan grijpen
+  if (G.matrixShot) checkMatrix();
 
   if (G.auto) autoSwing(dt);
   else if (G.state === 'hang') {

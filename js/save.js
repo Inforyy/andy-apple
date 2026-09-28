@@ -7,7 +7,7 @@
 // =====================================================================
 const SAVE_KEY = 'andyApples.save.v1';
 function defaultSave() {
-  return { version:3, upt:1, apples:0, xp:0, upgrades:{}, best:0, totalApples:0, totalDistance:0, runs:0, maxBiome:0, sound:true, music:true, sfxVol:0.8, musicVol:0.8, lbBest:0, mpGames:0, mpWins:0, chaseBest:0, boxes:0, cosm:{ own:[], color:'', hat:'', suit:'' }, career:{ lpw:LEVELS_PER_WORLD, unlocked:1, anim:0, at:1, stars:Array.from({ length: LEVELS }, () => 0) } };
+  return { version:3, upt:1, matrixSeen:0, apples:0, xp:0, upgrades:{}, best:0, totalApples:0, totalDistance:0, runs:0, maxBiome:0, sound:true, music:true, sfxVol:0.8, musicVol:0.8, lbBest:0, mpGames:0, mpWins:0, chaseBest:0, boxes:0, cosm:{ own:[], color:'', hat:'', suit:'' }, career:{ lpw:LEVELS_PER_WORLD, unlocked:1, anim:0, at:1, stars:Array.from({ length: LEVELS }, () => 0) } };
 }
 // Oude carrière (5 levels per wereld, het 5e was de baas) omzetten naar LEVELS_PER_WORLD per wereld:
 // levels 1-4 blijven, de baas wordt het kasteel (laatste level); de nieuwe levels ertussen moet je nog spelen.
@@ -49,6 +49,7 @@ function normalizeSave(o) {
   s.xp = num(o.xp);
   s.lbBest = num('lbBest' in o ? o.lbBest : o.best); // beste afstand die meetelt voor de ranglijst (zonder debug-snelheid)
   s.mpGames = num(o.mpGames);
+  s.matrixSeen = o.matrixSeen ? 1 : 0; // het Matrix-geheim gevonden (eenmalige beloning)
   s.mpWins = Math.min(num(o.mpWins), s.mpGames);
   s.chaseBest = Math.min(num(o.chaseBest), 36e6); // langste achtervolging (ms)
   // kisten en uiterlijk: alleen bestaande items, en alleen aantrekken wat je hebt

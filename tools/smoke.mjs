@@ -187,6 +187,17 @@ async function main() {
   await js('__andy.unpress()');
   await esc(); await js(`document.getElementById('btnQuit').click()`);
 
+  console.log('Matrix-geheim');
+  await js('__andy.startReady(null)'); await sleep(100);
+  await js('__andy.press()');
+  await until(`__andy.G.state === 'hang'`, 3000);
+  await js(`(() => { const G = __andy.G; G.hangT = 2; G.vx = -1100; G.vy = -200; __andy.release(); __andy.unpress(); })()`);
+  check(await until('!!__andy.run.matrix', 3000), 'hard naar achter van de eerste liaan: de Matrix in');
+  for (let i = 0; i < 14 && await js('!!__andy.run.matrix'); i++) { await js('__andy.press(); __andy.unpress()'); await sleep(250); }
+  check(await until(`!__andy.run.matrix && __andy.G.state === 'stand' && __andy.save.matrixSeen === 1`, 4000), 'Kiwi stuurt je terug naar de startrots');
+  await js(`window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }))`); await sleep(150);
+  await js(`document.getElementById('btnQuit').click()`); await sleep(300);
+
   console.log('Nieuwe biome, onder water en kisten');
   await js('__andy.startReady(null)'); await sleep(100);
   await js('__andy.press()');

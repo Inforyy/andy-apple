@@ -935,6 +935,59 @@ function drawAmbient(P) {
   }
   ctx.globalAlpha = ga;
 }
+// ---- De Matrix (geheim, zie checkMatrix in physics.js): vallende code, zwevende Andy en een pratende Kiwi ----
+const MATRIX_GLYPHS = '01アイウエオカキクケコサシスセソタチツテト0110ナニヌネノ10ハヒフヘホマミムメモ';
+function drawMatrix(M) {
+  const c = mainCtx, W = cssW, H = cssH;
+  c.setTransform(pr, 0, 0, pr, 0, 0);
+  c.fillStyle = '#000'; c.fillRect(0, 0, W, H);
+  // vallende groene code
+  const cw = 18, cols = Math.ceil(W / cw) + 1;
+  c.font = `700 ${cw - 2}px monospace`; c.textAlign = 'center'; c.textBaseline = 'top';
+  for (let i = 0; i < cols; i++) {
+    const sp = 90 + hash(i * 3.7) * 160, len = 8 + ((hash(i * 1.3) * 18) | 0), head = ((M.t * sp + hash(i * 9.1) * H * 2) % (H + len * cw * 2)) - len * cw;
+    for (let k = 0; k < len; k++) {
+      const y = head - k * cw; if (y < -cw || y > H) continue;
+      const ch = MATRIX_GLYPHS[((hash(i * 7 + k * 13 + Math.floor(M.t * 6 + k)) * MATRIX_GLYPHS.length) | 0)];
+      c.fillStyle = k === 0 ? '#d8ffe0' : `rgba(0,255,90,${(1 - k / len) * 0.85})`;
+      c.fillText(ch, i * cw, y);
+    }
+  }
+  const fade = M.out ? 1 - M.out / 0.6 : Math.min(1, M.t / 0.5);
+  // Andy zweeft links, Kiwi staat rechts (in groene tinten, als in de Matrix)
+  const sc = Math.min(W / 420, H / 260) * 1.2, ay = H * 0.6;
+  const gor = (x, y, pal, state, flip, extra) => {
+    const s0 = ctx, G0 = G, GC0 = GC;
+    ctx = c;
+    c.save(); c.translate(x, y); c.scale(flip * sc, sc);
+    G = Object.assign({ x: 0, y: 0, state, standT: M.t, angle: 0, trickRot: 0, balloonT: 0, turboT: 0, invuln: 0, vx: 0, vy: 0, trick: null, diving: false }, extra);
+    try { GC = pal; drawGorilla(); } finally { ctx = s0; G = G0; GC = GC0; c.restore(); }
+  };
+  c.globalAlpha = fade;
+  c.fillStyle = 'rgba(0,255,90,.12)'; c.beginPath(); c.ellipse(W * 0.3, ay + 40 * sc, 60 * sc, 12 * sc, 0, 0, 7); c.fill(); c.beginPath(); c.ellipse(W * 0.7, ay + 40 * sc, 60 * sc, 12 * sc, 0, 0, 7); c.fill();
+  gor(W * 0.3, ay - 10 * sc + Math.sin(M.t * 2) * 8 * sc, myLook(), 'air', 1, { vx: 200, vy: 400 * Math.sin(M.t * 2), angle: Math.sin(M.t * 1.3) * 0.2 });
+  gor(W * 0.7, ay, GCK, 'stand', -1, { standT: 2.9 + (M.lineT < MATRIX_LINES[M.line].length / 28 ? (M.t % 0.6) : 0) }); // praat: trommelt zachtjes (mond open)
+  // tekstballon boven Kiwi, letter voor letter
+  const txt = MATRIX_LINES[M.line].slice(0, Math.floor(M.lineT * 28)), fs = Math.max(14, Math.min(22, W / 34));
+  c.font = `800 ${fs}px Trebuchet MS, sans-serif`; c.textAlign = 'left'; c.textBaseline = 'top';
+  const maxW = Math.min(W * 0.62, 460), words = MATRIX_LINES[M.line].split(' '), lines = [];
+  let cur = '';
+  for (const w of words) { const t = cur ? cur + ' ' + w : w; if (c.measureText(t).width > maxW - 28 && cur) { lines.push(cur); cur = w; } else cur = t; }
+  lines.push(cur);
+  const bw = maxW, bh = lines.length * fs * 1.3 + 26, bx = Math.min(W - bw - 12, Math.max(12, W * 0.7 - bw * 0.7)), by = Math.max(12, ay - 70 * sc - bh);
+  c.fillStyle = 'rgba(0,20,6,.92)'; c.strokeStyle = '#00ff5a'; c.lineWidth = 2.5;
+  c.beginPath(); c.roundRect ? c.roundRect(bx, by, bw, bh, 14) : c.rect(bx, by, bw, bh); c.fill(); c.stroke();
+  c.beginPath(); c.moveTo(W * 0.7 - 10, by + bh); c.lineTo(W * 0.7 + 4, by + bh + 20); c.lineTo(W * 0.7 + 12, by + bh); c.fill(); c.stroke();
+  c.fillStyle = '#c8ffd4'; let n = txt.length;
+  lines.forEach((l, i) => { const part = l.slice(0, Math.max(0, n)); n -= l.length + 1; c.fillText(part, bx + 14, by + 13 + i * fs * 1.3); });
+  c.font = `700 ${Math.max(11, fs * 0.6)}px Trebuchet MS, sans-serif`; c.fillStyle = 'rgba(0,255,90,.8)'; c.textAlign = 'right';
+  c.fillText(`${M.line + 1}/${MATRIX_LINES.length} · tik om verder te gaan ▸`, bx + bw - 12, by + bh - fs * 0.75);
+  c.textAlign = 'center'; c.font = `900 ${Math.max(16, fs * 1.1)}px monospace`; c.fillStyle = 'rgba(0,255,90,.9)';
+  c.fillText('K I W I', W * 0.7, ay + 52 * sc); c.fillText('A N D Y', W * 0.3, ay + 52 * sc);
+  c.globalAlpha = 1;
+  if (M.out) { c.fillStyle = `rgba(255,255,255,${M.out / 0.6})`; c.fillRect(0, 0, W, H); }
+  else if (M.t < 0.4) { c.fillStyle = `rgba(255,255,255,${1 - M.t / 0.4})`; c.fillRect(0, 0, W, H); }
+}
 function drawFlash() {
   if (flashT > 0) { ctx.fillStyle = `rgba(255,255,255,${flashT})`; ctx.fillRect(0, 0, viewW, viewH); }
 }
@@ -1266,6 +1319,7 @@ function render() {
   try { renderScene(); } finally { interpEnd(); }
 }
 function renderScene() {
+  if (run && run.matrix && !LOCAL.on) { drawMatrix(run.matrix); return; }
   const mid = (camX + viewW * 0.5 - START_X) / PX_PER_M, P = paletteAt(mid);
   const S = scale * pr;
   // achtergrondtegels: per beeld maar een paar nieuwe; komt de volgende biome eraan, dan die alvast vooruit tekenen

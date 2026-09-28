@@ -60,6 +60,7 @@ function mpLeaveMatch() {
   $('mpHud').classList.add('hidden'); $('mpCount').textContent = '';
 }
 function toMenu() {
+  document.body.classList.remove('matrix');
   game.paused = false; Music.duck();
   game.career = null;
   localExit(); MP.local = false;
@@ -73,6 +74,7 @@ function toMenu() {
 }
 // level = null: eindeloze modus; anders een carrière-level
 function startReady(level) {
+  document.body.classList.remove('matrix');
   // Eindeloos vanuit het hoofdmenu: achter het menu staat al een verse Eindeloos-wereld. Die houden we
   // (alleen Andy en de run beginnen opnieuw), anders verspringt alles bij de start naar een andere wereld.
   const keepWorld = typeof level !== 'number' && game.mode === 'menu' && !game.career && !game.mp && !LOCAL.on

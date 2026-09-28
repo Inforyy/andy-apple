@@ -109,6 +109,7 @@ function resetWorld() {
   vineSeq = 0;
   // Andy staat op de startrots; de eerste liaan hangt binnen springbereik
   const v0 = makeVine(FIRST_VINE.x, FIRST_VINE.ay, FIRST_VINE.len, 'normal', 0);
+  v0.first = true; // de allereerste liaan (zie het Matrix-geheim in physics.js)
   vines.push(v0);
   gen = { x: FIRST_VINE.x, lastPortal: -1e9, lastPath: 0, special: 0, col: 0, low: FIRST_VINE.ay + FIRST_VINE.len, tips: [null, null, FIRST_VINE.ay + FIRST_VINE.len * TIP_F] };
   resetRunner();
