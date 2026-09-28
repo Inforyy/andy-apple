@@ -49,7 +49,7 @@ function normalizeSave(o) {
   s.xp = num(o.xp);
   s.lbBest = num('lbBest' in o ? o.lbBest : o.best); // beste afstand die meetelt voor de ranglijst (zonder debug-snelheid)
   s.mpGames = num(o.mpGames);
-  s.matrixSeen = o.matrixSeen ? 1 : 0; // het Matrix-geheim gevonden (eenmalige beloning)
+  s.matrixSeen = clamp(Math.floor(+o.matrixSeen || 0), 0, 3); // hoe vaak je in de Matrix was (na 3 keer gaat hij op slot)
   s.mpWins = Math.min(num(o.mpWins), s.mpGames);
   s.chaseBest = Math.min(num(o.chaseBest), 36e6); // langste achtervolging (ms)
   // kisten en uiterlijk: alleen bestaande items, en alleen aantrekken wat je hebt
@@ -90,7 +90,7 @@ const UP_BY_ID = Object.fromEntries(UPGRADES.map(u => [u.id, u]));
 function lvl(id) {
   if (game.mp) return 0;
   const u = UP_BY_ID[id], l = upSteps(id) / u.tiers * (game.career ? CAREER_UP : 1);
-  return u.whole ? Math.floor(l + 1e-9) : l;
+  return u.whole ? Math.floor(l + 1e-9) : upEff(l);
 }
 
 function checksum(str) { // FNV-1a

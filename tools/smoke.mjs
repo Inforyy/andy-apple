@@ -205,7 +205,7 @@ async function main() {
   check(await js(`(() => { const s = __andy.save, a = s.apples = 600, b = s.boxes; document.getElementById('btnCrates').click(); document.getElementById('btnCrBuy').click(); const ok = s.boxes === b + 1 && s.apples === a - CRATE_PRICE; document.getElementById('btnCrBack').click(); return ok; })()`), 'kist gekocht voor appels');
   check(await js(`(() => { const s = __andy.save; s.upgrades.grip = 7; const b = document.querySelector('[data-reset=upgrades]'); b.click(); b.click(); return s.upgrades.grip === 0 && upSteps('grip') === 0; })()`), 'resetmenu: upgrades terug naar 0');
   check(await js(`(() => { __andy.startReady(20); const t0 = timeScale(); givePow('slow', __andy.G.x, __andy.G.y); const ok = Math.abs(timeScale() - t0 * SLOWMO) < 1e-6; __andy.run.pow = null; return ok; })()`), 'slowmotion-power-up: alles half zo snel');
-  check(await js(`(() => { const u = UP_BY_ID.grip; return u.steps === 15 && upCost(u, 14) <= Math.round(u.base * 1.5 * Math.pow(u.growth, u.max - 1) / 5) * 5; })()`), 'upgrades in stapjes, zonder duurdere aankopen');
+  check(await js(`(() => { const u = UP_BY_ID.grip; return u.steps === 15 && upCost(u, 14) <= Math.round(u.base * UP_PRICE * Math.pow(u.growth, u.max - 1) / 5) * 5; })()`), 'upgrades in stapjes, zonder duurdere aankopen');
 
   console.log('Nieuwe biome, onder water en kisten');
   await js('__andy.startReady(null)'); await sleep(100);
