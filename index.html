@@ -27,6 +27,7 @@
   <div id="mpCount"></div>
   <div id="banner"><div class="big"></div><div class="small"></div></div>
   <div id="hint"></div>
+  <div id="headStart" class="hidden"><b>🚀 Head-start</b><small>Vlieg meteen een stuk vooruit</small><div id="hsBtns"></div></div>
 </div>
 
 <!-- Hoofdmenu -->
@@ -81,7 +82,7 @@
       </section>
       <section class="mp-card" id="mpDevice">
         <div class="mp-card-h"><h3>Op dit apparaat</h3></div>
-        <div class="row"><button class="btn local" id="btnMpLocal">2 spelers, één scherm</button><button class="btn kiwi" id="btnMpAi">Tegen Kiwi (AI)</button></div>
+        <div class="row"><button class="btn local" id="btnMpLocal">2 spelers, één scherm</button><button class="btn kiwi" id="btnMpAi">Tegen Kiwi (AI)</button><button class="btn kiwi" id="btnMpChase">Achtervolging</button></div>
       </section>
       <details class="mp-manual" id="mpManual">
         <summary>Handmatig verbinden (zonder server, 2 spelers)</summary>
@@ -128,6 +129,7 @@
         <div class="mp-modes">
           <button class="mp-mode" id="mpModeRace" data-mode="race"><b>Race</b><small>Eerst bij de finish wint. Val je, dan kom je terug (en verlies je tijd).</small></button>
           <button class="mp-mode" id="mpModeEnd" data-mode="endurance"><b>Endurance</b><small>Wie het langst volhoudt, wint. Een storm jaagt je op.</small></button>
+          <button class="mp-mode hidden" id="mpModeChase" data-mode="chase"><b>Achtervolging</b><small>Kiwi zit je achterna en wordt steeds sneller. Hoe lang blijf je hem voor?</small></button>
         </div>
         <div class="mp-lens" id="mpLens">
           <button class="mp-len" data-len="500">500 m</button>
@@ -173,6 +175,7 @@
     <ul>
       <li><b>Race</b>: eerst bij de finish wint. Val je, dan kom je na een tel terug op een liaan.</li>
       <li><b>Endurance</b>: wie het langst volhoudt, wint. Een storm jaagt je steeds sneller op.</li>
+      <li><b>Achtervolging</b> (tegen Kiwi): Kiwi start een paar tellen na jou en probeert je in te halen. Hij wordt steeds sneller; hoe lang hou je het vol?</li>
       <li>Upgrades staan uit; appels en XP tellen niet mee voor je save.</li>
     </ul>
     <div class="row"><button class="btn" id="btnMpSetupBack">← Terug</button></div>
@@ -282,7 +285,8 @@
       <li>Pak appels (goud = 5). Snel achter elkaar geeft een <b>combo</b>. Vijanden stelen appels, een helm beschermt je.</li>
       <li>Koop met appels <b>upgrades</b>; met XP ontgrendel je er meer.</li>
       <li>Hoe verder je komt, hoe iets lastiger en sneller het wordt.</li>
-      <li>Blauw portaal in, oranje portaal uit. Gouden ballonnen achter elkaar pakken: de ruimte in!</li>
+      <li>Blauw portaal in, oranje portaal uit. De drie gouden ballonnen (1, 2, 3) achter elkaar pakken: de ruimte in!</li>
+      <li>In Eindeloos kun je vóór je eerste sprong een <b>head-start</b> kopen: Andy vliegt dan meteen een stuk vooruit.</li>
       <li><kbd>P</kbd> of <kbd>Esc</kbd>: pauze.</li>
     </ul>
     <h3>Speciale lianen</h3>

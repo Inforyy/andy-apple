@@ -34,7 +34,7 @@ function simVine(v, dt) {
     const q = p[i]; if (q.im === 0) continue;
     const vx = (q.x - q.px) * damp, vy = (q.y - q.py) * damp;
     q.px = q.x; q.py = q.y;
-    q.x += vx + wind * dt2; q.y += vy + GRAVITY * dt2;
+    q.x += vx + wind * dt2; q.y += vy + (v.space ? GRAVITY * SPACE_G : GRAVITY) * dt2;
   }
   const k = G.k, elastic = v.type === 'elastic';
   if (hang) { // Andy's hand is een vast punt op het touw; het touw volgt hem
@@ -89,7 +89,7 @@ function swingStep(v, dt) {
     setHand();
     return;
   }
-  const g = GRAVITY, elastic = v.type === 'elastic';
+  const g = v.space ? GRAVITY * SPACE_G : GRAVITY, elastic = v.type === 'elastic';
   if (elastic) { // bungee: het touw rekt uit en veert terug
     const acc = g * Math.cos(G.th) + G.R * G.om * G.om - 38 * (G.R - G.R0);
     G.vr = (G.vr + acc * dt) * 0.995;
@@ -138,7 +138,7 @@ function attach(v, k) {
   const airT = G.airT, dx = G.x - G.airX;
   const p = v.pts, n = p.length;
   if (G.trick) { G.trick = null; G.trickRot = 0; } // truc onderbroken
-  G.state = 'hang'; G.vine = v; G.k = k; G.hangT = 0; G.iceT = 0; G.diveT = 0; G.dive = 0; G.noDive = false; G.chain = 0;
+  G.state = 'hang'; G.vine = v; G.k = k; G.hangT = 0; G.iceT = 0; G.diveT = 0; G.dive = 0; G.noDive = false; G.chain = 0; G.swSide = 0;
   // Nooit helemaal bovenin: Andy glijdt een stukje omlaag (anders is al zijn vaart weg)
   G.slideTo = Math.max(k, Math.max(6, Math.round(n * 0.45))); G.slideT = 0;
   if (v.type === 'icy') G.slideTo = Math.max(G.slideTo, Math.round(n * 0.6));
@@ -179,6 +179,8 @@ function reward(x, y, txt, bonus, col) {
   starBurst(x, y, 12, '#ffe46b');
   Sfx.bigjump();
 }
+// de wereld van Kiwi (die wordt niet getekend): geen losse geluidjes voor dingen die je niet ziet
+function aiWorld() { return !!(game.mp && game.mp.local && LOCAL.ai && game.mp.idx === 1); }
 // voluntary = de speler liet zelf los (niet weggegleden of een gebroken liaan)
 function release(voluntary = true) {
   if (G.state !== 'hang') return;
@@ -270,15 +272,19 @@ function snapVine(v) {
   Sfx.crack();
   release(false);
 }
-function startRocket() {
+// extra = gekochte head-start in meters (bovenop de Raketstart-upgrade). Een lange vlucht gaat sneller,
+// zodat hij nooit veel langer dan een paar seconden duurt.
+function startRocket(extra = 0) {
   run.firstJump = false;
   if (G.state === 'hang') { freeHand(G.vine, G.k); G.lastVine = G.vine; G.releaseT = 1; G.vine = null; }
   G.state = 'rocket';
-  G.rocketEnd = START_X + rocketDist(lvl('rocket')) * PX_PER_M;
+  const dist = rocketDist(lvl('rocket')) + extra;
+  G.rocketEnd = START_X + dist * PX_PER_M;
   G.y = ROCK.top - FEET - 30;
-  G.vx = 1500; G.vy = 0;
-  floatText(G.x, G.y - 60, 'Raketstart! 🚀', '#ffe07a', 24);
+  G.vx = clamp(dist * PX_PER_M / 4, 1500, 9000); G.vy = 0;
+  floatText(G.x, G.y - 60, extra ? `Head-start: ${extra} m! 🚀` : 'Raketstart! 🚀', '#ffe07a', 24);
   Sfx.rocket();
+  if (extra) { Sfx.turbo(); confetti(G.x, G.y - 30, 40); shake(5, 0.3); }
 }
 function hitHazard() {
   if (G.balloons > 0) {
@@ -349,7 +355,8 @@ function step(dt) {
   // alleen lianen in (de buurt van) beeld worden gesimuleerd
   const x0 = camX - 500, x1 = camX + viewW + 500, y0 = camY - 450, y1 = camY + viewH + 450;
   for (const v of vines) {
-    if (v === G.vine || (v.x > x0 && v.x < x1 && v.ay < y1 && v.rest[3] > y0 - 200)) simVine(v, dt);
+    // ook de liaan waar de tegenstander aan hangt (ghostPin): anders hangt die er buiten beeld bevroren bij
+    if (v === G.vine || v === ghostPin.v || (v.x > x0 && v.x < x1 && v.ay < y1 && v.rest[3] > y0 - 200)) simVine(v, dt);
   }
 
   updateGorilla(dt, holdHang, holdAir);
@@ -388,6 +395,10 @@ function updateGorilla(dt, holdHang, holdAir) {
     if (!holdHang) release();
     else if (playing) {
       G.hangT += dt;
+      // zwaaigeluid: een zoef bij elke doorgang door het laagste punt (niet voor Kiwi, die zie je meestal niet)
+      const side = Math.sign(Math.sin(G.th));
+      if (side && G.swSide && side !== G.swSide && !G.slack && !aiWorld()) Sfx.swing(Math.abs(G.om * G.R), G.om > 0);
+      if (side) G.swSide = side;
       if (v.type === 'rotten') {
         if (G.hangT > v.snapAt) snapVine(v);
         else if (G.hangT > v.snapAt - 0.45 && Math.random() < 0.3) addPart({ x: p[1].x, y: p[1].y, vx: rand(-40, 40), vy: 0, life: 0.6, max: 0.6, col: '#7b5b36', r: 2.5 });
@@ -540,7 +551,7 @@ function updateGorilla(dt, holdHang, holdAir) {
       floatText(G.x, G.y - 70, '🍎 Appels meer waard!', '#ffe46b', 24);
       confetti(G.x + 200, G.y - 200, 90);
       flashT = 0.35;
-      Sfx.jingle(bi);
+      if (!aiWorld()) Sfx.biome(bi);
     }
   }
 }
@@ -663,30 +674,83 @@ function updateTrick(dt, holdAir) {
   }
 }
 // ---- Ruimte ----
-const SPACE_PATH = 5, SPACE_Y = -3000;
+// Een ballonpad (SPACE_PATH gouden ballonnen op volgorde) lanceert Andy de ruimte in. Daar is bijna geen zwaartekracht,
+// hangen sterrenlianen aan zwevende planetoïden, kun je van losse planetoïden stuiteren en vliegt er een ufo rond.
+const SPACE_PATH = 3, SPACE_Y = -3000, SPACE_G = 0.6;
 function checkSpaceLaunch(v) {
   const b = v.balloon;
   // alleen als alle ballonnen van dit pad op volgorde zijn gepakt
   const path = vines.filter(w => w.balloon && w.balloon.path === b.path).sort((p, q) => p.balloon.step - q.balloon.step);
   if (b.step !== SPACE_PATH - 1 || !path.every(w => w.balloon.visited)) return;
-  G.vx = Math.max(G.vx, 700); G.vy = -1550; G.turboT = 1.5; G.noDive = true; G.airT = 0; run.launchT = 6;
+  G.vx = Math.max(G.vx, 700); G.vy = -1750; G.turboT = 1.5; G.noDive = true; G.airT = 0; run.launchT = 6;
   floatText(G.x, G.y - 70, 'LANCERING! 🚀', '#ffe46b', 30);
   confetti(G.x, G.y, 60); shake(8, 0.4); Sfx.rocket(); Sfx.turbo();
 }
+// Ruimtelianen horen niet bij de (gedeelde) wereld: ze krijgen een negatief id, gebruiken Math.random en laten
+// vineSeq en genRandom ongemoeid, zodat de wereld van andere spelers met dezelfde seed gelijk blijft.
+let spaceVineId = -1;
+function addSpaceVine(x, ay) {
+  const sr = genRandom, sq = vineSeq;
+  genRandom = Math.random;
+  let v;
+  try { v = makeVine(x, ay, rand(260, 340), 'space', run.biome); } finally { genRandom = sr; vineSeq = sq; }
+  v.id = spaceVineId--; v.space = { r: rand(26, 38), ph: rand(0, 6), col: ['#8a7f9e', '#9e8a7a', '#7a8a9e'][(Math.random() * 3) | 0] };
+  vines.push(v);
+}
+function spawnSpace() {
+  const x0 = G.x, y0 = G.y;
+  // sterrenlianen aan zwevende planetoïden, in een golvend spoor vooruit
+  for (let i = 0; i < 12; i++) addSpaceVine(x0 + 350 + i * 430 + rand(-40, 40), y0 - 330 - Math.sin(i * 0.9) * 180 - rand(0, 120));
+  // losse planetoïden om van te stuiteren
+  for (let i = 0; i < 7; i++) spaceObjs.push({ type: 'rock', x: x0 + 600 + i * 700 + rand(-100, 100), y: y0 - rand(0, 900), r: rand(34, 56), ph: rand(0, 6), spin: rand(-0.6, 0.6), cd: 0 });
+  // een ufo die met je meevliegt (aanraken = bonus) en een paar satellieten
+  spaceObjs.push({ type: 'ufo', x: x0 + 900, y: y0 - 500, t: 0, done: false });
+  for (let i = 0; i < 3; i++) spaceObjs.push({ type: 'sat', x: x0 + 1200 + i * 1500 + rand(-200, 200), y: y0 - rand(200, 800), ph: rand(0, 6) });
+}
 function updateSpace(dt) {
+  for (let i = spaceObjs.length - 1; i >= 0; i--) { // opruimen wat ver achter je ligt
+    const o = spaceObjs[i];
+    if (o.x < camX - 900 || (o.type === 'ufo' && o.t > 40)) spaceObjs.splice(i, 1);
+  }
   if (game.mode !== 'playing') return;
   run.launchT = (run.launchT || 0) - dt;
   const inSpace = G.y < SPACE_Y - 200;
   if (inSpace && !run.space && run.launchT > 0) {
     run.space = true; run.spaceVisits++;
     run.earned += 25;
-    showBanner('🚀 In de ruimte!', 'Bijna geen zwaartekracht… pak de sterappels! +25 🍎');
+    showBanner('🚀 In de ruimte!', 'Slinger aan de sterrenlianen, stuiter op planetoïden en pak de sterappels! +25 🍎');
     confetti(G.x + 150, G.y - 100, 80); flashT = 0.4; Sfx.jingle(5);
     // sterappels (goud) in een grote boog vooruit
     for (let i = 0; i < 24; i++) { const t = i / 23; apples.push({ x: G.x + 250 + t * 2000, y: G.y - 250 - Math.sin(t * Math.PI) * 900 + t * 900, gold: true, t: Math.random() * 6 }); }
+    spawnSpace();
   } else if (run.space && G.y > SPACE_Y + 400) {
     run.space = false;
     floatText(G.x, G.y - 60, 'Terug naar de jungle!', '#ffffff', 24);
+  }
+  const alive = G.state === 'air' || G.state === 'hang';
+  for (const o of spaceObjs) {
+    if (o.type === 'rock') {
+      o.ph += o.spin * dt; o.cd -= dt;
+      // stuiteren: je vliegt weg van het midden van de planetoïde, altijd een beetje naar voren
+      const dx = G.x - o.x, dy = G.y - o.y, d = Math.hypot(dx, dy);
+      if (G.state === 'air' && o.cd <= 0 && d < o.r + G_R * 0.9 && d > 1) {
+        const nx = dx / d, ny = dy / d, sp = Math.max(900, Math.hypot(G.vx, G.vy) * 1.05);
+        G.vx = Math.max(nx * sp, 520); G.vy = ny * sp; G.x = o.x + nx * (o.r + G_R); G.y = o.y + ny * (o.r + G_R);
+        G.airT = 0.3; G.airX = G.x; G.noDive = false; o.cd = 0.35;
+        floatText(o.x, o.y - o.r - 20, 'Boing!', '#e2d6ff', 22); starBurst(o.x + nx * o.r, o.y + ny * o.r, 10, '#c8b8ff');
+        Sfx.tramp(); shake(3, 0.12);
+      }
+    } else if (o.type === 'ufo') {
+      o.t += dt;
+      // blijft een eind voor je uit zweven en schommelt op en neer; na een tijdje vliegt hij weg
+      const tx = G.x + 520 + Math.sin(o.t * 0.7) * 160, ty = (o.t > 30 ? o.y - 400 * dt : Math.min(G.y - 140, SPACE_Y - 300) + Math.sin(o.t * 1.3) * 90);
+      o.x += (tx - o.x) * Math.min(1, dt * (o.t > 30 ? 0 : 1.2)) + (o.t > 30 ? 900 * dt : 0); o.y += (ty - o.y) * Math.min(1, dt * 1.2);
+      if (!o.done && alive && Math.hypot(G.x - o.x, G.y - o.y) < 70) {
+        o.done = true; o.t = Math.max(o.t, 30);
+        reward(o.x, o.y - 50, 'Buitenaards bezoek! 👽', 15, '#b6ff8a');
+        confetti(o.x, o.y, 40);
+      }
+    } else o.ph += dt;
   }
 }
 // Papegaaimaatje: vliegt mee en plukt af en toe een appel in de buurt

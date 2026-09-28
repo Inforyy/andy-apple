@@ -6,6 +6,7 @@
 //  Wereldstatus
 // =====================================================================
 let vines = [], apples = [], shrooms = [], foes = [], parts = [], texts = [], fishes = [], tramps = [], portals = [];
+let spaceObjs = []; // de ruimte: planetoïden (stuiteren), een ufo en satellieten
 let gen = { x: 0, special: 0 };
 let run = null;
 let camX = 0, camY = 0, lastCamX = 0, shakeT = 0, shakeAmp = 0, flashT = 0;
@@ -30,6 +31,7 @@ const WORLD_VARS = {
   fishes:      [() => fishes,        v => { fishes = v; },        () => []],
   tramps:      [() => tramps,        v => { tramps = v; },        () => []],
   portals:     [() => portals,       v => { portals = v; },       () => []],
+  spaceObjs:   [() => spaceObjs,     v => { spaceObjs = v; },     () => []],
   gen:         [() => gen,           v => { gen = v; },           () => ({ x: 0, special: 0 })],
   run:         [() => run,           v => { run = v; },           () => null],
   camX:        [() => camX,          v => { camX = v; },          () => 0],
@@ -75,7 +77,7 @@ function makeVine(x, ay, len, type, bi) {
 }
 
 function resetWorld() {
-  vines = []; apples = []; shrooms = []; foes = []; parts = []; texts = []; fishes = []; tramps = []; portals = [];
+  vines = []; apples = []; shrooms = []; foes = []; parts = []; texts = []; fishes = []; tramps = []; portals = []; spaceObjs = [];
   time = 0;
   const C = game.career;
   // carrière en multiplayer: vaste seed, zodat de wereld elke keer (en bij beide spelers) hetzelfde is
@@ -139,7 +141,9 @@ function vineFits(x, ay, len, type) {
   const seg = restSeg(x, ay, Math.max(6, Math.round(len / SEG_LEN)) * SEG_LEN, type);
   for (const v of vines) {
     if (Math.abs(v.rest[0] - x) > 700) continue; // rest[0]: vaste plek (luchtballonnen drijven weg)
-    if (segDist(seg, v.rest) < 75 || Math.hypot(v.x - x, v.ay - ay) < 130) return false;
+    // rest[0] en niet v.x: een luchtballon drijft alleen weg zolang hij in beeld gesimuleerd wordt, en dat verschilt
+    // per speler (en per schermgrootte). Met v.x zou de wereld van twee spelers met dezelfde seed uit elkaar lopen.
+    if (segDist(seg, v.rest) < 75 || Math.hypot(v.rest[0] - x, v.ay - ay) < 130) return false;
   }
   for (const P of portals) if (segDist(seg, portalSeg(P.bx, P.by, 0)) < 105 || segDist(seg, portalSeg(P.ox, P.oy, P.oa)) < 105) return false;
   return true;
@@ -199,9 +203,9 @@ function genNext() {
   let low = -Infinity;
   for (const v of col) low = Math.max(low, v.ay + v.pts.length * SEG_LEN * (v.type === 'elastic' ? 1.2 : 1));
 
-  // Af en toe een ballonpad naar de ruimte: een trap van ballonlianen die steeds hoger hangen.
-  // Alleen wie ze PERFECT achter elkaar pakt en van de laatste loslaat, wordt de ruimte in gelanceerd.
-  if (!game.career && m > 250 && m - gen.lastPath > 800 && genRandom() < 0.25) {
+  // Geregeld een ballonpad naar de ruimte: een trapje van gouden ballonlianen die steeds hoger hangen.
+  // Wie ze achter elkaar pakt en van de laatste loslaat, wordt de ruimte in gelanceerd.
+  if (!game.career && m > 150 && m - gen.lastPath > 450 && genRandom() < 0.35) {
     gen.lastPath = m;
     const pid = genRandom();
     for (let i = 0; i < SPACE_PATH; i++) {
@@ -210,7 +214,7 @@ function genNext() {
     }
       }
   // Heel af en toe: een luchtballon boven het plafond met een liaan eronder
-  else if (m > 40 && genRandom() < 0.07 && !vines.some(v => v.balloon && v.x > x - 1500)) {
+  else if (m > 40 && genRandom() < 0.07 && !vines.some(v => v.balloon && v.rest[0] > x - 1500)) { // rest[0]: zie vineFits
     const bv = addVine(x + grand(0, 100), CEIL_Y - 190, 300, 'balloon', vbi);
     if (bv) bv.balloon = { vx: grand(60, 90), hue: (genRandom() * 360) | 0, bob: grand(0, 6) };
   }

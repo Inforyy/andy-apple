@@ -181,7 +181,7 @@ function treeSprite(bi, v) {
     const rnd = mulberry32(bi * 977 + v * 131 + 7), rr = (a, b) => a + rnd() * (b - a);
     const cx = W / 2, base = H - 4;
     const leaf = C.mid, cols = [shade(leaf, -0.32), leaf, shade(leaf, 0.2), shade(leaf, 0.42)];
-    const bark = { jungle: '#5a4030', swamp: '#4a4632', savanne: '#6e5236', ice: '#4b3b34', volcano: '#231815', night: '#262c52' }[style];
+    const bark = { jungle: '#5a4030', swamp: '#4a4632', savanne: '#6e5236', ice: '#4b3b34', volcano: '#231815', night: '#262c52', blocky: '#6b4a2b', paint: '#8b5a2b', poly3d: '#4a3a8a', candy: '#f3d9e6' }[style] || '#5a4030';
     const barkD = shade(bark, -0.4), barkL = shade(bark, 0.22);
     const trunk = (w0, w1, h) => {
       const gr = g.createLinearGradient(cx - w0, 0, cx + w0, 0);
@@ -264,6 +264,65 @@ function treeSprite(bi, v) {
         for (let k = 0; k <= 6; k++) g.lineTo(cx + w * 0.45 - k * (w * 0.9 / 6), y - th * 1.05 + (k % 2 ? 7 : 0));
         g.closePath(); g.fill();
       }
+    } else if (style === 'blocky') { // Minecraft-eik: blokken met pixels
+      const B = 34, px = (x, y, w, h, col, seed) => { // blok met een pixelpatroon
+        g.fillStyle = col; g.fillRect(x, y, w, h);
+        const r2 = mulberry32(seed), cs = [shade(col, -0.18), shade(col, 0.14), shade(col, -0.08)];
+        for (let yy = 0; yy < h; yy += 6) for (let xx = 0; xx < w; xx += 6) if (r2() < 0.42) { g.fillStyle = cs[(r2() * 3) | 0]; g.fillRect(x + xx, y + yy, 6, 6); }
+      };
+      const h = Math.round(rr(5, 8)) * B;
+      for (let y = base - B; y > base - h; y -= B) px(cx - B / 2, y, B, B, bark, (y * 7 + v) | 0);
+      const lw = Math.round(rr(4, 6)), lh = Math.round(rr(3, 4)), top = base - h - (lh - 1) * B;
+      for (let j = 0; j < lh; j++) for (let i = 0; i < lw; i++) {
+        if ((j === 0 || j === lh - 1) && (i === 0 || i === lw - 1) && rnd() < 0.7) continue; // hoeken eraf
+        px(cx - lw * B / 2 + i * B, top + j * B, B, B, j === 0 ? cols[2] : cols[1], i * 31 + j * 7 + v * 3);
+      }
+      g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(cx - lw * B / 2, top + lh * B - 8, lw * B, 8);
+    } else if (style === 'paint') { // getekend in Paint: platte kleuren, dikke zwarte randen, een beetje bibberig
+      const h = rr(200, 290), wob = a => Math.sin(a * 7.3 + v) * 3;
+      g.lineWidth = 4; g.strokeStyle = '#000'; g.lineJoin = 'round';
+      g.fillStyle = bark; g.beginPath(); g.moveTo(cx - 16, base); g.lineTo(cx - 12 + wob(1), base - h); g.lineTo(cx + 12 + wob(2), base - h); g.lineTo(cx + 17, base); g.closePath(); g.fill(); g.stroke();
+      const R = rr(85, 115), cy = base - h - R * 0.6;
+      g.fillStyle = C.canopy; g.beginPath();
+      for (let a = 0; a <= 40; a++) { const t = a / 40 * Math.PI * 2, rr2 = R * (1 + Math.sin(t * 5 + v) * 0.07); g.lineTo(cx + Math.cos(t) * rr2, cy + Math.sin(t) * rr2 * 0.85); }
+      g.closePath(); g.fill(); g.stroke();
+      g.lineWidth = 3; g.strokeStyle = C.canopy2; // krabbeltjes met het potlood
+      for (let i = 0; i < 6; i++) { const x = cx + rr(-R * 0.6, R * 0.6), y = cy + rr(-R * 0.5, R * 0.4); g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + 10, y - 12, x + 20, y); g.stroke(); }
+      for (let i = 0; i < 4; i++) { const x = cx + rr(-R * 0.6, R * 0.6), y = cy + rr(-R * 0.4, R * 0.4); g.fillStyle = '#ed1c24'; blob(g, x, y, 8); g.strokeStyle = '#000'; g.lineWidth = 2; g.stroke(); }
+    } else if (style === 'poly3d') { // low-poly: gefacetteerde kegels met licht van rechts
+      const h = rr(260, 360);
+      const box = (x, y, w, hh, d, col) => { // 3D-balkje (voorkant, bovenkant, zijkant)
+        g.fillStyle = col; g.fillRect(x, y, w, hh);
+        g.fillStyle = shade(col, 0.25); g.beginPath(); g.moveTo(x, y); g.lineTo(x + d, y - d * 0.6); g.lineTo(x + w + d, y - d * 0.6); g.lineTo(x + w, y); g.fill();
+        g.fillStyle = shade(col, -0.3); g.beginPath(); g.moveTo(x + w, y); g.lineTo(x + w + d, y - d * 0.6); g.lineTo(x + w + d, y + hh - d * 0.6); g.lineTo(x + w, y + hh); g.fill();
+      };
+      box(cx - 12, base - h * 0.35, 24, h * 0.35, 12, bark);
+      const tiers = 3;
+      for (let j = 0; j < tiers; j++) {
+        const w = 120 - j * 28, yb = base - h * 0.28 - j * h * 0.22, yt = yb - h * 0.42;
+        const L = cols[2], M = cols[1], D = cols[0];
+        g.fillStyle = L; g.beginPath(); g.moveTo(cx, yt); g.lineTo(cx - w, yb); g.lineTo(cx - w * 0.15, yb + 14); g.fill();
+        g.fillStyle = M; g.beginPath(); g.moveTo(cx, yt); g.lineTo(cx - w * 0.15, yb + 14); g.lineTo(cx + w * 0.55, yb + 8); g.fill();
+        g.fillStyle = D; g.beginPath(); g.moveTo(cx, yt); g.lineTo(cx + w * 0.55, yb + 8); g.lineTo(cx + w, yb); g.fill();
+        g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(cx, yt); g.lineTo(cx - w * 0.15, yb + 14); g.stroke();
+      }
+    } else if (style === 'candy') { // lolly's en suikerspin op zuurstokstammen
+      const h = rr(220, 320);
+      g.save(); g.beginPath(); g.rect(cx - 9, base - h, 18, h); g.clip();
+      g.fillStyle = '#fff6fa'; g.fillRect(cx - 9, base - h, 18, h);
+      g.fillStyle = '#ff4f8b'; for (let y = base - h - 20; y < base + 20; y += 26) { g.beginPath(); g.moveTo(cx - 10, y); g.lineTo(cx + 10, y - 14); g.lineTo(cx + 10, y - 4); g.lineTo(cx - 10, y + 10); g.fill(); }
+      g.restore();
+      if (v % 2) { // lolly met draaikolk
+        const R = rr(70, 95), cy = base - h - R + 10;
+        g.fillStyle = ['#ff7eb9', '#7fd3ff', '#b69cff', '#ffd23f'][v % 4]; blob(g, cx, cy, R);
+        g.strokeStyle = '#fff'; g.lineWidth = 9; g.beginPath();
+        for (let a = 0; a < 26; a++) { const t = a / 26 * Math.PI * 5, r2 = R * a / 26; g.lineTo(cx + Math.cos(t) * r2, cy + Math.sin(t) * r2); }
+        g.stroke();
+        g.fillStyle = 'rgba(255,255,255,.4)'; g.beginPath(); g.ellipse(cx - R * 0.35, cy - R * 0.4, R * 0.25, R * 0.15, -0.6, 0, Math.PI * 2); g.fill();
+      } else { // suikerspin
+        const pts = crown(base - h - 30, rr(95, 120), rr(60, 75), 24, ['#f59ac7', '#ffb8dc', '#ffd6ec', '#ffffff']);
+        for (let i = 0; i < 8; i++) { const [x, y, r] = pts[(rnd() * pts.length) | 0]; g.fillStyle = ['#ff4f4f', '#4fb0ff', '#ffe14f', '#6fe07a'][i % 4]; g.fillRect(x + rr(-r, r) * 0.5, y + rr(-r, r) * 0.5, 7, 3); }
+      }
     } else { // vulkaan: verkoolde dode boom met gloeiende scheuren
       const h = rr(220, 310);
       trunk(15, 5, h);
@@ -293,6 +352,10 @@ const MTN = {
   ice:     { amp: 340, freq: 0.0048, ridged: true, plateau: 0, snow: 0.45 },
   volcano: { amp: 230, freq: 0.0038, ridged: true, plateau: 0, snow: 0 },
   night:   { amp: 260, freq: 0.0036, ridged: false, plateau: 0, snow: 0 },
+  blocky:  { amp: 280, freq: 0.0034, ridged: false, plateau: 0, snow: 0.78, step: 40 }, // step: in blokken van 40
+  paint:   { amp: 200, freq: 0.0026, ridged: false, plateau: 0, snow: 0 },
+  poly3d:  { amp: 300, freq: 0.0040, ridged: true, plateau: 0, snow: 0, facet: 90 },   // facet: rechte vlakken
+  candy:   { amp: 220, freq: 0.0030, ridged: false, plateau: 0, snow: 0.35 },           // 'sneeuw' = glazuur
 };
 function mtnH(x, p, seed) {
   let n1 = noise1(x * p.freq + seed);
@@ -364,7 +427,19 @@ function drawSky(P) {
     disc.addColorStop(0, '#ffffff'); disc.addColorStop(0.55, P.sun); disc.addColorStop(1, rgbStr(mixC(P.sunC, [255, 140, 40], 0.35 * (1 - nightW))));
     return disc;
   });
-  circ(0, 0, R); ctx.restore();
+  // stijl-biomes: een vierkante zon (blokjes), een Paint-zon met zwarte rand en streepjes, of een retro 3D-zon
+  const st = P.t < 0.5 ? P.a.style : P.b.style;
+  if (st === 'blocky') { ctx.fillRect(-R, -R, R * 2, R * 2); ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.fillRect(-R * 0.6, -R * 0.6, R * 0.5, R * 0.5); }
+  else if (st === 'paint') {
+    ctx.fillStyle = P.sun; ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.lineWidth = 4; ctx.strokeStyle = P.sun; ctx.lineCap = 'round';
+    for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5 + 0.2; line(Math.cos(a) * R * 1.3, Math.sin(a) * R * 1.3, Math.cos(a) * R * 1.8, Math.sin(a) * R * 1.8); }
+  } else if (st === 'poly3d') {
+    ctx.fillStyle = cachedGrad('retrosun', () => { const g = ctx.createLinearGradient(0, -R, 0, R); g.addColorStop(0, '#fff27a'); g.addColorStop(1, '#ff4fb4'); return g; });
+    circ(0, 0, R * 1.3);
+    ctx.fillStyle = P.skyMid; for (let k = 0; k < 5; k++) ctx.fillRect(-R * 1.4, R * (0.15 + k * 0.24), R * 2.8, 2 + k * 2.2);
+  } else circ(0, 0, R);
+  ctx.restore();
   if (nightW > 0) { // maankraters
     ctx.fillStyle = `rgba(150,150,130,${0.45 * nightW})`;
     circ(sx - 14, sy - 8, 9); circ(sx + 14, sy + 12, 7); circ(sx + 8, sy - 20, 4.5); circ(sx - 6, sy + 20, 5);
@@ -377,11 +452,19 @@ function drawSky(P) {
   // verre wolken
   if (nightW < 0.9) {
     ctx.save(); ctx.globalAlpha = 0.75 * (1 - nightW) * (1 - volcW * 0.6);
+    const blocky = styleWeight(P, 'blocky') > 0.5, paint = styleWeight(P, 'paint') > 0.5;
     for (let i = -1; i < 6; i++) {
       const cs = cloudSprite(i & 3), w = 1600;
       const x = (((i * 360 + hash(i * 3.3) * 200 - camX * 0.025 - time * 6) % w) + w) % w - 200;
       const y = layerY(60 + hash(i * 7.7) * 140, 0.02), sc = 0.55 + hash(i * 1.1) * 0.4;
-      ctx.drawImage(cs.c, x, y, cs.w * sc, cs.h * sc);
+      if (blocky) { // blokwolken
+        ctx.fillStyle = '#ffffff'; const b = 24 * sc;
+        for (let k = 0; k < 7; k++) ctx.fillRect(x + k * b * 1.4, y + 30 + (hash(i * 5 + k) < 0.5 ? 0 : -b), b * 1.4, b * (hash(i * 5 + k) < 0.5 ? 1 : 2));
+      } else if (paint) { // Paint-wolk: witte bolletjes met een zwarte omtrek
+        ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 2.5;
+        ctx.beginPath(); for (let k = 0; k < 4; k++) { const cx = x + 40 * sc + k * 38 * sc; ctx.moveTo(cx + 30 * sc, y + 60 * sc); ctx.arc(cx, y + 60 * sc - (k % 2) * 12 * sc, 30 * sc, 0, Math.PI * 2); }
+        ctx.stroke(); ctx.fill();
+      } else ctx.drawImage(cs.c, x, y, cs.w * sc, cs.h * sc);
     }
     ctx.restore();
   }
@@ -401,8 +484,12 @@ function drawMountainLayer(P, L) {
   crossfade(P, (B) => {
     const p = MTN[B.style], base = layerY(L.base, L.fy), off = camX * L.f, amp = p.amp * L.ampK;
     // punten op een vast raster in de wereld, zodat aangrenzende tegels precies op elkaar aansluiten
-    const pts = [];
-    for (let k = Math.floor((off - 100 - PAD) / 12); k * 12 - off <= viewW + 40 + PAD; k++) { const sx = k * 12 - off; pts.push([sx, base - mtnH((sx + off) / (L.ampK * 0.9 + 0.1), p, L.seed) * L.ampK]); }
+    const pts = [], grid = p.step || p.facet || 12;
+    for (let k = Math.floor((off - 100 - PAD) / grid); k * grid - off <= viewW + 40 + PAD; k++) {
+      const sx = k * grid - off, y = base - mtnH((sx + off) / (L.ampK * 0.9 + 0.1), p, L.seed) * L.ampK;
+      if (p.step) { const yq = base - Math.round((base - y) / p.step) * p.step; pts.push([sx, yq], [sx + grid, yq]); } // blokken: vlakke treden
+      else pts.push([sx, y]);
+    }
     const path = () => { ctx.beginPath(); ctx.moveTo(pts[0][0], viewH + 10 + PAD); for (const [x, y] of pts) ctx.lineTo(x, y); ctx.lineTo(pts[pts.length - 1][0], viewH + 10 + PAD); ctx.closePath(); };
     const gr = ctx.createLinearGradient(0, base - amp, 0, base + 40);
     gr.addColorStop(0, rgbStr(mixC(col, hazeTop, L.haze))); gr.addColorStop(1, rgbStr(mixC(col, hazeTop, L.haze + 0.4)));
@@ -415,8 +502,30 @@ function drawMountainLayer(P, L) {
         ctx.beginPath(); ctx.moveTo(pts[i][0], pts[i][1]); ctx.lineTo(pts[i][0] + 70, base + 20); ctx.lineTo(pts[i][0] + 18, base + 20); ctx.fill();
       }
     }
-    if (p.snow) { ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.fillRect(pts[0][0], -PAD, viewW + 200 + 2 * PAD, base - amp * p.snow * L.ampK - (1 - L.ampK) * 40 + PAD); }
+    const snowY = base - amp * p.snow * L.ampK - (1 - L.ampK) * 40;
+    if (p.snow) { ctx.fillStyle = B.style === 'candy' ? '#ffe6f3' : 'rgba(255,255,255,.92)'; ctx.fillRect(pts[0][0], -PAD, viewW + 200 + 2 * PAD, snowY + PAD); }
+    if (B.style === 'candy') { // glazuur dat omlaag druipt
+      ctx.fillStyle = '#ffe6f3';
+      for (let x = Math.floor((pts[0][0] + off) / 34) * 34 - off; x < viewW + PAD + 40; x += 34) { const hh = 10 + hash(Math.round((x + off) / 34) * 1.7) * 26; ctx.fillRect(x, snowY - 2, 12, hh); circ(x + 6, snowY + hh, 6); }
+    } else if (B.style === 'blocky') { // blokranden en een grasrandje op elke trede
+      ctx.strokeStyle = rgbStr(mixC(col, [0, 0, 0], 0.25), 0.5); ctx.lineWidth = 2;
+      for (let i = 0; i < pts.length; i += 2) { const [x, y] = pts[i]; for (let yy = y; yy < base + 60; yy += p.step) ctx.strokeRect(x, yy, p.step, p.step); }
+      ctx.fillStyle = rgbStr(mixC(hexToRgb(B.c.canopy2), hazeTop, L.haze + 0.1));
+      for (let i = 0; i < pts.length; i += 2) if (pts[i][1] > snowY + 4) ctx.fillRect(pts[i][0], pts[i][1], p.step, 9);
+    } else if (B.style === 'poly3d') { // vlakken met licht van rechts
+      for (let i = 0; i < pts.length - 1; i++) {
+        const [x1, y1] = pts[i], [x2, y2] = pts[i + 1], lit = y2 > y1;
+        ctx.fillStyle = lit ? 'rgba(255,255,255,.16)' : 'rgba(0,0,0,.2)';
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo((x1 + x2) / 2 + (lit ? 30 : -30), base + 40); ctx.closePath(); ctx.fill();
+      }
+      ctx.strokeStyle = 'rgba(255,190,255,.45)'; ctx.lineWidth = 1.5;
+      for (let i = 0; i < pts.length - 1; i++) line(pts[i][0], pts[i][1], (pts[i][0] + pts[i + 1][0]) / 2 + (pts[i + 1][1] > pts[i][1] ? 30 : -30), base + 40);
+    }
     ctx.restore();
+    if (B.style === 'paint' || B.style === 'poly3d') { // Paint: dikke zwarte omtrek; 3D: een neon randje
+      ctx.strokeStyle = B.style === 'paint' ? '#000' : 'rgba(255,120,220,.8)'; ctx.lineWidth = B.style === 'paint' ? 4 : 2; ctx.lineJoin = 'round';
+      ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke();
+    }
     if (B.style === 'night') { ctx.strokeStyle = 'rgba(200,210,255,.3)'; ctx.lineWidth = 1.5; ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke(); }
     // vulkanen met gloeiende krater
     if (B.style === 'volcano' && L.key === 'far') {
@@ -495,7 +604,7 @@ function drawForestLayer(P) {
   crossfade(P, (B, bi, w) => {
     const st = B.style;
     ctx.fillStyle = rgbStr(col); ctx.fillRect(-10 - PAD, base - 40, viewW + 20 + 2 * PAD, viewH + 2 * PAD + Math.max(0, 40 - base));
-    const sp = st === 'savanne' ? 120 : 30;
+    const sp = st === 'savanne' ? 120 : st === 'blocky' || st === 'poly3d' || st === 'candy' ? 66 : 30;
     for (let i = Math.floor((off - 100 - PAD) / sp); i <= Math.floor((off + viewW + 100 + PAD) / sp); i++) {
       const x = i * sp + hash(i * 1.9) * sp * 0.8 - off, h = hash(i * 3.7), top = base - 50 - noise1(i * 0.15) * 70 - h * 40;
       if (st === 'jungle' || st === 'night' || st === 'swamp') {
@@ -509,6 +618,21 @@ function drawForestLayer(P) {
         const hh = 60 + h * 70;
         ctx.fillStyle = rgbStr(colD); ctx.beginPath(); ctx.moveTo(x - 16, base - 36); ctx.lineTo(x, base - 36 - hh); ctx.lineTo(x + 16, base - 36); ctx.fill();
         ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.beginPath(); ctx.moveTo(x - 6, base - 36 - hh * 0.65); ctx.lineTo(x, base - 36 - hh); ctx.lineTo(x + 6, base - 36 - hh * 0.65); ctx.fill();
+      } else if (st === 'blocky') { // blokstruiken
+        const b = 22, hb = 1 + ((h * 3) | 0), bx = Math.round(x / b) * b;
+        ctx.fillStyle = rgbStr(col); for (let k = 0; k < hb; k++) ctx.fillRect(bx, base - 40 - (k + 1) * b, b, b);
+        if (h > 0.5) { ctx.fillStyle = rgbStr(colL); ctx.fillRect(bx - b, base - 40 - hb * b, b * 3, b); }
+      } else if (st === 'paint') { // rondjes met een zwarte rand
+        ctx.fillStyle = rgbStr(col); ctx.strokeStyle = '#000'; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.arc(x, top + 10, 20 + h * 14, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      } else if (st === 'poly3d') { // piramides met een lichte en een donkere kant
+        const hh = 50 + h * 70, w = 24 + h * 12;
+        ctx.fillStyle = rgbStr(colL); ctx.beginPath(); ctx.moveTo(x - w, base - 36); ctx.lineTo(x, base - 36 - hh); ctx.lineTo(x, base - 36); ctx.fill();
+        ctx.fillStyle = rgbStr(colD); ctx.beginPath(); ctx.moveTo(x + w, base - 36); ctx.lineTo(x, base - 36 - hh); ctx.lineTo(x, base - 36); ctx.fill();
+      } else if (st === 'candy') { // lolly's
+        ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 3; line(x, base - 40, x, top + 14);
+        ctx.fillStyle = rgbStr(mixC(col, [255, 120, 190], 0.3)); circ(x, top + 8, 14 + h * 8);
+        ctx.fillStyle = 'rgba(255,255,255,.5)'; circ(x - 4, top + 4, 5);
       } else {
         ctx.strokeStyle = rgbStr(colD); ctx.lineWidth = 3; line(x, base - 40, x + (h - 0.5) * 10, top + 10);
         ctx.lineWidth = 2; line(x, top + 40, x - 12, top + 22); line(x, top + 30, x + 10, top + 16);
@@ -582,6 +706,10 @@ const TRUNK = {
   ice:     { bark: '#56606d', moss: '#f4f9ff' },
   volcano: { bark: '#1e1412', moss: null },
   night:   { bark: '#1b1f3a', moss: '#1e4a42' },
+  blocky:  { bark: '#6b4a2b', moss: '#5aa532' },
+  paint:   { bark: '#8b5a2b', moss: null },
+  poly3d:  { bark: '#3a2f6e', moss: null },
+  candy:   { bark: '#fbe3ee', moss: '#ff7eb9' },
 };
 const TRUNK_SP = 880;
 // staat er een reuzenstam (met zijtakken) in dit stuk van de laag? (laagcoördinaten)
@@ -611,7 +739,18 @@ function drawTrunkLayer(P) {
         gr.addColorStop(0, rgbStr(barkD)); gr.addColorStop(0.35, rgbStr(bark)); gr.addColorStop(0.7, rgbStr(barkL)); gr.addColorStop(1, rgbStr(barkD));
         return gr;
       });
-      ctx.fillRect(-wq / 2, y0, wq, y1 - y0); ctx.restore();
+      ctx.fillRect(-wq / 2, y0, wq, y1 - y0);
+      // stijl-biomes: blokken, Paint-randen, 3D-vlakken of zuurstokstrepen over de stam
+      if (B.style === 'blocky') { ctx.strokeStyle = rgbStr(barkD, 0.7); ctx.lineWidth = 3; const g0 = Math.floor((yOff + y0) / wq) * wq - yOff; for (let y = g0; y < y1; y += wq) ctx.strokeRect(-wq / 2, y, wq, wq); }
+      else if (B.style === 'paint') { ctx.fillStyle = '#000'; ctx.fillRect(-wq / 2 - 4, y0, 7, y1 - y0); ctx.fillRect(wq / 2 - 3, y0, 7, y1 - y0); }
+      else if (B.style === 'poly3d') { ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.fillRect(-wq / 2, y0, wq * 0.35, y1 - y0); ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(wq * 0.2, y0, wq * 0.3, y1 - y0); }
+      else if (B.style === 'candy') {
+        ctx.save(); ctx.beginPath(); ctx.rect(-wq / 2, y0, wq, y1 - y0); ctx.clip(); ctx.fillStyle = 'rgba(255,79,139,.75)';
+        const g0 = Math.floor((yOff + y0) / 70) * 70 - yOff;
+        for (let y = g0 - 70; y < y1 + 70; y += 70) { ctx.beginPath(); ctx.moveTo(-wq, y); ctx.lineTo(wq, y - wq); ctx.lineTo(wq, y - wq + 26); ctx.lineTo(-wq, y + 26); ctx.fill(); }
+        ctx.restore();
+      }
+      ctx.restore();
       // wortels onderaan
       const gy = layerY(HAZARD_Y + 10, fy);
       if (gy < viewH + 40 + PAD) { ctx.fillStyle = rgbStr(barkD); ctx.beginPath(); ctx.moveTo(x - w / 2, gy - 80); ctx.quadraticCurveTo(x - w / 2 - 10, gy - 10, x - w * 1.3, gy + 10); ctx.lineTo(x + w * 1.3, gy + 10); ctx.quadraticCurveTo(x + w / 2 + 10, gy - 10, x + w / 2, gy - 80); ctx.fill(); }

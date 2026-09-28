@@ -150,20 +150,52 @@ function drawTramps() {
 const spaceWeight = () => clamp((-(camY + viewH / 2) - 1900) / 1300, 0, 1);
 function drawSpace(w) {
   ctx.fillStyle = `rgba(3,4,18,${w})`; ctx.fillRect(0, 0, viewW, viewH);
-  ctx.fillStyle = '#ffffff';
-  for (let i = 0; i < 160; i++) {
-    const x = hash(i * 3.17) * viewW, y = ((hash(i * 7.3) * viewH * 1.5 - camY * 0.05) % viewH + viewH) % viewH;
-    ctx.globalAlpha = w * (0.3 + 0.7 * Math.abs(Math.sin(time * 1.1 + i)));
-    ctx.fillRect(x, y, hash(i) < 0.12 ? 2.4 : 1.3, hash(i) < 0.12 ? 2.4 : 1.3);
-  }
-  ctx.globalAlpha = 1;
   ctx.save(); ctx.globalAlpha = w;
-  const px = viewW * 0.22, py = viewH * 0.3;
+  const px0 = -camX * 0.012, py0 = -camY * 0.01;
+  // nevels
+  if (!Q.lite) for (const [x, y, r, c] of [[0.3, 0.35, 380, '150,70,220'], [0.75, 0.25, 320, '40,150,220'], [0.55, 0.7, 420, '220,60,140']]) {
+    const cx = ((x * viewW + px0 * (r / 300)) % (viewW + 800) + viewW + 800) % (viewW + 800) - 400, cy = y * viewH + py0;
+    ctx.fillStyle = cachedGrad('neb' + c + r, () => { const g = ctx.createRadialGradient(0, 0, 10, 0, 0, r); g.addColorStop(0, `rgba(${c},.28)`); g.addColorStop(1, `rgba(${c},0)`); return g; });
+    ctx.save(); ctx.translate(cx, cy); ctx.scale(1.6, 0.8); circ(0, 0, r); ctx.restore();
+  }
+  // sterren
+  ctx.fillStyle = '#ffffff';
+  for (let i = 0; i < 220; i++) {
+    const x = ((hash(i * 3.17) * viewW * 1.3 + px0 * (0.5 + hash(i) * 2)) % viewW + viewW) % viewW, y = ((hash(i * 7.3) * viewH * 1.5 - camY * 0.05) % viewH + viewH) % viewH;
+    ctx.globalAlpha = w * (0.3 + 0.7 * Math.abs(Math.sin(time * 1.1 + i)));
+    const sz = hash(i) < 0.12 ? 2.4 : 1.3; ctx.fillRect(x, y, sz, sz);
+  }
+  ctx.globalAlpha = w;
+  // een spiraalstelsel in de verte
+  const gx = ((viewW * 0.62 + px0 * 0.4) % (viewW + 400) + viewW + 400) % (viewW + 400) - 200, gy = viewH * 0.16;
+  ctx.save(); ctx.translate(gx, gy); ctx.rotate(time * 0.02); ctx.scale(1, 0.45);
+  for (let k = 0; k < 90; k++) { const a = k * 0.21, r = 3 + k * 0.75; ctx.fillStyle = k % 3 ? 'rgba(220,200,255,.7)' : 'rgba(255,220,180,.8)'; ctx.fillRect(Math.cos(a) * r, Math.sin(a) * r, 2, 2); ctx.fillRect(-Math.cos(a) * r, -Math.sin(a) * r, 2, 2); }
+  ctx.fillStyle = 'rgba(255,240,220,.9)'; circ(0, 0, 5); ctx.restore();
+  // geringde planeet
+  const px = viewW * 0.22 + px0 * 1.5, py = viewH * 0.3 + py0 * 1.5;
   ctx.strokeStyle = 'rgba(230,200,150,.55)'; ctx.lineWidth = 6; ctx.beginPath(); ctx.ellipse(px, py, 120, 26, -0.3, Math.PI * 0.95, Math.PI * 2.05); ctx.stroke();
   const pg = ctx.createRadialGradient(px - 25, py - 25, 10, px, py, 70); pg.addColorStop(0, '#ffd9a0'); pg.addColorStop(1, '#b8603a');
   ctx.fillStyle = pg; circ(px, py, 70);
   ctx.fillStyle = 'rgba(120,50,30,.35)'; ell(px, py - 15, 66, 7, -0.3); ell(px + 5, py + 18, 62, 6, -0.3);
   ctx.beginPath(); ctx.ellipse(px, py, 120, 26, -0.3, -Math.PI * 0.05, Math.PI * 0.95); ctx.stroke();
+  // blauwe gasreus en een rode maan
+  const bx = viewW * 0.86 + px0 * 2.2, by = viewH * 0.55 + py0 * 2.2;
+  const bg = ctx.createRadialGradient(bx - 40, by - 40, 10, bx, by, 110); bg.addColorStop(0, '#9fe3ff'); bg.addColorStop(1, '#1f4fa0');
+  ctx.fillStyle = bg; circ(bx, by, 110);
+  ctx.fillStyle = 'rgba(255,255,255,.14)'; ell(bx, by - 30, 104, 10); ell(bx, by + 20, 100, 8); ell(bx + 10, by + 55, 80, 6);
+  const mx = bx - 170 + Math.cos(time * 0.2) * 10, my = by - 120;
+  ctx.fillStyle = '#c0583a'; circ(mx, my, 22); ctx.fillStyle = 'rgba(80,20,10,.4)'; circ(mx - 6, my - 4, 5); circ(mx + 8, my + 6, 4);
+  // een ruimtestation
+  const sx2 = ((viewW * 0.45 + px0 * 3) % (viewW + 600) + viewW + 600) % (viewW + 600) - 300, sy2 = viewH * 0.12 + py0 * 3;
+  ctx.save(); ctx.translate(sx2, sy2); ctx.rotate(time * 0.05);
+  ctx.strokeStyle = '#c9d0de'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(0, 0, 34, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = 2; line(-34, 0, 34, 0); line(0, -34, 0, 34);
+  ctx.fillStyle = '#e6e9f0'; circ(0, 0, 8); ctx.fillStyle = '#2f5fb8'; ctx.fillRect(-60, -6, 20, 12); ctx.fillRect(40, -6, 20, 12);
+  ctx.restore();
+  // komeet
+  const ct = (time * 0.12) % 1, cx2 = viewW * (1.1 - ct * 1.4), cy2 = viewH * (0.05 + ct * 0.35);
+  const cg = ctx.createLinearGradient(cx2, cy2, cx2 + 160, cy2 - 50); cg.addColorStop(0, 'rgba(200,240,255,.9)'); cg.addColorStop(1, 'rgba(200,240,255,0)');
+  ctx.strokeStyle = cg; ctx.lineWidth = 4; line(cx2, cy2, cx2 + 160, cy2 - 50); ctx.fillStyle = '#ffffff'; circ(cx2, cy2, 3.5);
   // de gloed van de aarde onder je
   const hy = viewH + 2300 - clamp((-(camY + viewH / 2) - 1900) / 1300, 0, 1) * 150;
   const eg = ctx.createRadialGradient(viewW / 2, hy, 2300, viewW / 2, hy, 2520);
@@ -185,6 +217,15 @@ function drawBalloon(v) {
   ctx.fillStyle = sh; ctx.fillRect(x - rx, cy - ry, rx * 2, ry * 2);
   ctx.restore();
   ctx.fillStyle = `hsl(${b.hue},70%,40%)`; ctx.beginPath(); ctx.moveTo(x - 34, cy + 52); ctx.quadraticCurveTo(x, cy + 80, x + 34, cy + 52); ctx.lineTo(x + 20, cy + 62); ctx.lineTo(x - 20, cy + 62); ctx.fill();
+  if (b.path) { // gouden ballonpad: nummertje, en bij de eerste een bordje "naar de ruimte"
+    ctx.font = '900 30px Trebuchet MS, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.strokeText(b.step + 1, x, cy); ctx.fillStyle = b.visited ? '#7dff8a' : '#ffffff'; ctx.fillText(b.step + 1, x, cy);
+    if (b.step === 0 && !b.visited) {
+      const by = cy - ry - 34 + Math.sin(time * 3) * 4;
+      ctx.fillStyle = 'rgba(20,16,60,.8)'; ctx.fillRect(x - 92, by - 18, 184, 36);
+      ctx.font = '900 18px Trebuchet MS, sans-serif'; ctx.fillStyle = '#ffe46b'; ctx.fillText('🚀 Naar de ruimte!', x, by + 1);
+    }
+  }
 }
 function drawVine(v) {
   const p = v.pts, n = p.length;
@@ -199,7 +240,10 @@ function drawVine(v) {
     ctx.lineTo(p[n - 1].x + shakeX, p[n - 1].y);
   };
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const st = v.type === 'balloon' || v.type === 'space' ? '' : BIOMES[v.bi].style;
+  if (st === 'blocky' || st === 'paint' || st === 'poly3d' || st === 'candy') { drawStyledVine(v, st, path, shakeX); return; }
   if (v.type === 'turbo') { ctx.strokeStyle = `rgba(255,215,70,${0.25 + 0.15 * Math.sin(time * 6)})`; ctx.lineWidth = 16; path(); ctx.stroke(); }
+  if (v.type === 'space') { ctx.strokeStyle = `rgba(190,160,255,${0.25 + 0.12 * Math.sin(time * 4 + v.phase)})`; ctx.lineWidth = 15; path(); ctx.stroke(); }
   ctx.strokeStyle = v.dark; ctx.lineWidth = v.type === 'balloon' ? 5 : 7.5; path(); ctx.stroke();
   ctx.strokeStyle = v.col; ctx.lineWidth = v.type === 'balloon' ? 3 : 4.5; path(); ctx.stroke();
   if (qLevel >= 3) { ctx.strokeStyle = v.light; ctx.lineWidth = 1.4; ctx.save(); ctx.translate(-1.2, -0.5); path(); ctx.stroke(); ctx.restore(); }
@@ -224,12 +268,126 @@ function drawVine(v) {
     ctx.fillStyle = '#fff6c0';
     for (let j = 0; j < 3; j++) { const q = p[Math.floor((time * 10 + j * n / 3) % n)]; starPath(ctx, q.x, q.y, 4.5, time * 4); ctx.fill(); }
   }
+  if (v.type === 'space') { // sterretjes langs de sterrenliaan
+    ctx.fillStyle = '#ffffff';
+    for (let j = 0; j < 3; j++) { const q = p[Math.floor((time * 6 + j * n / 3 + v.phase) % n)]; starPath(ctx, q.x, q.y, 4, time * 3); ctx.fill(); }
+  }
   ctx.fillStyle = v.dark; circ(p[n - 1].x, p[n - 1].y, 3.5);
+}
+// Lianen in de stijl-biomes: blokjes, Paint-streep, een 3D-buis of een zuurstok
+function drawStyledVine(v, st, path, shakeX) {
+  const p = v.pts, n = p.length;
+  if (st === 'blocky') {
+    for (let i = 0; i < n; i++) {
+      const q = p[i], b = i % 3 === 2 ? 11 : 9, x = Math.round((q.x + shakeX) / 3) * 3, y = Math.round(q.y / 3) * 3;
+      ctx.fillStyle = v.dark; ctx.fillRect(x - b / 2 - 1.5, y - b / 2 - 1.5, b + 3, b + 3);
+      ctx.fillStyle = (i % 2) ? v.col : v.light; ctx.fillRect(x - b / 2, y - b / 2, b, b);
+      if (i % 3 === 2) { ctx.fillStyle = v.leaf; ctx.fillRect(x + (i % 2 ? 5 : -13), y - 3, 8, 8); }
+    }
+  } else if (st === 'paint') {
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 9; path(); ctx.stroke();
+    ctx.strokeStyle = v.col; ctx.lineWidth = 5; path(); ctx.stroke();
+    for (let i = 3; i < n; i += 3) {
+      const q = p[i], side = i % 2 ? 1 : -1;
+      ctx.fillStyle = v.leaf; ctx.strokeStyle = '#000'; ctx.lineWidth = 1.8;
+      ctx.beginPath(); ctx.ellipse(q.x + side * 9, q.y, 7, 4, side * 0.6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    }
+  } else if (st === 'poly3d') {
+    ctx.strokeStyle = v.dark; ctx.lineWidth = 10; path(); ctx.stroke();
+    ctx.strokeStyle = v.col; ctx.lineWidth = 7; path(); ctx.stroke();
+    ctx.save(); ctx.translate(-2, -1.5); ctx.strokeStyle = v.light; ctx.lineWidth = 2.6; path(); ctx.stroke();
+    ctx.translate(-0.5, -0.5); ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 0.9; path(); ctx.stroke(); ctx.restore();
+    for (let i = 3; i < n; i += 3) { // gefacetteerde blaadjes: twee driehoekjes in licht en schaduw
+      const q = p[i], side = i % 2 ? 1 : -1, x = q.x + side * 11, y = q.y;
+      ctx.fillStyle = v.leaf; ctx.beginPath(); ctx.moveTo(q.x, y); ctx.lineTo(x, y - 7); ctx.lineTo(x + side * 8, y); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = shade(v.leaf, -0.35); ctx.beginPath(); ctx.moveTo(q.x, y); ctx.lineTo(x + side * 8, y); ctx.lineTo(x, y + 6); ctx.closePath(); ctx.fill();
+    }
+  } else { // snoep: zuurstok met gummies
+    ctx.strokeStyle = shade(v.col, -0.3); ctx.lineWidth = 9; path(); ctx.stroke();
+    ctx.strokeStyle = '#fff6fa'; ctx.lineWidth = 7; path(); ctx.stroke();
+    ctx.setLineDash([9, 9]); ctx.lineDashOffset = -v.phase * 10; ctx.strokeStyle = v.col; ctx.lineWidth = 7; ctx.lineCap = 'butt'; path(); ctx.stroke(); ctx.setLineDash([]); ctx.lineCap = 'round';
+    for (let i = 4; i < n; i += 4) { const q = p[i]; ctx.fillStyle = SPRINKLE_COLS[i % SPRINKLE_COLS.length]; ell(q.x + (i % 8 ? 9 : -9), q.y + 2, 5, 6); ctx.fillStyle = 'rgba(255,255,255,.55)'; circ(q.x + (i % 8 ? 7.5 : -10.5), q.y, 1.8); }
+  }
+  if (v.type === 'turbo') { ctx.fillStyle = '#fff6c0'; for (let j = 0; j < 3; j++) { const q = p[Math.floor((time * 10 + j * n / 3) % n)]; starPath(ctx, q.x, q.y, 5, time * 4); ctx.fill(); } }
+  if (v.type === 'elastic') { ctx.setLineDash([5, 7]); ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 2.5; path(); ctx.stroke(); ctx.setLineDash([]); }
+  if (v.type === 'rotten') { ctx.fillStyle = '#4a321a'; for (let i = 3; i < n; i += 4) circ(p[i].x + shakeX, p[i].y, 2.5); }
+  if (v.type === 'icy') { ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 1.5; path(); ctx.stroke(); }
+}
+function drawStyledBranch(v, style, c) {
+  const L = v.bl;
+  ctx.save(); ctx.translate(v.x, v.ay);
+  if (style === 'blocky') { // drie houtblokken met gras erop
+    const b = 16;
+    for (let i = -2; i <= 1; i++) {
+      ctx.fillStyle = '#6b4a2b'; ctx.fillRect(i * b, -b / 2, b, b);
+      ctx.fillStyle = '#8a6238'; ctx.fillRect(i * b + 3, -b / 2 + 3, 5, 5); ctx.fillRect(i * b + 9, -b / 2 + 9, 4, 4);
+      ctx.fillStyle = c.canopy2; ctx.fillRect(i * b, -b / 2 - 5, b, 6);
+    }
+    ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 1.5; ctx.strokeRect(-2 * b, -b / 2 - 5, 4 * b, b + 5);
+  } else if (style === 'paint') { // een bruine balk met een dikke zwarte rand
+    ctx.rotate(v.tilt);
+    ctx.fillStyle = '#8b5a2b'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(-L, -7); ctx.lineTo(L * 0.7, -6); ctx.lineTo(L * 0.72, 7); ctx.lineTo(-L - 2, 8); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = c.canopy2; ctx.beginPath(); ctx.ellipse(-L * 0.5, -14, 12, 7, -0.4, 0, Math.PI * 2); ctx.fill(); ctx.lineWidth = 2; ctx.stroke();
+  } else if (style === 'poly3d') { // 3D-balk: voorkant, bovenkant en zijkant
+    const w = L * 1.7, h = 13, d = 9, x = -L;
+    ctx.fillStyle = '#5a4fcf'; ctx.fillRect(x, -h / 2, w, h);
+    ctx.fillStyle = '#8f86f0'; ctx.beginPath(); ctx.moveTo(x, -h / 2); ctx.lineTo(x + d, -h / 2 - d * 0.7); ctx.lineTo(x + w + d, -h / 2 - d * 0.7); ctx.lineTo(x + w, -h / 2); ctx.fill();
+    ctx.fillStyle = '#34298f'; ctx.beginPath(); ctx.moveTo(x + w, -h / 2); ctx.lineTo(x + w + d, -h / 2 - d * 0.7); ctx.lineTo(x + w + d, h / 2 - d * 0.7); ctx.lineTo(x + w, h / 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,140,230,.9)'; ctx.lineWidth = 1.2; ctx.strokeRect(x, -h / 2, w, h);
+  } else { // snoep: een chocoladereep met een lolly
+    ctx.rotate(v.tilt);
+    ctx.fillStyle = '#5a2e16'; ctx.fillRect(-L, -8, L * 1.75, 15);
+    ctx.fillStyle = '#7a4424'; for (let x = -L + 2; x < L * 0.7; x += 13) ctx.fillRect(x, -6, 10, 5);
+    ctx.fillStyle = '#ffe6f3'; ctx.fillRect(-L, -10, L * 1.75, 4); for (let x = -L + 4; x < L * 0.7; x += 11) circ(x, -6, 2.5);
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; line(-L * 0.5, -8, -L * 0.6, -26);
+    ctx.fillStyle = '#ff7eb9'; circ(-L * 0.6, -31, 7); ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(-L * 0.6, -31, 4, 0, 4.5); ctx.stroke();
+  }
+  ctx.restore();
+}
+// Een planetoïde (ruimte): grijze bobbelige rots met kraters
+function drawAsteroid(x, y, r, rot, col) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
+  ctx.fillStyle = shade(col, -0.35); ctx.beginPath();
+  for (let i = 0; i < 11; i++) { const a = i / 11 * Math.PI * 2, rr = r * (0.82 + hash(i * 3.1 + r) * 0.26); ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = col; ctx.beginPath();
+  for (let i = 0; i < 11; i++) { const a = i / 11 * Math.PI * 2, rr = r * (0.78 + hash(i * 3.1 + r) * 0.24); ctx.lineTo(Math.cos(a) * rr - 2, Math.sin(a) * rr - 2); }
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = shade(col, -0.25); circ(-r * 0.3, -r * 0.1, r * 0.2); circ(r * 0.3, r * 0.3, r * 0.14); circ(r * 0.15, -r * 0.45, r * 0.1);
+  ctx.fillStyle = 'rgba(255,255,255,.18)'; circ(-r * 0.35, -r * 0.4, r * 0.18);
+  ctx.restore();
+}
+// Dingen in de ruimte: planetoïden (stuiteren), de ufo en satellieten
+function drawSpaceObjs() {
+  for (const o of spaceObjs) {
+    if (o.x < camX - 200 || o.x > camX + viewW + 200 || o.y < camY - 200 || o.y > camY + viewH + 200) continue;
+    if (o.type === 'rock') {
+      if (!Q.lite) { ctx.globalAlpha = 0.35; ctx.drawImage(glowSprite('200,180,255').c, o.x - o.r * 1.6, o.y - o.r * 1.6, o.r * 3.2, o.r * 3.2); ctx.globalAlpha = 1; }
+      drawAsteroid(o.x, o.y, o.r, o.ph, '#8f86a8');
+    } else if (o.type === 'ufo') {
+      const x = o.x, y = o.y;
+      if (!o.done) { ctx.fillStyle = `rgba(170,255,140,${0.12 + 0.06 * Math.sin(time * 8)})`; ctx.beginPath(); ctx.moveTo(x - 20, y + 8); ctx.lineTo(x + 20, y + 8); ctx.lineTo(x + 60, y + 170); ctx.lineTo(x - 60, y + 170); ctx.fill(); }
+      ctx.fillStyle = 'rgba(170,230,255,.75)'; ell(x, y - 12, 22, 18);
+      ctx.fillStyle = '#7ddc5a'; circ(x, y - 12, 8); ctx.fillStyle = '#111'; circ(x - 3, y - 14, 1.8); circ(x + 3, y - 14, 1.8);
+      ctx.fillStyle = '#9aa3b5'; ell(x, y, 50, 13); ctx.fillStyle = '#c9d0de'; ell(x, y - 3, 44, 7);
+      for (let k = 0; k < 6; k++) { ctx.fillStyle = ((time * 6 | 0) + k) % 3 ? '#ffe14f' : '#ff5a7a'; circ(x - 38 + k * 15.2, y + 4, 3); }
+    } else { // satelliet
+      ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(Math.sin(o.ph * 0.3) * 0.4);
+      ctx.fillStyle = '#2f5fb8'; ctx.fillRect(-58, -9, 38, 18); ctx.fillRect(20, -9, 38, 18);
+      ctx.strokeStyle = '#9fc3ff'; ctx.lineWidth = 1; for (let k = 0; k < 3; k++) { line(-58 + k * 13, -9, -58 + k * 13, 9); line(20 + k * 13, -9, 20 + k * 13, 9); }
+      ctx.fillStyle = '#d7dbe4'; ctx.fillRect(-16, -13, 32, 26); ctx.fillStyle = '#b0b6c2'; ctx.fillRect(-16, 5, 32, 8);
+      ctx.strokeStyle = '#d7dbe4'; ctx.lineWidth = 2; line(0, -13, 0, -26); ctx.fillStyle = Math.sin(o.ph * 5) > 0 ? '#ff4f4f' : '#6b1d1d'; circ(0, -27, 3);
+      ctx.restore();
+    }
+  }
 }
 // De tak waar een liaan aan hangt (blijft staan als een rotte liaan breekt)
 function drawBranch(v) {
   if (v.balloon) { drawBalloon(v); return; }
+  if (v.space) { drawAsteroid(v.pts[0].x, v.pts[0].y - v.space.r * 0.55, v.space.r, v.space.ph + time * 0.15, v.space.col); return; }
   const style = BIOMES[v.bi].style, c = BIOMES[v.bi].c;
+  if (style === 'blocky' || style === 'paint' || style === 'poly3d' || style === 'candy') { drawStyledBranch(v, style, c); return; }
   ctx.save(); ctx.translate(v.x, v.ay); ctx.rotate(v.tilt);
   const L = v.bl;
   const wood = style === 'volcano' ? '#3a2a22' : style === 'ice' ? '#6b5a4e' : '#6b4423';
@@ -583,12 +741,24 @@ function drawHazard(P) {
     const x = i * 70 + hash(i) * 50 + Math.sin(time * 0.8 + i) * 8, y = HAZARD_Y + 14 + hash(i * 2.2) * 50;
     ell(x, y, 8 + hash(i * 3) * 16, 1.6);
   }
-  ctx.strokeStyle = lavaW > 0.5 ? 'rgba(255,240,160,.75)' : 'rgba(255,255,255,.55)'; ctx.lineWidth = 3;
+  ctx.strokeStyle = lavaW > 0.5 ? 'rgba(255,240,160,.75)' : styleWeight(P, 'candy') > 0.5 ? 'rgba(160,90,60,.9)' : 'rgba(255,255,255,.55)'; ctx.lineWidth = 3;
   ctx.beginPath();
   for (let x = sx; x <= x1 + 14; x += 14) { const y = waveY(x) + 1.5; x === sx ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
   ctx.stroke();
   // voorwerpen op het oppervlak, per biome
   const st = P.t < 0.5 ? P.a.style : P.b.style;
+  if (st === 'poly3d') { // neon-raster in perspectief: de rasterzee
+    ctx.strokeStyle = 'rgba(255,120,230,.55)'; ctx.lineWidth = 1.6;
+    const vx = camX + viewW / 2;
+    for (let k = 0; k < 7; k++) { const y = HAZARD_Y + 6 + k * k * 6 + ((time * 20) % 12) * (k / 7); line(x0, y, x1, y); }
+    for (let i = Math.floor((x0 - vx) / 90) - 6; i <= Math.ceil((x1 - vx) / 90) + 6; i++) { const x = vx + i * 90 - (camX % 90); line(x, HAZARD_Y + 4, vx + (x - vx) * 2.4, bottom); }
+  } else if (st === 'paint') { ctx.strokeStyle = '#000'; ctx.lineWidth = 4; ctx.beginPath(); for (let x = sx; x <= x1 + 14; x += 14) { const y = waveY(x); x === sx ? ctx.moveTo(x, y) : ctx.lineTo(x, y); } ctx.stroke(); }
+  else if (st === 'blocky') { // blokwater: vierkantjes met lichte en donkere tinten
+    for (let i = Math.floor(x0 / 24); i < x1 / 24 + 1; i++) for (let j = 0; j < 4; j++) {
+      const h = hash(i * 7.1 + j * 3.3 + Math.floor(time * 2) * 0.37);
+      if (h < 0.3) { ctx.fillStyle = h < 0.12 ? 'rgba(255,255,255,.28)' : 'rgba(10,30,120,.25)'; ctx.fillRect(i * 24, HAZARD_Y + 4 + j * 24, 24, 24); }
+    }
+  }
   for (let i = Math.floor(x0 / 160); i < x1 / 160 + 1; i++) {
     const h = hash(i * 9.7), x = i * 160 + hash(i * 4.4) * 110, y = waveY(x);
     if (st === 'jungle' || st === 'swamp' || st === 'night') {
@@ -605,6 +775,11 @@ function drawHazard(P) {
     } else if (st === 'volcano') {
       if (h < 0.45) { ctx.fillStyle = '#3a1a10'; ctx.beginPath(); ctx.moveTo(x - 28, y + 5); ctx.lineTo(x - 18, y - 3); ctx.lineTo(x + 20, y - 2); ctx.lineTo(x + 30, y + 6); ctx.fill(); ctx.strokeStyle = '#ffcc4a'; ctx.lineWidth = 1.5; line(x - 10, y - 1, x + 5, y + 4); }
       if (h > 0.8 && Math.random() < 0.02) addPart({ x, y, vx: rand(-30, 30), vy: -rand(80, 200), life: 0.6, max: 0.6, col: '#ffb020', r: rand(2, 4) });
+    } else if (st === 'candy') { // marshmallows en snoepjes drijven in de chocola
+      if (h < 0.4) { ctx.fillStyle = '#fff4f8'; ctx.fillRect(x - 10, y - 8, 20, 14); ctx.fillStyle = '#ffd1e6'; ctx.fillRect(x - 10, y - 8, 20, 4); }
+      else if (h < 0.55) { ctx.fillStyle = SPRINKLE_COLS[(h * 50 | 0) % SPRINKLE_COLS.length]; ell(x, y, 9, 6); ctx.fillStyle = 'rgba(255,255,255,.5)'; circ(x - 3, y - 2, 2); }
+    } else if (st === 'blocky') {
+      if (h < 0.25) { ctx.fillStyle = '#3a8a2a'; ctx.fillRect(Math.round(x / 8) * 8, y - 4, 24, 8); } // waterlelieblokje
     } else if (st === 'savanne') {
       if (h < 0.35) { ctx.strokeStyle = 'rgba(120,80,30,.45)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(x, y + 16, 20, 5, 0, time * 0.5, time * 0.5 + 4.5); ctx.stroke(); ctx.beginPath(); ctx.ellipse(x, y + 16, 10, 2.5, 0, -time * 0.7, -time * 0.7 + 4); ctx.stroke(); }
     }
@@ -633,6 +808,7 @@ function drawTexts() {
   }
   ctx.globalAlpha = 1;
 }
+const PAINT_COLS = ['#ed1c24', '#ffc90e', '#22b14c', '#00a2e8', '#a349a4'], SPRINKLE_COLS = ['#ff4f8b', '#4fb0ff', '#ffe14f', '#6fe07a', '#b69cff'];
 function drawAmbient(P) {
   const type = P.t < 0.5 ? P.a.particle : P.b.particle, ga = ctx.globalAlpha;
   // wisselende doorzichtigheid via globalAlpha: geen nieuwe kleurstring per deeltje per beeld
@@ -654,6 +830,21 @@ function drawAmbient(P) {
         const a = 0.3 + 0.7 * Math.abs(Math.sin(time * 1.7 + p.ph));
         ctx.globalAlpha = ga * a * 0.2; ctx.fillStyle = 'rgb(170,210,255)'; circ(p.x, p.y, 6 * p.s);
         ctx.globalAlpha = ga * a; ctx.fillStyle = 'rgb(210,235,255)'; circ(p.x, p.y, 1.6 * p.s); break;
+      }
+      case 'pixel': ctx.fillStyle = p.s > 1 ? 'rgba(96,181,56,.85)' : 'rgba(255,255,255,.85)'; ctx.fillRect(Math.round(p.x / 4) * 4, Math.round(p.y / 4) * 4, 5 * p.s, 5 * p.s); break;
+      case 'paint':
+        ctx.fillStyle = PAINT_COLS[(p.ph * 10 | 0) % PAINT_COLS.length]; ctx.globalAlpha = ga * 0.8;
+        ell(p.x, p.y, 5 * p.s, 3.5 * p.s, p.ph); ell(p.x + 4 * p.s, p.y - 3 * p.s, 2 * p.s, 2 * p.s); break;
+      case 'cube': {
+        const r = 4 * p.s, a = time * 0.8 + p.ph, c = Math.cos(a) * r, sn = Math.sin(a) * r;
+        ctx.strokeStyle = 'rgba(143,245,229,.8)'; ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.moveTo(p.x + c, p.y + sn * 0.5 - r); ctx.lineTo(p.x - sn, p.y + c * 0.5 - r); ctx.lineTo(p.x - c, p.y - sn * 0.5 - r); ctx.lineTo(p.x + sn, p.y - c * 0.5 - r); ctx.closePath();
+        ctx.moveTo(p.x + c, p.y + sn * 0.5 + r); ctx.lineTo(p.x - sn, p.y + c * 0.5 + r); ctx.lineTo(p.x - c, p.y - sn * 0.5 + r); ctx.lineTo(p.x + sn, p.y - c * 0.5 + r); ctx.closePath();
+        ctx.stroke(); break;
+      }
+      case 'sprinkle': {
+        ctx.strokeStyle = SPRINKLE_COLS[(p.ph * 10 | 0) % SPRINKLE_COLS.length]; ctx.lineWidth = 2.6 * p.s; ctx.lineCap = 'round';
+        const a = time * 2 + p.ph; line(p.x - Math.cos(a) * 4 * p.s, p.y - Math.sin(a) * 4 * p.s, p.x + Math.cos(a) * 4 * p.s, p.y + Math.sin(a) * 4 * p.s); break;
       }
     }
   }
@@ -758,6 +949,7 @@ function renderScene() {
   drawFinish();
   drawShrooms();
   drawTramps();
+  if (spaceObjs.length) drawSpaceObjs();
   drawPortals(false);
   const vx0 = camX - 300, vx1 = camX + viewW + 420, vy0 = camY - 60, vy1 = camY + viewH + 60;
   for (const v of vines) if (v.x > vx0 && v.rest[2] - 200 < vx1 && v.ay < vy1 && v.rest[3] + 150 > vy0) drawVine(v);

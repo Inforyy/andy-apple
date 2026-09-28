@@ -10,6 +10,23 @@ function showScreen(id) {
   curScreen = id;
   for (const s of document.querySelectorAll('.screen')) s.classList.toggle('show', s.id === id);
   $('hud').classList.toggle('hidden', !(game.mode === 'ready' || game.mode === 'playing' || game.mode === 'dying' || game.mode === 'done' || game.mode === 'mpcount' || game.mode === 'mpend'));
+  renderHeadStart();
+}
+// ---- Head-start: alleen vóór de eerste sprong van een run in Eindeloos ----
+function renderHeadStart() {
+  const show = game.mode === 'ready' && !game.career && !game.mp && !curScreen && !LOCAL.on;
+  $('headStart').classList.toggle('hidden', !show);
+  if (!show) return;
+  $('hsBtns').innerHTML = HEADSTARTS.map((h, i) => { const ok = save.apples >= h.cost; return `<button class="btn sm${ok ? ' green' : ''}" data-hs="${i}"${ok ? '' : ' disabled'}>${h.m} m · 🍎 ${h.cost}</button>`; }).join('');
+}
+function buyHeadStart(i) {
+  const h = HEADSTARTS[i];
+  if (!h || game.mode !== 'ready' || game.career || game.mp || curScreen || save.apples < h.cost) return;
+  save.apples -= h.cost;
+  persist();
+  Sfx.buy();
+  run.headStart = h.m;
+  begin();
 }
 function showBanner(big, small) {
   const b = $('banner');
@@ -54,7 +71,8 @@ function startReady(level) {
 function retry() { startReady(game.career ? game.career.n : null); }
 function begin() {
   game.mode = 'playing';
-  if (lvl('rocket') > 0 && !game.career) startRocket(); else jump();
+  renderHeadStart();
+  if (!game.career && (lvl('rocket') > 0 || run.headStart)) startRocket(run.headStart || 0); else jump();
 }
 // XP: vooral afstand, plus wat voor trucs en appels
 function awardXp(extra) {
@@ -110,12 +128,16 @@ function gameOver(quit) {
   save.totalDistance += dist;
   save.runs++;
   if (!game.career) save.maxBiome = Math.max(save.maxBiome, biomeIndexAt(dist));
-  const ranked = !game.career && DBG.speed === 1; // runs met een aangepaste debug-snelheid tellen niet mee
+  const ranked = !game.career && Math.abs(DBG.speed - 1) < 0.001; // runs met een aangepaste debug-snelheid tellen niet mee
   if (ranked) save.lbBest = Math.max(save.lbBest, dist);
   const xp = awardXp();
   persist();
   $('btnOverLb').style.display = game.career || !lbOn() ? 'none' : '';
   $('ovRank').classList.add('hidden');
+  if (!ranked && !game.career && lbOn() && dist > save.lbBest) { // laat zien waarom deze afstand niet op de ranglijst komt
+    $('ovRank').textContent = `Telt niet mee voor de ranglijst: de debug-snelheid staat op ${Math.round(DBG.speed * 100)}%.`;
+    $('ovRank').classList.remove('hidden');
+  }
   if (ranked && lbOn()) {
     lbSubmit().then(() => lbRank()).then(r => {
       if (curScreen !== 'over' || !r) return;
@@ -330,7 +352,9 @@ function uiInit() {
   on('btnMpJoin', () => { MP.local = false; mpJoinStart(); });
   on('btnMpLocal', () => { mpClose(false); MP.local = true; MP.aiLvl = null; mpMsg(''); mpRender(); });
   const AI_KEY = 'andyApples.aiLevel';
-  on('btnMpAi', () => { mpClose(false); MP.local = true; let l = 1; try { l = clamp(+(localStorage.getItem(AI_KEY) || 1), 0, 3); } catch (e) { /* */ } MP.aiLvl = l; mpMsg(''); mpRender(); });
+  const vsKiwi = () => { mpClose(false); MP.local = true; let l = 1; try { l = clamp(+(localStorage.getItem(AI_KEY) || 1), 0, 3); } catch (e) { /* */ } MP.aiLvl = l; mpMsg(''); };
+  on('btnMpAi', () => { vsKiwi(); if (MP.sel.mode === 'chase') MP.sel.mode = 'race'; mpRender(); });
+  on('btnMpChase', () => { vsKiwi(); MP.sel.mode = 'chase'; mpRender(); });
   for (const b of document.querySelectorAll('[data-ai]')) on(b, () => { MP.aiLvl = +b.dataset.ai; try { localStorage.setItem(AI_KEY, MP.aiLvl); } catch (e) { /* */ } mpRender(); });
   on('btnMpConnect', mpConnect);
   on('btnMpMakeAnswer', mpMakeAnswer);
@@ -339,6 +363,7 @@ function uiInit() {
   on('btnMpCancel', () => { if (MP.local) { MP.local = false; MP.aiLvl = null; } else mpClose(MP.inRoom); mpMsg(''); mpRender(); });
   on('mpModeRace', () => mpSelect('race'));
   on('mpModeEnd', () => mpSelect('endurance'));
+  on('mpModeChase', () => mpSelect('chase'));
   for (const b of document.querySelectorAll('[data-len]')) on(b, () => mpSelect(null, +b.dataset.len));
   on('btnMpStart', () => MP.local ? localStart(MP.sel, MP.aiLvl) : mpHostStart(MP.sel));
   on('btnMpAgain', mpAgain);
@@ -382,6 +407,7 @@ function uiInit() {
   on('btnQuit', () => { if (game.mp && game.mp.local) { game.paused = false; Music.duck(); openMp(); return; } if (game.mp) { showScreen(null); mpForfeit('Je hebt opgegeven.'); return; } game.paused = false; Music.duck(); if (game.mode === 'ready') toMenu(); else gameOver(true); });
   $('btnPause').addEventListener('click', e => { e.currentTarget.blur(); pauseGame(); });
   $('btnPause').addEventListener('pointerdown', e => e.stopPropagation());
+  $('hsBtns').addEventListener('click', e => { const b = e.target.closest('[data-hs]'); if (b) { Sfx.init(); b.blur(); buyHeadStart(+b.dataset.hs); } });
 
   on('btnExport', () => {
     const fname = `andy-apples-save-${new Date().toISOString().slice(0, 10)}.json`;

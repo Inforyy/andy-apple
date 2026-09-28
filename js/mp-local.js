@@ -27,13 +27,14 @@ function useWorld(i) {
 function freshWorld(i, cfg, seed) {
   const w = {};
   for (const k in WORLD_VARS) w[k] = WORLD_VARS[k][2]();
-  w.mp = { local: true, idx: i, mode: cfg.mode, len: cfg.mode === 'race' ? cfg.len : 0, seed, t: 0, myEv: null, falls: 0, result: null,
+  // chase: true = dit is Kiwi die jou achternazit, false = jij wordt achternagezeten (alleen in de modus achtervolging)
+  w.mp = { local: true, idx: i, mode: cfg.mode, len: cfg.mode === 'race' ? cfg.len : 0, seed, t: 0, myEv: null, falls: 0, result: null, chase: cfg.mode === 'chase' ? i === 1 : null,
     stormX: START_X - 1100, bolt: 0, boltX: 0, oppEv: null, oppT: 0 };
   return w;
 }
 function localStart(cfg, aiLvl) {
-  const mode = cfg.mode === 'endurance' ? 'endurance' : 'race';
   const ai = aiLvl != null && aiLvl >= 0 ? { lvl: clamp(aiLvl | 0, 0, AI_LV.length - 1) } : null;
+  const mode = cfg.mode === 'endurance' ? 'endurance' : cfg.mode === 'chase' && ai ? 'chase' : 'race';
   if (LOCAL.on && !!LOCAL.ai !== !!ai) LOCAL.score = [0, 0];
   LOCAL.ai = ai;
   LOCAL.cfg = { mode, len: [500, 1000, 2000].includes(cfg.len) ? cfg.len : 1000 };
@@ -42,7 +43,7 @@ function localStart(cfg, aiLvl) {
   resize();
   const seed = 1 + ((Math.random() * 2147483000) | 0);
   LOCAL.worlds = [0, 1].map(i => freshWorld(i, LOCAL.cfg, seed));
-  LOCAL.result = null; LOCAL.count = 3.5; LOCAL.lastCount = 99;
+  LOCAL.result = null; LOCAL.count = 3.5; LOCAL.lastCount = 99; LOCAL.kAcc = 0;
   game.paused = false; game.career = null;
   for (const i of [0, 1]) { useWorld(i); resetWorld(); }
   game.mode = 'mpcount';
@@ -51,7 +52,8 @@ function localStart(cfg, aiLvl) {
   showScreen(null);
   $('hud').classList.add('local');
   $('mpHud').classList.add('hidden');
-  showBanner(mode === 'race' ? `Race · ${LOCAL.cfg.len} m` : 'Endurance', mode === 'race' ? 'Eerst bij de finish wint' : 'Blijf de storm voor');
+  if (mode === 'chase') showBanner('Achtervolging!', `Kiwi komt je na ${CHASE_DELAY} tellen achterna. Blijf hem voor!`);
+  else showBanner(mode === 'race' ? `Race · ${LOCAL.cfg.len} m` : 'Endurance', mode === 'race' ? 'Eerst bij de finish wint' : 'Blijf de storm voor');
 }
 function localExit() {
   if (!LOCAL.on) return;
@@ -94,12 +96,17 @@ function localLoop(dt) {
     renderAlpha = acc / STEP;
     for (const i of [0, 1]) {
       useWorld(i);
-      for (let k = 0; k < n; k++) { if (LOCAL.ai && i === 1) aiThink(); step(DT); }
+      let m = n;
+      if (i === 1 && game.mp.chase && game.mode === 'playing') { // achtervolging: Kiwi's tijd loopt steeds iets sneller
+        LOCAL.kAcc += n * (chaseK() - 1); const x = Math.floor(LOCAL.kAcc); LOCAL.kAcc -= x; m += x;
+      }
+      for (let k = 0; k < m; k++) { if (LOCAL.ai && i === 1) aiThink(); step(DT); }
       updateEffects(gdt);
       const oy = camY;
       interpBegin(true); updateCamera(gdt); interpEnd();
       updateZoom(gdt);
-      genUntil(camX + viewW + 900);
+      // Kiwi kijkt tot 1700 px vooruit om zijn sprong te kiezen: zorg dat die lianen er al zijn, ook op een klein scherm
+      genUntil(Math.max(camX + viewW + 900, LOCAL.ai && i === 1 ? G.x + 2600 : 0));
       const P = paletteAt((camX + viewW * 0.5 - START_X) / PX_PER_M);
       { const dx = camX - lastCamX, dy = camY - oy; withBaseView(() => updateAmbient(gdt, P.t < 0.5 ? P.a.particle : P.b.particle, dx, dy)); }
       updateLife(gdt, P);
@@ -149,6 +156,7 @@ function aiThink() {
   const A = LOCAL.ai, L = AI_LV[A.lvl];
   if (!G || game.mode !== 'playing' || G.state === 'dead') { A.relAt = 0; if (input.down && game.mode === 'playing') aiSet(false); return; }
   A.t = (A.t || 0) + DT;
+  if (game.mp.chase && game.mp.t < CHASE_DELAY) { if (input.down) aiSet(false); return; } // achtervolging: Kiwi geeft je een voorsprong
   if (G.state === 'stand') { aiSet(!input.down); return; }  // springen van de rots
   if (G.state === 'rocket') return;
   if (G.state === 'hang') {
@@ -190,13 +198,48 @@ function aiThink() {
   else { A.nearT = 0; if (A.air > 0.15) aiSet(false); }
 }
 
+// =====================================================================
+//  Achtervolging: Kiwi komt je achterna en probeert je te pakken
+//  Kiwi start CHASE_DELAY seconden later. Zijn tijd loopt steeds iets sneller (en extra snel als hij ver achter ligt),
+//  dus hoe goed je ook bent: vroeg of laat haalt hij je in. Hoe lang hou je het vol?
+// =====================================================================
+const CHASE_DELAY = 3;
+function chaseK() {
+  const M = game.mp, me = LOCAL.worlds[0].G;
+  const t = Math.max(0, M.t - CHASE_DELAY), gap = me ? me.x - G.x : 0;
+  return 1 + Math.min(0.55, t / 140) + clamp((gap - 2500) / 6000, 0, 0.6);
+}
+function chaseEnd(M) {
+  const t = M.myEv ? M.myEv.t : M.t, ms = Math.round(t * 1000), rec = ms > save.chaseBest;
+  if (rec) { save.chaseBest = ms; persist(); }
+  LOCAL.why = `Kiwi had je na ${fmtTime(t)} te pakken.`;
+  LOCAL.chaseRec = rec;
+  showBanner('Gepakt!', rec ? 'Nieuw record!' : LOCAL.why);
+  Sfx.steal(); Sfx.tone(392, 0.25, 'triangle', 0.1, 0, 0.2); Sfx.tone(262, 0.5, 'triangle', 0.1, 0, 0.42);
+  shake(8, 0.4); flashT = 0.3;
+  const worlds = LOCAL.worlds;
+  setTimeout(() => { if (LOCAL.on && LOCAL.worlds === worlds) localShowResult(); }, 2200);
+}
+function chaseShowResult() {
+  const P = [0, 1].map(i => { const W = i === curW ? grabWorld() : LOCAL.worlds[i]; return { M: W.mp, run: W.run }; });
+  const me = P[0], t = me.M.myEv ? me.M.myEv.t : me.M.t;
+  $('mpCount').textContent = '';
+  $('mpResTitle').textContent = 'Gepakt!';
+  $('mpResSub').textContent = LOCAL.why + ` (Kiwi: ${AI_LV[LOCAL.ai.lvl].name.toLowerCase()})`;
+  const row = (label, a) => `<div><span>${label}</span><b>${a}</b></div>`;
+  $('mpResTable').innerHTML = row('Volgehouden', fmtTime(t)) + row('📏 Afstand', Math.floor(me.run.dist) + ' m') + row('Gevallen', me.M.falls + '×') + row('Appels', Math.max(0, Math.floor(me.run.earned)));
+  $('mpResScore').textContent = (LOCAL.chaseRec ? '🏆 Nieuw record! ' : '') + `Record: ${fmtTime(save.chaseBest / 1000)}`;
+  mpAgainRender();
+  showScreen('mpRes');
+}
+
 // hangt de andere speler aan een liaan, dan buigt die liaan in jouw wereld ook mee
 function localPin(i) {
   const o = LOCAL.worlds[1 - i].G;
   ghostPin.v = null;
   if (!o || o.state !== 'hang' || !o.vine) return;
   const v = vines.find(w => w.id === o.vine.id);
-  if (!v || v === G.vine || !v.anchored || o.k >= v.pts.length) return;
+  if (!v || v.id < MP_FREE_VINES || v === G.vine || !v.anchored || o.k >= v.pts.length) return;
   const an = v.pts[0], reach = o.k * SEG_LEN * (v.type === 'elastic' ? ELASTIC_STRETCH : 1) + 60;
   if (Math.hypot(o.hx - an.x, o.hy - an.y) < reach) { ghostPin.v = v; ghostPin.k = o.k; ghostPin.x = o.hx; ghostPin.y = o.hy; }
 }
@@ -204,6 +247,11 @@ function localPin(i) {
 function localCheck() {
   if (LOCAL.result !== null || game.mode !== 'playing') return;
   const A = LOCAL.worlds[0].mp, B = LOCAL.worlds[1].mp, a = A.myEv, b = B.myEv;
+  if (A.mode === 'chase') { // gepakt zodra Kiwi je inhaalt (de G-objecten zelf blijven dezelfde, ook als hun wereld niet is ingeladen)
+    const me = LOCAL.worlds[0].G, k = LOCAL.worlds[1].G;
+    if (A.t > CHASE_DELAY && k.state !== 'dead' && k.x >= me.x - 25) { A.myEv = { t: A.t }; localEnd(1); }
+    return;
+  }
   if (!a && !b) return;
   let w;
   if (A.mode === 'race') w = a && b ? (a.t < b.t ? 0 : b.t < a.t ? 1 : -1) : a ? 0 : 1;
@@ -218,6 +266,7 @@ function localEnd(w) {
   if (w >= 0) LOCAL.score[w]++;
   const race = M.mode === 'race';
   const nm = localName(w), jij = LOCAL.ai && w === 0;
+  if (M.mode === 'chase') return chaseEnd(M);
   const why = w < 0 ? (race ? 'Tegelijk over de finish!' : 'Tegelijk gevallen!') : race ? `${nm} ${jij ? 'was' : 'was'} als eerste bij de finish.` : `${nm} hield het langst vol.`;
   LOCAL.why = why;
   showBanner(w < 0 ? 'Gelijkspel!' : jij ? 'Gewonnen!' : `${nm} wint!`, why);
@@ -230,6 +279,7 @@ function localEnd(w) {
 }
 function localShowResult() {
   const w = LOCAL.result, race = LOCAL.cfg.mode === 'race';
+  if (LOCAL.cfg.mode === 'chase') { chaseShowResult(); return; }
   $('mpCount').textContent = '';
   $('mpResTitle').textContent = w < 0 ? 'Gelijkspel!' : LOCAL.ai && w === 0 ? 'Gewonnen!' : `${localName(w)} wint!`;
   $('mpResSub').textContent = LOCAL.why + (LOCAL.ai ? ` (Kiwi: ${AI_LV[LOCAL.ai.lvl].name.toLowerCase()})` : '');
@@ -263,6 +313,7 @@ function drawLocalHud() {
   const t = fmtTime(M.result ? M.endT : (LOCAL.result !== null ? LOCAL.worlds[0].mp.endT : M.t)).slice(0, -1);
   let extra = '⏱ ' + t;
   if (M.mode === 'endurance') extra += G.state === 'dead' ? ' · af' : ` · 🌩️ ${Math.max(0, Math.floor((G.x - M.stormX) / PX_PER_M))} m`;
+  if (M.chase === false) extra += M.t < CHASE_DELAY ? ` · Kiwi start over ${Math.ceil(CHASE_DELAY - M.t)}` : ` · 🦧 Kiwi ${Math.max(0, Math.floor((G.x - LOCAL.worlds[1].G.x) / PX_PER_M))} m achter je`;
   ctx.font = `900 ${18 * u}px Trebuchet MS, sans-serif`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
   const label = localName(M.idx), lw = ctx.measureText(label).width;
   const pill = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(x + h / 2, y); ctx.arcTo(x + w, y, x + w, y + h, h / 2); ctx.arcTo(x + w, y + h, x, y + h, h / 2); ctx.arcTo(x, y + h, x, y, h / 2); ctx.arcTo(x, y, x + w, y, h / 2); ctx.fill(); };
@@ -278,7 +329,7 @@ function drawLocalHud() {
   pill(x0, y0 + h + 6 * u, ew + 20 * u, 24 * u, 'rgba(0,0,0,.4)');
   ctx.fillStyle = '#fff'; ctx.fillText(extra, x0 + 10 * u, y0 + h + 18 * u);
   // groot bericht als deze speler klaar is
-  const big = M.mode === 'race' && M.myEv ? 'FINISH!' : M.mode === 'endurance' && M.myEv ? 'AF!' : '';
+  const big = M.mode === 'race' && M.myEv ? 'FINISH!' : M.mode === 'endurance' && M.myEv ? 'AF!' : M.mode === 'chase' && M.myEv ? 'GEPAKT!' : '';
   if (big) {
     ctx.font = `900 ${56 * u}px Trebuchet MS, sans-serif`; ctx.textAlign = 'center';
     ctx.lineWidth = 8 * u; ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.strokeText(big, viewW / 2, viewH * 0.4);

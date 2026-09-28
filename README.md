@@ -32,9 +32,10 @@ Speel met anderen (tot 20 online), met z'n tweeën op één scherm, of tegen de 
 
 - **2 spelers, één scherm**: twee spelers op hetzelfde apparaat met een gedeeld scherm. **Speler 1** speelt met `Spatie` (of tikt op de linker/bovenste helft), **Speler 2** met `↑` of `Enter` (of tikt op de rechter/onderste helft). Geen internet nodig.
 - **Tegen Kiwi (AI)**: Kiwi is een oranje orang-oetan met een kiwischijfje op zijn bandana. Kies een niveau: *Makkelijk*, *Normaal*, *Moeilijk* of *Expert*. Kiwi rekent vooruit waar hij uitkomt als hij loslaat; op lagere niveaus reageert hij trager, mist hij vaker zijn timing en bouwt hij minder vaart op.
+- **Achtervolging** (tegen Kiwi, via **Multiplayer → Achtervolging**): Kiwi start 3 tellen na jou en probeert je in te halen. Zijn tijd loopt steeds iets sneller (en nog sneller als hij ver achter ligt), dus vroeg of laat pakt hij je. Val je, dan kom je terug op een liaan, maar Kiwi komt dichterbij. Hoe lang hou je het vol? Je record wordt bewaard.
 - **Online** via lobbies met maximaal 20 spelers: maak er een of doe mee met een lobby uit de lijst.
 
-Spelmodi: **Race** (eerst bij de finish van 500, 1000 of 2000 m wint) en **Endurance** (wie het langst volhoudt; een storm jaagt je op). Upgrades staan uit, appels en XP tellen niet mee voor je save. Jullie spelen in dezelfde wereld en zien elkaar als tweede gorilla.
+Spelmodi: **Race** (eerst bij de finish van 500, 1000 of 2000 m wint), **Endurance** (wie het langst volhoudt; een storm jaagt je op) en tegen Kiwi ook **Achtervolging**. Upgrades staan uit, appels en XP tellen niet mee voor je save. Jullie spelen in dezelfde wereld en zien elkaar als tweede gorilla. Hangt een ander aan een liaan, dan buigt die liaan bij jou mee; dat geldt niet voor de eerste 10 lianen, waar aan het begin iedereen tegelijk aan hangt.
 
 ### Online spelen (lobbies, tot 20 spelers)
 
@@ -115,7 +116,7 @@ Accounts, online lobbies en de ranglijst gebruiken één gratis [Supabase](https
 
 **Hoe het werkt**
 - *Account*: via **Account** in het hoofdmenu maak je een account (e-mail + wachtwoord) of log je in. Je voortgang blijft ook lokaal staan en wordt na elke wijziging binnen een paar seconden online bewaard. Log je in op een ander apparaat, dan wordt de online voortgang geladen; staat er op beide plekken (verschillende) voortgang, dan vraagt het spel welke je wilt houden. Een wachtwoord vergeten kun je (nog) niet in het spel resetten; dat kan in Supabase bij **Authentication → Users**.
-- *Ranglijst*: elke speler krijgt een willekeurig, geheim id. Na elke run in Eindeloos wordt je beste afstand met je naam verstuurd. Runs met een aangepaste debug-snelheid tellen niet mee. Iemand met technische kennis kan een nepscore insturen; verwijder die in **Table Editor → scores**.
+- *Ranglijst*: elke speler krijgt een willekeurig, geheim id. Na elke run in Eindeloos wordt je beste afstand met je naam verstuurd. Runs met een aangepaste debug-snelheid tellen niet mee; het eindscherm en de ranglijst zeggen dat er dan ook bij. Iemand met technische kennis kan een nepscore insturen; verwijder die in **Table Editor → scores**.
 
 ## Besturing
 
@@ -131,18 +132,19 @@ Accounts, online lobbies en de ranglijst gebruiken één gratis [Supabase](https
 ## Features
 
 - **Lianen met physics**: elke liaan is een Verlet-touw van segmenten dat schuin naar linksonder hangt (zoals in Benji Bananas), zodat je hem makkelijk grijpt. Andy's gewicht, vaart, zwaaien en loslaten werken zoals je zou verwachten.
-- **Drie modi**: 🏁 **Carrière** met 35 levels (start → finish, steeds langer en moeilijker, elke 5 levels een nieuwe biome, tot 3 sterren per level), ♾️ **Eindeloos** (zo ver mogelijk komen) en 👥 **Multiplayer** (zie hierboven).
+- **Drie modi**: 🏁 **Carrière** met 55 levels (start → finish, steeds langer en moeilijker, elke 5 levels een nieuwe biome, tot 3 sterren per level), ♾️ **Eindeloos** (zo ver mogelijk komen) en 👥 **Multiplayer** (zie hierboven).
 - **Vloeiend zwaaien**: Andy zwaait als een echte slinger zonder energieverlies. Bij het grijpen blijft al zijn vaart behouden als voorwaartse zwaai; alleen verkeerd loslaten kost snelheid. Zwaai je te hoog, dan wordt het touw even slap. Grijp je een liaan te hoog, dan glijdt hij vanzelf omlaag. Bij verkeerde timing wordt een lancering die bijna kaarsrecht omhoog of pal achteruit zou gaan automatisch teruggebogen naar een bruikbare, voorwaartse sprong: zo verspil je nooit een hele zwaai.
 - **Uitzoomen**: het beeld staat standaard 25% verder uitgezoomd voor meer overzicht, en zoomt rustig verder uit (tot 35% meer beeld, helemaal pas op topsnelheid) naarmate Andy gemiddeld sneller vooruit gaat (en weer in als hij vertraagt). Alleen de speelwereld zoomt mee; de verre achtergrond blijft op een vaste zoom en sluit altijd netjes aan op de waterlijn.
 - **Trucs**: blijf je lang in de lucht, dan doet Andy salto's, kurkentrekkers, sterrensprongen en superaap-poses voor bonusappels (achter elkaar = meer bonus).
 - **Lucht-trampolines** schieten je omhoog, uit welke richting je ze ook raakt; grote **stuiterzwammen** lanceren je ook.
-- **De ruimte**: soms hangt er hoog boven het plafond een pad van gouden ballonnen. Pak ze perfect achter elkaar en laat los bij de laatste: dan word je de ruimte in gelanceerd (weinig zwaartekracht, sterappels, +25 🍎).
+- **De ruimte**: in Eindeloos (vanaf 150 m) hangt er geregeld hoog boven het plafond een pad van drie genummerde gouden ballonnen, met een bordje *Naar de ruimte!* bij de eerste. Pak ze achter elkaar en laat los bij de laatste: dan word je de ruimte in gelanceerd (+25 🍎). Daar is weinig zwaartekracht, slinger je aan paarse **sterrenlianen** die aan zwevende planetoïden hangen, **stuiter** je van losse planetoïden, vliegt er een **ufo** met je mee (aanraken: +15 🍎), draaien er satellieten rond en zie je nevels, een spiraalstelsel, planeten, een ruimtestation en kometen. Ruimtelianen horen niet bij de gedeelde wereld, dus in multiplayer lopen de werelden daardoor niet uit elkaar.
+- **Head-start**: vóór je eerste sprong in Eindeloos koop je rechts in beeld voor appels een vlucht vooruit (250, 500, 1000 of 2000 m). Andy vliegt dan met een raket over de wereld heen (bovenop de Raketstart-upgrade).
 - **Start op een rots**: Andy begint op een rots en springt met ingedrukte spatie naar de eerste liaan. Lianen spawnen nooit in of tegen elkaar.
 - **Lianen in een logisch patroon**: kolommen op regelmatige afstand met drie banen (hoog, midden, laag) die in een rustige golf op en neer lopen. De lianen zijn lang en hangen aan takjes. Hoe verder je komt, hoe groter de afstand en hoe vaker er een bovenste baan ontbreekt; de laagste baan is er altijd. Boven het plafond hangen geen lianen: daar vliegen alleen vogels langs en drijft af en toe een **luchtballon** met een liaan eronder (+5 🍎).
 - **Speciale lianen**: ✨ turbo (flink extra vaart), 🎀 elastiek (rekt en veert), 🍎 fruitliaan (vol appels), 🪵 rot (breekt na even hangen), 🧊 ijs (je glijdt omlaag).
 - **Snel en belonend**: een extra krachtige eerste sprong, combo's als je snel appels pakt, bonussen voor mooie sprongen, mijlpalen elke 100 m met confetti, en een **WOOHOO!** als je van een liaan zwaait.
 - **Alleen vallen is game over**: wespen, eksters en vuurballen stelen appels (die je terug kunt pakken), maar laten Andy nooit vallen. Een helm beschermt je appels.
-- **Zeven biomes**, die steeds iets lastiger worden:
+- **Elf biomes**, die steeds iets lastiger worden:
   1. 🌿 Jungle (0 m)
   2. 🐸 Moeras (450 m): wespen, rotte lianen
   3. 🦒 Savanne (1100 m): meer rotte en elastieken lianen
@@ -150,11 +152,15 @@ Accounts, online lobbies en de ranglijst gebruiken één gratis [Supabase](https
   5. 🌋 Vulkaan (2900 m): vuurballen uit de lava
   6. 🌙 Sterrennacht (4100 m): alles door elkaar
   7. 🌀 Portaalwoud (5200 m): portalen zoals in *Portal 2*. Vlieg door het **blauwe** portaal en je komt met al je vaart uit het **oranje** portaal, een flink stuk verderop (en meestal hoger). Er hangt steeds maar één portaalpaar tegelijk, zodat het overzichtelijk blijft.
+  8. 🟩 Kubuswoud (6300 m): alles van blokjes, zoals in *Minecraft*: getrapte bergen met gras, blokbomen, een vierkante zon, blokwolken en lianen van blokjes.
+  9. 🖍️ Tekenland (7400 m): alles getekend in *Paint*: platte kleuren, dikke zwarte randen, een streepjeszon en een verfpot als water.
+  10. 🧊 3D-wereld (8500 m): een low-poly wereld met gefacetteerde bergen en bomen, 3D-takken, buislianen, een retrozon en een neonraster in perspectief op de rasterzee.
+  11. 🍭 Snoepland (9700 m): lolly- en suikerspinbomen op zuurstokstammen, bergen met druipend glazuur, zuurstoklianen en een rivier van chocola met marshmallows.
 
   Hoe verder je komt, hoe meer gaten tussen de lianen, hoe meer vijanden en hoe minder appels. In Eindeloos gaat ook het tempo langzaam omhoog (tot +12% bij 4000 m, bovenop het standaardtempo). Beide lopen af naar een plafond, zodat het altijd te doen blijft.
-  Bij elke nieuwe biome speelt een riedeltje en tellen appels voor meer: +0,5 / +1 / +1,5 / +2 / +3 / +4 per appel, bovenop de Appeloogst-upgrade.
+  Bij elke nieuwe biome klinkt een eigen geluid (een opstijgende zoef, een glinsterend akkoord en een handtekening per stijl, zoals 8-bit-noten in het Kubuswoud) en tellen appels voor meer: +0,5 / +1 / +1,5 / +2 / +3 / +4 / +5 / +6 / +7 / +8 per appel, bovenop de Appeloogst-upgrade.
 - **Levendige wereld**: meerdere parallaxlagen (bergen, heuvels, boomlijn, gedetailleerde bomen, reuzenstammen, voorgrond), een zon met stralen, wolken, noorderlicht en sterren, en daarnaast vogelzwermen, vlinders, papegaaien, giraffen, springende vissen en vallende sterren.
-- **Muziek en geluid**: een procedurele jungle-groove (marimba, conga's, shaker, bas) met een eigen toonsoort per biome. Muziek en geluid staan los van elkaar aan/uit.
+- **Muziek en geluid**: een procedurele jungle-groove (marimba, conga's, shaker, bas) met een eigen toonsoort per biome. Bij elke doorgang door het laagste punt van een zwaai hoor je een zoef, harder en hoger naarmate Andy sneller zwaait. Muziek en geluid staan los van elkaar aan/uit.
 - **Tempo en momentum**: het spel loopt standaard op een rustiger tempo (0,56× het oorspronkelijke), maar je kunt door te zwaaien veel meer vaart opbouwen (zwaaien tot 1250, topsnelheid 1600, met upgrades meer).
 - **Accounts, online lobbies en een ranglijst** voor Eindeloos (zie *Supabase instellen*).
 - **XP en spelerslevels**: hoe verder je komt, hoe meer XP. Direct te koop zijn Wingsuit, Lange armen, Zwaaikracht, Lanceerkracht, Appelmagneet, Appeloogst en Reddingsballon; de rest ontgrendel je langzaam met spelerslevels: Gouden appels (level 4), Helm (6), Comboketting (8), Stuiterzwam (10), Liaankenner (12), Papegaaimaatje (14), Appelregen (16) en Raketstart (20).
