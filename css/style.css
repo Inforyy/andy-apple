@@ -471,3 +471,7 @@ html.short .panel .bank{font-size:18px;padding:2px 12px}
 }
 html.short .set-row{padding:5px 10px 5px 8px}
 html.short .qual{padding:6px 12px 6px 8px}
+/* lage schermen: vier knoppen naast de hoofdactie passen alleen zonder icoontjes en met wat meer ruimte */
+html.short .p-foot .row{flex:4 1 0}
+html.short .p-foot .row .ico{display:none}
+html.short #done .panel,html.short #over .panel{max-width:720px}
