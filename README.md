@@ -38,17 +38,20 @@ Laat los als Andy naar voren zwaait. Alleen in het water (of de lava, …) valle
 
 ## Spelmodi
 
-- 🏁 **Carrière**: 11 werelden (één per biome) met elk 5 levels op een **wereldkaart**, zoals in *New Super Mario Bros.* Zie [Carrière](#carrière).
+- 🏁 **Carrière**: 11 werelden (één per biome) met elk 8 levels op een **3D-wereldkaart**, zoals in *New Super Mario Bros.* Zie [Carrière](#carrière).
 - ♾️ **Eindeloos**: kom zo ver mogelijk. Het wordt geleidelijk lastiger en iets sneller (tot een plafond). Met een account kom je met je gebruikersnaam op de online ranglijst.
 - 👥 **Spelmodi**: Multiplayer (online tot 20 spelers), Duel (met z'n tweeën op één scherm), Tegen Kiwi en Achtervolging. Zie [Multiplayer](#multiplayer).
 
 ## Carrière
 
-- **Wereldkaart**: elke wereld is een eiland in de stijl van zijn biome, schuin van boven gezien, met een pad van stippen (levels) en aan het eind het kasteel van de baas. Andy loopt over het pad: tik op een stip (of gebruik ◀ ▶) om erheen te lopen, en op **Spelen** (of nog eens op de stip) om het level te starten. Met ◀ Wereld ▶ spring je naar een eerdere wereld. Op een telefoon werkt alles met tikken.
+- **Wereldkaart**: elke wereld is een groot 3D-eiland in de stijl van zijn biome, schuin van boven gezien, met een kronkelend pad langs de levels, halverwege een **toren** en aan het eind het **kasteel** van de baas. Op het eiland staan bomen, bergen (of een vulkaan, blokkenbergen, piramides, snoepheuvels), een meer, rotsen, bloemen, huisjes, kristallen, lolly's of portalen, en er vliegen vogels over. Andy is op de kaart een 3D-model (met je vachtkleur, hoed of kostuum) dat loopt, huppelt, zwaait en juicht. Andy loopt over het pad: tik op een stip (of gebruik ◀ ▶) om erheen te lopen, en op **Spelen** (of nog eens op de stip) om het level te starten. Met ◀ Wereld ▶ spring je naar een eerdere wereld. Op een telefoon werkt alles met tikken.
 - **Filmpjes**: haal je een level, dan vult het pad zich op de kaart tot het volgende level en loopt Andy erheen. Versla je de baas, dan krijg je *Wereld voltooid!*, vaar je over zee naar het volgende eiland en verschijnt de nieuwe wereld met zijn naam.
+- **Laadscherm**: kies je een level, dan springt Andy, zoomt de camera in en sluit een cirkel zich rond hem. Daarna komt een laadscherm met een ronddraaiende 3D-Andy, de gegevens van het level, een tip en een voortgangsbalk.
 - **Tijdslimiet**: elk level heeft een maximale tijd (bovenin beeld, rood in de laatste 20 seconden). Tijd op = level mislukt.
-- **Steeds lastiger**: latere levels zijn langer, hebben grotere gaten, meer vijanden en lastige lianen, lopen tot 28% sneller en geven relatief minder tijd.
-- **Uitdagingen** (vanaf level 3, in wereld 7 en later soms twee tegelijk): 🍎 *Appeljacht* (pak genoeg appels vóór de finish), 💨 *Tegenwind*, 🌫️ *Mist* (je ziet maar een klein stukje), 🪵 *Rotte boel*, 🐝 *Wespennest* en ⏱️ *Tijdrit* (veel minder tijd).
+- **Steeds lastiger**: latere levels zijn langer, hebben grotere gaten, meer vijanden en lastige lianen, lopen tot 25% sneller en geven relatief minder tijd.
+- **Schaalt mee met je upgrades**: hoe meer upgrades je hebt, hoe zwaarder elk level: nog grotere gaten en meer vijanden, minder tijd (een sterke Andy is sneller), iets hoger tempo, meer appels nodig bij Appeljacht, eerder en vaker uitdagingen, snellere bazen, en met bijna alles gekocht maar 2 harten tegen de baas. Op de kaart zie je hoe zwaar een level is (●●●○○).
+- **Toren** (level 4 van elke wereld): extra zwaar en altijd twee uitdagingen tegelijk.
+- **Uitdagingen** (vanaf level 3; in torens, latere werelden en met veel upgrades vaak twee tegelijk): 🍎 *Appeljacht* (pak genoeg appels vóór de finish), 💨 *Tegenwind*, 🌫️ *Mist* (je ziet maar een klein stukje), 🪵 *Rotte boel*, 🐝 *Wespennest* en ⏱️ *Tijdrit* (veel minder tijd).
 - **Baasgevechten**: het laatste level van elke wereld. De baas (van de Kokosbaron in de jungle tot de Suikerspinner in Snoepland) vliegt vóór je uit en gooit dingen naar waar je straks bent, laat een regen vallen (rode strepen waarschuwen) of duikt op je af (een rode baan waarschuwt). Je hebt 3 harten; haal de finish om hem te verslaan. Latere bazen vallen vaker en harder aan.
 - **Power-ups** zweven in de levels, in bellen: ⭐ *Onkwetsbaar* (8 s, niets kan je raken), 🧲 *Supermagneet* (12 s), 🪽 *Vleugels* (10 s: je zweeft, en van het water stuiter je terug omhoog), 🚀 *Turbo* en ⏰ *+20 seconden*.
 
@@ -165,7 +168,9 @@ Er is geen build-stap en geen npm. `index.html` bevat de schermen, `css/style.cs
 | `util.js`, `save.js`, `audio.js` | hulpfuncties, opslag, geluid en muziek |
 | `view.js`, `world.js`, `physics.js`, `effects.js` | beeld, zoom en kwaliteit; wereldgenerator; lianen en zwaaien; deeltjes |
 | `render-bg.js`, `render-world.js` | achtergrond en speelwereld tekenen |
+| `model3d.js` | kleine 3D-tekenaar (driehoeken op een 2D-canvas) en Andy als 3D-model |
 | `online.js`, `mp-online.js`, `mp-local.js` | Supabase (ranglijst, accounts), online lobbies, één scherm en Kiwi |
+| `career.js`, `worldmap.js` | carrière: tijd, uitdagingen, power-ups en bazen in een level; de 3D-wereldkaart, filmpjes en het laadscherm |
 | `game.js`, `main.js` | spelverloop, menu's, invoer en HUD; hoofdlus en opstarten |
 
 - **Testen**: `node tools/smoke.mjs` (Node 18+ en Chrome/Chromium). Klikt door de menu's, speelt alle modi en faalt bij elke JavaScript-fout.

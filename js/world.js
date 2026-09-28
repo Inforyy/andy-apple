@@ -190,7 +190,7 @@ function addVine(x, ay, len, type, bi, force) {
 const LANES = [-1000, -540, -80];
 function genNext() {
   const m = (gen.x - START_X) / PX_PER_M;
-  const d = diffAt(m), dc = Math.min(1, d), dx = Math.min(1.3, d); // dx: carrière gaat verder dan 1 (zie levelInfo)
+  const d = diffAt(m), dc = Math.min(1, d), dx = Math.min(1.8, d); // dx: carrière gaat verder dan 1 (zie levelInfo)
   const bi = biomeIndexAt(m), C = game.career;
   let F = features(bi);
   if (C && C.ch.includes('rotten')) F = Object.assign({}, F, { rotten: F.rotten + 0.22, icy: F.icy + 0.14 }); // uitdaging: rotte boel

@@ -7,7 +7,26 @@
 // =====================================================================
 const SAVE_KEY = 'andyApples.save.v1';
 function defaultSave() {
-  return { version:3, apples:0, xp:0, upgrades:{}, best:0, totalApples:0, totalDistance:0, runs:0, maxBiome:0, sound:true, music:true, sfxVol:0.8, musicVol:0.8, lbBest:0, mpGames:0, mpWins:0, chaseBest:0, boxes:0, cosm:{ own:[], color:'', hat:'', suit:'' }, career:{ unlocked:1, anim:0, at:1, stars:Array.from({ length: LEVELS }, () => 0) } };
+  return { version:3, apples:0, xp:0, upgrades:{}, best:0, totalApples:0, totalDistance:0, runs:0, maxBiome:0, sound:true, music:true, sfxVol:0.8, musicVol:0.8, lbBest:0, mpGames:0, mpWins:0, chaseBest:0, boxes:0, cosm:{ own:[], color:'', hat:'', suit:'' }, career:{ lpw:LEVELS_PER_WORLD, unlocked:1, anim:0, at:1, stars:Array.from({ length: LEVELS }, () => 0) } };
+}
+// Oude carrière (5 levels per wereld, het 5e was de baas) omzetten naar LEVELS_PER_WORLD per wereld:
+// levels 1-4 blijven, de baas wordt het kasteel (laatste level); de nieuwe levels ertussen moet je nog spelen.
+function migrateCareer(c) {
+  const num = v => (typeof v === 'number' && isFinite(v) && v > 0) ? Math.floor(v) : 0;
+  const old = num(c.lpw) || 5;
+  if (old === LEVELS_PER_WORLD || !Array.isArray(c.stars)) return c;
+  const to = (n, lock) => { // lock: een open maar nog niet verslagen baas wordt het eerste nieuwe level
+    if (n < 1) return n;
+    const w = Math.floor((n - 1) / old), k = (n - 1) % old;
+    return w * LEVELS_PER_WORLD + (k === old - 1 ? (lock ? old - 1 : LEVELS_PER_WORLD - 1) : k) + 1;
+  };
+  const stars = [];
+  c.stars.forEach((v, i) => { if (v) stars[to(i + 1) - 1] = v; });
+  const u = num(c.unlocked) || 1, beaten = (u - 1) % old === old - 1 ? !!c.stars[u - 1] : true;
+  const out = Object.assign({}, c, { lpw: LEVELS_PER_WORLD, stars, unlocked: to(u, !beaten) });
+  if ('anim' in c) out.anim = Math.min(to(num(c.anim), true), out.unlocked);
+  if ('at' in c) out.at = Math.min(to(num(c.at), true), out.unlocked);
+  return out;
 }
 function normalizeSave(o) {
   const s = defaultSave();
@@ -37,12 +56,13 @@ function normalizeSave(o) {
   const cm = (o.cosm && typeof o.cosm === 'object') ? o.cosm : {};
   s.cosm.own = [...new Set(Array.isArray(cm.own) ? cm.own.filter(id => LOOT_BY_ID[id] && ['color', 'hat', 'suit'].includes(LOOT_BY_ID[id].kind)) : [])];
   for (const k of ['color', 'hat', 'suit']) s.cosm[k] = s.cosm.own.includes(cm[k]) && LOOT_BY_ID[cm[k]].kind === k ? cm[k] : '';
-  const c = (o.career && typeof o.career === 'object') ? o.career : {};
+  const c = migrateCareer((o.career && typeof o.career === 'object') ? o.career : {});
   s.career.unlocked = clamp(num(c.unlocked) || 1, 1, LEVELS);
   s.career.stars = Array.from({ length: LEVELS }, (_, i) => clamp(num(Array.isArray(c.stars) ? c.stars[i] : 0), 0, 3));
   // anim: tot welk level het vrijspeel-filmpje op de kaart al is getoond (oude saves: alles al gezien); at: waar Andy staat
   s.career.anim = 'anim' in c ? clamp(num(c.anim), 0, s.career.unlocked) : (o.career ? s.career.unlocked : 0);
   s.career.at = clamp(num(c.at) || s.career.unlocked, 1, s.career.unlocked);
+  s.career.lpw = LEVELS_PER_WORLD;
   const up = (o.upgrades && typeof o.upgrades === 'object') ? o.upgrades : {};
   for (const u of UPGRADES) s.upgrades[u.id] = clamp(num(up[u.id]), 0, u.max);
   return s;

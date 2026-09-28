@@ -129,8 +129,9 @@ const xpNeed = L => Math.round(260 * Math.pow(L, 1.6)); // XP nodig om van level
 function playerLevel(xp) { let L = 1; while (xp >= xpNeed(L)) { xp -= xpNeed(L); L++; } return { L, into: xp, need: xpNeed(L) }; }
 const unlocked = u => !u.unlock || playerLevel(save.xp).L >= u.unlock;
 // ---- Carrière: werelden met levels op een kaart (zie career.js); hoe verder, hoe AANZIENLIJK moeilijker ----
-// Elke biome is een wereld met LEVELS_PER_WORLD levels; het laatste level van een wereld is een baasgevecht.
-const LEVELS_PER_WORLD = 5, WORLDS = BIOMES.length, LEVELS = WORLDS * LEVELS_PER_WORLD;
+// Elke biome is een wereld met LEVELS_PER_WORLD levels: halverwege een toren (extra zwaar, twee uitdagingen)
+// en als laatste het kasteel met een baasgevecht. Hoe meer upgrades je hebt, hoe zwaarder elk level (zie levelInfo).
+const LEVELS_PER_WORLD = 8, TOWER_IDX = 3, WORLDS = BIOMES.length, LEVELS = WORLDS * LEVELS_PER_WORLD;
 // Uitdagingen: een extra opdracht of tegenwerking in een level (zie career.js)
 const CHALLENGES = {
   apples: { icon: '🍎', name: 'Appeljacht',  info: n => `Pak minstens ${n} appels vóór de finish` },
@@ -165,20 +166,29 @@ const POWERUPS = {
 };
 function levelInfo(n) {
   const w = Math.min(WORLDS - 1, Math.floor((n - 1) / LEVELS_PER_WORLD)), idx = (n - 1) % LEVELS_PER_WORLD;
-  const boss = idx === LEVELS_PER_WORLD - 1, p = (n - 1) / (LEVELS - 1); // p: 0 bij level 1, 1 bij het laatste
-  const L = 220 + n * 45;
-  // uitdagingen: niet in de eerste twee levels en niet bij een baas; vanaf wereld 7 soms twee tegelijk
+  const boss = idx === LEVELS_PER_WORLD - 1, tower = idx === TOWER_IDX, p = (n - 1) / (LEVELS - 1); // p: 0 bij level 1, 1 bij het laatste
+  // up: hoe sterk je Andy is (0..1, alle upgrades). Een sterke Andy krijgt zwaardere levels en minder tijd.
+  const up = upgradePower();
+  const L = Math.round(260 + p * 1900 + idx * 25 + (boss ? 150 : 0));
+  // uitdagingen: niet in de eerste twee levels en niet bij een baas; in een toren (en later, of met veel upgrades) twee
   const ch = [];
-  if (!boss && n > 2 && idx > 0) {
-    ch.push(CHALLENGE_ORDER[(w * 2 + idx) % CHALLENGE_ORDER.length]);
-    if (w >= 6 && idx === 3) ch.push(CHALLENGE_ORDER[(w * 2 + idx + 3) % CHALLENGE_ORDER.length]);
+  if (!boss && n > 2 && (idx > 0 || up > 0.3)) {
+    ch.push(CHALLENGE_ORDER[(w * 3 + idx) % CHALLENGE_ORDER.length]);
+    if (tower || (w >= 5 && idx === 6) || (up > 0.6 && idx >= 4)) {
+      const b = CHALLENGE_ORDER[(w * 3 + idx + 2) % CHALLENGE_ORDER.length];
+      if (!ch.includes(b)) ch.push(b);
+    }
   }
-  // tijdslimiet (echte seconden): ruim in het begin, krap aan het eind
-  let time = Math.round(L / (6 + 9 * p) + 15);
+  // tijdslimiet (echte seconden): hoe verder en hoe sterker je bent, hoe sneller je moet gaan
+  const pace = 6 + 8 * p + 6 * up; // verwachte gemiddelde snelheid (m/s)
+  let time = Math.round(L / pace + 14);
   if (ch.includes('rush')) time = Math.round(time * 0.72);
-  return { n, bi: w, world: w + 1, idx, boss, L, p, ch, time, need: ch.includes('apples') ? Math.round(L / 11) : 0,
-    diff: clamp(0.1 + (n - 1) * 0.034, 0, 2) };
+  if (tower) time = Math.round(time * 0.9);
+  const diff = clamp(0.2 + p * 1.6 + (tower ? 0.15 : 0) + (boss ? 0.1 : 0), 0, 2) + 0.9 * up;
+  return { n, bi: w, world: w + 1, idx, boss, tower, L, p, up, ch, time, need: ch.includes('apples') ? Math.round(L / 11 * (1 + 0.35 * up)) : 0, diff };
 }
+// hoe zwaar een level is, in 1..5 bolletjes (voor de kaart)
+const levelPips = I => clamp(Math.round(I.diff / 2.9 * 5 + 0.4), 1, 5);
 const upCost = (u, l) => Math.round(u.base * 1.5 * Math.pow(u.growth, l) / 5) * 5;
 // =====================================================================
 //  Kisten (loot-boxes) en uiterlijk van Andy
@@ -269,7 +279,7 @@ function upgradePower() {
 const DIFF_START = 0.2, DIFF_MAX = 1.3, DIFF_RAMP = 3000;
 function diffAt(m) {
   const up = 0.35 * upgradePower(); // meer upgrades = lastiger
-  if (game.career) return clamp(game.career.diff + 0.08 + Math.max(0, m) / game.career.L * 0.08, 0, 2.1) + up;
+  if (game.career) return clamp(game.career.diff + 0.08 + Math.max(0, m) / game.career.L * 0.1, 0, 3); // upgrades zitten al in levelInfo
   return DIFF_START + (DIFF_MAX - DIFF_START) * (1 - Math.exp(-Math.max(0, m) / DIFF_RAMP)) + up;
 }
 // Eindeloos: het tempo gaat ook iets omhoog naarmate je verder komt, tot maximaal +12%% (bij 4000 m).
@@ -281,7 +291,7 @@ const BASE_SPEED = 0.65; // met GAME_SPEED 1,2: de simulatie loopt op ~0,78× ec
 function timeScale() {
   let k = BASE_SPEED * (game.mp && !game.mp.local ? 1 : DBG.speed);
   if (!game.career && !game.mp && run) { const t = clamp(run.dist / TEMPO_DIST, 0, 1); k *= 1 + TEMPO_MAX * t * t * (3 - 2 * t); }
-  if (game.career) k *= 1 + 0.28 * game.career.p; // carrière: latere levels lopen tot 28% sneller
+  if (game.career) k *= 1 + 0.25 * game.career.p + 0.12 * game.career.up; // carrière: latere levels (en een sterke Andy) lopen sneller
   if (!game.mp && run && run.cine) k *= cineSlow(); // slow motion bij een nieuwe biome
   return k;
 }
