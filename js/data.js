@@ -94,7 +94,8 @@ function features(bi) {
 const gripR      = l => 34 + 7 * l;
 const pumpA      = l => 600 * (1 + 0.22 * l);
 const launchM    = l => 1.16 + 0.07 * l;
-const magnetR    = l => l ? 50 + 35 * l : 0;
+const magnetR    = l => l ? 70 + 50 * l : 0;   // bereik (was 50 + 35·l)
+const magnetPull = l => 800 + 90 * l;          // trekkracht (was vast 520)
 const appleVal   = l => 1 + 0.5 * l;
 const goldChance = l => 0.03 + 0.025 * l;
 const rocketDist = l => 150 * l;

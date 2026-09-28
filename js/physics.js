@@ -609,7 +609,7 @@ function updateApples(dt) {
     if (!alive) continue;
     const dx = G.x - a.x, dy = G.y - a.y, d = Math.hypot(dx, dy);
     if (d < G_R + APPLE_PICK) { collect(a); apples.splice(i, 1); continue; }
-    if (mr && d < mr) { const s = Math.min(d, (520 + (mr - d) * 6) * dt); a.x += dx / d * s; a.y += dy / d * s; if (a.vine) a.vine = null; }
+    if (mr && d < mr) { const s = Math.min(d, (magnetPull(lvl('magnet')) + (mr - d) * 8) * dt); a.x += dx / d * s; a.y += dy / d * s; if (a.vine) a.vine = null; }
   }
 }
 function collect(a) {
