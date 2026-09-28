@@ -12,21 +12,25 @@ In [`android/`](android/) staat **`AndyApples.apk`**: het spel als Android-app (
 
 ## Multiplayer
 
-Speel met z'n tweeën, of tegen de computer:
+Speel met anderen (tot 20 online), met z'n tweeën op één scherm, of tegen de computer:
 
-- **Op één scherm**: twee spelers op hetzelfde apparaat met een gedeeld scherm. **Speler 1** speelt met `Spatie` (of tikt op de linker/bovenste helft), **Speler 2** met `↑` of `Enter` (of tikt op de rechter/onderste helft). Geen internet nodig.
+- **2 spelers, één scherm**: twee spelers op hetzelfde apparaat met een gedeeld scherm. **Speler 1** speelt met `Spatie` (of tikt op de linker/bovenste helft), **Speler 2** met `↑` of `Enter` (of tikt op de rechter/onderste helft). Geen internet nodig.
 - **Tegen Kiwi (AI)**: Kiwi is een oranje orang-oetan met een kiwischijfje op zijn bandana. Kies een niveau: *Makkelijk*, *Normaal*, *Moeilijk* of *Expert*. Kiwi rekent vooruit waar hij uitkomt als hij loslaat; op lagere niveaus reageert hij trager, mist hij vaker zijn timing en bouwt hij minder vaart op.
-- **Online op twee apparaten** via lobbies: maak er een of doe mee met een lobby uit de lijst.
+- **Online** via lobbies met maximaal 20 spelers: maak er een of doe mee met een lobby uit de lijst.
 
 Spelmodi: **Race** (eerst bij de finish van 500, 1000 of 2000 m wint) en **Endurance** (wie het langst volhoudt; een storm jaagt je op). Upgrades staan uit, appels en XP tellen niet mee voor je save. Jullie spelen in dezelfde wereld en zien elkaar als tweede gorilla.
 
-### Online spelen (lobbies)
+### Online spelen (lobbies, tot 20 spelers)
 
-1. **Speler 1** kiest **Multiplayer → Lobby maken**. De lobby verschijnt meteen in de lijst van iedereen die het multiplayermenu open heeft. Met **Kopieer uitnodiging** stuur je ook een link.
-2. **Speler 2** klikt in de lijst **Open lobbies** op **Meedoen** (of opent de link).
-3. De host kiest Race of Endurance en klikt op **Start**.
+1. Kies **Multiplayer → + Nieuwe lobby**. Je lobby verschijnt meteen in de lijst van iedereen die het multiplayermenu open heeft (met het aantal spelers, bijv. *3/20*). Met **Uitnodiging kopiëren** stuur je ook een link.
+2. Anderen klikken in **Online lobbies** op **Meedoen** (of openen de link). Er passen **20 spelers** in een lobby; een volle lobby staat als *Vol* in de lijst.
+3. De host kiest Race of Endurance en klikt op **Start** (vanaf 2 spelers). Na afloop ziet iedereen de ranglijst en start de host met **Nieuwe ronde** het volgende potje. Wie tijdens een potje binnenkomt, doet mee vanaf de volgende ronde.
 
-Lobbies lopen via Supabase Realtime (zie *Supabase instellen*): de server koppelt alleen de twee spelers, daarna praten de browsers direct met elkaar (WebRTC). Een volle lobby verdwijnt uit de lijst. Blokkeert een netwerk directe verbindingen, gebruik dan **Handmatig verbinden (zonder server)**: dan wissel je een uitnodigings- en antwoordcode uit.
+- **Race**: wie het eerst bij de finish is, wint. Met 3 of meer spelers krijgen de anderen daarna nog 20 seconden om ook te finishen; wie dan nog onderweg is, wordt op afstand gerangschikt.
+- **Endurance**: de laatste die overblijft, wint; de rest wordt gerangschikt op hoe lang ze het volhielden.
+- Elke speler krijgt een eigen bandanakleur. Spelers buiten beeld zie je als pijl aan de rand (de drie dichtstbijzijnde).
+
+Hoe het werkt: Supabase Realtime (zie *Supabase instellen*) wordt alleen gebruikt om lobbies te vinden en de verbinding op te zetten. Daarna heeft elke speler een directe verbinding (WebRTC) met de host, en de host stuurt de standen van iedereen door. Bij grote lobbies verstuurt het spel de standen minder vaak (tot 20× per seconde bij 4 spelers, ~7× per seconde vanaf 9 spelers); de host heeft bij 20 spelers wel een goede (wifi-)verbinding nodig. Blokkeert een netwerk directe verbindingen, gebruik dan **Handmatig verbinden (zonder server, 2 spelers)**.
 
 ## Supabase instellen (accounts, lobbies, ranglijst)
 
