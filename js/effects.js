@@ -69,7 +69,8 @@ function updateCamera(dt) {
   const tx = Math.max(-100, G.x - viewW * (G.state === 'rocket' ? 0.25 : 0.33 - clamp(G.vx / 1800, 0, 1) * 0.1));
   camX += (tx - camX) * Math.min(1, dt * (G.state === 'rocket' ? 14 : 4.5)); // een (snelle) head-start-vlucht strak volgen
   // verticaal meebewegen (de wereld is veel hoger dan het scherm), maar nooit onder de bodem kijken
-  const bt = baseTop();
+  // onder water mag de camera wel onder de waterlijn (daar speel je dan)
+  const bt = run && run.under ? Infinity : baseTop();
   const ty = Math.min(bt, G.y - viewH * 0.5 + clamp(G.vy * 0.15, -110, 190));
   camY += (ty - camY) * Math.min(1, dt * 4.5);
   if (G.state !== 'dead') camY = clamp(camY, G.y - viewH + 120, G.y - 100);

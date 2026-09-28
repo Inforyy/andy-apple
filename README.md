@@ -64,6 +64,9 @@ Hoe verder je komt, hoe meer gaten tussen de lianen, hoe meer vijanden en hoe mi
 
 De appelbonus komt bovenop de upgrade Appeloogst.
 
+- **Na Snoepland** komen de werelden steeds terug, elk 1100 m lang, in een vaste, door elkaar gehusselde volgorde (je blijft dus nooit in dezelfde wereld). Appels tellen daar minstens +8.
+- **Een nieuwe wereld** kondig je niet zomaar aan: op de grens staat een poort met de naam, en als je erdoor gaat krijg je slow motion, filmbalken, een grote titelkaart en een eigen geluid per wereld. Rond de grens is een korte, rustige buffer: geen vijanden, geen lastige lianen en alle drie de banen hangen er.
+
 ### Lianen en extra's
 
 - **Speciale lianen**: ✨ turbo (extra vaart), 🎀 elastiek (rekt en veert), 🍎 fruit (vol appels), 🪵 rot (breekt na even hangen), 🧊 ijs (je glijdt omlaag).
@@ -74,6 +77,18 @@ De appelbonus komt bovenop de upgrade Appeloogst.
 - **Luchtballonnen** drijven boven het plafond, met een liaan eronder (+5 🍎).
 - **De ruimte**: in Eindeloos hangt er vanaf 150 m geregeld een pad van drie gouden ballonnen hoog in de lucht. Pak ze achter elkaar en laat bij de laatste los: dan word je de ruimte in gelanceerd (+25 🍎), met weinig zwaartekracht, sterrenlianen, planetoïden en een ufo (+15 🍎).
 - **Head-start**: vóór je eerste sprong in Eindeloos koop je met appels een raketvlucht vooruit (250 tot 2000 m).
+- **Onder water**: val je in het water (niet in lava, niet in multiplayer), dan is er 20% kans dat Andy niet verdrinkt maar ondergaat. Je zwemt dan verder door een onderwaterwereld met rotswanden, kwallen (die appels stelen) en parels. Een stroming houdt je onder water, behalve bij een **luchtgat** (een bellenzuil). Haal je er binnen 30 seconden een, dan schiet je omhoog (+10 🍎 en een bonus per seconde lucht over); anders verdrinkt Andy.
+- **Kisten**: tijdens het spelen hangen er soms kisten 📦 in de lucht (en onder water). Raak je er een aan, dan krijg je hem na de run. Open ze via **📦 Kisten** in het menu of op het eindscherm: een rij prijzen rolt voorbij (zoals in *Counter-Strike*) en stopt op je buit.
+
+  | Zeldzaamheid | Kans | Wat |
+  | --- | --- | --- |
+  | Gewoon | 55% | appels of XP |
+  | Ongewoon | 26% | bruine of grijze vacht, petje, **kiwikostuum** (je ziet eruit als Kiwi) |
+  | Zeldzaam | 12,5% | blauwe of roze vacht, cowboyhoed, piratenhoed |
+  | Episch | 5% | gouden vacht, kroon, tovenaarshoed |
+  | Legendarisch | 1,5% | **appelkostuum**, regenboogvacht |
+
+  In de **garderobe** (onder de kisten) kies je vachtkleur, hoed en kostuum, met een voorbeeld van Andy. Heb je iets al, dan krijg je in plaats daarvan appels. Online zien anderen je gewone uiterlijk.
 
 ### Upgrades en levels
 
@@ -83,7 +98,7 @@ Met appels koop je 15 permanente upgrades. Met XP (vooral voor afstand) stijg je
 | --- | --- |
 | ✋ Lange armen · 🌀 Zwaaikracht · 💨 Lanceerkracht · 🧲 Appelmagneet · 🧺 Appeloogst · 🎈 Reddingsballon · 🦸 Wingsuit | ✨ Gouden appels (level 4) · ⛑️ Helm (6) · 🔥 Comboketting (8) · 🍄 Stuiterzwam (10) · 🌿 Liaankenner (12) · 🦜 Papegaaimaatje (14) · 🌧️ Appelregen (16) · 🚀 Raketstart (20) |
 
-Zwaaikracht en Lanceerkracht verhogen ook je topsnelheid: snelheid moet je verdienen.
+Zwaaikracht en Lanceerkracht verhogen ook je topsnelheid: snelheid moet je verdienen. Maar hoe meer upgrades je hebt, hoe lastiger de wereld: grotere gaten tussen de lianen, vaker een ontbrekende liaan en meer vijanden (in Eindeloos en de carrière; in multiplayer staan upgrades uit).
 
 ## Multiplayer
 

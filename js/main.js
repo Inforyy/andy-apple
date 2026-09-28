@@ -71,6 +71,7 @@ function frame(now) {
 }
 function frameSolo(dt) {
   if (!game.paused) {
+    if (run && run.cine && (run.cine.t += dt) > CINE_DUR) run.cine = null; // filmische biome-overgang (echte tijd)
     const ts = timeScale();
     acc += dt * ts;
     let steps = 0;
@@ -106,7 +107,7 @@ window.__andySaved = ok => saveMsg(ok ? 'Save-bestand opgeslagen.' : 'Opslaan ge
 
 // Debug-/testhaak (handig voor automatische tests)
 window.__andy = { get G() { return G; }, get run() { return run; }, get game() { return game; }, get save() { return save; },
-  get vines() { return vines; }, get apples() { return apples; }, get foes() { return foes; }, get quality() { return qLevel; }, get tramps() { return tramps; }, get portalsList() { return portals; }, get spaceObjs() { return spaceObjs; }, buyHeadStart, attach, release, AIR_G, MAX_FALL, DT, Sfx, Music, press, unpress, startReady,
+  get vines() { return vines; }, get apples() { return apples; }, get foes() { return foes; }, get quality() { return qLevel; }, get tramps() { return tramps; }, get portalsList() { return portals; }, get spaceObjs() { return spaceObjs; }, get loot() { return loot; }, openCrate, get crate() { return CRATE; }, buyHeadStart, attach, release, AIR_G, MAX_FALL, DT, Sfx, Music, press, unpress, startReady,
   MP, get ghostPin() { return ghostPin; }, mpStartMatch, localStart, get LOCAL() { return LOCAL; }, localPress, localUnpress, useWorld, mpHost, mpConnect, mpMakeAnswer, mpJoinStart, mpHostStart, mpSelect, mpAgain, mpForfeit, openMp, mpRender, get curScreen() { return curScreen; },
   get scale() { return scale; }, get viewW() { return viewW; }, get viewH() { return viewH; }, get zoomK() { return zoomK; }, get rotPref() { return rotPref; }, get texts() { return texts; }, resize, toggleFullscreen, toggleRotate,
   get perf() { return { quality: qLevel, auto: qAuto, steps: stats.steps, work: stats.work, tiles: tileBuilds }; }, setQuality, setQualityChoice };

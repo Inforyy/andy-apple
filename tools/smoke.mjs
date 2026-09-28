@@ -129,6 +129,24 @@ async function main() {
   await js(`window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }))`); await sleep(150);
   await js(`document.getElementById('btnQuit').click()`); await sleep(300);
 
+  console.log('Nieuwe biome, onder water en kisten');
+  await js('__andy.startReady(null)'); await sleep(200);
+  await js('__andy.press()'); await sleep(800);
+  await js(`(() => { const G = __andy.G; __andy.release(); G.state = 'air'; G.x = START_X + 1095 * PX_PER_M; G.y = -100; G.vx = 900; G.vy = -500; })()`); await sleep(600);
+  check(await js('!!__andy.run.cine && __andy.run.biome === 2'), 'filmische overgang naar de Savanne');
+  check(await js('biomeSeg(11500).i !== biomeSeg(12700).i && biomeSeg(11500).i < BIOMES.length'), 'na de laatste biome komen de biomes terug');
+  await js(`(() => { const G = __andy.G; G.state = 'air'; G.x = START_X + 1500 * PX_PER_M; G.y = HAZARD_Y + 20; G.vy = 300; enterUnder(); loot.push({ x: G.x + 4, y: G.y, t: 0 }); })()`); await sleep(1500);
+  check(await js(`__andy.G.state === 'swim' && __andy.run.under && __andy.run.loot === 1`), 'onder water, kist opgepakt');
+  await js(`(() => { const G = __andy.G, U = __andy.run.under; G.x = U.exits[0]; G.y = HAZARD_Y + 150; })()`); await sleep(500);
+  check(await js(`__andy.G.state === 'air' && !__andy.run.under`), 'via een luchtgat weer boven water');
+  await js(`window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }))`); await sleep(150);
+  await js(`document.getElementById('btnQuit').click()`); await sleep(300);
+  check(await js('__andy.save.boxes >= 1'), 'kist na de run bewaard');
+  await js(`document.getElementById('btnOverCrates').click()`); await sleep(200);
+  await js(`document.getElementById('btnCrOpen').click()`); await sleep(6200);
+  check(await js(`__andy.crate.spinning === false && document.querySelector('.cr-card.win') !== null`), 'kist geopend');
+  await js(`document.getElementById('btnCrBack').click()`); await sleep(200);
+
   console.log('Carrière');
   await js('__andy.startReady(1)'); await sleep(300);
   check(await js('__andy.game.career && __andy.game.career.n === 1'), 'level 1 start');

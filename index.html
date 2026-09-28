@@ -59,6 +59,7 @@
     </div>
     <nav class="mm-bar">
       <button class="ib" id="btnShop"><span class="ib-ic">🛒</span><small>Upgrades</small></button>
+      <button class="ib" id="btnCrates"><span class="ib-ic">📦</span><small>Kisten</small></button>
       <button class="ib" id="btnLb"><span class="ib-ic">🏆</span><small>Ranglijst</small></button>
       <button class="ib" id="btnAccount"><span class="ib-ic">👤</span><small id="mmAcc">Account</small></button>
       <button class="ib" id="btnSaves"><span class="ib-ic">💾</span><small>Opslaan</small></button>
@@ -287,6 +288,8 @@
       <li>Hoe verder je komt, hoe iets lastiger en sneller het wordt.</li>
       <li>Blauw portaal in, oranje portaal uit. De drie gouden ballonnen (1, 2, 3) achter elkaar pakken: de ruimte in!</li>
       <li>In Eindeloos kun je vóór je eerste sprong een <b>head-start</b> kopen: Andy vliegt dan meteen een stuk vooruit.</li>
+      <li>Val je in het water, dan ga je soms <b>onder water</b>: zwem (ingedrukt houden) naar een luchtgat binnen 30 seconden.</li>
+      <li>Pak <b>kisten 📦</b> op tijdens het spelen en open ze na afloop voor appels, XP, hoeden en kostuums.</li>
       <li><kbd>P</kbd> of <kbd>Esc</kbd>: pauze.</li>
     </ul>
     <h3>Speciale lianen</h3>
@@ -356,14 +359,32 @@
       <div class="total"><span>Verdiend</span><b id="ovTotal"></b></div>
     </div>
     <div id="ovXp"></div>
+    <div id="ovLoot" class="lootgot hidden"></div>
     <div id="ovRank" class="sub hidden"></div>
     <button class="btn big green" id="btnRetry">↻ Opnieuw</button>
     <div class="row">
       <button class="btn" id="btnOverShop">Upgrades</button>
+      <button class="btn" id="btnOverCrates">📦 Kisten</button>
       <button class="btn" id="btnOverLb">Ranglijst</button>
       <button class="btn" id="btnOverLevels">Levels</button>
       <button class="btn" id="btnOverMenu">Menu</button>
     </div>
+  </div>
+</div>
+
+<!-- Kisten openen en garderobe -->
+<div id="crate" class="screen">
+  <div class="panel wide crate">
+    <div class="panel-head"><h2>📦 Kisten</h2><div class="bank">📦 <span id="crBoxes">0</span></div></div>
+    <div class="cr-reel" id="crReel"><div class="cr-strip" id="crStrip"></div><div class="cr-mark"></div></div>
+    <div id="crResult" class="cr-result">Pak kisten op tijdens het spelen en open ze hier.</div>
+    <button class="btn big green" id="btnCrOpen">Open een kist</button>
+    <p class="sub cr-odds" id="crOdds"></p>
+    <div class="cr-bottom">
+      <canvas id="crPreview" width="170" height="190"></canvas>
+      <div class="wardrobe" id="crWardrobe"></div>
+    </div>
+    <div class="row"><button class="btn" id="btnCrBack">← Terug</button></div>
   </div>
 </div>
 
@@ -389,11 +410,13 @@
       <div class="total"><span>Verdiend</span><b id="dnTotal"></b></div>
     </div>
     <div id="dnXp"></div>
+    <div id="dnLoot" class="lootgot hidden"></div>
     <div style="margin-bottom:12px"><span class="bank">🍎 <span id="dnBank"></span></span></div>
     <button class="btn big green" id="btnNextLevel">▶ Volgend level</button>
     <div class="row">
       <button class="btn" id="btnDoneRetry">↻ Opnieuw</button>
       <button class="btn" id="btnDoneShop">Upgrades</button>
+      <button class="btn" id="btnDoneCrates">📦 Kisten</button>
       <button class="btn" id="btnDoneLevels">Levels</button>
     </div>
   </div>

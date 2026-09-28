@@ -121,6 +121,7 @@ function levelComplete() {
   save.career.stars[C.n - 1] = Math.max(prev, stars);
   if (C.n < LEVELS) save.career.unlocked = Math.max(save.career.unlocked, C.n + 1);
   const xp = awardXp(20 + C.n * 4);
+  const boxes = bankLoot();
   persist();
   confetti(G.x + 100, G.y - 150, 120); flashT = 0.3; Sfx.jingle(C.bi);
   $('doneTitle').textContent = `Level ${C.n} gehaald!`;
@@ -131,6 +132,7 @@ function levelComplete() {
   $('dnTotal').textContent = '+' + earned + ' 🍎';
   $('dnBank').textContent = save.apples;
   $('dnXp').innerHTML = xpHtml(xp);
+  lootLine('dnLoot', boxes);
   $('btnNextLevel').style.display = C.n < LEVELS ? '' : 'none';
   setTimeout(() => { if (game.mode === 'done') { showScreen('done'); $('hint').textContent = ''; } }, 900);
 }
@@ -150,7 +152,9 @@ function gameOver(quit) {
   const ranked = !game.career && Math.abs(DBG.speed - 1) < 0.001; // runs met een aangepaste debug-snelheid tellen niet mee
   if (ranked) save.lbBest = Math.max(save.lbBest, dist);
   const xp = awardXp();
+  const boxes = bankLoot();
   persist();
+  lootLine('ovLoot', boxes);
   $('btnOverLb').style.display = game.career || !lbOn() ? 'none' : '';
   $('ovRank').classList.add('hidden');
   if (!ranked && !game.career && lbOn() && dist > save.lbBest) { // laat zien waarom deze afstand niet op de ranglijst komt
@@ -169,7 +173,7 @@ function gameOver(quit) {
   $('ovDistLabel').textContent = game.career ? `Afstand (finish ${game.career.L} m)` : 'Afstand';
 
   const hz = BIOMES[biomeIndexAt(run.dist)].hazardName;
-  const [title, reason] = quit ? ['Run gestopt', 'Je appels zijn bewaard.'] : ['Plons!', `Andy viel in ${hz}.`];
+  const [title, reason] = quit ? ['Run gestopt', 'Je appels zijn bewaard.'] : run.reason === 'drown' ? ['Verdronken!', 'Andy kwam niet op tijd boven water.'] : ['Plons!', `Andy viel in ${hz}.`];
   $('overTitle').textContent = title;
   $('overReason').textContent = reason;
   $('ovDist').textContent = dist + ' m';
@@ -248,6 +252,7 @@ function refreshMenu() {
   renderQuality();
   $('saveStats').innerHTML = statsHtml();
   setBadge($('btnShop'), affordableCount());
+  setBadge($('btnCrates'), save.boxes);
   $('btnLb').classList.toggle('hidden', !lbOn());
   $('btnAccount').classList.toggle('hidden', !sbOn());
   const snd = save.sound ? 'Geluid aan' : 'Geluid uit';
@@ -331,6 +336,94 @@ function on(id, fn) {
 }
 
 
+// =====================================================================
+//  Kisten: na een run openen (zoals in Counter-Strike) en de garderobe
+// =====================================================================
+const CRATE = { spinning: false, ret: 'menu', raf: 0 };
+// opgepakte kisten van deze run in de save zetten
+function bankLoot() { const n = run.loot | 0; run.loot = 0; if (n) save.boxes += n; return n; }
+function lootLine(id, n) {
+  $(id).classList.toggle('hidden', !n && !save.boxes);
+  $(id).textContent = n ? `📦 +${n} kist${n === 1 ? '' : 'en'}! Je hebt er nu ${save.boxes}.` : `📦 Je hebt nog ${save.boxes} kist${save.boxes === 1 ? '' : 'en'} om te openen.`;
+  for (const b of ['btnOverCrates', 'btnDoneCrates']) setBadge($(b), save.boxes);
+}
+function openCrate(from) {
+  CRATE.ret = from || 'menu';
+  $('crOdds').textContent = 'Kansen: ' + Object.values(RARITY).map(r => { const tot = Object.values(RARITY).reduce((a, x) => a + x.w, 0); return `${r.name} ${fmtNum(r.w / tot * 100)}%`; }).join(' · ');
+  if (!CRATE.spinning) $('crStrip').innerHTML = Array.from({ length: 9 }, () => crateCard(rollLoot())).join('');
+  renderCrate();
+  showScreen('crate');
+  previewLoop();
+}
+const crateCard = (it, win) => `<div class="cr-card${win ? ' win' : ''}" style="--rc:${RARITY[it.r].col}"><span>${it.icon}</span><small>${escHtml(it.name)}</small></div>`;
+function renderCrate() {
+  $('crBoxes').textContent = save.boxes;
+  const b = $('btnCrOpen');
+  b.disabled = CRATE.spinning || save.boxes < 1;
+  b.textContent = CRATE.spinning ? 'Draaien…' : save.boxes ? `Open een kist (${save.boxes})` : 'Geen kisten: pak ze op tijdens het spelen';
+  const rows = [['color', 'Vachtkleur'], ['hat', 'Hoed'], ['suit', 'Kostuum']];
+  $('crWardrobe').innerHTML = '<h3>Garderobe</h3>' + rows.map(([k, label]) => {
+    const own = save.cosm.own.map(id => LOOT_BY_ID[id]).filter(it => it.kind === k);
+    const chip = (id, txt, col) => `<button class="wd-chip${save.cosm[k] === id ? ' sel' : ''}" data-wk="${k}" data-wid="${id}"${col ? ` style="--rc:${col}"` : ''}>${txt}</button>`;
+    return `<div class="wd-row"><b>${label}</b><div class="wd-chips">${chip('', 'Geen')}${own.map(it => chip(it.id, `${it.icon} ${escHtml(it.name)}`, RARITY[it.r].col)).join('')}${own.length ? '' : '<small>nog niets</small>'}</div></div>`;
+  }).join('');
+  for (const c of $('crWardrobe').querySelectorAll('[data-wk]')) on(c, () => { save.cosm[c.dataset.wk] = c.dataset.wid; persist(); renderCrate(); });
+}
+// voorbeeld van Andy met je uiterlijk (tekent met de gewone drawGorilla op een eigen canvasje)
+function drawPreview() {
+  const c = $('crPreview'), g = c.getContext('2d');
+  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height);
+  const s0 = ctx, G0 = G, GC0 = GC;
+  ctx = g; g.setTransform(2.3, 0, 0, 2.3, c.width / 2, c.height * 0.56);
+  G = { x: 0, y: 0, state: 'stand', standT: 1 + (time % 2), angle: 0, trickRot: 0, balloonT: 0, turboT: 0, invuln: 0, vx: 0, vy: 0, trick: null };
+  try { GC = myLook(); drawGorilla(); } finally { ctx = s0; G = G0; GC = GC0; }
+}
+function previewLoop() {
+  cancelAnimationFrame(CRATE.raf);
+  const tick = () => { if (curScreen !== 'crate') return; drawPreview(); CRATE.raf = requestAnimationFrame(tick); };
+  tick();
+}
+// de buit meteen toekennen (ook als je het scherm tijdens het draaien sluit)
+function grantLoot(it) {
+  if (it.kind === 'apples') { save.apples += it.n; return `+${it.n} 🍎`; }
+  if (it.kind === 'xp') { const before = playerLevel(save.xp).L; save.xp += it.n; const after = playerLevel(save.xp).L; return `+${it.n} XP` + (after > before ? ` · Level ${after}!` : ''); }
+  if (save.cosm.own.includes(it.id)) { const n = DUPE_APPLES[it.r] || 30; save.apples += n; return `Had je al: +${n} 🍎`; }
+  save.cosm.own.push(it.id);
+  return 'Nieuw! Trek het aan in de garderobe hieronder.';
+}
+function spinCrate() {
+  if (CRATE.spinning || save.boxes < 1) return;
+  save.boxes--;
+  const win = rollLoot(), msg = grantLoot(win);
+  persist();
+  CRATE.spinning = true;
+  const N = 60, WIN = 52, CW = 128, strip = $('crStrip'), reelW = $('crReel').clientWidth;
+  const items = Array.from({ length: N }, () => rollLoot()); items[WIN] = win;
+  strip.innerHTML = items.map(it => crateCard(it)).join('');
+  strip.style.transition = 'none'; strip.style.transform = 'translateX(0px)'; void strip.offsetWidth;
+  const target = WIN * CW + 8 + 60 - reelW / 2 + rand(-48, 48), dur = 5.6;
+  strip.style.transition = `transform ${dur}s cubic-bezier(.06,.72,.12,1)`; strip.style.transform = `translateX(${-target}px)`;
+  $('crResult').innerHTML = '&nbsp;';
+  renderCrate();
+  // tikje bij elke kaart die langs de wijzer schiet
+  let last = -1;
+  const tick = () => {
+    if (!CRATE.spinning) return;
+    const m = new DOMMatrixReadOnly(getComputedStyle(strip).transform), i = Math.floor((-m.m41 + reelW / 2 - 8) / CW);
+    if (i !== last) { last = i; Sfx.crateTick(); }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+  setTimeout(() => {
+    CRATE.spinning = false;
+    const card = strip.children[WIN]; if (card) card.classList.add('win');
+    const R = RARITY[win.r];
+    $('crResult').innerHTML = `<small style="color:${R.col}">${R.name.toUpperCase()}</small><b style="color:${R.col}">${win.icon} ${escHtml(win.name)}</b><small>${escHtml(msg)}</small>`;
+    Sfx.crateReveal(win.r);
+    renderCrate(); refreshMenu();
+  }, dur * 1000 + 150);
+}
+
 // ---- Debug-instellingen: zoom en snelheid, achter een wachtwoord ----
 function renderDbg() {
   $('dbgLock').classList.toggle('hidden', DBG.open);
@@ -403,6 +496,11 @@ function uiInit() {
   on('btnDoneShop', () => openShop('done'));
   on('btnOverLevels', () => { toMenu(); openCareer(); });
   on('btnShop', () => openShop('menu'));
+  on('btnCrates', () => openCrate('menu'));
+  on('btnOverCrates', () => openCrate('over'));
+  on('btnDoneCrates', () => openCrate('done'));
+  on('btnCrBack', () => { refreshMenu(); showScreen(CRATE.ret); });
+  on('btnCrOpen', spinCrate);
   on('btnSaves', () => { $('saveMsg').textContent = ''; refreshMenu(); showScreen('saves'); });
   on('btnHelp', () => showScreen('help'));
   on('btnSettings', () => { refreshMenu(); showScreen('settings'); });
@@ -548,6 +646,7 @@ function inputInit() {
       else if (curScreen === 'lb') showScreen(lbReturn);
       else if (curScreen === 'account') showScreen('menu');
       else if (curScreen === 'debug') showScreen('settings');
+      else if (curScreen === 'crate') { if (!CRATE.spinning) $('btnCrBack').click(); }
       else if (curScreen === 'shop' || curScreen === 'saves' || curScreen === 'help' || curScreen === 'career' || curScreen === 'settings') {
         if (curScreen === 'shop') $('btnShopBack').click(); else showScreen('menu');
       }
@@ -608,6 +707,7 @@ function updateHud() {
     else if (G.state === 'hang') hint = G.vx > 150 ? 'Laat nu los om te springen!' : 'Blijf vasthouden… wacht op de zwaai naar voren';
     else if (G.state === 'air') hint = 'Houd ingedrukt om te duiken en een liaan te grijpen';
   }
+  if (game.mode === 'playing' && G.state === 'swim') hint = 'Houd ingedrukt om omhoog te zwemmen · zoek een luchtgat!';
   setText('hint', hint);
   $('hint').classList.toggle('pulse', game.mode === 'ready');
 }

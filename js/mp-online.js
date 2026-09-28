@@ -895,7 +895,7 @@ function mpHud() {
 const localName = i => LOCAL.ai ? (i ? 'Kiwi' : 'Jij') : `Speler ${i + 1}`;
 function drawOwnGorilla() {
   const M = game.mp;
-  if (!(M && M.local && M.idx === 1)) { drawGorilla(); return; }
+  if (!(M && M.local && M.idx === 1)) { const pal = GC; GC = myLook(); try { drawGorilla(); } finally { GC = pal; } return; } // jouw uiterlijk uit de kisten
   const pal = GC; GC = oppPal(); // speler 2 is altijd de blauwe (of Kiwi)
   try { drawGorilla(); } finally { GC = pal; }
 }
@@ -903,7 +903,7 @@ function drawOwnGorilla() {
 function mpOthers() {
   const M = game.mp;
   if (!M) return [];
-  if (M.local) return [{ g: LOCAL.worlds[1 - M.idx].G, name: localName(1 - M.idx), pal: M.idx === 1 ? GC1 : oppPal(), tag: M.idx === 1 ? '#a8141c' : (LOCAL.ai ? '#2c6e18' : '#17498f'), local: true }];
+  if (M.local) return [{ g: LOCAL.worlds[1 - M.idx].G, name: localName(1 - M.idx), pal: M.idx === 1 ? myLook() : oppPal(), tag: M.idx === 1 ? '#a8141c' : (LOCAL.ai ? '#2c6e18' : '#17498f'), local: true }];
   return opps(M).filter(P => P.ghost && !(P.left && !P.ev)).map(P => ({ g: P.ghost, name: P.name, pal: palOf(P.col), tag: shade(P.col, -0.35) }));
 }
 function drawGhost() {
