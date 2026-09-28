@@ -71,19 +71,26 @@
   @keyframes pulse2{50%{transform:scale(1.15)}}
   .panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
   .bank{font-size:22px;font-weight:900;background:#fff3c4;border:3px solid #e0a82e;border-radius:999px;padding:4px 14px;color:#7a4a1c}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin:6px 0 16px;text-align:left}
-  .card{background:#fff;border:3px solid #e8c98a;border-radius:18px;padding:12px;display:flex;flex-direction:column;gap:8px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;margin:4px 0 8px;text-align:left}
+  .card{background:#fff;border:3px solid #e8c98a;border-radius:16px;padding:8px 10px;display:flex;align-items:center;gap:10px}
   .card.maxed{border-color:#4ade80;background:#f0fdf4}
-  .card-top{display:flex;gap:10px;align-items:flex-start}
-  .card-top .ic{font-size:32px;line-height:1}
-  .card-top b{display:block;font-size:17px}
-  .card-top small{display:block;font-size:13px;color:#7a5a3a;line-height:1.25}
-  .pips{display:flex;gap:4px}
-  .pips i{flex:1;height:8px;border-radius:4px;background:#ecdcb8}
+  .card .ic{font-size:28px;line-height:1;flex:none}
+  .card-mid{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+  .card-mid b{font-size:16px;line-height:1.1}
+  .card-mid small{font-size:12.5px;color:#7a5a3a;line-height:1.2}
+  .pips{display:flex;gap:3px;max-width:120px}
+  .pips i{flex:1;height:6px;border-radius:3px;background:#ecdcb8}
   .pips i.on{background:#f59e0b}
   .card.maxed .pips i.on{background:#22c55e}
-  .fx{font-size:14px;font-weight:700;color:#6b4423}
-  .buy{font-size:17px;padding:9px 12px;margin-top:auto}
+  .buy{font-size:16px;padding:8px 10px;flex:none;min-width:78px;box-shadow:0 4px 0 #92400e}
+  .locks{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 6px}
+  .locks span{background:rgba(122,74,28,.1);border-radius:999px;padding:3px 10px;font-size:13px;font-weight:700;color:#7a5a3a}
+  /* upgrades: kop en knoppen blijven altijd in beeld, alleen de lijst scrolt */
+  .panel.shop{display:flex;flex-direction:column;overflow:hidden;padding-bottom:12px}
+  .shop-list{flex:1 1 auto;min-height:0;overflow:auto;touch-action:pan-y;margin:6px -8px 0;padding:0 8px}
+  .shop-foot{flex:none;margin-top:4px;padding-top:8px;border-top:2px dashed rgba(122,74,28,.25)}
+  .shop-foot .row{margin-top:0}
+  .panel-head .lvl{font-weight:900;color:#6b4423;font-size:15px}
   .results{background:rgba(122,74,28,.1);border-radius:16px;padding:8px 14px;margin:8px 0 12px;text-align:left}
   .results div{display:flex;justify-content:space-between;padding:5px 0;font-size:17px;border-bottom:1px dashed rgba(122,74,28,.25)}
   .results div:last-child{border:none}
@@ -176,7 +183,7 @@
   html.short .mode-go{width:38px;height:38px;font-size:18px}
   html.short .ib-ic{width:48px;height:48px;font-size:22px}html.short .ib small{font-size:12px}
   html.short .chip{font-size:17px;padding:4px 12px 4px 10px}html.short .ring{width:36px;height:36px}html.short .ring b{width:28px;height:28px;font-size:14px}
-  html.short .panel{padding:14px 18px}html.short h2{font-size:26px}
+  html.short .panel{padding:14px 18px}html.short h2{font-size:26px}html.short .panel.shop h2{font-size:22px}html.short .card{padding:6px 8px}
   /* gedraaid beeld: de hele pagina een kwartslag gedraaid, zodat je een staande telefoon liggend kunt gebruiken */
   html.rot body{position:fixed;top:0;left:0;transform-origin:0 0}
   html.rot .panel{touch-action:auto}
@@ -226,6 +233,22 @@
   #mpCount.pop{animation:cpop .9s ease-out}
   @keyframes cpop{0%{transform:translate(-50%,-50%) scale(1.8);opacity:0}25%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{opacity:.9}}
   html.slim #mpHud{top:auto;bottom:max(10px,env(safe-area-inset-bottom));width:80vw} html.slim #mpHud:not(.hidden) ~ #hint{bottom:120px} html.slim .mp-modes{grid-template-columns:1fr}
+  .mp-code{display:flex;gap:8px;align-items:center;margin-top:6px}
+  .mp-code input{font:inherit;font-weight:900;font-size:22px;letter-spacing:1px;border:3px solid #e8c98a;border-radius:12px;padding:6px 10px;
+    flex:1;min-width:0;color:#4a2c12;background:#fff;text-align:center;text-transform:lowercase}
+  .mp-code .btn{flex:none}
+  .mp-manual{margin-top:8px}
+  .mp-manual .mp-step{margin:8px 0}
+  .lb{list-style:none;text-align:left;margin:6px 0;max-height:min(52vh,420px);overflow:auto;touch-action:pan-y}
+  .lb li{display:grid;grid-template-columns:34px 1fr auto;gap:8px;align-items:center;padding:6px 10px;border-radius:10px;font-weight:800}
+  .lb li:nth-child(odd){background:rgba(122,74,28,.08)}
+  .lb li.me{background:#fff3c4;outline:2px solid #e0a82e}
+  .lb li b{color:#c2410c}
+  .lb .empty{display:block;text-align:center;font-weight:700;color:#7a5a3a;background:none}
+  .dbg label{display:block;text-align:left;font-weight:800;margin:12px 0 2px}
+  .dbg label span{float:right;color:#c2410c}
+  .dbg input[type=range]{width:100%}
+  .dbg input[type=password]{font:inherit;font-weight:800;border:3px solid #e8c98a;border-radius:12px;padding:8px 10px;width:100%;text-align:center;color:#4a2c12;background:#fff}
   kbd{background:#fff;border:2px solid #d6b77a;border-bottom-width:4px;border-radius:6px;padding:0 6px;font-weight:800;font-size:13px}
 </style>
 </head>
@@ -237,7 +260,7 @@
     <div class="hud-col">
       <div class="pill" id="hudDist">0 m</div>
       <div class="pill" id="hudApples">🍎 0</div>
-      <div class="pill small" id="hudValue">🍎 ×1</div>
+      <div class="pill small" id="hudValue"></div>
     </div>
     <div class="hud-col right">
       <button id="btnPause" aria-label="Pauze">❚❚</button>
@@ -263,7 +286,7 @@
     <div class="mm-modes">
       <button class="mode career" id="btnCareer">
         <span class="mode-ic">🏁</span>
-        <span class="mode-txt"><span class="mode-t">Carrière</span><span class="mode-s" id="mmCareer">Level 1 · ⭐ 0 / 90</span></span>
+        <span class="mode-txt"><span class="mode-t">Carrière</span><span class="mode-s" id="mmCareer">Level 1</span></span>
         <span class="mode-go">▶</span>
       </button>
       <button class="mode endless" id="btnPlay">
@@ -273,12 +296,13 @@
       </button>
       <button class="mode multi" id="btnMulti">
         <span class="mode-ic">👥</span>
-        <span class="mode-txt"><span class="mode-t">Multiplayer</span><span class="mode-s" id="mmMulti">Race of Endurance tegen een vriend</span></span>
+        <span class="mode-txt"><span class="mode-t">Multiplayer</span><span class="mode-s" id="mmMulti">Tegen een vriend</span></span>
         <span class="mode-go">▶</span>
       </button>
     </div>
     <nav class="mm-bar">
       <button class="ib" id="btnShop"><span class="ib-ic">🛒</span><small>Upgrades</small></button>
+      <button class="ib" id="btnLb"><span class="ib-ic">🏆</span><small>Ranglijst</small></button>
       <button class="ib" id="btnSaves"><span class="ib-ic">💾</span><small>Opslaan</small></button>
       <button class="ib" id="btnHelp"><span class="ib-ic">❓</span><small>Uitleg</small></button>
       <button class="ib" id="btnSettings"><span class="ib-ic">⚙️</span><small>Instellingen</small></button>
@@ -290,70 +314,85 @@
 <!-- Multiplayer -->
 <div id="mp" class="screen">
   <div class="panel">
-    <h2>👥 Multiplayer</h2>
+    <h2>Multiplayer</h2>
     <div class="mp-status" id="mpStatus"><i></i><span id="mpStatusTxt">Niet verbonden</span></div>
-    <div class="mp-name"><label for="mpName">Jouw naam:</label><input id="mpName" maxlength="12" spellcheck="false" autocomplete="off"></div>
+    <div class="mp-name"><label for="mpName">Naam</label><input id="mpName" maxlength="12" spellcheck="false" autocomplete="off"></div>
 
     <!-- stap 0: kiezen -->
     <div id="mpPick">
-      <p class="sub">Speel tegen een vriend op een ander apparaat. Upgrades staan uit, dus iedereen is gelijk!</p>
       <div class="row">
-        <button class="btn green" id="btnMpHost">🏠 Spel hosten</button>
-        <button class="btn" id="btnMpJoin">🔗 Meedoen</button>
+        <button class="btn green" id="btnMpHost">Hosten</button>
+        <button class="btn" id="btnMpJoin">Meedoen</button>
       </div>
-      <div class="row"><button class="btn local" id="btnMpLocal">📺 Op één scherm (2 spelers op dit apparaat)</button></div>
+      <div class="row"><button class="btn local" id="btnMpLocal">Op één scherm</button></div>
     </div>
 
     <!-- host -->
     <div id="mpHostBox" class="hidden">
       <div class="mp-step">
-        <h3>1. Stuur deze uitnodigingscode naar je vriend</h3>
-        <textarea id="mpOffer" readonly spellcheck="false" placeholder="Code wordt gemaakt…"></textarea>
-        <div class="row"><button class="btn" id="btnMpCopyOffer" disabled>📋 Kopieer uitnodigingscode</button></div>
+        <h3>Spelcode</h3>
+        <p>Stuur deze code (of de link) naar je vriend. Je mag hem aanpassen.</p>
+        <div class="mp-code"><input id="mpRoom" maxlength="16" spellcheck="false" autocomplete="off" autocapitalize="off"><button class="btn ghost" id="btnMpRoom">Wijzig</button></div>
+        <div class="row"><button class="btn green" id="btnMpShare" disabled>Kopieer uitnodiging</button></div>
       </div>
-      <div class="mp-step">
-        <h3>2. Plak hier de antwoordcode van je vriend</h3>
-        <textarea id="mpAnswerIn" spellcheck="false" placeholder="Plak de antwoordcode…"></textarea>
-        <div class="row"><button class="btn green" id="btnMpConnect">🔌 Verbinden</button></div>
-      </div>
+      <details class="mp-manual" id="mpHostManual">
+        <summary>Lukt het niet? Verbind handmatig</summary>
+        <div class="mp-step">
+          <h3>1. Stuur deze uitnodigingscode</h3>
+          <div class="row" id="mpManualHostGo"><button class="btn" id="btnMpManualHost">Maak uitnodigingscode</button></div>
+          <textarea id="mpOffer" readonly spellcheck="false" placeholder="Code wordt gemaakt…"></textarea>
+          <div class="row"><button class="btn" id="btnMpCopyOffer" disabled>Kopieer</button></div>
+        </div>
+        <div class="mp-step">
+          <h3>2. Plak de antwoordcode</h3>
+          <textarea id="mpAnswerIn" spellcheck="false" placeholder="Plak de antwoordcode…"></textarea>
+          <div class="row"><button class="btn green" id="btnMpConnect">Verbinden</button></div>
+        </div>
+      </details>
     </div>
 
     <!-- meedoen -->
     <div id="mpJoinBox" class="hidden">
       <div class="mp-step">
-        <h3>1. Plak de uitnodigingscode van de host</h3>
-        <textarea id="mpOfferIn" spellcheck="false" placeholder="Plak de uitnodigingscode…"></textarea>
-        <div class="row"><button class="btn green" id="btnMpMakeAnswer">✍️ Maak antwoordcode</button></div>
+        <h3>Spelcode van de host</h3>
+        <div class="mp-code"><input id="mpJoinRoom" maxlength="16" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="code"><button class="btn green" id="btnMpJoinGo">Verbinden</button></div>
       </div>
-      <div class="mp-step hidden" id="mpAnswerStep">
-        <h3>2. Stuur deze antwoordcode terug naar de host</h3>
-        <textarea id="mpAnswer" readonly spellcheck="false" placeholder="Code wordt gemaakt…"></textarea>
-        <div class="row"><button class="btn" id="btnMpCopyAnswer" disabled>📋 Kopieer antwoordcode</button></div>
-        <p class="sub" style="margin:8px 0 0">Zodra de host hem plakt, zijn jullie verbonden.</p>
-      </div>
+      <details class="mp-manual">
+        <summary>Lukt het niet? Verbind handmatig</summary>
+        <div class="mp-step">
+          <h3>1. Plak de uitnodigingscode</h3>
+          <textarea id="mpOfferIn" spellcheck="false" placeholder="Plak de uitnodigingscode…"></textarea>
+          <div class="row"><button class="btn green" id="btnMpMakeAnswer">Maak antwoordcode</button></div>
+        </div>
+        <div class="mp-step hidden" id="mpAnswerStep">
+          <h3>2. Stuur deze antwoordcode terug</h3>
+          <textarea id="mpAnswer" readonly spellcheck="false" placeholder="Code wordt gemaakt…"></textarea>
+          <div class="row"><button class="btn" id="btnMpCopyAnswer" disabled>Kopieer</button></div>
+        </div>
+      </details>
     </div>
 
     <!-- verbonden: lobby -->
     <div id="mpLobby" class="hidden">
       <div class="mp-vs"><div class="pl me" id="mpMeName">Jij</div><span>VS</span><div class="pl opp" id="mpOppName">Tegenstander</div></div>
       <div class="mp-modes">
-        <button class="mp-mode" id="mpModeRace" data-mode="race"><b>🏁 Race</b><small>Wie het eerst bij de finish is, wint. Val je, dan kom je terug op een liaan (en verlies je tijd).</small></button>
-        <button class="mp-mode" id="mpModeEnd" data-mode="endurance"><b>⏱️ Endurance</b><small>Wie het langst volhoudt, wint. Val je, dan ben je af. Een storm jaagt je steeds sneller op!</small></button>
+        <button class="mp-mode" id="mpModeRace" data-mode="race"><b>Race</b><small>Eerst bij de finish wint. Val je, dan kom je terug (en verlies je tijd).</small></button>
+        <button class="mp-mode" id="mpModeEnd" data-mode="endurance"><b>Endurance</b><small>Wie het langst volhoudt, wint. Een storm jaagt je op.</small></button>
       </div>
       <div class="mp-lens" id="mpLens">
         <button class="mp-len" data-len="500">500 m</button>
         <button class="mp-len" data-len="1000">1000 m</button>
         <button class="mp-len" data-len="2000">2000 m</button>
       </div>
-      <div class="row"><button class="btn big green" id="btnMpStart">▶ Start!</button></div>
-      <p class="sub hidden" id="mpLocalKeys" style="margin-top:10px">⌨️ <b style="color:#e8322b">Speler 1</b>: SPATIE (of tik op de linker/bovenste helft) · <b style="color:#2f7fe0">Speler 2</b>: ↑ of ENTER (of tik op de rechter/onderste helft)</p>
-      <p class="sub hidden" id="mpGuestWait" style="margin-top:10px">⏳ Wachten tot de host het spel start…</p>
+      <div class="row"><button class="btn big green" id="btnMpStart">Start</button></div>
+      <p class="sub hidden" id="mpLocalKeys" style="margin-top:10px"><b style="color:#e8322b">Speler 1</b>: <kbd>SPATIE</kbd> of links/boven tikken · <b style="color:#2f7fe0">Speler 2</b>: <kbd>↑</kbd> / <kbd>ENTER</kbd> of rechts/onder tikken</p>
+      <p class="sub hidden" id="mpGuestWait" style="margin-top:10px">Wachten tot de host start…</p>
     </div>
 
     <div id="mpMsg" class="msg"></div>
     <div class="row">
-      <button class="btn ghost" id="btnMpSetup">❓ Set-up</button>
-      <button class="btn ghost red hidden" id="btnMpCancel">✖ Opnieuw</button>
+      <button class="btn ghost" id="btnMpSetup">Uitleg</button>
+      <button class="btn ghost red hidden" id="btnMpCancel">Opnieuw</button>
       <button class="btn" id="btnMpBack">← Terug</button>
     </div>
   </div>
@@ -362,36 +401,23 @@
 <!-- Multiplayer: instructies -->
 <div id="mpSetup" class="screen">
   <div class="panel help setup">
-    <h2 style="text-align:center">❓ Multiplayer instellen</h2>
-    <p class="sub" style="text-align:center">Je hebt geen account of server nodig: de twee apparaten verbinden direct met elkaar. Je wisselt alleen twee codes uit.</p>
-    <div class="tip">📺 <b>Met z'n tweeën op één apparaat?</b> Kies <b>📺 Op één scherm</b>. Het beeld wordt in tweeën gedeeld. <b style="color:#e8322b">Speler 1</b> speelt met <kbd>SPATIE</kbd> (of tikt op de linker/bovenste helft), <b style="color:#2f7fe0">Speler 2</b> met <kbd>↑</kbd> of <kbd>ENTER</kbd> (of tikt op de rechter/onderste helft). Je hebt geen codes of internet nodig. Onderstaande stappen zijn alleen voor spelen op <b>twee apparaten</b>.</div>
-    <h3>Wat heb je nodig? (twee apparaten)</h3>
-    <ul>
-      <li>Twee apparaten (computer, laptop, tablet of telefoon), elk met dit spel open. Stuur je vriend dus ook dit spel (hetzelfde <b>index.html</b>-bestand of dezelfde link).</li>
-      <li>Internet op allebei, of allebei op <b>hetzelfde wifi-netwerk</b> (dat werkt het best).</li>
-      <li>Een manier om een stukje tekst naar elkaar te sturen: WhatsApp, Discord, e-mail, sms…</li>
-    </ul>
-    <h3>Stap voor stap</h3>
+    <h2 style="text-align:center">Multiplayer</h2>
+    <h3>Op twee apparaten</h3>
     <ol>
-      <li><b>Speler 1 (host)</b> klikt op <b>👥 Multiplayer</b> en dan op <b>🏠 Spel hosten</b>. Er verschijnt een <b>uitnodigingscode</b>. Klik op <b>📋 Kopieer</b> en stuur hem naar je vriend.</li>
-      <li><b>Speler 2</b> klikt op <b>👥 Multiplayer</b> en dan op <b>🔗 Meedoen</b>. Plak de uitnodigingscode in het vak en klik op <b>✍️ Maak antwoordcode</b>.</li>
-      <li>Speler 2 kopieert de <b>antwoordcode</b> en stuurt die terug naar de host.</li>
-      <li>De host plakt de antwoordcode in stap 2 en klikt op <b>🔌 Verbinden</b>. Na een paar seconden staat bovenin <b>🟢 Verbonden</b>.</li>
-      <li>De host kiest <b>🏁 Race</b> (met een afstand) of <b>⏱️ Endurance</b> en klikt op <b>▶ Start!</b> Na het aftellen (3, 2, 1) mag je springen.</li>
+      <li><b>Speler 1</b> kiest <b>Hosten</b> en stuurt de <b>spelcode</b> (of met <b>Kopieer uitnodiging</b> de link) naar speler 2.</li>
+      <li><b>Speler 2</b> kiest <b>Meedoen</b>, vult de spelcode in en klikt op <b>Verbinden</b>. Met de link gaat dat vanzelf.</li>
+      <li>De host kiest <b>Race</b> of <b>Endurance</b> en klikt op <b>Start</b>.</li>
     </ol>
-    <h3>De spelmodi</h3>
+    <div class="tip">Blijft het hangen op <b>Verbinden…</b>? Zet beide apparaten op hetzelfde wifi-netwerk, of gebruik <b>Verbind handmatig</b> (twee codes uitwisselen, werkt zonder server).</div>
+    <div class="tip">Laat het spel in beeld: wie tijdens een potje een paar seconden wegklikt, geeft op. Twee tabbladen in één venster werkt niet; gebruik twee aparte vensters.</div>
+    <h3>Op één apparaat</h3>
+    <p>Kies <b>Op één scherm</b>. <b style="color:#e8322b">Speler 1</b>: <kbd>SPATIE</kbd> of de linker/bovenste helft. <b style="color:#2f7fe0">Speler 2</b>: <kbd>↑</kbd> / <kbd>ENTER</kbd> of de rechter/onderste helft.</p>
+    <h3>Spelmodi</h3>
     <ul>
-      <li><b>🏁 Race</b>: wie het eerst bij de finish is, wint. Val je, dan kom je na een tel terug op een liaan (dat kost tijd).</li>
-      <li><b>⏱️ Endurance</b>: wie het langst volhoudt, wint. Val je, dan ben je af. Een donkere storm jaagt je van achteren op en gaat steeds sneller: blijf hem voor!</li>
-      <li>Jullie spelen in <b>precies dezelfde wereld</b> en zien elkaar als tweede gorilla (met blauwe bandana).</li>
-      <li><b>Upgrades staan uit</b> tijdens multiplayer: iedereen speelt met een gewone Andy. Appels en XP tellen niet mee voor je save.</li>
-      <li>Na afloop klikken jullie allebei op <b>🔁 Revanche</b> voor nog een potje.</li>
+      <li><b>Race</b>: eerst bij de finish wint. Val je, dan kom je na een tel terug op een liaan.</li>
+      <li><b>Endurance</b>: wie het langst volhoudt, wint. Een storm jaagt je steeds sneller op.</li>
+      <li>Upgrades staan uit; appels en XP tellen niet mee voor je save.</li>
     </ul>
-    <h3>Lukt het niet?</h3>
-    <div class="tip">💡 <b>Codes zijn eenmalig.</b> Mislukt het verbinden, klik dan op <b>✖ Opnieuw</b> en begin weer bij stap 1 met nieuwe codes.</div>
-    <div class="tip">📶 Blijft het op <b>Verbinden…</b> hangen? Sommige school-, werk- en mobiele netwerken blokkeren directe verbindingen. Zet allebei de apparaten op hetzelfde wifi-netwerk (of op de hotspot van één van de telefoons) en probeer het opnieuw.</div>
-    <div class="tip">🪟 <b>Laat het spel in beeld.</b> Wissel je tijdens een potje van tabblad of app, dan stopt jouw Andy en na een paar seconden telt het als opgeven.</div>
-    <div class="tip">🧪 <b>Twee tabbladen in hetzelfde venster werkt niet</b>: de browser zet het tabblad dat niet in beeld is stil. Wil je online multiplayer op één computer testen, open het spel dan in twee <b>aparte vensters naast elkaar</b>. Gewoon samen spelen op één computer doe je met <b>📺 Op één scherm</b>.</div>
     <div class="row"><button class="btn" id="btnMpSetupBack">← Terug</button></div>
   </div>
 </div>
@@ -405,59 +431,85 @@
     <div class="results" id="mpResTable"></div>
     <div id="mpResScore" class="sub"></div>
     <div class="row">
-      <button class="btn big green" id="btnMpAgain">🔁 Revanche</button>
+      <button class="btn big green" id="btnMpAgain">Revanche</button>
     </div>
     <div class="row">
-      <button class="btn" id="btnMpLobby">👥 Lobby</button>
-      <button class="btn ghost" id="btnMpLeave">🚪 Stoppen</button>
+      <button class="btn" id="btnMpLobby">Lobby</button>
+      <button class="btn ghost" id="btnMpLeave">Stoppen</button>
     </div>
+  </div>
+</div>
+
+<!-- Ranglijst (eindeloos) -->
+<div id="lb" class="screen">
+  <div class="panel">
+    <h2>Ranglijst</h2>
+    <p class="sub" id="lbSub">Eindeloos · verste afstand</p>
+    <div class="mp-name"><label for="lbName">Naam</label><input id="lbName" maxlength="12" spellcheck="false" autocomplete="off"></div>
+    <ol class="lb" id="lbList"></ol>
+    <div id="lbMsg" class="msg"></div>
+    <div class="row"><button class="btn" id="btnLbBack">← Terug</button><button class="btn green" id="btnLbPlay">▶ Spelen</button></div>
   </div>
 </div>
 
 <!-- Instellingen -->
 <div id="settings" class="screen">
   <div class="panel" style="max-width:420px">
-    <h2>⚙️ Instellingen</h2>
-    <p class="sub">Geluid en muziek staan los van elkaar aan of uit.</p>
+    <h2>Instellingen</h2>
     <div class="stack">
-      <button class="btn big" id="btnSound">🔊 Geluid aan</button>
-      <button class="btn big" id="btnMusic">🎵 Muziek aan</button>
-      <button class="btn big" id="btnFullscreen">⛶ Volledig scherm</button>
-      <button class="btn big" id="btnRotate">🔄 Liggend spelen</button>
+      <button class="btn big" id="btnSound">Geluid aan</button>
+      <button class="btn big" id="btnMusic">Muziek aan</button>
+      <button class="btn big" id="btnFullscreen">Volledig scherm</button>
+      <button class="btn big" id="btnRotate">Liggend spelen</button>
     </div>
     <div class="stats" id="menuStats" style="margin-top:16px"></div>
-    <div class="row"><button class="btn" id="btnSettingsBack">← Terug</button></div>
+    <div class="row"><button class="btn ghost" id="btnDebug">Debug</button><button class="btn" id="btnSettingsBack">← Terug</button></div>
+  </div>
+</div>
+
+<!-- Debug (achter een wachtwoord) -->
+<div id="debug" class="screen">
+  <div class="panel dbg" style="max-width:420px">
+    <h2>Debug</h2>
+    <div id="dbgLock">
+      <input type="password" id="dbgPass" placeholder="Wachtwoord" autocomplete="off">
+      <div class="row"><button class="btn green" id="btnDbgUnlock">Ontgrendel</button></div>
+    </div>
+    <div id="dbgBox" class="hidden">
+      <label for="dbgZoom">Zoom <span id="dbgZoomV">100%</span></label>
+      <input type="range" id="dbgZoom" min="0.4" max="2.5" step="0.05" value="1">
+      <label for="dbgSpeed">Snelheid <span id="dbgSpeedV">100%</span></label>
+      <input type="range" id="dbgSpeed" min="0.25" max="2.5" step="0.05" value="1">
+      <p class="sub" style="margin-top:10px">Runs met een andere snelheid tellen niet voor de ranglijst. Online multiplayer speelt altijd op normale snelheid.</p>
+      <div class="row"><button class="btn ghost" id="btnDbgReset">Standaard</button><button class="btn ghost red" id="btnDbgLock">Vergrendel</button></div>
+    </div>
+    <div id="dbgMsg" class="msg"></div>
+    <div class="row"><button class="btn" id="btnDebugBack">← Terug</button></div>
   </div>
 </div>
 
 <!-- Uitleg -->
 <div id="help" class="screen">
   <div class="panel help">
-    <h2 style="text-align:center">❓ Hoe speel je?</h2>
+    <h2 style="text-align:center">Hoe speel je?</h2>
     <ul>
-      <li>Je start op een rots: houd <kbd>SPATIE</kbd>, de muis of het scherm <b>ingedrukt</b> om naar de eerste liaan te springen.</li>
-      <li>Blijf ingedrukt houden om aan een liaan te hangen. Grijp je hem te hoog, dan glijdt Andy vanzelf een stukje omlaag en houdt hij zijn vaart.</li>
-      <li><b>Laat los</b> om weg te springen – laat los als Andy naar voren zwaait! <b>WOOHOO!</b></li>
-      <li>Houd in de lucht ingedrukt om te <b>duiken</b>: eerst rustig, daarna steeds sneller. Raak je een liaan terwijl je ingedrukt houdt, dan grijp je hem vast.</li>
-      <li>Paddenstoelen laten je hoog stuiteren. Alleen <b>naar beneden vallen</b> is game over.</li>
-      <li>Pak 🍎 appels (gouden appels zijn 5 waard). Snel achter elkaar pakken geeft een <b>combo</b>!</li>
-      <li>Wespen, eksters en vuurballen doen je niets, maar ze <b>stelen appels</b>. Een helm beschermt je.</li>
-      <li>Met je appels koop je <b>permanente upgrades</b>.</li>
-      <li>Blijf je lang in de lucht, dan doet Andy vanzelf <b>trucs</b> (salto's, kurkentrekkers…) voor bonusappels.</li>
-      <li><b>Carrière</b>: levels met een start en finish, steeds moeilijker. <b>Eindeloos</b>: zo ver mogelijk komen.</li>
-      <li><b>Multiplayer</b>: speel tegen een vriend op een ander apparaat, of samen op één scherm. <b>Race</b>: eerste bij de finish wint. <b>Endurance</b>: wie het langst volhoudt, wint. Upgrades staan dan uit. Hoe je het instelt, staat onder <b>❓ Set-up</b> in het multiplayermenu.</li>
-      <li>Door ver te komen verdien je <b>XP</b>; met spelerslevels ontgrendel je nieuwe upgrades.</li>
-      <li>🌀 In het <b>Portaalwoud</b> hangen portalen: vlieg door het <b>blauwe</b> portaal en je komt met al je vaart uit het <b>oranje</b> portaal verderop.</li>
-      <li>Vind je hoog boven het plafond een pad van gouden ballonnen? Pak ze perfect achter elkaar en je vliegt de ruimte in!</li>
-      <li><kbd>P</kbd> of <kbd>Esc</kbd> pauzeert het spel.</li>
+      <li>Houd <kbd>SPATIE</kbd>, de muis of het scherm <b>ingedrukt</b> om te springen en aan een liaan te hangen.</li>
+      <li><b>Laat los</b> als Andy naar voren zwaait om weg te springen.</li>
+      <li>Houd in de lucht ingedrukt om te <b>duiken</b>; raak je dan een liaan, dan grijp je hem.</li>
+      <li>Alleen <b>naar beneden vallen</b> is game over. Paddenstoelen en trampolines lanceren je.</li>
+      <li>Pak appels (goud = 5). Snel achter elkaar geeft een <b>combo</b>. Vijanden stelen appels, een helm beschermt je.</li>
+      <li>Koop met appels <b>upgrades</b>; met XP ontgrendel je er meer.</li>
+      <li>Hoe verder je komt, hoe iets lastiger en sneller het wordt.</li>
+      <li>Blauw portaal in, oranje portaal uit. Gouden ballonnen achter elkaar pakken: de ruimte in!</li>
+      <li><kbd>P</kbd> of <kbd>Esc</kbd>: pauze.</li>
     </ul>
     <h3>Speciale lianen</h3>
     <div class="biomes">
-      <div>✨ <b>Turbo</b><br><small>Goud: extra vaart als je loslaat.</small></div>
-      <div>🎀 <b>Elastiek</b><br><small>Roze: rekt uit en veert mee.</small></div>
-      <div>🍎 <b>Fruitliaan</b><br><small>Hangt vol appels.</small></div>
-      <div>🪵 <b>Rot</b><br><small>Bruin: breekt na even hangen.</small></div>
-      <div>🧊 <b>IJs</b><br><small>Blauw: je glijdt omlaag.</small></div>
+      <div><b>Turbo</b><br><small>Goud: extra vaart.</small></div>
+      <div><b>Elastiek</b><br><small>Roze: rekt en veert.</small></div>
+      <div><b>Fruit</b><br><small>Vol appels.</small></div>
+      <div><b>Rot</b><br><small>Bruin: breekt.</small></div>
+      <div><b>IJs</b><br><small>Blauw: je glijdt.</small></div>
     </div>
     <h3>Biomes</h3>
     <div class="biomes" id="helpBiomes"></div>
@@ -467,37 +519,38 @@
 
 <!-- Winkel -->
 <div id="shop" class="screen">
-  <div class="panel wide">
-    <div class="panel-head"><h2>🛒 Upgrades</h2><div class="bank">🍎 <span id="shopBank">0</span></div></div>
-    <p class="sub" style="text-align:left">Upgrades zijn permanent. Verdien XP door ver te komen om nieuwe upgrades te ontgrendelen.</p>
-    <div id="shopXp"></div>
-    <div id="shopGrid" class="grid"></div>
-    <div class="row"><button class="btn" id="btnShopBack">← Terug</button><button class="btn green" id="btnShopPlay">▶ Spelen</button></div>
+  <div class="panel wide shop">
+    <div class="panel-head"><h2>Upgrades</h2><span class="lvl" id="shopLvl"></span><div class="bank">🍎 <span id="shopBank">0</span></div></div>
+    <div class="shop-list">
+      <div id="shopGrid" class="grid"></div>
+      <div id="shopLocks" class="locks"></div>
+    </div>
+    <div class="shop-foot"><div class="row"><button class="btn" id="btnShopBack">← Terug</button><button class="btn green" id="btnShopPlay">▶ Spelen</button></div></div>
   </div>
 </div>
 
 <!-- Opslaan -->
 <div id="saves" class="screen">
   <div class="panel">
-    <h2>💾 Voortgang</h2>
-    <p class="sub">Je voortgang wordt automatisch opgeslagen in deze browser. Exporteer een save-bestand als back-up of om je voortgang naar een ander apparaat te verhuizen.</p>
+    <h2>Voortgang</h2>
+    <p class="sub">Wordt automatisch bewaard in deze browser. Exporteer voor een back-up of een ander apparaat.</p>
     <div class="stats" id="saveStats"></div>
     <div class="row">
-      <button class="btn green" id="btnExport">⬇ Exporteer save</button>
-      <button class="btn" id="btnImport">⬆ Importeer save</button>
+      <button class="btn green" id="btnExport">Exporteer</button>
+      <button class="btn" id="btnImport">Importeer</button>
     </div>
     <input type="file" id="fileImport" accept=".json,application/json,text/plain" hidden>
     <details>
-      <summary>Of gebruik een save-code (handig op telefoon)</summary>
+      <summary>Save-code (tekst)</summary>
       <textarea id="saveCode" placeholder="Plak hier een save-code…" spellcheck="false"></textarea>
       <div class="row">
-        <button class="btn" id="btnCopyCode">📋 Kopieer mijn code</button>
-        <button class="btn" id="btnLoadCode">📥 Laad code</button>
+        <button class="btn" id="btnCopyCode">Kopieer mijn code</button>
+        <button class="btn" id="btnLoadCode">Laad code</button>
       </div>
     </details>
     <div id="saveMsg" class="msg"></div>
     <div class="row">
-      <button class="btn ghost red" id="btnReset">🗑 Voortgang wissen</button>
+      <button class="btn ghost red" id="btnReset">Voortgang wissen</button>
       <button class="btn" id="btnSavesBack">← Terug</button>
     </div>
   </div>
@@ -508,22 +561,22 @@
   <div class="panel">
     <h2 id="overTitle">Plons!</h2>
     <p class="sub" id="overReason"></p>
-    <div id="overRecord" class="record hidden">🏆 Nieuw record!</div>
+    <div id="overRecord" class="record hidden">Nieuw record!</div>
     <div class="results">
       <div><span id="ovDistLabel">Afstand</span><b id="ovDist"></b></div>
-      <div><span>Appels geplukt</span><b id="ovPicked"></b></div>
-      <div><span>Appels (met bonus)</span><b id="ovApples"></b></div>
-      <div id="ovStolenRow"><span>Gestolen door vijanden</span><b id="ovStolen"></b></div>
+      <div><span>Appels</span><b id="ovApples"></b></div>
+      <div id="ovStolenRow"><span>Gestolen</span><b id="ovStolen"></b></div>
       <div><span>Afstandsbonus</span><b id="ovBD"></b></div>
       <div class="total"><span>Verdiend</span><b id="ovTotal"></b></div>
     </div>
     <div id="ovXp"></div>
-    <div style="margin-bottom:12px"><span class="bank">🍎 <span id="ovBank"></span></span></div>
+    <div id="ovRank" class="sub hidden"></div>
     <button class="btn big green" id="btnRetry">↻ Opnieuw</button>
     <div class="row">
-      <button class="btn" id="btnOverShop">🛒 Upgrades</button>
-      <button class="btn" id="btnOverLevels">🏁 Levels</button>
-      <button class="btn" id="btnOverMenu">🏠 Menu</button>
+      <button class="btn" id="btnOverShop">Upgrades</button>
+      <button class="btn" id="btnOverLb">Ranglijst</button>
+      <button class="btn" id="btnOverLevels">Levels</button>
+      <button class="btn" id="btnOverMenu">Menu</button>
     </div>
   </div>
 </div>
@@ -531,8 +584,8 @@
 <!-- Carrière -->
 <div id="career" class="screen">
   <div class="panel wide">
-    <div class="panel-head"><h2>🏁 Carrière</h2><div class="bank">⭐ <span id="carStars">0</span></div></div>
-    <p class="sub" style="text-align:left">Zwaai van de start naar de finish. Elk level is iets langer en moeilijker, en elke 5 levels kom je in een nieuwe biome. Pak appels voor extra sterren: ★ finish · ★★ 35% van de appels · ★★★ 65%.</p>
+    <div class="panel-head"><h2>Carrière</h2><div class="bank">★ <span id="carStars">0</span></div></div>
+    <p class="sub" style="text-align:left">★ finish · ★★ 35% van de appels · ★★★ 65%</p>
     <div id="levelGrid" class="lvgrid"></div>
     <div class="row"><button class="btn" id="btnCareerBack">← Terug</button></div>
   </div>
@@ -554,8 +607,8 @@
     <button class="btn big green" id="btnNextLevel">▶ Volgend level</button>
     <div class="row">
       <button class="btn" id="btnDoneRetry">↻ Opnieuw</button>
-      <button class="btn" id="btnDoneShop">🛒 Upgrades</button>
-      <button class="btn" id="btnDoneLevels">🏁 Levels</button>
+      <button class="btn" id="btnDoneShop">Upgrades</button>
+      <button class="btn" id="btnDoneLevels">Levels</button>
     </div>
   </div>
 </div>
@@ -563,13 +616,13 @@
 <!-- Pauze -->
 <div id="pause" class="screen">
   <div class="panel">
-    <h2 id="pauseTitle">⏸ Pauze</h2>
-    <p class="sub" id="pauseSub">Neem even een banaan.</p>
+    <h2 id="pauseTitle">Pauze</h2>
+    <p class="sub" id="pauseSub"></p>
     <button class="btn big green" id="btnResume">▶ Doorgaan</button>
     <div class="row">
-      <button class="btn" id="btnQuit">🏁 Stoppen &amp; innen</button>
-      <button class="btn ghost" id="btnPauseSound">🔊 Geluid aan</button>
-      <button class="btn ghost" id="btnPauseMusic">🎵 Muziek aan</button>
+      <button class="btn" id="btnQuit">Stoppen</button>
+      <button class="btn ghost" id="btnPauseSound">Geluid aan</button>
+      <button class="btn ghost" id="btnPauseMusic">Muziek aan</button>
     </div>
   </div>
 </div>
@@ -577,6 +630,18 @@
 <script>
 'use strict';
 (() => {
+// =====================================================================
+//  Instellingen voor de website (zie README: "Ranglijst instellen")
+// =====================================================================
+const CONFIG = {
+  // Supabase-project voor de ranglijst van Eindeloos: de "Project URL" en de "anon"/"publishable" key.
+  // Laat leeg als je (nog) geen ranglijst wilt; het spel werkt dan gewoon zonder.
+  leaderboard: { url: '', key: '' },
+  // Adres waar het spel online staat (bijv. https://jouwnaam.github.io/andy-apple/). Wordt gebruikt voor
+  // uitnodigingslinks als het spel als los bestand of in de Android-app draait. Leeg = het huidige adres.
+  siteUrl: '',
+};
+
 // =====================================================================
 //  Constanten
 // =====================================================================
@@ -664,20 +729,20 @@ const fmtNum = n => (Math.round(n * 10) / 10).toString().replace('.', ',');
 
 const UPGRADES = [
   { id:'grip',    icon:'✋', name:'Lange armen',    info:'Grijp lianen van verder weg.',                          max:5, base:25,  growth:1.8,  fx:l => `${gripR(l)} bereik` },
-  { id:'swing',   icon:'🌀', name:'Zwaaikracht',    info:'Zwaai harder en sneller aan een liaan.',              max:5, base:30,  growth:1.8,  fx:l => `+${l * 22}% zwaai, max ${1030 + 110 * l}` },
-  { id:'launch',  icon:'💨', name:'Lanceerkracht',  info:'Meer vaart bij het loslaten en een hogere topsnelheid.',                        max:5, base:40,  growth:1.85, fx:l => `+${l * 7}% vaart, top ${1300 + 110 * l}` },
-  { id:'magnet',  icon:'🧲', name:'Appelmagneet',   info:'Trekt appels in de buurt naar je toe.',                 max:5, base:35,  growth:1.8,  fx:l => l ? `${magnetR(l)} bereik` : 'geen' },
-  { id:'value',   icon:'🧺', name:'Appeloogst',     info:'Elke geplukte appel telt voor meer (bovenop de biomebonus).', max:5, base:50, growth:1.9, fx:l => `×${fmtNum(appleVal(l))} per appel` },
-  { id:'golden',  icon:'✨', name:'Gouden appels',  info:'Meer gouden appels (5 appels waard).',                  unlock:4, max:4, base:45,  growth:1.9,  fx:l => `${Math.round(goldChance(l) * 100)}% kans` },
-  { id:'balloon', icon:'🎈', name:'Reddingsballon', info:'Redt je als je naar beneden valt.',                     max:3, base:80,  growth:2.2,  fx:l => `${l}× per run` },
-  { id:'helmet',  icon:'⛑️', name:'Helm',           info:'Voorkomt dat een vijand appels van je steelt.',         unlock:6, max:3, base:70,  growth:2.2,  fx:l => `${l}× per run` },
-  { id:'rocket',  icon:'🚀', name:'Raketstart',     info:'Begin elke run met een raketvlucht.',                   unlock:20, max:4, base:120, growth:2.0,  fx:l => l ? `${rocketDist(l)} m` : 'geen' },
-  { id:'parrot',  icon:'🦜', name:'Papegaaimaatje', info:'Een papegaai vliegt met je mee en plukt appels voor je.',  unlock:14, max:4, base:90,  growth:2.0,  fx:l => l ? `elke ${fmtNum(parrotCd(l))} s een appel` : 'geen' },
-  { id:'rain',    icon:'🌧️', name:'Appelregen',     info:'Bij elke 100 m regent het appels uit de lucht.',        unlock:16, max:3, base:60,  growth:2.0,  fx:l => l ? `${3 + l * 3} appels per 100 m` : 'geen' },
-  { id:'combo',   icon:'🔥', name:'Comboketting',   info:'Je combo blijft langer staan en levert meer bonus op.',  unlock:8, max:3, base:55,  growth:2.0,  fx:l => `${fmtNum(comboWin(l))} s · bonus ×${1 + l}` },
-  { id:'vinewise',icon:'🌿', name:'Liaankenner',    info:'Rotte lianen houden langer, ijs is minder glad en er zijn meer turbolianen.', unlock:12, max:3, base:50, growth:2.0, fx:l => l ? `+${l * 40}% grip` : 'geen' },
-  { id:'wingsuit',icon:'🦸', name:'Wingsuit',       info:'Andy krijgt een cape en glijdt veel verder door de lucht.', max:4, base:110, growth:2.0, fx:l => l ? `+${l * 25}% glijvlucht` : 'geen' },
-  { id:'shroom',  icon:'🍄', name:'Stuiterzwam',    info:'Meer paddenstoelen en lucht-trampolines, en ze lanceren je verder.',  unlock:10, max:3, base:40,  growth:1.9,  fx:l => l ? `+${l * 40}% paddenstoelen` : 'geen' },
+  { id:'swing',   icon:'🌀', name:'Zwaaikracht',    info:'Zwaai harder en sneller.',              max:5, base:30,  growth:1.8,  fx:l => `+${l * 22}% zwaai, max ${1030 + 110 * l}` },
+  { id:'launch',  icon:'💨', name:'Lanceerkracht',  info:'Meer vaart bij het loslaten.',                        max:5, base:40,  growth:1.85, fx:l => `+${l * 7}% vaart, top ${1300 + 110 * l}` },
+  { id:'magnet',  icon:'🧲', name:'Appelmagneet',   info:'Trekt appels naar je toe.',                 max:5, base:35,  growth:1.8,  fx:l => l ? `${magnetR(l)} bereik` : 'geen' },
+  { id:'value',   icon:'🧺', name:'Appeloogst',     info:'Elke appel telt voor meer.', max:5, base:50, growth:1.9, fx:l => `×${fmtNum(appleVal(l))} per appel` },
+  { id:'golden',  icon:'✨', name:'Gouden appels',  info:'Meer gouden appels (5 waard).',                  unlock:4, max:4, base:45,  growth:1.9,  fx:l => `${Math.round(goldChance(l) * 100)}% kans` },
+  { id:'balloon', icon:'🎈', name:'Reddingsballon', info:'Redt je als je valt.',                     max:3, base:80,  growth:2.2,  fx:l => `${l}× per run` },
+  { id:'helmet',  icon:'⛑️', name:'Helm',           info:'Vijanden stelen geen appels.',         unlock:6, max:3, base:70,  growth:2.2,  fx:l => `${l}× per run` },
+  { id:'rocket',  icon:'🚀', name:'Raketstart',     info:'Begin met een raketvlucht.',                   unlock:20, max:4, base:120, growth:2.0,  fx:l => l ? `${rocketDist(l)} m` : 'geen' },
+  { id:'parrot',  icon:'🦜', name:'Papegaaimaatje', info:'Een papegaai plukt appels voor je.',  unlock:14, max:4, base:90,  growth:2.0,  fx:l => l ? `elke ${fmtNum(parrotCd(l))} s een appel` : 'geen' },
+  { id:'rain',    icon:'🌧️', name:'Appelregen',     info:'Appelregen bij elke 100 m.',        unlock:16, max:3, base:60,  growth:2.0,  fx:l => l ? `${3 + l * 3} appels per 100 m` : 'geen' },
+  { id:'combo',   icon:'🔥', name:'Comboketting',   info:'Langere combo\'s, meer bonus.',  unlock:8, max:3, base:55,  growth:2.0,  fx:l => `${fmtNum(comboWin(l))} s · bonus ×${1 + l}` },
+  { id:'vinewise',icon:'🌿', name:'Liaankenner',    info:'Sterkere rotte lianen, minder glad ijs.', unlock:12, max:3, base:50, growth:2.0, fx:l => l ? `+${l * 40}% grip` : 'geen' },
+  { id:'wingsuit',icon:'🦸', name:'Wingsuit',       info:'Glijd veel verder door de lucht.', max:4, base:110, growth:2.0, fx:l => l ? `+${l * 25}% glijvlucht` : 'geen' },
+  { id:'shroom',  icon:'🍄', name:'Stuiterzwam',    info:'Meer en sterkere paddenstoelen.',  unlock:10, max:3, base:40,  growth:1.9,  fx:l => l ? `+${l * 40}% paddenstoelen` : 'geen' },
 ];
 // ---- XP: hoe verder je komt, hoe meer XP; met spelerslevels ontgrendel je nieuwe upgrades ----
 const xpNeed = L => Math.round(260 * Math.pow(L, 1.6)); // XP nodig om van level L naar L+1 te gaan
@@ -697,7 +762,7 @@ const upCost = (u, l) => Math.round(u.base * 1.5 * Math.pow(u.growth, l) / 5) * 
 const SAVE_KEY = 'andyApples.save.v1';
 const GAME_ID = 'Andy Apples';
 function defaultSave() {
-  return { version:3, apples:0, xp:0, upgrades:{}, best:0, totalApples:0, totalDistance:0, runs:0, maxBiome:0, sound:true, music:true, mpGames:0, mpWins:0, career:{ unlocked:1, stars:Array.from({ length: LEVELS }, () => 0) } };
+  return { version:3, apples:0, xp:0, upgrades:{}, best:0, totalApples:0, totalDistance:0, runs:0, maxBiome:0, sound:true, music:true, lbBest:0, mpGames:0, mpWins:0, career:{ unlocked:1, stars:Array.from({ length: LEVELS }, () => 0) } };
 }
 function normalizeSave(o) {
   const s = defaultSave();
@@ -714,6 +779,7 @@ function normalizeSave(o) {
   s.sound = o.sound !== false;
   s.music = o.music !== false;
   s.xp = num(o.xp);
+  s.lbBest = num('lbBest' in o ? o.lbBest : o.best); // beste afstand die meetelt voor de ranglijst (zonder debug-snelheid)
   s.mpGames = num(o.mpGames);
   s.mpWins = Math.min(num(o.mpWins), s.mpGames);
   const c = (o.career && typeof o.career === 'object') ? o.career : {};
@@ -795,7 +861,18 @@ function shade(hex, f) { const c = hexToRgb(hex); return rgbStr(c.map(v => f < 0
 const $ = id => document.getElementById(id);
 
 function biomeIndexAt(m) { if (game.career) return game.career.bi; let i = 0; for (let j = 0; j < BIOMES.length; j++) if (m >= BIOMES[j].start) i = j; return i; }
-function diffAt(m) { if (game.career) return clamp(game.career.diff + Math.max(0, m) / game.career.L * 0.08, 0, 1.4); return Math.min(1.4, Math.max(0, m) / 3500); }
+// Eindeloos (en multiplayer): de moeilijkheid loopt geleidelijk op en vlakt af naar een plafond,
+// zodat het spel altijd te doen blijft (meer gaten, grotere afstanden, meer vijanden, minder appels).
+const DIFF_MAX = 1.2, DIFF_RAMP = 3000;
+function diffAt(m) { if (game.career) return clamp(game.career.diff + Math.max(0, m) / game.career.L * 0.08, 0, 1.4); return DIFF_MAX * (1 - Math.exp(-Math.max(0, m) / DIFF_RAMP)); }
+// Eindeloos: het tempo gaat ook iets omhoog naarmate je verder komt, tot maximaal +12%% (bij 4000 m).
+// Debug-snelheid telt overal mee, behalve online (dan moeten beide spelers gelijk zijn).
+const TEMPO_MAX = 0.12, TEMPO_DIST = 4000;
+function timeScale() {
+  let k = game.mp && !game.mp.local ? 1 : DBG.speed;
+  if (!game.career && !game.mp && run) { const t = clamp(run.dist / TEMPO_DIST, 0, 1); k *= 1 + TEMPO_MAX * t * t * (3 - 2 * t); }
+  return k;
+}
 function paletteAt(m) {
   const i = biomeIndexAt(m), a = BIOMES[i], b = game.career ? a : BIOMES[i + 1] || a;
   let t = 0;
@@ -1072,6 +1149,12 @@ const QKEY = 'andyApples.quality3';
 let qLevel = 3, qMax = 4;
 try { const q = JSON.parse(localStorage.getItem(QKEY)); if (q && q.l >= 0 && q.l <= 4) qLevel = q.l; } catch (e) { /* geen voorkeur */ }
 let Q = QUALITY[qLevel];
+// ---- Debug-instellingen (achter een wachtwoord): zoom en snelheid ----
+const DBG_KEY = 'andyApples.debug';
+const DBG_HASH = '80dfac20'; // checksum van het wachtwoord (zie README)
+const DBG = { zoom: 1, speed: 1, open: false };
+try { const d = JSON.parse(localStorage.getItem(DBG_KEY)); if (d) { DBG.zoom = clamp(+d.zoom || 1, 0.4, 2.5); DBG.speed = clamp(+d.speed || 1, 0.25, 2.5); DBG.open = !!d.open; } } catch (e) { /* geen instellingen */ }
+const dbgPersist = () => { try { localStorage.setItem(DBG_KEY, JSON.stringify(DBG)); } catch (e) { /* negeren */ } };
 let dpr = 1, pr = 1, cssW = 0, cssH = 0, baseScale = 1, scale = 1, viewW = 0, viewH = 0, zoomK = 0;
 let bgFrame = 0, bgStale = true;
 let bgCanvas = document.createElement('canvas');
@@ -1140,8 +1223,8 @@ function resize() {
   }
   LOCAL.vw = vw; LOCAL.vh = vh;
   baseScale = Math.min(vh / 740, vw / 500);
-  // standaard 50% verder uitgezoomd (los van de snelheidsafhankelijke zoom hieronder)
-  baseScale /= BASE_ZOOM_OUT;
+  // standaard-zoom (los van de snelheidsafhankelijke zoom hieronder), plus de debug-zoom
+  baseScale *= DBG.zoom / BASE_ZOOM_OUT;
   // telefoons/tablets: iets verder uitgezoomd voor meer overzicht
   if (IS_MOBILE) baseScale *= vw < vh ? 0.76 : 0.86;
   RW = Math.round(vw * pr); RH = Math.round(vh * pr);
@@ -1150,7 +1233,7 @@ function resize() {
   bgStale = true;
   applyZoom();
 }
-const BASE_ZOOM_OUT = 1.5; // standaard-zoomniveau: 50% verder uitgezoomd dan het oorspronkelijke beeld
+const BASE_ZOOM_OUT = 1.25; // standaard-zoomniveau (was 1,5: het beeld staat nu 20% verder ingezoomd)
 // Hoe sneller Andy gaat, hoe verder uitgezoomd (meer overzicht bij hoge snelheid).
 // De zoom volgt NIET de directe snelheid (die schommelt bij elke zwaai sterk), maar de gemiddelde
 // voorwaartse snelheid over ruim een seconde, en beweegt daar dan ook nog rustig naartoe.
@@ -1457,6 +1540,7 @@ function limitDist(a, b, max) { // "long range attachment": voorkomt te ver uitr
 function simVine(v, dt) {
   const p = v.pts, n = p.length, dt2 = dt * dt;
   const hang = G.state === 'hang' && G.vine === v;
+  v.is = stepNo; for (let i = 0; i < n; i++) { p[i].ix = p[i].x; p[i].iy = p[i].y; } // voor de interpolatie bij het tekenen
   if (v.balloon) { // de luchtballon drijft langzaam naar rechts en deint op en neer
     const b = v.balloon, a = p[0];
     a.x += b.vx * dt; v.x += b.vx * dt;
@@ -1772,6 +1856,8 @@ function die() {
 //  Update
 // =====================================================================
 function step(dt) {
+  stepNo++;
+  if (G) { G.is = stepNo; G.ix = G.x; G.iy = G.y; G.ihx = G.hx; G.ihy = G.hy; G.ia = G.angle; G.itr = G.trickRot || 0; }
   time += dt;
   const forced = game.mode === 'menu' || game.mode === 'ready' || game.mode === 'done' || game.mode === 'mpcount' || game.mode === 'mpend' || game.holdLock;
   const holdHang = forced || (game.mode === 'playing' && input.down);
@@ -1950,7 +2036,7 @@ function updateGorilla(dt, holdHang, holdAir) {
     if (bi > run.biome && !game.career) {
       run.biome = bi; Music.biome = bi;
       const b = BIOMES[bi];
-      showBanner(`${b.icon} ${b.name}`, `${b.tip}\nElke appel telt nu ×${fmtNum(applesPerPick(bi))}!`);
+      showBanner(b.name, `Elke appel ×${fmtNum(applesPerPick(bi))}`);
       floatText(G.x, G.y - 70, '🍎 Appels meer waard!', '#ffe46b', 24);
       confetti(G.x + 200, G.y - 200, 90);
       flashT = 0.35;
@@ -3490,7 +3576,50 @@ function drawFlash() {
 }
 
 
+// ---- Vloeiend beeld: interpolatie tussen de laatste twee physics-stappen ----
+// De physics loopt op vaste stappen van 1/120 s. Op schermen die niet precies 60/120 Hz verversen
+// (75, 90, 144 Hz, of bij wisselende framerates) valt er soms een stap meer of minder in een beeld;
+// zonder interpolatie schokt/flikkert Andy dan t.o.v. de soepel bewegende camera.
+let stepNo = 0, renderAlpha = 1;
+const ipVines = [];
+let ipTime = null, ipG = null;
+const wrapA = a => Math.atan2(Math.sin(a), Math.cos(a));
+// zet een gorilla tijdelijk op zijn geïnterpoleerde plek (false = niet nodig of niet mogelijk)
+function ipApply(g) {
+  if (!g || g.is == null || renderAlpha >= 1) return false;
+  if (Math.abs(g.x - g.ix) + Math.abs(g.y - g.iy) > 250) return false; // sprong door een portaal of een respawn
+  const a = renderAlpha, b = 1 - a;
+  g.sx = g.x; g.sy = g.y; g.shx = g.hx; g.shy = g.hy; g.sa = g.angle; g.str = g.trickRot;
+  g.x = g.ix * b + g.x * a; g.y = g.iy * b + g.y * a;
+  g.hx = g.ihx * b + g.hx * a; g.hy = g.ihy * b + g.hy * a;
+  g.angle = g.sa - wrapA(g.sa - g.ia) * b;
+  if (g.trickRot) g.trickRot = g.str - wrapA(g.str - g.itr) * b;
+  return true;
+}
+function ipRestore(g) { g.x = g.sx; g.y = g.sy; g.hx = g.shx; g.hy = g.shy; g.angle = g.sa; g.trickRot = g.str; }
+function interpBegin(onlyG) {
+  if (!G || G.is == null || renderAlpha >= 1) return;
+  const a = renderAlpha, b = 1 - a;
+  if (ipApply(G)) ipG = G;
+  if (onlyG) return;
+  ipTime = time; time -= b * DT;
+  for (const v of vines) {
+    if (v.is !== G.is) continue;
+    ipVines.push(v);
+    for (const q of v.pts) { q.sx = q.x; q.sy = q.y; q.x = q.ix * b + q.x * a; q.y = q.iy * b + q.y * a; }
+  }
+}
+function interpEnd() {
+  if (ipG) { ipRestore(ipG); ipG = null; }
+  if (ipTime !== null) { time = ipTime; ipTime = null; }
+  for (const v of ipVines) for (const q of v.pts) { q.x = q.sx; q.y = q.sy; }
+  ipVines.length = 0;
+}
 function render() {
+  interpBegin(false);
+  try { renderScene(); } finally { interpEnd(); }
+}
+function renderScene() {
   const P = paletteAt((camX + viewW * 0.5 - START_X) / PX_PER_M);
   const S = scale * pr;
   const clip = LOCAL.on;
@@ -3566,7 +3695,7 @@ function render() {
 // =====================================================================
 const MP_NAME_KEY = 'andyApples.name';
 const MP_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
-const MP = { pc: null, dc: null, role: null, connected: false, busy: false, local: false, oppName: 'Tegenstander',
+const MP = { pc: null, dc: null, peer: null, hosting: false, manual: false, room: '', joinTimer: 0, role: null, connected: false, busy: false, local: false, oppName: 'Tegenstander',
   sel: { mode: 'race', len: 1000 }, cfg: null, match: null, snaps: [], rt: null, ghost: null,
   lastMsg: 0, sendAcc: 0, again: false, oppAgain: false, score: { me: 0, opp: 0 }, hideTimer: 0 };
 let ghostPin = { v: null, k: 0, x: 0, y: 0 };
@@ -3625,43 +3754,47 @@ function mpNewPc() {
   });
   return pc;
 }
+function mpOpened() {
+  clearTimeout(MP.joinTimer);
+  MP.connected = true; MP.lastMsg = performance.now(); MP.score = { me: 0, opp: 0 };
+  mpSend({ type: 'hello', name: myName() });
+  if (MP.role === 'host') mpSend({ type: 'lobby', mode: MP.sel.mode, len: MP.sel.len });
+  mpMsg('');
+  Sfx.buy();
+  mpRender();
+}
+function mpData(text) { let m; try { m = JSON.parse(text); } catch (err) { return; } mpOnMsg(m); }
 function mpSetupDc(dc) {
   MP.dc = dc;
-  dc.onopen = () => {
-    if (MP.dc !== dc) return;
-    MP.connected = true; MP.lastMsg = performance.now(); MP.score = { me: 0, opp: 0 };
-    mpSend({ type: 'hello', name: myName() });
-    if (MP.role === 'host') mpSend({ type: 'lobby', mode: MP.sel.mode, len: MP.sel.len });
-    mpMsg('');
-    Sfx.buy();
-    mpRender();
-  };
+  dc.onopen = () => { if (MP.dc === dc) mpOpened(); };
   dc.onclose = () => { if (MP.dc === dc) mpLost('De verbinding is verbroken.'); };
-  dc.onmessage = e => { if (MP.dc !== dc) return; let m; try { m = JSON.parse(e.data); } catch (err) { return; } mpOnMsg(m); };
+  dc.onmessage = e => { if (MP.dc === dc) mpData(e.data); };
 }
 function mpSend(m) { const dc = MP.dc; if (dc && dc.readyState === 'open') { try { dc.send(JSON.stringify(m)); } catch (e) { /* negeren */ } } }
 function mpClose(sayBye) {
   if (sayBye) mpSend({ type: 'bye' });
-  const pc = MP.pc, dc = MP.dc;
-  MP.pc = null; MP.dc = null; MP.connected = false; MP.role = null; MP.busy = false;
+  const pc = MP.pc, dc = MP.dc, peer = MP.peer;
+  MP.pc = null; MP.dc = null; MP.peer = null; MP.connected = false; MP.role = null; MP.busy = false; MP.hosting = false;
   MP.again = MP.oppAgain = false;
+  clearTimeout(MP.joinTimer);
   // het afsluiten iets uitstellen, zodat het "bye"-bericht nog weg kan
-  setTimeout(() => { try { if (dc) dc.close(); } catch (e) { /* */ } try { if (pc) pc.close(); } catch (e) { /* */ } }, sayBye ? 300 : 0);
+  setTimeout(() => { try { if (dc) dc.close(); } catch (e) { /* */ } try { if (pc) pc.close(); } catch (e) { /* */ } try { if (peer) peer.destroy(); } catch (e) { /* */ } }, sayBye ? 300 : 0);
 }
+const mpActive = () => !!(MP.pc || MP.peer || MP.dc);
 // verbinding kwijt: tijdens een potje eindigt dat zonder winnaar
 function mpLost(reason) {
   const wasConnected = MP.connected || MP.role;
   mpClose(false);
   const M = MP.match;
   if (M && !M.result && game.mp === M) mpEnd('conn', reason);
-  else if (curScreen === 'mpRes') { $('btnMpAgain').disabled = true; $('btnMpAgain').textContent = '🔌 Verbinding verbroken'; }
+  else if (curScreen === 'mpRes') { $('btnMpAgain').disabled = true; $('btnMpAgain').textContent = 'Verbinding verbroken'; }
   if (wasConnected) mpMsg(reason, false);
   mpRender();
 }
 async function mpHost() {
   if (MP.busy) return;
   mpClose(false);
-  MP.role = 'host'; MP.busy = true;
+  MP.role = 'host'; MP.busy = true; MP.manual = true;
   $('mpOffer').value = ''; $('mpAnswerIn').value = ''; $('btnMpCopyOffer').disabled = true;
   mpMsg(''); mpRender();
   try {
@@ -3681,13 +3814,18 @@ async function mpConnect() {
   try {
     const d = await unpackCode($('mpAnswerIn').value);
     if (d.type !== 'answer') throw new Error('Dit is een uitnodigingscode. Je hebt de ANTWOORDcode van je vriend nodig.');
-    if (pc.signalingState !== 'have-local-offer') throw new Error('Deze uitnodiging is al gebruikt. Klik op ✖ Opnieuw.');
+    if (pc.signalingState !== 'have-local-offer') throw new Error('Deze uitnodiging is al gebruikt. Klik op Opnieuw.');
     await pc.setRemoteDescription(d);
     mpMsg('Verbinden…', true);
     mpRender();
   } catch (e) { mpMsg(e.message, false); }
 }
-function mpJoinStart() { mpClose(false); MP.role = 'guest'; $('mpOfferIn').value = ''; $('mpAnswer').value = ''; mpMsg(''); mpRender(); }
+function mpJoinStart(code) {
+  mpClose(false); MP.role = 'guest'; MP.manual = false;
+  $('mpOfferIn').value = ''; $('mpAnswer').value = ''; $('mpJoinRoom').value = code || '';
+  mpMsg(''); mpRender();
+  if (code) mpPeerJoin(code); else setTimeout(() => $('mpJoinRoom').focus(), 50);
+}
 async function mpMakeAnswer() {
   if (MP.busy) return;
   let d;
@@ -3696,7 +3834,7 @@ async function mpMakeAnswer() {
     if (d.type !== 'offer') throw new Error('Dit is een antwoordcode. Je hebt de UITNODIGINGScode van de host nodig.');
   } catch (e) { mpMsg(e.message, false); return; }
   mpClose(false);
-  MP.role = 'guest'; MP.busy = true;
+  MP.role = 'guest'; MP.busy = true; MP.manual = true;
   $('mpAnswer').value = ''; $('btnMpCopyAnswer').disabled = true;
   mpMsg(''); mpRender();
   try {
@@ -3721,6 +3859,106 @@ function mpCopy(id) {
   else { try { document.execCommand('copy'); done(); } catch (e) { mpMsg('Selecteer en kopieer de code handmatig.', true); } }
 }
 
+// ---- Verbinden met één spelcode (PeerJS) ----
+// Een gratis "makelaar"-server (PeerJS Cloud) koppelt de twee spelers via een korte spelcode die de
+// host zelf mag kiezen; daarna praten de browsers direct met elkaar (WebRTC), net als bij de codes.
+// De PeerJS-bibliotheek wordt pas geladen als je online multiplayer gebruikt.
+const PEER_PREFIX = 'andyapples-';
+const PEER_LIBS = ['https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js', 'https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js'];
+let peerLib = null;
+function loadPeerLib() {
+  if (window.Peer) return Promise.resolve();
+  if (!peerLib) peerLib = (async () => {
+    for (const src of PEER_LIBS) {
+      try {
+        await new Promise((res, rej) => { const el = document.createElement('script'); el.src = src; el.onload = res; el.onerror = () => { el.remove(); rej(new Error('laden mislukt')); }; document.head.appendChild(el); });
+        if (window.Peer) return;
+      } catch (e) { /* volgende bron proberen */ }
+    }
+    peerLib = null;
+    throw new Error('Kon online multiplayer niet laden. Heb je internet? Je kunt ook handmatig verbinden.');
+  })();
+  return peerLib;
+}
+// spelcode: kleine letters en cijfers, zonder spaties of accenten
+const roomCode = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '').slice(0, 16);
+const suggestRoom = () => (roomCode(myName()) || 'andy').slice(0, 10) + (10 + Math.floor(Math.random() * 90));
+function mpInviteLink(code) {
+  const base = CONFIG.siteUrl || (/^https?:$/.test(location.protocol) ? location.origin + location.pathname : '');
+  return base ? `${base}#join=${code}` : '';
+}
+function mpPeerError(err) {
+  const t = err && err.type;
+  if (MP.connected && t !== 'peer-unavailable') return; // makelaar kwijt, maar de directe verbinding werkt nog
+  const msg = t === 'unavailable-id' ? 'Deze spelcode is al in gebruik. Kies een andere.'
+    : t === 'peer-unavailable' ? 'Geen spel gevonden met deze code. Klopt de code, en wacht de host nog?'
+    : t === 'invalid-id' ? 'Ongeldige spelcode.'
+    : t === 'browser-incompatible' ? 'Deze browser ondersteunt geen online multiplayer.'
+    : (t === 'network' || t === 'server-error' || t === 'socket-error' || t === 'socket-closed') ? 'Geen verbinding met de multiplayer-server. Probeer het opnieuw, of verbind handmatig.'
+    : 'Verbinden mislukt. Probeer het opnieuw of verbind handmatig.';
+  const role = MP.role;
+  mpClose(false); MP.role = role; MP.manual = false;
+  mpMsg(msg, false); mpRender();
+}
+function mpSetupConn(conn) {
+  const dc = { get readyState() { return conn.open ? 'open' : 'connecting'; }, send: t => conn.send(t), close: () => conn.close() };
+  MP.dc = dc;
+  conn.on('open', () => { if (MP.dc === dc) mpOpened(); });
+  conn.on('data', d => { if (MP.dc === dc) mpData(String(d)); });
+  conn.on('close', () => { if (MP.dc === dc) mpLost('De verbinding is verbroken.'); });
+  conn.on('error', () => { if (MP.dc === dc) mpLost(MP.connected ? 'De verbinding is weggevallen.' : 'Verbinden is mislukt. Tip: zet beide apparaten op hetzelfde wifi-netwerk.'); });
+}
+async function mpPeerHost(code) {
+  code = roomCode(code);
+  $('mpRoom').value = code;
+  if (code.length < 3) { mpMsg('Kies een spelcode van minstens 3 letters of cijfers.', false); return; }
+  mpClose(false);
+  MP.role = 'host'; MP.manual = false; MP.busy = true; MP.room = code;
+  mpMsg(''); mpRender();
+  try { await loadPeerLib(); } catch (e) { if (MP.room === code) { MP.busy = false; mpMsg(e.message, false); mpRender(); } return; }
+  if (MP.role !== 'host' || MP.room !== code || MP.peer || MP.manual) return;
+  let peer;
+  try { peer = new window.Peer(PEER_PREFIX + code, { config: { iceServers: MP_ICE } }); } catch (e) { mpPeerError(e); return; }
+  MP.peer = peer;
+  peer.on('open', () => { if (MP.peer !== peer) return; MP.busy = false; MP.hosting = true; mpRender(); });
+  peer.on('connection', conn => {
+    if (MP.peer !== peer) return;
+    if (MP.dc) { conn.on('open', () => { try { conn.send(JSON.stringify({ type: 'full' })); } catch (e) { /* */ } setTimeout(() => conn.close(), 400); }); return; }
+    mpSetupConn(conn);
+  });
+  peer.on('error', e => { if (MP.peer === peer) mpPeerError(e); });
+  peer.on('disconnected', () => { if (MP.peer === peer && !MP.connected) { try { peer.reconnect(); } catch (e) { /* */ } } });
+}
+async function mpPeerJoin(code) {
+  code = roomCode(code);
+  $('mpJoinRoom').value = code;
+  if (!code) { mpMsg('Vul de spelcode van de host in.', false); return; }
+  mpClose(false);
+  MP.role = 'guest'; MP.manual = false; MP.busy = true; MP.room = code;
+  mpMsg('Verbinden…', true); mpRender();
+  try { await loadPeerLib(); } catch (e) { if (MP.room === code) { MP.busy = false; mpMsg(e.message, false); mpRender(); } return; }
+  if (MP.role !== 'guest' || MP.room !== code || MP.peer || MP.manual) return;
+  let peer;
+  try { peer = new window.Peer({ config: { iceServers: MP_ICE } }); } catch (e) { mpPeerError(e); return; }
+  MP.peer = peer;
+  peer.on('open', () => {
+    if (MP.peer !== peer) return;
+    mpSetupConn(peer.connect(PEER_PREFIX + code, { reliable: true, serialization: 'raw' }));
+    MP.joinTimer = setTimeout(() => { if (MP.peer === peer && !MP.connected) mpPeerError({ type: 'timeout' }); }, 20000);
+  });
+  peer.on('error', e => { if (MP.peer === peer) mpPeerError(e); });
+}
+function mpShare() {
+  const code = MP.room, link = mpInviteLink(code);
+  if (!code || !MP.hosting) return;
+  const text = link ? `Speel Andy Apples tegen mij! ${link}  (spelcode: ${code})` : code;
+  const done = () => mpMsg(link ? 'Uitnodiging gekopieerd. Plak hem in een bericht aan je vriend.' : 'Spelcode gekopieerd.', true);
+  if (IN_APP) { AndroidBridge.copy(text); done(); return; }
+  if (navigator.share && link && IS_MOBILE) { navigator.share({ title: 'Andy Apples', text: `Speel Andy Apples tegen mij! Spelcode: ${code}`, url: link }).then(() => mpMsg('')).catch(() => { /* geannuleerd */ }); return; }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, () => mpMsg('Kopiëren lukte niet. Stuur de spelcode: ' + code, true));
+  else mpMsg('Stuur deze spelcode naar je vriend: ' + code, true);
+}
+
 // ---- berichten ----
 function mpOnMsg(m) {
   MP.lastMsg = performance.now();
@@ -3739,14 +3977,15 @@ function mpOnMsg(m) {
       if (!cur || M.oppEv) break;
       M.oppEv = { t: m.t, d: m.d };
       if (!M.result && game.mode === 'playing') {
-        if (M.mode === 'race') showBanner(`🏁 ${MP.oppName} is bij de finish!`, 'Snel!');
-        else showBanner(`💦 ${MP.oppName} is af!`, 'Houd nog heel even vol…');
+        if (M.mode === 'race') showBanner(`${MP.oppName} is bij de finish!`, 'Snel!');
+        else showBanner(`${MP.oppName} is af!`, 'Houd nog even vol…');
       }
       mpCheck();
       break;
     case 'quit': if (cur && !M.result) mpEnd('win', `${MP.oppName} heeft opgegeven.`); break;
     case 'again': MP.oppAgain = true; mpAgainCheck(); break;
     case 'bye': mpLost(`${MP.oppName} heeft de verbinding verbroken.`); break;
+    case 'full': mpLost('Deze host speelt al met iemand anders.'); break;
   }
 }
 
@@ -3754,21 +3993,25 @@ function mpOnMsg(m) {
 function mpMsg(text, ok) { const el = $('mpMsg'); el.textContent = text || ''; el.className = 'msg ' + (ok ? 'ok' : 'err'); }
 function mpRender() {
   const st = $('mpStatus'), loc = !!MP.local, host = MP.role === 'host' || loc, guest = MP.role === 'guest', con = MP.connected || loc;
-  const connecting = MP.pc && (MP.pc.connectionState === 'connecting' || (host && MP.pc.signalingState === 'stable'));
+  const connecting = (MP.pc && (MP.pc.connectionState === 'connecting' || (host && MP.pc.signalingState === 'stable'))) || (MP.dc && !con && !MP.manual);
   st.className = 'mp-status' + (con ? ' on' : MP.role ? ' wait' : '');
   $('mpLocalKeys').classList.toggle('hidden', !loc);
-  $('mpStatusTxt').textContent = loc ? 'Op één scherm · 2 spelers' : con ? `Verbonden met ${MP.oppName}` : connecting ? 'Verbinden…' : host ? 'Wachten op je vriend…' : guest ? 'Meedoen…' : 'Niet verbonden';
+  $('mpStatusTxt').textContent = loc ? 'Op één scherm · 2 spelers' : con ? `Verbonden met ${MP.oppName}` : connecting ? 'Verbinden…'
+    : host ? (MP.manual || MP.hosting ? 'Wachten op je vriend…' : MP.busy ? 'Spel openen…' : 'Niet verbonden') : guest ? (MP.busy ? 'Verbinden…' : 'Meedoen') : 'Niet verbonden';
   $('mpPick').classList.toggle('hidden', !!MP.role || con);
   $('mpHostBox').classList.toggle('hidden', !host || con);
   $('mpJoinBox').classList.toggle('hidden', !guest || con);
   $('mpAnswerStep').classList.toggle('hidden', !guest || (!MP.busy && !$('mpAnswer').value));
+  $('btnMpShare').disabled = !MP.hosting;
+  $('btnMpJoinGo').disabled = !!MP.busy && !MP.manual;
+  $('mpManualHostGo').classList.toggle('hidden', !!(MP.manual && MP.pc));
   $('mpLobby').classList.toggle('hidden', !con);
   $('btnMpCancel').classList.toggle('hidden', !MP.role && !con);
-  $('btnMpCancel').textContent = loc ? '↩ Kiezen' : con ? '🔌 Verbreken' : '✖ Opnieuw';
+  $('btnMpCancel').textContent = loc ? 'Terug' : con ? 'Verbreken' : 'Annuleren';
   document.querySelector('.mp-name').classList.toggle('hidden', loc);
   if (con) {
-    $('mpMeName').textContent = loc ? '🦍 Speler 1' : '🦍 ' + myName() + (host ? ' (host)' : '');
-    $('mpOppName').textContent = loc ? '🦍 Speler 2' : '🦍 ' + MP.oppName + (host ? '' : ' (host)');
+    $('mpMeName').textContent = loc ? 'Speler 1' : myName() + (host ? ' (host)' : '');
+    $('mpOppName').textContent = loc ? 'Speler 2' : MP.oppName + (host ? '' : ' (host)');
     $('mpModeRace').classList.toggle('sel', MP.sel.mode === 'race');
     $('mpModeEnd').classList.toggle('sel', MP.sel.mode === 'endurance');
     $('mpModeRace').disabled = $('mpModeEnd').disabled = !host;
@@ -3820,7 +4063,7 @@ function mpStartMatch(c) {
   $('mpHud').classList.remove('hidden');
   $('mpTagOpp').textContent = MP.oppName;
   $('mpHud').querySelector('.track').classList.toggle('hidden', mode !== 'race');
-  showBanner(mode === 'race' ? `🏁 Race · ${M.len} m` : '⏱️ Endurance', mode === 'race' ? 'Wie het eerst bij de finish is, wint!' : 'Wie het langst volhoudt, wint! Blijf de storm voor.');
+  showBanner(mode === 'race' ? `Race · ${M.len} m` : 'Endurance', mode === 'race' ? 'Eerst bij de finish wint' : 'Blijf de storm voor');
 }
 // eigen gebeurtenis: finish (race) of af (endurance)
 function mpFinished() {
@@ -3842,7 +4085,7 @@ function mpDied() {
   M.myEv = { t: M.t, d: run.dist };
   mpSend({ type: 'ev', id: M.seed, t: M.t, d: run.dist });
   if (M.local) floatText(G.x, G.y - 110, 'AF!', '#ffffff', 34);
-  else showBanner('💦 Je bent af!', 'Even kijken wie het langst volhield…');
+  else showBanner('Je bent af!', 'Even kijken wie het langst volhield…');
   mpCheck();
 }
 // Wie wint? Beide spelers meten hun eigen tijd vanaf hun eigen GO. Omdat de berichten op volgorde
@@ -3872,33 +4115,33 @@ function mpEnd(result, reason) {
     persist();
     MP.score[result === 'win' ? 'me' : 'opp']++;
   }
-  if (result === 'win') { showBanner('🏆 Gewonnen!', reason); confetti(G.x + 60, G.y - 160, 140); Sfx.jingle(2); flashT = 0.3; }
+  if (result === 'win') { showBanner('Gewonnen!', reason); confetti(G.x + 60, G.y - 160, 140); Sfx.jingle(2); flashT = 0.3; }
   else if (result === 'lose') { showBanner('😢 Verloren', reason); Sfx.tone(392, 0.25, 'triangle', 0.1); Sfx.tone(330, 0.25, 'triangle', 0.1, 0, 0.22); Sfx.tone(262, 0.5, 'triangle', 0.1, 0, 0.44); }
-  else showBanner('🔌 Verbinding verbroken', reason);
+  else showBanner('Verbinding verbroken', reason);
   setTimeout(() => { if (MP.match === M && game.mp === M) mpShowResult(); }, result === 'conn' ? 1200 : 2200);
 }
 function mpShowResult() {
   const M = MP.match;
   $('mpHud').classList.add('hidden');
   $('mpCount').textContent = '';
-  const title = { win: '🏆 Gewonnen!', lose: '😢 Verloren', conn: '🔌 Verbinding verbroken' }[M.result];
+  const title = { win: 'Gewonnen!', lose: 'Verloren', conn: 'Verbinding verbroken' }[M.result];
   $('mpResTitle').textContent = title;
   $('mpResSub').textContent = M.reason;
-  $('mpResMe').textContent = '🦍 ' + myName();
-  $('mpResOpp').textContent = '🦍 ' + MP.oppName;
+  $('mpResMe').textContent = myName();
+  $('mpResOpp').textContent = MP.oppName;
   const fmt = t => t == null ? '—' : fmtTime(t);
   const row = (label, a, b) => `<div><span style="flex:1">${label}</span><b style="color:#e8322b;min-width:80px;text-align:right">${a}</b><b style="color:#2f7fe0;min-width:90px;text-align:right">${b}</b></div>`;
   let h = row('', 'Jij', escHtml(MP.oppName));
   const oppD = Math.floor(M.oppEv ? Math.max(M.oppEv.d, M.oppDist) : M.oppDist);
   if (M.mode === 'race') {
-    h += row('🏁 Finishtijd', fmt(M.myEv && M.myEv.t), fmt(M.oppEv && M.oppEv.t));
+    h += row('Finishtijd', fmt(M.myEv && M.myEv.t), fmt(M.oppEv && M.oppEv.t));
     h += row('📏 Afstand', Math.min(M.len, Math.floor(run.dist)) + ' m', Math.min(M.len, oppD) + ' m');
-    h += row('💦 Gevallen', M.falls + '×', M.oppFalls + '×');
+    h += row('Gevallen', M.falls + '×', M.oppFalls + '×');
   } else {
-    h += row('⏱️ Volgehouden', fmt(M.myEv ? M.myEv.t : M.endT), fmt(M.oppEv ? M.oppEv.t : Math.max(M.oppT, M.endT)));
+    h += row('Volgehouden', fmt(M.myEv ? M.myEv.t : M.endT), fmt(M.oppEv ? M.oppEv.t : Math.max(M.oppT, M.endT)));
     h += row('📏 Afstand', Math.floor(run.dist) + ' m', oppD + ' m');
   }
-  h += row('🍎 Appels', Math.max(0, Math.floor(run.earned)), M.oppApples);
+  h += row('Appels', Math.max(0, Math.floor(run.earned)), M.oppApples);
   $('mpResTable').innerHTML = h;
   $('mpResScore').textContent = MP.connected || M.result !== 'conn' ? `Stand: ${myName()} ${MP.score.me} – ${MP.score.opp} ${MP.oppName}` : '';
   mpAgainRender();
@@ -3906,10 +4149,10 @@ function mpShowResult() {
 }
 function mpAgainRender() {
   const b = $('btnMpAgain');
-  if (LOCAL.on) { b.disabled = false; b.textContent = '🔁 Revanche'; return; }
-  if (!MP.connected) { b.disabled = true; b.textContent = '🔌 Verbinding verbroken'; return; }
+  if (LOCAL.on) { b.disabled = false; b.textContent = 'Revanche'; return; }
+  if (!MP.connected) { b.disabled = true; b.textContent = 'Verbinding verbroken'; return; }
   b.disabled = MP.again;
-  b.textContent = MP.again ? '⏳ Wachten op ' + MP.oppName + '…' : MP.oppAgain ? `🔁 Revanche! (${MP.oppName} wil ook)` : '🔁 Revanche';
+  b.textContent = MP.again ? 'Wachten op ' + MP.oppName + '…' : MP.oppAgain ? `Revanche! (${MP.oppName} wil ook)` : 'Revanche';
 }
 function mpAgain() {
   if (LOCAL.on) { localStart(LOCAL.cfg); return; }
@@ -4074,9 +4317,9 @@ function drawOwnGorilla() {
 function drawGhost() {
   const g = ghostOf(), M = game.mp;
   if (!g || g.x < camX - 200 || g.x > camX + viewW + 200) return;
-  const me = G, pal = GC;
+  const me = G, pal = GC, ip = M.local && ipApply(g); // op één scherm: ook de andere gorilla vloeiend
   G = g; GC = M.local && M.idx === 1 ? GC1 : GC2;
-  try { drawGorilla(); } finally { G = me; GC = pal; }
+  try { drawGorilla(); } finally { G = me; GC = pal; if (ip) ipRestore(g); }
   if (g.state === 'dead' && g.y > HAZARD_Y + 60) return;
   // naamkaartje
   const name = oppNameOf();
@@ -4183,7 +4426,7 @@ function localStart(cfg) {
   showScreen(null);
   $('hud').classList.add('local');
   $('mpHud').classList.add('hidden');
-  showBanner(mode === 'race' ? `🏁 Race · ${LOCAL.cfg.len} m` : '⏱️ Endurance', mode === 'race' ? 'Wie het eerst bij de finish is, wint!' : 'Wie het langst volhoudt, wint! Blijf de storm voor.');
+  showBanner(mode === 'race' ? `Race · ${LOCAL.cfg.len} m` : 'Endurance', mode === 'race' ? 'Eerst bij de finish wint' : 'Blijf de storm voor');
 }
 function localExit() {
   if (!LOCAL.on) return;
@@ -4204,7 +4447,7 @@ const localSide = (x, y) => (LOCAL.split === 'v' ? x > cssW / 2 : y > cssH / 2) 
 
 // wordt elk beeld aangeroepen in plaats van de gewone lus
 function localLoop(dt) {
-  const gdt = dt * GAME_SPEED;
+  const ts = timeScale(), gdt = dt * GAME_SPEED * ts;
   if (!game.paused) {
     if (game.mode === 'mpcount') {
       LOCAL.count -= dt;
@@ -4218,16 +4461,17 @@ function localLoop(dt) {
         if (c <= 0) { game.mode = 'playing'; setTimeout(() => { if ($('mpCount').textContent === 'GO!') $('mpCount').textContent = ''; }, 800); }
       }
     }
-    acc += dt;
+    acc += dt * ts;
     let n = 0;
-    while (acc >= STEP && n < 6) { n++; acc -= STEP; }
+    while (acc >= STEP && n < 12) { n++; acc -= STEP; }
     if (acc > STEP) acc = 0;
+    renderAlpha = acc / STEP;
     for (const i of [0, 1]) {
       useWorld(i);
       for (let k = 0; k < n; k++) step(DT);
       updateEffects(gdt);
       const oy = camY;
-      updateCamera(gdt);
+      interpBegin(true); updateCamera(gdt); interpEnd();
       updateZoom(gdt);
       genUntil(camX + viewW + 900);
       const P = paletteAt((camX + viewW * 0.5 - START_X) / PX_PER_M);
@@ -4279,7 +4523,7 @@ function localEnd(w) {
   const race = M.mode === 'race';
   const why = w < 0 ? (race ? 'Tegelijk over de finish!' : 'Tegelijk gevallen!') : race ? `Speler ${w + 1} was als eerste bij de finish.` : `Speler ${w + 1} hield het langst vol.`;
   LOCAL.why = why;
-  showBanner(w < 0 ? '🤝 Gelijkspel!' : `🏆 Speler ${w + 1} wint!`, why);
+  showBanner(w < 0 ? 'Gelijkspel!' : `Speler ${w + 1} wint!`, why);
   Sfx.jingle(2);
   const c = curW;
   if (w >= 0) { useWorld(w); confetti(G.x + 60, G.y - 160, 140); flashT = 0.3; }
@@ -4290,24 +4534,24 @@ function localEnd(w) {
 function localShowResult() {
   const w = LOCAL.result, race = LOCAL.cfg.mode === 'race';
   $('mpCount').textContent = '';
-  $('mpResTitle').textContent = w < 0 ? '🤝 Gelijkspel!' : `🏆 Speler ${w + 1} wint!`;
+  $('mpResTitle').textContent = w < 0 ? 'Gelijkspel!' : `Speler ${w + 1} wint!`;
   $('mpResSub').textContent = LOCAL.why;
-  $('mpResMe').textContent = '🦍 Speler 1';
-  $('mpResOpp').textContent = '🦍 Speler 2';
+  $('mpResMe').textContent = 'Speler 1';
+  $('mpResOpp').textContent = 'Speler 2';
   const P = [0, 1].map(i => { const W = i === curW ? grabWorld() : LOCAL.worlds[i]; return { M: W.mp, run: W.run }; });
   const row = (label, a, b) => `<div><span style="flex:1">${label}</span><b style="color:#e8322b;min-width:80px;text-align:right">${a}</b><b style="color:#2f7fe0;min-width:90px;text-align:right">${b}</b></div>`;
   const fmt = t => t == null ? '—' : fmtTime(t);
   let h = row('', 'Speler 1', 'Speler 2');
   const d = p => Math.floor(race ? Math.min(p.M.len, p.run.dist) : p.run.dist) + ' m';
   if (race) {
-    h += row('🏁 Finishtijd', fmt(P[0].M.myEv && P[0].M.myEv.t), fmt(P[1].M.myEv && P[1].M.myEv.t));
+    h += row('Finishtijd', fmt(P[0].M.myEv && P[0].M.myEv.t), fmt(P[1].M.myEv && P[1].M.myEv.t));
     h += row('📏 Afstand', d(P[0]), d(P[1]));
-    h += row('💦 Gevallen', P[0].M.falls + '×', P[1].M.falls + '×');
+    h += row('Gevallen', P[0].M.falls + '×', P[1].M.falls + '×');
   } else {
-    h += row('⏱️ Volgehouden', fmt(P[0].M.myEv ? P[0].M.myEv.t : P[0].M.t), fmt(P[1].M.myEv ? P[1].M.myEv.t : P[1].M.t));
+    h += row('Volgehouden', fmt(P[0].M.myEv ? P[0].M.myEv.t : P[0].M.t), fmt(P[1].M.myEv ? P[1].M.myEv.t : P[1].M.t));
     h += row('📏 Afstand', d(P[0]), d(P[1]));
   }
-  h += row('🍎 Appels', Math.max(0, Math.floor(P[0].run.earned)), Math.max(0, Math.floor(P[1].run.earned)));
+  h += row('Appels', Math.max(0, Math.floor(P[0].run.earned)), Math.max(0, Math.floor(P[1].run.earned)));
   $('mpResTable').innerHTML = h;
   $('mpResScore').textContent = `Stand: Speler 1 ${LOCAL.score[0]} – ${LOCAL.score[1]} Speler 2`;
   mpAgainRender();
@@ -4373,7 +4617,7 @@ function toMenu() {
   game.career = null;
   localExit(); MP.local = false;
   mpLeaveMatch();
-  if (MP.pc) mpClose(true);
+  if (mpActive()) mpClose(true);
   resetWorld();
   game.mode = 'menu';
   refreshMenu();
@@ -4383,7 +4627,7 @@ function toMenu() {
 function startReady(level) {
   game.paused = false; Music.duck();
   game.career = typeof level === 'number' ? levelInfo(level) : null;
-  if (MP.pc) mpClose(true);
+  if (mpActive()) mpClose(true);
   localExit(); MP.local = false;
   mpLeaveMatch();
   resetWorld();
@@ -4391,8 +4635,8 @@ function startReady(level) {
   input.down = false;
   showScreen(null);
   const C = game.career;
-  if (C) showBanner(`🏁 Level ${C.n}`, `${BIOMES[C.bi].icon} ${BIOMES[C.bi].name} · ${C.L} m tot de finish`);
-  else showBanner('🌿 Jungle', 'Houd ingedrukt om te springen en een liaan te grijpen!');
+  if (C) showBanner(`Level ${C.n}`, `${BIOMES[C.bi].name} · ${C.L} m`);
+  else if (save.runs < 3) showBanner('Jungle', 'Houd ingedrukt om te springen');
 }
 function retry() { startReady(game.career ? game.career.n : null); }
 function begin() {
@@ -4411,7 +4655,7 @@ function awardXp(extra) {
 function xpHtml(res) {
   const P = playerLevel(save.xp);
   let h = `<div class="xp"><div class="xp-top"><b>Level ${P.L}</b><span>+${res.gain} XP</span></div><div class="xp-bar"><i style="width:${Math.round(P.into / P.need * 100)}%"></i></div></div>`;
-  if (res.levelUp) h += `<div class="record">⬆️ Level ${res.level}!${res.fresh.length ? ' Nieuw: ' + res.fresh.map(u => u.icon + ' ' + u.name).join(', ') : ''}</div>`;
+  if (res.levelUp) h += `<div class="record">Level ${res.level}!${res.fresh.length ? ' Nieuw: ' + res.fresh.map(u => u.name).join(', ') : ''}</div>`;
   return h;
 }
 function levelComplete() {
@@ -4431,10 +4675,10 @@ function levelComplete() {
   confetti(G.x + 100, G.y - 150, 120); flashT = 0.3; Sfx.jingle(C.bi);
   $('doneTitle').textContent = `Level ${C.n} gehaald!`;
   $('doneStars').innerHTML = [1, 2, 3].map(i => `<span class="${i <= stars ? 'on' : ''}">★</span>`).join('');
-  $('dnApples').textContent = `🍎 ${run.picked} / ${run.appleTotal}`;
-  $('dnEarned').textContent = '🍎 ' + fromApples;
-  $('dnBonus').textContent = '🍎 ' + bonus + (prev ? ' (herhaling)' : '');
-  $('dnTotal').textContent = '+ 🍎 ' + earned;
+  $('dnApples').textContent = `${run.picked} / ${run.appleTotal}`;
+  $('dnEarned').textContent = fromApples;
+  $('dnBonus').textContent = bonus + (prev ? ' (herhaling)' : '');
+  $('dnTotal').textContent = '+' + earned + ' 🍎';
   $('dnBank').textContent = save.apples;
   $('dnXp').innerHTML = xpHtml(xp);
   $('btnNextLevel').style.display = C.n < LEVELS ? '' : 'none';
@@ -4453,8 +4697,19 @@ function gameOver(quit) {
   save.totalDistance += dist;
   save.runs++;
   if (!game.career) save.maxBiome = Math.max(save.maxBiome, biomeIndexAt(dist));
+  const ranked = !game.career && DBG.speed === 1; // runs met een aangepaste debug-snelheid tellen niet mee
+  if (ranked) save.lbBest = Math.max(save.lbBest, dist);
   const xp = awardXp();
   persist();
+  $('btnOverLb').style.display = game.career || !lbOn() ? 'none' : '';
+  $('ovRank').classList.add('hidden');
+  if (ranked && lbOn()) {
+    lbSubmit().then(() => lbRank()).then(r => {
+      if (curScreen !== 'over' || !r) return;
+      $('ovRank').textContent = `Ranglijst: #${r} met ${save.lbBest} m`;
+      $('ovRank').classList.remove('hidden');
+    }).catch(() => { /* offline: wordt later verstuurd */ });
+  }
   $('ovXp').innerHTML = xpHtml(xp);
   $('btnOverLevels').style.display = game.career ? '' : 'none';
   $('ovDistLabel').textContent = game.career ? `Afstand (finish ${game.career.L} m)` : 'Afstand';
@@ -4464,13 +4719,11 @@ function gameOver(quit) {
   $('overTitle').textContent = title;
   $('overReason').textContent = reason;
   $('ovDist').textContent = dist + ' m';
-  $('ovPicked').textContent = '🍎 ' + run.picked;
-  $('ovApples').textContent = '🍎 ' + fromApples;
-  $('ovStolen').textContent = '🍎 −' + run.stolen;
+  $('ovApples').textContent = fromApples;
+  $('ovStolen').textContent = '−' + run.stolen;
   $('ovStolenRow').style.display = run.stolen > 0 ? '' : 'none';
-  $('ovBD').textContent = '🍎 ' + fromDist;
-  $('ovTotal').textContent = '+ 🍎 ' + earned;
-  $('ovBank').textContent = save.apples;
+  $('ovBD').textContent = fromDist;
+  $('ovTotal').textContent = '+' + earned + ' 🍎';
   $('overRecord').classList.toggle('hidden', !record || dist < 5);
   setBadge($('btnOverShop'), affordableCount());
   $('hint').textContent = '';
@@ -4478,10 +4731,10 @@ function gameOver(quit) {
 }
 function pauseGame() {
   const multi = !!game.mp && !game.mp.local; // op één scherm mag je gewoon pauzeren
-  $('pauseTitle').textContent = multi ? '⚙️ Menu' : '⏸ Pauze';
-  $('pauseSub').textContent = multi ? 'Let op: het potje loopt gewoon door!' : 'Neem even een banaan.';
-  $('btnResume').textContent = multi ? '▶ Verder spelen' : '▶ Doorgaan';
-  $('btnQuit').textContent = multi ? '🏳️ Opgeven' : '🏁 Stoppen & innen';
+  $('pauseTitle').textContent = multi ? 'Menu' : 'Pauze';
+  $('pauseSub').textContent = multi ? 'Het potje loopt door!' : '';
+  $('btnResume').textContent = '▶ Doorgaan';
+  $('btnQuit').textContent = multi ? 'Opgeven' : 'Stoppen';
   if (multi) { // in multiplayer kun je niet pauzeren
     if (game.mode !== 'playing' || game.mp.result) return;
     input.down = false;
@@ -4518,9 +4771,9 @@ function setBadge(btn, n) {
 }
 function statsHtml() {
   const b = BIOMES[save.maxBiome];
-  return `<div class="stat">🍎 ${save.apples}</div><div class="stat">🏆 ${save.best} m</div>` +
-    `<div class="stat">🧺 ${save.totalApples} geplukt</div><div class="stat">${b.icon} ${b.name}</div>` +
-    `<div class="stat">🔁 ${save.runs} runs</div>` + (save.mpGames ? `<div class="stat">👥 ${save.mpWins} / ${save.mpGames} gewonnen</div>` : '');
+  return `<div class="stat">🍎 ${save.apples}</div><div class="stat">Record ${save.best} m</div>` +
+    `<div class="stat">${save.totalApples} geplukt</div><div class="stat">${b.name}</div>` +
+    `<div class="stat">${save.runs} runs</div>` + (save.mpGames ? `<div class="stat">${save.mpWins} / ${save.mpGames} gewonnen</div>` : '');
 }
 function refreshMenu() {
   const PL = playerLevel(save.xp);
@@ -4530,50 +4783,49 @@ function refreshMenu() {
   $('mmRing').style.setProperty('--p', Math.round(PL.into / PL.need * 100));
   const stars = save.career.stars.reduce((a, b) => a + b, 0);
   const next = Math.min(save.career.unlocked, LEVELS);
-  $('mmCareer').textContent = `Level ${next} · ⭐ ${stars} / ${LEVELS * 3}`;
-  $('mmEndless').textContent = save.best ? `Record: ${save.best} m` : 'Kom zo ver mogelijk!';
-  $('mmMulti').textContent = save.mpGames ? `Race of Endurance · ${save.mpWins} van ${save.mpGames} gewonnen` : 'Race of Endurance tegen een vriend';
+  $('mmCareer').textContent = `Level ${next} · ★ ${stars} / ${LEVELS * 3}`;
+  $('mmEndless').textContent = save.best ? `Record: ${save.best} m` : 'Kom zo ver mogelijk';
+  $('mmMulti').textContent = save.mpGames ? `${save.mpWins} van ${save.mpGames} gewonnen` : 'Tegen een vriend';
   $('menuStats').innerHTML = statsHtml();
-  $('btnRotate').textContent = rotPref ? '🔄 Staand spelen' : '🔄 Liggend spelen';
-  $('btnFullscreen').textContent = isFullscreen() ? '⛶ Volledig scherm uit' : '⛶ Volledig scherm';
+  $('btnRotate').textContent = rotPref ? 'Staand spelen' : 'Liggend spelen';
+  $('btnFullscreen').textContent = isFullscreen() ? 'Volledig scherm uit' : 'Volledig scherm';
   $('btnFullscreen').classList.toggle('hidden', !canFullscreen || IN_APP);
   $('btnRotate').classList.toggle('hidden', IN_APP);
   $('saveStats').innerHTML = statsHtml();
   setBadge($('btnShop'), affordableCount());
-  const snd = save.sound ? '🔊 Geluid aan' : '🔇 Geluid uit';
-  const mus = save.music ? '🎵 Muziek aan' : '🎵 Muziek uit';
+  $('btnLb').classList.toggle('hidden', !lbOn());
+  const snd = save.sound ? 'Geluid aan' : 'Geluid uit';
+  const mus = save.music ? 'Muziek aan' : 'Muziek uit';
   $('btnSound').textContent = snd; $('btnPauseSound').textContent = snd;
   $('btnMusic').textContent = mus; $('btnPauseMusic').textContent = mus;
 }
 function renderShop() {
   $('shopBank').textContent = save.apples;
   const PL = playerLevel(save.xp);
-  $('shopXp').innerHTML = `<div class="xp"><div class="xp-top"><b>Spelerslevel ${PL.L}</b><span>${PL.into} / ${PL.need} XP</span></div><div class="xp-bar"><i style="width:${Math.round(PL.into / PL.need * 100)}%"></i></div></div>`;
+  $('shopLvl').textContent = `Level ${PL.L} · ${PL.into} / ${PL.need} XP`;
   const grid = $('shopGrid');
   grid.innerHTML = '';
+  const locked = [];
   for (const u of UPGRADES) {
+    if (!unlocked(u)) { locked.push(u); continue; }
     const l = lvl(u.id), maxed = l >= u.max, cost = maxed ? 0 : upCost(u, l);
     const card = document.createElement('div');
-    if (!unlocked(u)) {
-      card.className = 'card locked';
-      card.innerHTML = `<div class="card-top"><span class="ic">🔒</span><div><b>${u.name}</b><small>${u.info}</small></div></div><div class="fx">Ontgrendelt op spelerslevel ${u.unlock}</div>`;
-      grid.appendChild(card); continue;
-    }
     card.className = 'card' + (maxed ? ' maxed' : '');
+    card.title = `${u.info}\n${u.fx(l)}${maxed ? '' : ' → ' + u.fx(l + 1)}`;
     let pips = '';
     for (let i = 0; i < u.max; i++) pips += `<i class="${i < l ? 'on' : ''}"></i>`;
-    card.innerHTML = `<div class="card-top"><span class="ic">${u.icon}</span><div><b>${u.name}</b><small>${u.info}</small></div></div>
-      <div class="pips">${pips}</div>
-      <div class="fx">${u.fx(l)}${maxed ? ' (max)' : ` → <b>${u.fx(l + 1)}</b>`}</div>`;
+    card.innerHTML = `<span class="ic">${u.icon}</span><div class="card-mid"><b>${u.name}</b><small>${u.info}</small><div class="pips">${pips}</div></div>`;
     const b = document.createElement('button');
     const can = !maxed && save.apples >= cost;
     b.className = 'btn buy' + (can ? ' green' : '');
     b.disabled = !can;
-    b.textContent = maxed ? '✔ MAX' : `🍎 ${cost}`;
+    b.textContent = maxed ? 'MAX' : `🍎 ${cost}`;
     b.addEventListener('click', () => buy(u));
     card.appendChild(b);
     grid.appendChild(card);
   }
+  locked.sort((x, y) => x.unlock - y.unlock);
+  $('shopLocks').innerHTML = locked.map(u => `<span title="${escHtml(u.info)}">🔒 Level ${u.unlock}: ${u.name}</span>`).join('');
 }
 function buy(u) {
   const l = lvl(u.id);
@@ -4586,7 +4838,7 @@ function buy(u) {
   Sfx.buy();
   renderShop();
   refreshMenu();
-  if (game.mode === 'over') { $('ovBank').textContent = save.apples; setBadge($('btnOverShop'), affordableCount()); }
+  if (game.mode === 'over') setBadge($('btnOverShop'), affordableCount());
 }
 function renderCareer() {
   const st = save.career.stars;
@@ -4596,7 +4848,7 @@ function renderCareer() {
     const I = levelInfo(n), open = n <= save.career.unlocked, b = document.createElement('button');
     b.className = 'lv' + (open ? '' : ' locked');
     b.style.background = open ? `linear-gradient(${BIOMES[I.bi].c.skyTop}, ${BIOMES[I.bi].c.mid})` : '';
-    b.innerHTML = open ? `<small>${BIOMES[I.bi].icon}</small><b>${n}</b><span>${[0, 1, 2].map(i => i < st[n - 1] ? '★' : '☆').join('')}</span>` : `<b>🔒</b><small>${n}</small>`;
+    b.innerHTML = open ? `<b>${n}</b><span>${[0, 1, 2].map(i => i < st[n - 1] ? '★' : '☆').join('')}</span>` : `<b>🔒</b><small>${n}</small>`;
     b.disabled = !open;
     b.addEventListener('click', () => { Sfx.init(); startReady(n); });
     grid.appendChild(b);
@@ -4608,26 +4860,130 @@ function saveMsg(text, ok) { const m = $('saveMsg'); m.textContent = text; m.cla
 function afterImport() {
   refreshMenu();
   renderShop();
-  saveMsg('✔ Save geïmporteerd!', true);
+  saveMsg('Save geïmporteerd.', true);
   Sfx.buy();
 }
 function on(id, fn) {
   (typeof id === 'string' ? $(id) : id).addEventListener('click', e => { Sfx.init(); e.currentTarget.blur(); fn(e); });
 }
 
+// =====================================================================
+//  Ranglijst (Eindeloos): optioneel, via een gratis Supabase-project (zie README)
+// =====================================================================
+const LB_ID_KEY = 'andyApples.playerId', LB_SENT_KEY = 'andyApples.lbSent';
+const lbOn = () => !!(CONFIG.leaderboard.url && CONFIG.leaderboard.key);
+let lbReturn = 'menu';
+function lbPlayerId() { // geheim, willekeurig id van deze speler (alleen jouw eigen rij kun je bijwerken)
+  let id = '';
+  try { id = localStorage.getItem(LB_ID_KEY) || ''; } catch (e) { /* geen opslag */ }
+  if (!/^[0-9a-f]{24}$/.test(id)) {
+    const b = new Uint8Array(12);
+    try { crypto.getRandomValues(b); } catch (e) { for (let i = 0; i < 12; i++) b[i] = Math.random() * 256; }
+    id = Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
+    try { localStorage.setItem(LB_ID_KEY, id); } catch (e) { /* negeren */ }
+  }
+  return id;
+}
+async function lbFetch(path, opt) {
+  const { url, key } = CONFIG.leaderboard;
+  const headers = Object.assign({ apikey: key, 'Content-Type': 'application/json' }, /^eyJ/.test(key) ? { Authorization: 'Bearer ' + key } : {}, opt && opt.headers);
+  const ctl = typeof AbortController === 'function' ? new AbortController() : null, t = setTimeout(() => ctl && ctl.abort(), 8000);
+  try {
+    const r = await fetch(url.replace(/\/+$/, '') + '/rest/v1/' + path, Object.assign({}, opt, { headers, signal: ctl && ctl.signal }));
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r;
+  } finally { clearTimeout(t); }
+}
+// stuurt je beste afstand (en naam) naar de ranglijst, alleen als er iets veranderd is
+async function lbSubmit(force) {
+  if (!lbOn() || save.lbBest < 1) return;
+  const name = myName();
+  let sent = {};
+  try { sent = JSON.parse(localStorage.getItem(LB_SENT_KEY)) || {}; } catch (e) { /* niets verstuurd */ }
+  if (!force && sent.d >= save.lbBest && sent.n === name) return;
+  await lbFetch('rpc/submit_score', { method: 'POST', body: JSON.stringify({ p_id: lbPlayerId(), p_name: name, p_dist: save.lbBest }) });
+  try { localStorage.setItem(LB_SENT_KEY, JSON.stringify({ d: save.lbBest, n: name })); } catch (e) { /* negeren */ }
+}
+// jouw plek: het aantal spelers met een grotere afstand + 1
+async function lbRank() {
+  if (!lbOn() || save.lbBest < 1) return 0;
+  const r = await lbFetch(`scores?select=name&dist=gt.${save.lbBest}`, { method: 'HEAD', headers: { Prefer: 'count=exact' } });
+  const m = /\/(\d+)/.exec(r.headers.get('content-range') || '');
+  return m ? +m[1] + 1 : 0;
+}
+async function lbShow() {
+  const list = $('lbList'), me = myName();
+  $('lbSub').textContent = save.lbBest ? `Eindeloos · jouw record: ${save.lbBest} m` : 'Eindeloos · verste afstand';
+  $('lbMsg').textContent = '';
+  if (!lbOn()) { list.innerHTML = '<li class="empty">De ranglijst is nog niet ingesteld.</li>'; return; }
+  if (!list.children.length || list.querySelector('.empty')) list.innerHTML = '<li class="empty">Laden…</li>';
+  try {
+    await lbSubmit().catch(() => { /* versturen mislukt: de lijst toch laten zien */ });
+    const rows = await (await lbFetch('scores?select=name,dist&order=dist.desc,updated_at.asc&limit=50')).json();
+    let mine = false;
+    list.innerHTML = rows.length ? rows.map((r, i) => {
+      const isMe = !mine && r.name === me && r.dist === save.lbBest;
+      if (isMe) mine = true;
+      return `<li class="${isMe ? 'me' : ''}"><b>${i + 1}</b><span>${escHtml(r.name)}</span><span>${r.dist | 0} m</span></li>`;
+    }).join('') : '<li class="empty">Nog niemand. Word de eerste!</li>';
+    if (!mine && save.lbBest) { const rk = await lbRank().catch(() => 0); if (rk) $('lbMsg').textContent = `Jij staat op #${rk}`; $('lbMsg').className = 'msg ok'; }
+  } catch (e) { list.innerHTML = '<li class="empty">Kon de ranglijst niet laden. Heb je internet?</li>'; }
+}
+function openLb(from) { lbReturn = from || 'menu'; $('lbName').value = myName(); showScreen('lb'); lbShow(); }
+function setMyName(n) {
+  n = cleanName(n);
+  try { localStorage.setItem(MP_NAME_KEY, n); } catch (err) { /* negeren */ }
+  return n;
+}
+on('btnLb', () => openLb('menu'));
+on('btnOverLb', () => openLb('over'));
+on('btnLbBack', () => showScreen(lbReturn));
+on('btnLbPlay', () => startReady(null));
+$('lbName').addEventListener('change', e => { setMyName(e.target.value); e.target.value = myName(); if (lbOn()) lbShow(); });
+
+// ---- Debug-instellingen: zoom en snelheid, achter een wachtwoord ----
+function renderDbg() {
+  $('dbgLock').classList.toggle('hidden', DBG.open);
+  $('dbgBox').classList.toggle('hidden', !DBG.open);
+  $('dbgZoom').value = DBG.zoom; $('dbgSpeed').value = DBG.speed;
+  $('dbgZoomV').textContent = Math.round(DBG.zoom * 100) + '%';
+  $('dbgSpeedV').textContent = Math.round(DBG.speed * 100) + '%';
+}
+function dbgUnlock() {
+  if (checksum('andy-debug:' + $('dbgPass').value) === DBG_HASH) { DBG.open = true; dbgPersist(); $('dbgMsg').textContent = ''; renderDbg(); }
+  else { $('dbgMsg').textContent = 'Onjuist wachtwoord.'; $('dbgMsg').className = 'msg err'; }
+  $('dbgPass').value = '';
+}
+on('btnDebug', () => { $('dbgPass').value = ''; $('dbgMsg').textContent = ''; renderDbg(); showScreen('debug'); if (!DBG.open) setTimeout(() => $('dbgPass').focus(), 50); });
+on('btnDbgUnlock', dbgUnlock);
+$('dbgPass').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); dbgUnlock(); } });
+$('dbgZoom').addEventListener('input', e => { DBG.zoom = clamp(+e.target.value || 1, 0.4, 2.5); dbgPersist(); resize(); renderDbg(); });
+$('dbgSpeed').addEventListener('input', e => { DBG.speed = clamp(+e.target.value || 1, 0.25, 2.5); dbgPersist(); renderDbg(); });
+on('btnDbgReset', () => { DBG.zoom = 1; DBG.speed = 1; dbgPersist(); resize(); renderDbg(); });
+on('btnDbgLock', () => { DBG.open = false; DBG.zoom = 1; DBG.speed = 1; dbgPersist(); resize(); renderDbg(); });
+on('btnDebugBack', () => { refreshMenu(); showScreen('settings'); });
+
 on('btnPlay', () => startReady(null));
 on('btnMulti', openMp);
 on('btnMpBack', toMenu);
 on('btnMpSetup', () => showScreen('mpSetup'));
 on('btnMpSetupBack', () => { mpRender(); showScreen('mp'); });
-on('btnMpHost', () => { MP.local = false; mpHost(); });
+on('btnMpHost', () => { MP.local = false; const c = roomCode($('mpRoom').value) || suggestRoom(); $('mpOffer').value = ''; $('mpAnswerIn').value = ''; mpPeerHost(c); });
+on('btnMpRoom', () => mpPeerHost($('mpRoom').value));
+on('btnMpShare', mpShare);
+on('btnMpManualHost', mpHost);
 on('btnMpJoin', () => { MP.local = false; mpJoinStart(); });
+on('btnMpJoinGo', () => mpPeerJoin($('mpJoinRoom').value));
+for (const [id, fn] of [['mpRoom', () => mpPeerHost($('mpRoom').value)], ['mpJoinRoom', () => mpPeerJoin($('mpJoinRoom').value)]]) {
+  $(id).addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); fn(); } });
+  $(id).addEventListener('input', e => { const c = roomCode(e.target.value); if (c !== e.target.value) e.target.value = c; });
+}
 on('btnMpLocal', () => { mpClose(false); MP.local = true; mpMsg(''); mpRender(); });
 on('btnMpConnect', mpConnect);
 on('btnMpMakeAnswer', mpMakeAnswer);
 on('btnMpCopyOffer', () => mpCopy('mpOffer'));
 on('btnMpCopyAnswer', () => mpCopy('mpAnswer'));
-on('btnMpCancel', () => { if (MP.local) MP.local = false; else mpClose(MP.connected); mpMsg(''); mpRender(); });
+on('btnMpCancel', () => { if (MP.local) MP.local = false; else mpClose(MP.connected); $('mpRoom').value = ''; mpMsg(''); mpRender(); });
 on('mpModeRace', () => mpSelect('race'));
 on('mpModeEnd', () => mpSelect('endurance'));
 for (const b of document.querySelectorAll('.mp-len')) on(b, () => mpSelect(null, +b.dataset.len));
@@ -4636,8 +4992,7 @@ on('btnMpAgain', mpAgain);
 on('btnMpLobby', () => { mpLeaveMatch(); openMp(); });
 on('btnMpLeave', toMenu);
 $('mpName').addEventListener('input', e => {
-  const n = cleanName(e.target.value);
-  try { localStorage.setItem(MP_NAME_KEY, n); } catch (err) { /* negeren */ }
+  const n = setMyName(e.target.value);
   mpSend({ type: 'hello', name: n || 'Andy' });
   if (MP.connected) mpRender();
 });
@@ -4664,7 +5019,7 @@ on('btnSound', toggleSound);
 on('btnPauseSound', toggleSound);
 on('btnMusic', toggleMusic);
 on('btnPauseMusic', toggleMusic);
-on('btnShopBack', () => { if (shopReturn === 'done') $('dnBank').textContent = save.apples; if (shopReturn === 'over') { $('ovBank').textContent = save.apples; setBadge($('btnOverShop'), affordableCount()); } refreshMenu(); showScreen(shopReturn); });
+on('btnShopBack', () => { if (shopReturn === 'done') $('dnBank').textContent = save.apples; if (shopReturn === 'over') setBadge($('btnOverShop'), affordableCount()); refreshMenu(); showScreen(shopReturn); });
 on('btnShopPlay', () => (shopReturn === 'done' || shopReturn === 'over') ? retry() : startReady(null));
 on('btnSavesBack', () => showScreen('menu'));
 on('btnRetry', retry);
@@ -4685,7 +5040,7 @@ on('btnExport', () => {
     a.download = fname;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-    saveMsg('✔ Save-bestand gedownload.', true);
+    saveMsg('Save-bestand gedownload.', true);
   } catch (e) { saveMsg('Exporteren mislukt: ' + e.message, false); }
 });
 on('btnImport', () => $('fileImport').click());
@@ -4705,7 +5060,7 @@ on('btnCopyCode', () => {
   const code = 'AA1:' + toB64(JSON.stringify(makeExport()));
   const ta = $('saveCode');
   ta.value = code; ta.focus(); ta.select();
-  const done = () => saveMsg('✔ Code gekopieerd! Bewaar hem goed.', true);
+  const done = () => saveMsg('Code gekopieerd.', true);
   if (IN_APP) { AndroidBridge.copy(code); done(); }
   else if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, () => { document.execCommand('copy'); done(); });
   else { try { document.execCommand('copy'); done(); } catch (e) { saveMsg('Selecteer en kopieer de code handmatig.', true); } }
@@ -4723,7 +5078,7 @@ on('btnReset', () => {
   saveMsg('Voortgang gewist.', true);
 });
 
-$('helpBiomes').innerHTML = BIOMES.map(b => `<div>${b.icon} <b>${b.name}</b><br><small>vanaf ${b.start} m – ${b.tip}<br>Appelbonus: +${fmtNum(b.bonus)} per appel</small></div>`).join('');
+$('helpBiomes').innerHTML = BIOMES.map(b => `<div><b>${b.name}</b> <small>${b.start} m</small><br><small>${b.tip}</small></div>`).join('');
 
 // Save wordt in een ander tabblad aangepast
 window.addEventListener('storage', e => { if (e.key === SAVE_KEY) { save = loadSave(); refreshMenu(); if (curScreen === 'shop') renderShop(); } });
@@ -4787,6 +5142,8 @@ window.addEventListener('keydown', e => {
     else if (!curScreen) pauseGame();
     else if (curScreen === 'mpSetup') { mpRender(); showScreen('mp'); }
     else if (curScreen === 'mp') toMenu();
+    else if (curScreen === 'lb') showScreen(lbReturn);
+    else if (curScreen === 'debug') showScreen('settings');
     else if (curScreen === 'shop' || curScreen === 'saves' || curScreen === 'help' || curScreen === 'career' || curScreen === 'settings') {
       if (curScreen === 'shop') $('btnShopBack').click(); else showScreen('menu');
     }
@@ -4824,7 +5181,7 @@ function updateHud() {
   if (M) {
     setText('hudDist', M.mode === 'race' ? `${Math.min(M.len, Math.floor(run.dist))} / ${M.len} m` : Math.floor(run.dist) + ' m');
     setText('hudApples', '🍎 ' + Math.max(0, Math.floor(run.earned + 1e-6)));
-    setText('hudValue', M.mode === 'race' ? '🏁 Race · upgrades uit' : '⏱️ Endurance · upgrades uit');
+    setText('hudValue', M.mode === 'race' ? 'Race' : 'Endurance'); $('hudValue').style.display = '';
     setText('hudItems', ''); $('hudItems').style.display = 'none';
     setText('hint', game.mode === 'mpcount' ? 'Houd bij GO! ingedrukt om meteen te springen' : game.mode === 'playing' && G.state === 'stand' ? 'Druk om te springen!' : game.holdLock && G.state === 'hang' ? 'Druk opnieuw en laat los om verder te gaan' : '');
     $('hint').classList.toggle('pulse', game.mode === 'mpcount');
@@ -4832,7 +5189,8 @@ function updateHud() {
   }
   setText('hudDist', game.career ? `${Math.min(game.career.L, Math.floor(run.dist))} / ${game.career.L} m` : Math.floor(run.dist) + ' m');
   setText('hudApples', '🍎 ' + Math.max(0, Math.floor(run.earned + 1e-6)));
-  setText('hudValue', (game.career ? `Level ${game.career.n} · ` : '') + `elke appel ×${fmtNum(applesPerPick(run.biome))}`);
+  setText('hudValue', game.career ? `Level ${game.career.n}` : '');
+  $('hudValue').style.display = game.career ? '' : 'none';
   let items = '';
   if (G.helmets > 0) items += '⛑️×' + G.helmets + ' ';
   if (G.balloons > 0) items += '🎈×' + G.balloons;
@@ -4881,16 +5239,18 @@ function frame(now) {
   if (dt > 0.1) dt = 0.1;
   if (LOCAL.on) { localLoop(dt); requestAnimationFrame(frame); return; }
   if (!game.paused) {
-    acc += dt;
+    const ts = timeScale();
+    acc += dt * ts;
     let steps = 0;
-    // hooguit 4 physics-stappen per beeld: liever even iets trager dan een haperende spiraal
-    while (acc >= STEP && steps < 6) { step(DT); acc -= STEP; steps++; }
+    // hooguit 12 physics-stappen per beeld: liever even iets trager dan een haperende spiraal
+    while (acc >= STEP && steps < 12) { step(DT); acc -= STEP; steps++; }
     if (acc > STEP) acc = 0;
-    const gdt = dt * GAME_SPEED;
+    renderAlpha = acc / STEP;
+    const gdt = dt * GAME_SPEED * ts;
     mpFrame(dt, gdt);
     updateEffects(gdt);
     const oy = camY;
-    updateCamera(gdt);
+    interpBegin(true); updateCamera(gdt); interpEnd(); // camera volgt de getekende (geïnterpoleerde) Andy
     updateZoom(gdt);
     genUntil(camX + viewW + 900);
     const P = paletteAt((camX + viewW * 0.5 - START_X) / PX_PER_M);
@@ -4911,7 +5271,7 @@ window.__andyBack = () => {
   window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }));
   return true;
 };
-window.__andySaved = ok => saveMsg(ok ? '✔ Save-bestand opgeslagen.' : 'Opslaan geannuleerd.', ok);
+window.__andySaved = ok => saveMsg(ok ? 'Save-bestand opgeslagen.' : 'Opslaan geannuleerd.', ok);
 
 // Debug-/testhaak (handig voor automatische tests)
 window.__andy = { get G() { return G; }, get run() { return run; }, get game() { return game; }, get save() { return save; },
@@ -4922,6 +5282,16 @@ window.__andy = { get G() { return G; }, get run() { return run; }, get game() {
 resetWorld();
 refreshMenu();
 showScreen('menu');
+// uitnodigingslink (…#join=spelcode): meteen naar multiplayer en verbinden
+function checkJoinLink() {
+  const m = /[#&]join=([^&]+)/.exec(location.hash);
+  if (!m) return;
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { location.hash = ''; }
+  openMp(); MP.local = false; mpJoinStart(roomCode(decodeURIComponent(m[1])));
+}
+window.addEventListener('hashchange', checkJoinLink);
+checkJoinLink();
+if (lbOn()) lbSubmit().catch(() => { /* offline */ });
 requestAnimationFrame(frame);
 })();
 </script>

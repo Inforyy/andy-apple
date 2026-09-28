@@ -14,27 +14,74 @@ In [`android/`](android/) staat **`AndyApples.apk`**: het spel als Android-app (
 
 Speel met z'n tweeën, op twee manieren:
 
-- 📺 **Op één scherm**: twee spelers op hetzelfde apparaat met een gedeeld scherm (naast elkaar op een breed scherm, boven elkaar op een staand scherm). **Speler 1** speelt met `Spatie` (of tikt op de linker/bovenste helft), **Speler 2** met `↑` of `Enter` (of tikt op de rechter/onderste helft). Geen codes of internet nodig, en pauzeren kan gewoon.
-- 🌐 **Online op twee apparaten**, zonder account of server: de twee browsers verbinden direct met elkaar (WebRTC). Je wisselt alleen twee codes uit (zie *Instellen*).
+- **Op één scherm**: twee spelers op hetzelfde apparaat met een gedeeld scherm. **Speler 1** speelt met `Spatie` (of tikt op de linker/bovenste helft), **Speler 2** met `↑` of `Enter` (of tikt op de rechter/onderste helft). Geen internet nodig.
+- **Online op twee apparaten**, met één **spelcode**.
 
-Beide manieren hebben dezelfde spelmodi:
+Spelmodi: **Race** (eerst bij de finish van 500, 1000 of 2000 m wint) en **Endurance** (wie het langst volhoudt; een storm jaagt je op). Upgrades staan uit, appels en XP tellen niet mee voor je save. Jullie spelen in dezelfde wereld en zien elkaar als tweede gorilla.
 
+### Online verbinden
 
-- 🏁 **Race**: wie het eerst bij de finish is (500, 1000 of 2000 m), wint. Val je, dan kom je na een tel terug op een liaan; dat kost tijd.
-- ⏱️ **Endurance**: wie het langst volhoudt, wint. Val je, dan ben je af. Een storm jaagt je van achteren op en gaat steeds sneller.
-- **Upgrades staan uit** tijdens multiplayer, zodat iedereen gelijk is. Appels en XP uit multiplayer tellen niet mee voor je save.
-- Jullie spelen in precies dezelfde wereld (dezelfde seed) en zien elkaar als tweede gorilla met een blauwe bandana. Buiten beeld wijst een pijl naar je tegenstander.
+1. **Speler 1** kiest **Multiplayer → Hosten**. Er verschijnt een spelcode (bijv. `stijn42`); die mag je zelf aanpassen naar iets makkelijks. Klik op **Kopieer uitnodiging** en stuur het bericht (met link) naar speler 2.
+2. **Speler 2** opent de link (dan verbindt het spel vanzelf), of kiest **Multiplayer → Meedoen**, typt de spelcode en klikt op **Verbinden**.
+3. De host kiest Race of Endurance en klikt op **Start**.
 
-### Instellen (online)
+De spelcode loopt via de gratis PeerJS-server (die de twee spelers aan elkaar koppelt); daarna praten de browsers direct met elkaar (WebRTC). Lukt dat niet (sommige school-, werk- of mobiele netwerken blokkeren het), gebruik dan **Lukt het niet? Verbind handmatig**: dan wissel je, net als vroeger, een uitnodigings- en antwoordcode uit, zonder server.
 
-De uitleg staat ook in het spel: **👥 Multiplayer → ❓ Set-up**.
+Uitnodigingslinks werken als het spel online staat (bijv. via GitHub Pages). Draait het spel als los bestand of in de Android-app, vul dan `CONFIG.siteUrl` in (zie hieronder); anders wordt alleen de spelcode gekopieerd.
 
-1. **Speler 1 (host)** klikt op **👥 Multiplayer → 🏠 Spel hosten**, kopieert de **uitnodigingscode** en stuurt die naar speler 2 (WhatsApp, Discord, e-mail…).
-2. **Speler 2** klikt op **👥 Multiplayer → 🔗 Meedoen**, plakt de code en klikt op **✍️ Maak antwoordcode**.
-3. Speler 2 stuurt de **antwoordcode** terug; de host plakt die en klikt op **🔌 Verbinden**.
-4. Staat er **Verbonden**, dan kiest de host Race of Endurance en klikt op **▶ Start!**. Na afloop kun je met **🔁 Revanche** meteen opnieuw.
+## Ranglijst instellen (Eindeloos)
 
-Tips: codes zijn eenmalig (mislukt het, klik dan op **✖ Opnieuw**). Het werkt het best als beide apparaten op hetzelfde wifi-netwerk zitten; sommige school-, werk- of mobiele netwerken blokkeren directe verbindingen. Wie tijdens een potje een paar seconden wegklikt, geeft op. Twee tabbladen in hetzelfde venster werkt niet voor online spelen (de browser zet het verborgen tabblad stil); gebruik twee aparte vensters naast elkaar, of speel gewoon met 📺 Op één scherm.
+De ranglijst gebruikt een gratis [Supabase](https://supabase.com)-project. Zolang dat niet is ingesteld, is de knop **Ranglijst** verborgen en werkt het spel gewoon zonder.
+
+1. Maak een account op supabase.com en een nieuw project (gratis plan is genoeg; kies een regio in Europa).
+2. Open in het project **SQL Editor → New query**, plak dit en klik op **Run**:
+
+   ```sql
+   create table public.scores (
+     player_id  text primary key check (char_length(player_id) between 16 and 40),
+     name       text not null check (char_length(name) between 1 and 12),
+     dist       integer not null check (dist between 0 and 100000),
+     updated_at timestamptz not null default now()
+   );
+   create index scores_dist_idx on public.scores (dist desc);
+   alter table public.scores enable row level security;
+
+   -- iedereen mag de lijst lezen, maar alleen naam, afstand en datum (het geheime speler-id niet)
+   create policy "ranglijst lezen" on public.scores for select to anon, authenticated using (true);
+   revoke all on table public.scores from anon, authenticated;
+   grant select (name, dist, updated_at) on table public.scores to anon, authenticated;
+
+   -- scores komen alleen binnen via deze functie: per speler blijft alleen het beste resultaat staan
+   create or replace function public.submit_score(p_id text, p_name text, p_dist integer)
+   returns void language plpgsql security definer set search_path = public as $$
+   begin
+     if p_id is null or p_id !~ '^[0-9a-f]{24}$' then raise exception 'ongeldig id'; end if;
+     if p_dist is null or p_dist < 0 or p_dist > 100000 then raise exception 'ongeldige afstand'; end if;
+     p_name := left(btrim(regexp_replace(coalesce(p_name, ''), '[<>&"]', '', 'g')), 12);
+     if p_name = '' then p_name := 'Andy'; end if;
+     insert into public.scores (player_id, name, dist) values (p_id, p_name, p_dist)
+     on conflict (player_id) do update
+       set name = excluded.name,
+           dist = greatest(scores.dist, excluded.dist),
+           updated_at = case when excluded.dist > scores.dist then now() else scores.updated_at end;
+   end $$;
+   revoke all on function public.submit_score(text, text, integer) from public;
+   grant execute on function public.submit_score(text, text, integer) to anon, authenticated;
+   ```
+
+3. Ga naar **Project Settings → API** (of **API Keys**) en kopieer de **Project URL** en de **anon public** key (in nieuwe projecten heet die **publishable key**, begint met `sb_publishable_`). Deze key is bedoeld om openbaar in een website te staan; gebruik **nooit** de `service_role`/secret key.
+4. Vul ze in bovenaan het `<script>` in `index.html`:
+
+   ```js
+   const CONFIG = {
+     leaderboard: { url: 'https://abcdefgh.supabase.co', key: 'sb_publishable_…' },
+     siteUrl: 'https://stoin3.github.io/andy-apple/',   // optioneel, voor uitnodigingslinks
+   };
+   ```
+
+5. Zet het spel online, bijvoorbeeld met **GitHub Pages**: repository → **Settings → Pages** → *Deploy from a branch* → `main` en `/ (root)`. Het spel staat dan op `https://<gebruikersnaam>.github.io/andy-apple/`. (Vul dat adres in als `siteUrl`.)
+
+Hoe het werkt: elke speler krijgt een willekeurig, geheim id (in de browser bewaard). Na elke run in Eindeloos wordt je beste afstand met je naam (dezelfde als in multiplayer) verstuurd; offline wordt dat later alsnog gedaan. Runs met een aangepaste debug-snelheid tellen niet mee. Let op: zoals bij elke ranglijst van een browserspel kan iemand met technische kennis een nepscore insturen; verwijder die dan in Supabase via **Table Editor → scores**.
 
 ## Besturing
 
@@ -52,7 +99,7 @@ Tips: codes zijn eenmalig (mislukt het, klik dan op **✖ Opnieuw**). Het werkt 
 - **Lianen met physics**: elke liaan is een Verlet-touw van segmenten dat schuin naar linksonder hangt (zoals in Benji Bananas), zodat je hem makkelijk grijpt. Andy's gewicht, vaart, zwaaien en loslaten werken zoals je zou verwachten.
 - **Drie modi**: 🏁 **Carrière** met 35 levels (start → finish, steeds langer en moeilijker, elke 5 levels een nieuwe biome, tot 3 sterren per level), ♾️ **Eindeloos** (zo ver mogelijk komen) en 👥 **Multiplayer** (zie hierboven).
 - **Vloeiend zwaaien**: Andy zwaait als een echte slinger zonder energieverlies. Bij het grijpen blijft al zijn vaart behouden als voorwaartse zwaai; alleen verkeerd loslaten kost snelheid. Zwaai je te hoog, dan wordt het touw even slap. Grijp je een liaan te hoog, dan glijdt hij vanzelf omlaag. Bij verkeerde timing wordt een lancering die bijna kaarsrecht omhoog of pal achteruit zou gaan automatisch teruggebogen naar een bruikbare, voorwaartse sprong: zo verspil je nooit een hele zwaai.
-- **Uitzoomen**: het beeld staat standaard zo'n 50% verder uitgezoomd voor meer overzicht, en zoomt rustig verder uit naarmate Andy gemiddeld sneller vooruit gaat (en weer in als hij vertraagt). Alleen de speelwereld zoomt mee; de verre achtergrond blijft op een vaste zoom en sluit altijd netjes aan op de waterlijn.
+- **Uitzoomen**: het beeld staat standaard 25% verder uitgezoomd voor meer overzicht, en zoomt rustig verder uit naarmate Andy gemiddeld sneller vooruit gaat (en weer in als hij vertraagt). Alleen de speelwereld zoomt mee; de verre achtergrond blijft op een vaste zoom en sluit altijd netjes aan op de waterlijn.
 - **Trucs**: blijf je lang in de lucht, dan doet Andy salto's, kurkentrekkers, sterrensprongen en superaap-poses voor bonusappels (achter elkaar = meer bonus).
 - **Lucht-trampolines** en grote **stuiterzwammen** lanceren je omhoog.
 - **De ruimte**: soms hangt er hoog boven het plafond een pad van gouden ballonnen. Pak ze perfect achter elkaar en laat los bij de laatste: dan word je de ruimte in gelanceerd (weinig zwaartekracht, sterappels, +25 🍎).
@@ -70,10 +117,11 @@ Tips: codes zijn eenmalig (mislukt het, klik dan op **✖ Opnieuw**). Het werkt 
   6. 🌙 Sterrennacht (4100 m): alles door elkaar
   7. 🌀 Portaalwoud (5200 m): portalen zoals in *Portal 2*. Vlieg door het **blauwe** portaal en je komt met al je vaart uit het **oranje** portaal, een flink stuk verderop (en meestal hoger). Er hangt steeds maar één portaalpaar tegelijk, zodat het overzichtelijk blijft.
 
-  Hoe verder je komt, hoe meer gaten tussen de lianen, hoe meer vijanden en hoe minder appels.
+  Hoe verder je komt, hoe meer gaten tussen de lianen, hoe meer vijanden en hoe minder appels. In Eindeloos gaat ook het tempo langzaam omhoog (tot +12% bij 4000 m). Beide lopen af naar een plafond, zodat het altijd te doen blijft.
   Bij elke nieuwe biome speelt een riedeltje en tellen appels voor meer: +0,5 / +1 / +1,5 / +2 / +3 / +4 per appel, bovenop de Appeloogst-upgrade.
 - **Levendige wereld**: meerdere parallaxlagen (bergen, heuvels, boomlijn, gedetailleerde bomen, reuzenstammen, voorgrond), een zon met stralen, wolken, noorderlicht en sterren, en daarnaast vogelzwermen, vlinders, papegaaien, giraffen, springende vissen en vallende sterren.
 - **Muziek en geluid**: een procedurele jungle-groove (marimba, conga's, shaker, bas) met een eigen toonsoort per biome. Muziek en geluid staan los van elkaar aan/uit.
+- **Ranglijst** voor Eindeloos (zie *Ranglijst instellen*).
 - **XP en spelerslevels**: hoe verder je komt, hoe meer XP. Direct te koop zijn Wingsuit, Lange armen, Zwaaikracht, Lanceerkracht, Appelmagneet, Appeloogst en Reddingsballon; de rest ontgrendel je langzaam met spelerslevels: Gouden appels (level 4), Helm (6), Comboketting (8), Stuiterzwam (10), Liaankenner (12), Papegaaimaatje (14), Appelregen (16) en Raketstart (20).
 - **15 permanente upgrades**, betaald met 🍎 appels. Snelheid moet je verdienen: Zwaaikracht en Lanceerkracht verhogen ook je topsnelheid. Naast de basis-upgrades (en Gouden appels, Helm, Raketstart):
   - 🦸 **Wingsuit**: Andy krijgt een cape en glijdt veel verder.
@@ -82,8 +130,13 @@ Tips: codes zijn eenmalig (mislukt het, klik dan op **✖ Opnieuw**). Het werkt 
   - 🔥 **Comboketting**: langere combo's met grotere bonussen.
   - 🌿 **Liaankenner**: rotte lianen houden langer, ijs is minder glad en er zijn meer turbolianen.
   - 🍄 **Stuiterzwam**: meer paddenstoelen die je verder lanceren.
-- **Volledig scherm en draaiknop**: in **⚙️ Instellingen** staan twee losse knoppen: ⛶ **Volledig scherm** en 🔄 **Liggend spelen**. Met de draaiknop speel je op een staande telefoon toch liggend (breder zicht) — waar het kan wordt de oriëntatie van het scherm echt vastgezet (via volledig scherm, meestal op Android); lukt dat niet, dan draait het spel het beeld zelf een kwartslag, zodat je de telefoon gewoon kantelt. Met 🔄 **Staand spelen** zet je het terug. Beide keuzes staan los van elkaar en worden onthouden.
-- **Soepel op elk apparaat**: het spel meet zelf de framerate en past resolutie en effecten automatisch aan (en onthoudt dat). Op trage machines schakelt het snel terug, tot een extra lichte stand. Op telefoons en tablets is het beeld iets verder uitgezoomd voor meer overzicht. De verre achtergrond wordt in een aparte buffer op lage resolutie getekend.
+- **Volledig scherm en draaiknop**: in **Instellingen** staan twee losse knoppen: **Volledig scherm** en **Liggend spelen**. Met de draaiknop speel je op een staande telefoon toch liggend (breder zicht) — waar het kan wordt de oriëntatie van het scherm echt vastgezet (via volledig scherm, meestal op Android); lukt dat niet, dan draait het spel het beeld zelf een kwartslag, zodat je de telefoon gewoon kantelt. Met **Staand spelen** zet je het terug. Beide keuzes staan los van elkaar en worden onthouden.
+- **Debug-instellingen**: **Instellingen → Debug**, met wachtwoord `jungle-debug`: zoomniveau en spelsnelheid. Een ander wachtwoord? Reken de nieuwe waarde voor `DBG_HASH` in `index.html` uit met:
+  ```sh
+  node -e "let h=0x811c9dc5;for(const c of 'andy-debug:'+process.argv[1]){h^=c.charCodeAt(0);h=Math.imul(h,0x01000193)>>>0}console.log(h.toString(16).padStart(8,'0'))" NIEUW_WACHTWOORD
+  ```
+  Het is een drempel, geen echte beveiliging: alles draait in de browser.
+- **Soepel op elk apparaat**: Andy wordt tussen de physics-stappen door geïnterpoleerd, zodat hij ook op 75/90/144 Hz-schermen niet schokt of flikkert. het spel meet zelf de framerate en past resolutie en effecten automatisch aan (en onthoudt dat). Op trage machines schakelt het snel terug, tot een extra lichte stand. Op telefoons en tablets is het beeld iets verder uitgezoomd voor meer overzicht. De verre achtergrond wordt in een aparte buffer op lage resolutie getekend.
 - **Save-systeem**:
   - De voortgang wordt automatisch opgeslagen in de `localStorage` van de browser.
   - **Exporteren** geeft een `.json`-save-bestand; **importeren** laadt zo'n bestand weer in.
