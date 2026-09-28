@@ -274,7 +274,14 @@ html.slim #mpHud{top:auto;bottom:max(10px,env(safe-area-inset-bottom));width:80v
   #mp .set-row:has(>.seg){flex-wrap:wrap;gap:6px 12px}
   #mp .set-lbl+.seg{flex:1 1 100%}
   .seg button{padding:7px 4px;font-size:14px}
+  #mp .p-head{grid-template-columns:auto minmax(0,1fr) auto}
+  #mpTitle{font-size:26px}
 }
+/* laag scherm: spelers en spelmodus naast elkaar, de keuzeknoppen onder hun label */
+html.short #mpRoom.set-groups{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}
+html.short #mp .set-row:has(>.seg){flex-wrap:wrap;gap:4px 12px}
+html.short #mp .set-lbl+.seg{flex:1 1 100%}
+.grp-h h3{white-space:nowrap}
 .seg button:disabled:not(.sel){opacity:.55}
 .mp-desc{margin:0;padding:0 14px 10px;font-size:13.5px;line-height:1.35;color:#7a5a3a;text-align:left}
 #mpModeRow.hidden+.mp-desc{padding-top:10px}
