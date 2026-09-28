@@ -25,7 +25,8 @@ const QUALITY_NAMES = ['minimaal', 'laag', 'middel', 'hoog', 'maximaal'];
 // Nieuwe sleutel: oude automatische standen (vaak onterecht op de laagste stand blijven hangen) vervallen.
 // qAuto = het spel kiest zelf (standaard); anders heeft de speler in Instellingen een vaste stand gekozen.
 const QKEY = 'andyApples.quality4';
-let qLevel = 3, qMax = 4, qAuto = true;
+// eerste keer: op een telefoon/tablet beginnen op 'middel' (schermen zijn klein en scherp; auto gaat vanzelf omhoog als het kan)
+let qLevel = navigator.maxTouchPoints > 0 && Math.min(screen.width, screen.height) < 900 ? 2 : 3, qMax = 4, qAuto = true;
 try {
   const q = JSON.parse(localStorage.getItem(QKEY));
   // automatisch: begin nooit lager dan 'middel'; is dat te zwaar, dan schakelt het spel binnen een paar seconden terug
@@ -49,8 +50,9 @@ const IS_MOBILE = navigator.maxTouchPoints > 0 && Math.min(screen.width, screen.
 // In de Android-app (WebView) is er een brug naar Android voor opslaan/kopiëren; de app staat al liggend en schermvullend
 const IN_APP = /AndyApplesApp/.test(navigator.userAgent) && !!window.AndroidBridge;
 const ROT_KEY = 'andyApples.rotate';
-let rotPref = false, rotOn = false;
-try { rotPref = localStorage.getItem(ROT_KEY) === '1'; } catch (e) { /* geen voorkeur */ }
+// telefoons/tablets spelen standaard liggend (tot de speler in Instellingen 'Staand spelen' kiest)
+let rotPref = IS_MOBILE, rotOn = false;
+try { const r = localStorage.getItem(ROT_KEY); if (r !== null) rotPref = r === '1'; } catch (e) { /* geen voorkeur */ }
 function applyRot() {
   rotOn = rotPref && !IN_APP && window.innerHeight > window.innerWidth;
   const b = document.body;
@@ -75,15 +77,17 @@ async function toggleFullscreen() {
 }
 // ---- Draaien: eigen, losse knop. Voor het echt vastzetten van de oriëntatie is op de meeste
 // browsers volledig scherm nodig, dus die proberen we hier zelf ook (zonder de fullscreen-knop te wijzigen) ----
+async function lockLandscape() {
+  try {
+    if (!isFullscreen()) await toggleFullscreen();
+    if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape');
+  } catch (e) { /* niet ondersteund: dan draaien we de pagina zelf (CSS-fallback) */ }
+}
 async function toggleRotate() {
   rotPref = !rotPref;
   try { localStorage.setItem(ROT_KEY, rotPref ? '1' : '0'); } catch (e) { /* negeren */ }
-  if (rotPref) {
-    try {
-      if (!isFullscreen()) await toggleFullscreen();
-      if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape');
-    } catch (e) { /* niet ondersteund: dan draaien we de pagina zelf (CSS-fallback) */ }
-  } else {
+  if (rotPref) await lockLandscape();
+  else {
     try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) { /* */ }
   }
   resize();
@@ -105,8 +109,9 @@ function resize() {
   baseScale = Math.min(vh / 740, vw / 500);
   // standaard-zoom (los van de snelheidsafhankelijke zoom hieronder), plus de debug-zoom
   baseScale *= DBG.zoom / BASE_ZOOM_OUT;
-  // telefoons/tablets: iets verder uitgezoomd voor meer overzicht
-  if (IS_MOBILE) baseScale *= vw < vh ? 0.76 : 0.86;
+  // Liggend is de zoom op telefoons/tablets gelijk aan die op de pc (de hoogte van de wereld past precies,
+  // net als op de pc). Alleen staand wordt het iets verder uitgezoomd, anders zie je te weinig vooruit.
+  if (IS_MOBILE && vw < vh) baseScale *= 0.76;
   applyQuality();
   gradCache.clear();
   applyZoom();
@@ -176,6 +181,15 @@ function cachedGrad(key, make) { let g = gradCache.get(key); if (!g) { g = make(
 function viewInit() {
   window.addEventListener('resize', resize);
   window.addEventListener('orientationchange', () => setTimeout(resize, 200));
+  // Standaard liggend op een telefoon: bij de eerste tik (volledig scherm vraagt om een tik van de speler) het scherm
+  // echt liggend vastzetten waar dat kan (Android). Anders (iPhone) draait het spel de pagina zelf, zie applyRot.
+  if (IS_MOBILE && !IN_APP && screen.orientation && screen.orientation.lock) {
+    const once = () => {
+      window.removeEventListener('pointerup', once);
+      if (rotPref && window.innerHeight > window.innerWidth) lockLandscape().then(() => { resize(); setTimeout(resize, 350); });
+    };
+    window.addEventListener('pointerup', once);
+  }
   document.documentElement.classList.toggle('touch', navigator.maxTouchPoints > 0 || (window.matchMedia && matchMedia('(pointer: coarse)').matches));
   resize();
 }
