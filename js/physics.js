@@ -28,7 +28,7 @@ function simVine(v, dt) {
     a.px = a.x; a.py = a.y;
   }
   // de scheefhang-kracht werkt niet op de liaan waar Andy aan hangt: die zou zijn zwaai afremmen
-  const wind = (Math.sin(time * 0.7 + v.phase) * 0.6 + Math.sin(time * 1.9 + v.phase * 2) * 0.4) * 60 + (hang ? 0 : v.jet ? JET_DRAG : VINE_TILT); // achter een straaljager wappert de liaan ver naar achteren
+  const wind = (Math.sin(time * 0.7 + v.phase) * 0.6 + Math.sin(time * 1.9 + v.phase * 2) * 0.4) * 60 + (hang ? 0 : v.jet ? JET_DRAG : brOn() ? 0 : VINE_TILT); // battle royale: lianen hangen recht (vrije richting) // achter een straaljager wappert de liaan ver naar achteren
   const damp = hang ? 0.9995 : 0.996;
   for (let i = 0; i < n; i++) {
     const q = p[i]; if (q.im === 0) continue;
@@ -106,9 +106,10 @@ function swingStep(v, dt) {
   if (v.jet) { alpha += (JET_DRAG * 0.8 / G.R) * Math.cos(G.th); G.om *= Math.pow(0.45, dt); } // fartwind: aan een straaljager hang je naar achteren
   if (game.mode !== 'dying') { // "pompen": Andy zwaait zelf mee
     const vt = G.om * G.R, c = Math.cos(G.th);
+    if (brOn() && game.mp.br && c > 0.25 && Math.abs(vt) <= 15) alpha += Math.sign(Math.cos(game.mp.br.aim) || 1) * pumpA(0) / G.R; // battle royale: vanuit stilstand zwaai je naar waar je richt
     if (c > 0.25 && Math.abs(vt) > 15 && Math.abs(vt) < swingCap()) {
       const s = Math.sign(G.om), fwd = s * c > 0;
-      alpha += s * pumpA(lvl('swing')) * (fwd ? 1 : 0.55) / G.R;
+      alpha += s * pumpA(lvl('swing')) * (fwd || brOn() ? 1 : 0.55) / G.R; // battle royale: naar achter zwaaien even sterk
     }
   }
   G.om = (G.om + alpha * dt) * 0.99998;
@@ -139,7 +140,7 @@ function tryGrab() {
 function attach(v, k) {
   const airT = G.airT, dx = G.x - G.airX;
   const p = v.pts, n = p.length;
-  if (G.trick) { G.trick = null; G.trickRot = 0; } // truc onderbroken
+  if (G.trick) G.trick = null; // truc onderbroken: de draaiing loopt vanzelf af (zie updateGorilla), geen sprong terug
   G.state = 'hang'; G.vine = v; G.k = k; G.hangT = 0; G.iceT = 0; G.diveT = 0; G.dive = 0; G.noDive = false; G.chain = 0; G.swSide = 0;
   G.sq = 0.24; // even uitrekken bij het grijpen (zie de rek-en-krimpveer in updateGorilla)
   // Nooit helemaal bovenin: Andy glijdt een stukje omlaag (anders is al zijn vaart weg)
@@ -154,6 +155,7 @@ function attach(v, k) {
   const vt = (G.vx - (v.balloon ? v.balloon.vx : 0)) * c - G.vy * sn;
   let dir = Math.abs(c) > 0.2 ? Math.sign(c) : -Math.sign(sn) || 1;
   if (G.vx < -250 && Math.sign(vt) === -dir) dir = -dir;
+  if (brOn() && Math.abs(vt) > 60) dir = Math.sign(vt); // battle royale: je zwaait gewoon door in de richting waarin je ging
   // een overschot boven de topsnelheid (zie de air-state) gaat niet mee de zwaai in: anders stapelt het zich
   // bij elke liaan op (loslaten vermenigvuldigt de vaart), en wordt het spel steeds sneller
   G.om = dir * Math.max(Math.min(speed, G.maxS || maxSpeed()), 480) / G.R;
@@ -198,13 +200,13 @@ function release(voluntary = true) {
   const sp0 = Math.hypot(G.vx, G.vy);
   // Geheim: vanaf de allereerste liaan met volle vaart naar ACHTEREN loslaten (en ver genoeg vliegen, zie
   // checkMatrix) brengt je in de Matrix. Zo'n harde zwaai naar achter gebeurt niet per ongeluk.
-  const matrixShot = voluntary && v.first && run.firstJump && G.vx < -MATRIX_VX && G.hangT > 1.2 && !game.career && !game.mp && !LOCAL.on;
+  const matrixShot = voluntary && v.first && run.firstJump && G.vx < -MATRIX_VX && G.hangT > 1.2 && matrixOpen();
   if (matrixShot) {
     G.vx *= m; G.vy = G.vy * m - 120; G.lastVine = v; G.releaseT = 0.3; G.vine = null; G.state = 'air'; G.airT = 0; G.airX = G.x; G.slack = false;
     G.matrixShot = true; Sfx.release(sp0); Sfx.whoa();
     return;
   }
-  if (sp0 > 70) {
+  if (sp0 > 70 && !brOn()) { // (battle royale: vrije richting, geen bijsturen)
     if (G.vx < 0) G.vx *= 0.4; // vol achteruit: fors afgezwakt
     const sp1 = Math.hypot(G.vx, G.vy);
     const vert = sp1 > 1 ? Math.abs(G.vy) / sp1 : 0; // 0 = helemaal horizontaal, 1 = kaarsrecht op/neer
@@ -216,6 +218,7 @@ function release(voluntary = true) {
   }
   let vx = G.vx * m, vy = G.vy * m;
   if (vx > 0) vx += 60 + 20 * lvl('launch');
+  else if (brOn()) vx -= 60;
   vy -= 50;
   const playing = game.mode === 'playing';
   if (playing && voluntary && v.type === 'turbo') {
@@ -263,35 +266,51 @@ function cosmTrail() {
 // de Matrix: vallende groene code, en Kiwi die in een paar tekstballonnen uitlegt dat je de verkeerde kant op ging.
 // Daarna sta je weer op de startrots. De wereld staat ondertussen stil.
 const MATRIX_VX = 820;
-const MATRIX_LINES = [
+// Per bezoek andere tekst (ook in latere runs, zie save.matrixSeen). Na het laatste bezoek gaat de Matrix op slot:
+// dan gebeurt er niets meer en vlieg je gewoon tegen de wand. Nooit in multiplayer, split-screen of tegen Kiwi.
+const MATRIX_VISITS = [[
   'Hé… jij daar. Wat doe jij hier?',
   'Dit is de Matrix. Hier is niks. Alleen maar code.',
   'Geen appels, geen lianen, geen avontuur. Die zitten allemaal díe kant op ➜',
   'Je bent de verkeerde kant op gezwaaid, Andy.',
   'Ik stuur je terug. En deze keer: naar vóren zwaaien, oké?',
-];
+], [
+  'Jij alweer?!',
+  'Ik heb nog eens goed gekeken: hier zijn echt nog steeds geen appels.',
+  'Alleen maar enen en nullen. En een beetje stof.',
+  'Weet je hoeveel moeite het kost om jou steeds terug te sturen?',
+  'Laatste keer, hoor. Naar vóren. Dáár ➜',
+], [
+  'Serieus. Voor de DERDE keer.',
+  'Oké, je hebt gewonnen: je bent officieel de koppigste gorilla van de jungle.',
+  'Maar ik doe de Matrix nu op slot. 🔒',
+  'Probeer je het nog eens, dan vlieg je gewoon tegen de muur.',
+  'Doei Andy! Veel plezier met je appels. 🍎',
+]];
+const matrixOpen = () => (save.matrixSeen || 0) < MATRIX_VISITS.length && !game.career && !game.mp && !LOCAL.on;
 function checkMatrix() {
   if (!G.matrixShot) return;
-  if (G.state !== 'air') { G.matrixShot = false; return; }
+  if (G.state !== 'air' || !matrixOpen()) { G.matrixShot = false; return; }
   if (G.x < WALL_X + 40 && G.y < ROCK.top - 60) {
     G.matrixShot = false;
-    run.matrix = { t: 0, line: 0, lineT: 0, press: input.presses, out: 0 };
+    run.matrix = { t: 0, line: 0, lineT: 0, press: input.presses, out: 0, lines: MATRIX_VISITS[save.matrixSeen || 0] };
     document.body.classList.add('matrix'); // HUD en hints even weg
     flashT = 0.6; shake(8, 0.5); Sfx.portal();
   }
 }
 function updateMatrix(dt) {
   const M = run.matrix;
+  if (game.mp || LOCAL.on) { run.matrix = null; document.body.classList.remove('matrix'); return; } // nooit in multiplayer
   M.t += dt; M.lineT += dt;
   if (M.out) { if ((M.out += dt) > 0.6) matrixDone(); return; }
-  const full = MATRIX_LINES[M.line].length / 28 + 0.3; // tijd om de regel uit te typen
+  const full = M.lines[M.line].length / 28 + 0.3; // tijd om de regel uit te typen
   // tikken: eerst de regel afmaken, dan de volgende
   if (input.presses !== M.press && M.t > 0.6) { M.press = input.presses; if (M.lineT < full) M.lineT = full; else nextMatrixLine(M); }
   if (M.lineT > full + 2.6) nextMatrixLine(M);
   if (Math.random() < 0.25) Sfx.tick(1800 + Math.random() * 900, 0.015);
 }
 function nextMatrixLine(M) {
-  if (M.line < MATRIX_LINES.length - 1) { M.line++; M.lineT = 0; Sfx.tick(1200, 0.05); }
+  if (M.line < M.lines.length - 1) { M.line++; M.lineT = 0; Sfx.tick(1200, 0.05); }
   else { M.out = 0.001; Sfx.portal(); }
 }
 function matrixDone() {
@@ -300,8 +319,12 @@ function matrixDone() {
   G.state = 'stand'; G.x = 250; G.y = ROCK.top - FEET; G.vx = 0; G.vy = 0; G.angle = 0; G.standT = 0; G.standPress = input.presses;
   run.firstJump = true;
   flashT = 0.5; confetti(G.x, G.y - 40, 50);
-  if (!save.matrixSeen) { save.matrixSeen = 1; save.apples += 25; persist(); floatText(G.x, G.y - 80, 'Geheim gevonden! +25 🍎', '#7dff8a', 26); }
+  const seen = save.matrixSeen || 0;
+  save.matrixSeen = Math.min(MATRIX_VISITS.length, seen + 1);
+  if (!seen) { save.apples += 25; floatText(G.x, G.y - 80, 'Geheim gevonden! +25 🍎', '#7dff8a', 26); }
+  else if (save.matrixSeen >= MATRIX_VISITS.length) floatText(G.x, G.y - 80, 'De Matrix is op slot 🔒', '#7dff8a', 24);
   else floatText(G.x, G.y - 80, 'Terug uit de Matrix!', '#7dff8a', 24);
+  persist();
   Sfx.cheer();
 }
 // Sprong vanaf de startrots naar de eerste liaan
@@ -465,6 +488,8 @@ function updateGorilla(dt, holdHang, holdAir) {
   const playing = game.mode === 'playing';
   // rek-en-krimpveer: bij grijpen, loslaten, landen en stuiteren rekt Andy even uit of krimpt hij in, en veert terug
   G.sqv = (G.sqv || 0) + (-(G.sq || 0) * 520 - G.sqv * 14) * dt; G.sq = (G.sq || 0) + G.sqv * dt;
+  // een onderbroken truc (grijpen, duiken) draait via de kortste weg rustig terug in plaats van in één beeld terug te springen
+  if (!G.trick && G.trickRot) { G.trickRot = wrapA(G.trickRot) * Math.exp(-dt * 11); if (Math.abs(G.trickRot) < 0.01) G.trickRot = 0; }
   if (!G.auto) checkTrans(); // biomegrens: vanzelf de reuzenliaan grijpen
   if (G.matrixShot) checkMatrix();
   if (save.cosm.trail && playing && !aiWorld() && (G.state === 'air' || G.state === 'hang')) cosmTrail();
@@ -542,7 +567,7 @@ function updateGorilla(dt, holdHang, holdAir) {
     if (float && G.y > SPACE_Y - 250) G.vy -= Math.min(900, (G.y - (SPACE_Y - 250)) * 1.6) * dt + G.vy * Math.min(1, dt * 1.2) * (G.vy > 0 ? 1 : 0);
     // ook zonder wingsuit-upgrade drijft Andy een klein beetje naar voren: zo kom je nooit hulpeloos
     // recht naar beneden vast te zitten tussen twee lianen in
-    G.vx += 55 * dt;
+    if (!brOn()) G.vx += 55 * dt;
     // wingsuit: een deel van de valsnelheid wordt voorwaartse vaart
     if (wing && falling && G.vx > 0) { const dv = Math.min(G.vy, 700) * 0.32 * wing * dt; G.vy -= dv; G.vx += dv * 0.85; }
     const maxFall = MAX_FALL * glide * (1 + 1.1 * G.dive);
@@ -758,7 +783,7 @@ const TRICKS = [
 function updateTrick(dt, holdAir) {
   if (game.mode !== 'playing') return;
   if (G.trick) {
-    if (G.dive > 0.3) { G.trick = null; G.trickRot = 0; return; } // duiken breekt de truc af
+    if (G.dive > 0.3) { G.trick = null; return; } // duiken breekt de truc af (de draaiing loopt vanzelf af)
     G.trickT += dt;
     const k = Math.min(1, G.trickT / G.trick.dur), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
     G.trickRot = G.trick.rot * e;
@@ -781,21 +806,20 @@ function updateTrick(dt, holdAir) {
     if (G.y < HAZARD_Y - 220) { G.trick = TRICKS[(Math.random() * TRICKS.length) | 0]; G.trickT = 0; G.sq = -0.22; } // eerst even inveren
   }
 }
-// ---- Nieuwe biome: over de klif aan een reuzenliaan ----
-// Op elke biomegrens staat een klif, met erboven een enorme liaan (zie TRANS, biomeGapAt en drawBiomeCliffs).
-// Komt Andy in de buurt, dan grijpt hij die liaan vanzelf, zwaait over de klif en wordt aan de andere kant
-// met extra vaart de nieuwe biome in geslingerd. De speler hoeft niets te doen; alles duurt nog geen 3 seconden.
-// Tijdens de zwaai verschijnen filmbalken en een titelkaart (zie drawCinematic).
-// TRANS: ay/L = ophangpunt en lengte van de reuzenliaan; before = hoe ver vóór de grens hij grijpt;
-// grab = hoe lang het vastpakken duurt, swing = de hele zwaai (echte seconden); th1 = hoek bij het loslaten.
-const TRANS = { ay: CEIL_Y - 450, L: 1400, hang: 46, before: 1000, after: 900, grab: 0.4, swing: 1.45, th1: 0.95 };
-const CINE_DUR = 2.8;
+// ---- Nieuwe biome: over de afgrond aan drie reuzenlianen ----
+// Op elke biomegrens houdt de wereld op: een klif, dan een diepe leegte zonder achtergrond of grond, en aan de
+// andere kant de klif van de nieuwe biome. Boven de leegte hangen TRANS.n reuzenlianen (zie transVineX en
+// drawBiomeCliffs). Komt Andy in de buurt, dan grijpt hij de eerste vanzelf, zwaait, springt naar de volgende,
+// en wordt na de laatste met extra vaart de nieuwe biome in geslingerd. De speler hoeft niets te doen.
+// Tijdens de zwaai verschijnen filmbalken en een titelkaart (zie drawCinematic). TRANS en transVineX staan in data.js.
+const CINE_DUR = 5.5;
 // de biomegrens (x) waar Andy nu in de buurt is, of null
 function transBoundary(x) {
   if (game.career) return null;
   const S = biomeSeg((x - START_X) / PX_PER_M), bn = START_X + S.nextStart * PX_PER_M, bs = START_X + S.start * PX_PER_M;
-  if (x > bn - TRANS.before && x < bn + TRANS.after) return bn;
-  if (S.start > 0 && x > bs - TRANS.before && x < bs + TRANS.after) return bs;
+  const a = TRANS.span + TRANS.before, b = TRANS.span + TRANS.after;
+  if (x > bn - a && x < bn + b) return bn;
+  if (S.start > 0 && x > bs - a && x < bs + b) return bs;
   return null;
 }
 function checkTrans() {
@@ -804,30 +828,60 @@ function checkTrans() {
   if (bx === null || run.transDone === bx) return;
   if (G.state === 'hang') release(false);
   G.state = 'air';
-  G.auto = { bx, t: 0, th0: clamp(Math.asin(clamp((G.x - bx) / TRANS.L, -1, 1)), -0.95, 0.4), sx: G.x, sy: G.y };
+  let k = 0; // kom je pas halverwege aan (bijvoorbeeld met een raket), dan grijp je de liaan die nog vóór je hangt
+  while (k < TRANS.n - 1 && G.x > transVineX(bx, k) + TRANS.R * Math.sin(TRANS.th1) * 0.5) k++;
+  G.auto = { bx, k, t: 0, fly: false, th0: transTh0(bx, k, G.x), sx: G.x, sy: G.y };
   run.transDone = bx;
-  G.trick = null; G.trickRot = 0; G.dive = 0; G.diving = false;
+  G.trick = null; G.trickT = 0; G.dive = 0; G.diving = false;
   if (!aiWorld()) { Sfx.grab(); Sfx.tarzan(); }
 }
-// de hoek van de reuzenliaan op tijd t van de zwaai (zacht op gang, snel door het laagste punt)
+const transTh0 = (bx, k, x) => clamp(Math.asin(clamp((x - transVineX(bx, k)) / TRANS.L, -1, 1)), -0.95, 0.4);
+// de hoek aan reuzenliaan k op tijd t van de zwaai: traag bij de uitslag, snel door het laagste punt
+// (en bij het loslaten nog genoeg vaart voor de sprong naar de volgende)
 function transAngle(A, t) {
-  const u = clamp(t / TRANS.swing, 0, 1), K = 0.86, e = (1 - Math.cos(Math.PI * u * K)) / (1 - Math.cos(Math.PI * K));
-  return A.th0 + (TRANS.th1 - A.th0) * e;
+  const u = clamp(t / TRANS.swing, 0, 1), K = 0.8, f = (Math.sin(Math.PI * K * (u - 0.5)) / Math.sin(Math.PI * K / 2) + 1) / 2;
+  return A.th0 + (TRANS.th1 - A.th0) * f;
+}
+// waar Andy hangt bij hoek th aan liaan k
+function transPos(A, th) {
+  const s = Math.sin(th), c = Math.cos(th), x = transVineX(A.bx, A.k);
+  return { hx: x + TRANS.L * s, hy: TRANS.ay + TRANS.L * c, px: x + TRANS.R * s, py: TRANS.ay + TRANS.R * c };
 }
 function autoSwing(dt) {
   const A = G.auto, rdt = dt / (GAME_SPEED * Math.max(0.05, timeScale()));
   A.t += rdt;
-  const th = transAngle(A, A.t), s = Math.sin(th), c = Math.cos(th);
-  const hx = A.bx + TRANS.L * s, hy = TRANS.ay + TRANS.L * c, px = hx + s * TRANS.hang, py = hy + c * TRANS.hang;
-  // eerst naar het uiteinde van de liaan toe (vastpakken), daarna hangt hij er gewoon aan
-  const k = clamp(A.t / TRANS.grab, 0, 1), e = k * k * (3 - 2 * k);
-  const nx = A.sx + (px - A.sx) * e, ny = A.sy + (py - A.sy) * e;
+  let nx, ny;
+  if (A.fly) { // de sprong tussen twee lianen: een vloeiende boog (Hermite) van loslaten naar vastpakken
+    const s = clamp(A.t / TRANS.fly, 0, 1), T = TRANS.fly, s2 = s * s, s3 = s2 * s;
+    const h00 = 2 * s3 - 3 * s2 + 1, h10 = s3 - 2 * s2 + s, h01 = -2 * s3 + 3 * s2, h11 = s3 - s2;
+    nx = h00 * A.p0x + h10 * T * A.v0x + h01 * A.p1x + h11 * T * A.v1x;
+    ny = h00 * A.p0y + h10 * T * A.v0y + h01 * A.p1y + h11 * T * A.v1y;
+    G.angle = -TRANS.th1 + 2 * TRANS.th1 * s * s * (3 - 2 * s);
+    G.hx = nx; G.hy = ny - TRANS.hang;
+    if (A.t >= TRANS.fly) { A.fly = false; A.t = 0; A.k++; A.th0 = -TRANS.th1; A.sx = nx; A.sy = ny; A.grabbed = true; if (!aiWorld()) Sfx.grab(); }
+  } else {
+    const th = transAngle(A, A.t), P = transPos(A, th);
+    // eerst naar het uiteinde van de liaan toe (vastpakken), daarna hangt hij er gewoon aan
+    const k = A.grabbed ? 1 : clamp(A.t / TRANS.grab, 0, 1), e = k * k * (3 - 2 * k);
+    nx = A.sx + (P.px - A.sx) * e; ny = A.sy + (P.py - A.sy) * e;
+    G.hx = P.hx + (nx - P.px); G.hy = P.hy + (ny - P.py);
+    G.angle += (-th - G.angle) * Math.min(1, rdt * 14);
+    if (A.t >= TRANS.swing) {
+      if (A.k < TRANS.n - 1) { // loslaten en naar de volgende reuzenliaan springen
+        const e2 = 1e-3, P2 = transPos(A, transAngle(A, A.t - e2));
+        A.p0x = P.px; A.p0y = P.py; A.v0x = (P.px - P2.px) / e2; A.v0y = (P.py - P2.py) / e2;
+        const B = { bx: A.bx, k: A.k + 1, th0: -TRANS.th1 }, Q0 = transPos(B, transAngle(B, 0)), Q1 = transPos(B, transAngle(B, e2));
+        A.p1x = Q0.px; A.p1y = Q0.py; A.v1x = (Q1.px - Q0.px) / e2; A.v1y = (Q1.py - Q0.py) / e2;
+        A.fly = true; A.t = 0;
+        if (!aiWorld()) Sfx.whoosh(0.35, 300, 900, 0.06);
+      }
+    }
+  }
   G.vx = (nx - G.x) / dt; G.vy = (ny - G.y) / dt; // voor de camera en het uitzoomen
-  G.x = nx; G.y = ny; G.hx = hx + (nx - px); G.hy = hy + (ny - py);
-  G.angle += (-th - G.angle) * Math.min(1, rdt * 14);
+  G.x = nx; G.y = ny;
   G.airT = 0; G.airX = G.x;
   if (Math.random() < 0.5) addPart({ type: 'streak', x: G.x + rand(-14, 14), y: G.y + rand(-14, 14), vx: -G.vx * 0.05, vy: -G.vy * 0.05, life: 0.3, max: 0.3, col: 'rgba(255,255,255,.75)', r: 2.5, g: 0 });
-  if (A.t >= TRANS.swing) { // loslaten: met extra vaart de nieuwe biome in
+  if (!A.fly && A.k === TRANS.n - 1 && A.t >= TRANS.swing) { // loslaten: met extra vaart de nieuwe biome in
     G.auto = null;
     G.vx = 1900; G.vy = -520; G.turboT = 0.9; G.noDive = true; G.airT = 0; G.airX = G.x;
     if (!aiWorld()) { floatText(G.x, G.y - 70, 'Wiiieee!', '#ffffff', 30); Sfx.woohoo(1900); Sfx.whoosh(0.5, 400, 1600, 0.1); }

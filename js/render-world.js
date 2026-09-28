@@ -656,7 +656,7 @@ function drawGorilla() {
   // ---- houding bepalen: handen (h1, h2) en voeten (f1, f2) ----
   let h1, h2, f1 = [-8, 25], f2 = [8, 25], mouth = 'smile';
   const sw = Math.sin(time * 10);
-  if (G.state === 'hang' || G.auto) { // G.auto: aan de reuzenliaan bij een biomegrens (zie autoSwing)
+  if (G.state === 'hang' || (G.auto && !G.auto.fly)) { // G.auto: aan een reuzenliaan bij een biomegrens (zie autoSwing)
     const d = G.auto ? 38 : Math.min(Math.hypot(G.hx - G.x, G.hy - G.y) / G_DRAW, 42); // nooit een uitgerekte arm tekenen
     // de benen slingeren achter de zwaai aan en trekken in op het hoogste punt
     const om = G.auto ? 0.6 : clamp((G.om || 0) * 0.4, -1, 1), tuck = 1 - Math.min(1, Math.abs(om) * 1.4);
@@ -1026,11 +1026,11 @@ function drawMatrix(M) {
   c.globalAlpha = fade;
   c.fillStyle = 'rgba(0,255,90,.12)'; c.beginPath(); c.ellipse(W * 0.3, ay + 40 * sc, 60 * sc, 12 * sc, 0, 0, 7); c.fill(); c.beginPath(); c.ellipse(W * 0.7, ay + 40 * sc, 60 * sc, 12 * sc, 0, 0, 7); c.fill();
   gor(W * 0.3, ay - 10 * sc + Math.sin(M.t * 2) * 8 * sc, myLook(), 'air', 1, { vx: 200, vy: 400 * Math.sin(M.t * 2), angle: Math.sin(M.t * 1.3) * 0.2 });
-  gor(W * 0.7, ay, GCK, 'stand', -1, { standT: 2.9 + (M.lineT < MATRIX_LINES[M.line].length / 28 ? (M.t % 0.6) : 0) }); // praat: trommelt zachtjes (mond open)
+  gor(W * 0.7, ay, GCK, 'stand', -1, { standT: 2.9 + (M.lineT < M.lines[M.line].length / 28 ? (M.t % 0.6) : 0) }); // praat: trommelt zachtjes (mond open)
   // tekstballon boven Kiwi, letter voor letter
-  const txt = MATRIX_LINES[M.line].slice(0, Math.floor(M.lineT * 28)), fs = Math.max(14, Math.min(22, W / 34));
+  const txt = M.lines[M.line].slice(0, Math.floor(M.lineT * 28)), fs = Math.max(14, Math.min(22, W / 34));
   c.font = `800 ${fs}px Trebuchet MS, sans-serif`; c.textAlign = 'left'; c.textBaseline = 'top';
-  const maxW = Math.min(W * 0.62, 460), words = MATRIX_LINES[M.line].split(' '), lines = [];
+  const maxW = Math.min(W * 0.62, 460), words = M.lines[M.line].split(' '), lines = [];
   let cur = '';
   for (const w of words) { const t = cur ? cur + ' ' + w : w; if (c.measureText(t).width > maxW - 28 && cur) { lines.push(cur); cur = w; } else cur = t; }
   lines.push(cur);
@@ -1041,7 +1041,7 @@ function drawMatrix(M) {
   c.fillStyle = '#c8ffd4'; let n = txt.length;
   lines.forEach((l, i) => { const part = l.slice(0, Math.max(0, n)); n -= l.length + 1; c.fillText(part, bx + 14, by + 13 + i * fs * 1.3); });
   c.font = `700 ${Math.max(11, fs * 0.6)}px Trebuchet MS, sans-serif`; c.fillStyle = 'rgba(0,255,90,.8)'; c.textAlign = 'right';
-  c.fillText(`${M.line + 1}/${MATRIX_LINES.length} · tik om verder te gaan ▸`, bx + bw - 12, by + bh - fs * 0.75);
+  c.fillText(`${M.line + 1}/${M.lines.length} · tik om verder te gaan ▸`, bx + bw - 12, by + bh - fs * 0.75);
   c.textAlign = 'center'; c.font = `900 ${Math.max(16, fs * 1.1)}px monospace`; c.fillStyle = 'rgba(0,255,90,.9)';
   c.fillText('K I W I', W * 0.7, ay + 52 * sc); c.fillText('A N D Y', W * 0.3, ay + 52 * sc);
   c.globalAlpha = 1;
@@ -1056,80 +1056,127 @@ function drawFlash() {
 // =====================================================================
 //  Biome-overgang, onder water, kisten en het uiterlijk van Andy
 // =====================================================================
-// Op elke biomegrens (Eindeloos): een klif die uit het water steekt, met erboven aan een reuzentak de enorme liaan
-// waarmee Andy vanzelf naar de nieuwe biome zwaait (zie TRANS en autoSwing in physics.js)
+// Op elke biomegrens (Eindeloos) houdt de wereld op: het water stort over een klif een diepe afgrond in, waar geen
+// achtergrond en geen grond meer is; aan de overkant begint de nieuwe biome weer met een klif. Boven de afgrond hangen
+// aan een reuzentak de reuzenlianen waarmee Andy vanzelf naar de nieuwe biome zwaait (zie TRANS en autoSwing).
+// voidSpans: de afgronden in beeld (wereld-x), zodat het water en de voorgrond daar niet getekend worden (clipVoid).
+const voidSpans = [];
 function drawBiomeCliffs() {
+  voidSpans.length = 0;
   if (game.career) return;
-  const m0 = (camX - 1500 - START_X) / PX_PER_M, m1 = (camX + viewW + 1500 - START_X) / PX_PER_M;
+  const reach = TRANS.span + 2500;
+  const m0 = (camX - reach - START_X) / PX_PER_M, m1 = (camX + viewW + reach - START_X) / PX_PER_M;
   const S = biomeSeg(m0), bounds = [];
   if (S.start > 0) bounds.push(S.start);
   for (let b = S.nextStart, k = 0; b <= m1 && k < 3; k++) { bounds.push(b); b = biomeSeg(b + 0.01).nextStart; }
   for (const b of bounds) {
-    const bx = START_X + b * PX_PER_M;
-    if (bx < camX - 1400 || bx > camX + viewW + 1400) continue;
+    const bx = START_X + b * PX_PER_M, [xL, xR] = voidEdges(bx);
+    if (xR + 400 < camX || xL - 400 > camX + viewW) continue;
     const A = BIOMES[biomeSeg(b - 0.01).i], B = BIOMES[biomeSeg(b + 0.01).i];
-    drawCliff(bx, A, B);
-    drawGiantVine(bx, A, B);
+    voidSpans.push([xL, xR]);
+    drawVoid(bx, xL, xR, A, B);
+    drawGiantVines(bx, xL, xR, A, B);
   }
 }
-// de klif: links in de kleuren van de oude biome, rechts in die van de nieuwe, met een waterval en een naambord
-const CLIFF = [[-600, 760], [-520, 330], [-470, 150], [-380, 90], [-300, 40], [-230, 55], [-150, -20], [-90, -60], [-30, -35], [40, -70], [120, -10], [200, 30], [290, 20], [380, 80], [460, 170], [520, 360], [600, 760]];
-function drawCliff(bx, A, B) {
-  const shape = () => { ctx.beginPath(); CLIFF.forEach(([x, y], i) => i ? ctx.lineTo(bx + x, y) : ctx.moveTo(bx + x, y)); ctx.closePath(); };
-  ctx.save();
-  shape(); ctx.clip();
-  const rock = cachedGrad('cliff' + A.name + B.name, () => { const g = ctx.createLinearGradient(-600, 0, 600, 0); g.addColorStop(0, shade(A.c.mid, -0.35)); g.addColorStop(0.48, '#7a6d60'); g.addColorStop(0.52, '#7a6d60'); g.addColorStop(1, shade(B.c.mid, -0.35)); return g; });
-  ctx.translate(bx, 0); ctx.fillStyle = rock; ctx.fillRect(-620, -120, 1240, 900); ctx.translate(-bx, 0);
-  // lichte kant en gesteentelagen
-  ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.fillRect(bx - 600, -120, 260, 900);
-  ctx.strokeStyle = 'rgba(0,0,0,.18)'; ctx.lineWidth = 6;
-  for (let k = 0; k < 7; k++) { const y = 60 + k * 95; ctx.beginPath(); for (let x = -600; x <= 600; x += 60) ctx.lineTo(bx + x, y + Math.sin(x * 0.02 + k) * 14); ctx.stroke(); }
-  // waterval aan de kant van de nieuwe biome
-  const wx = bx + 330;
-  ctx.fillStyle = rgbStr(B.rgb.hazTop, 0.85); ctx.fillRect(wx - 26, 60, 52, 720);
-  ctx.fillStyle = 'rgba(255,255,255,.55)';
-  for (let k = 0; k < 9; k++) { const y = 60 + ((time * 260 + k * 83) % 700); ctx.fillRect(wx - 20 + (k % 3) * 14, y, 5, 46); }
-  ctx.restore();
-  // mos/gras op de rand, per kant in de kleur van zijn biome
-  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-  for (const [col, from, to] of [[A.c.canopy2, 1, 9], [B.c.canopy2, 8, CLIFF.length - 2]]) {
-    ctx.strokeStyle = col; ctx.lineWidth = 16; ctx.beginPath();
-    for (let i = from; i <= to; i++) { const [x, y] = CLIFF[i]; i === from ? ctx.moveTo(bx + x, y) : ctx.lineTo(bx + x, y); }
-    ctx.stroke();
-  }
-  ctx.strokeStyle = 'rgba(20,14,24,.55)'; ctx.lineWidth = 4; shape(); ctx.stroke();
-  // naambord van de nieuwe biome op de top
-  const px = bx + 150, py = CLIFF[12][1] + 10;
-  ctx.fillStyle = '#5a3a1c'; ctx.fillRect(px - 5, py - 130, 10, 130);
-  ctx.font = '900 30px Trebuchet MS, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  const txt = `${B.icon} ${B.name.toUpperCase()} ➜`, w = ctx.measureText(txt).width + 40;
-  ctx.fillStyle = 'rgba(20,14,30,.88)'; ctx.fillRect(px - w / 2, py - 184, w, 56);
-  ctx.fillStyle = B.c.sun; ctx.fillRect(px - w / 2, py - 132, w, 5);
-  ctx.fillStyle = '#ffffff'; ctx.fillText(txt, px, py - 155);
+// Knipt de afgronden uit wat hierna getekend wordt (water, voorgrond). Geeft true als er ctx.restore() moet volgen.
+function clipVoid() {
+  if (!voidSpans.length) return false;
+  const T = ctx.getTransform(), W = ctx.canvas.width, H = ctx.canvas.height, k = scale * pr;
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.beginPath(); ctx.rect(0, 0, W, H);
+  for (const [a, b] of voidSpans) { const x0 = clamp((a - camX) * k + VOX, -10, W + 10), x1 = clamp((b - camX) * k + VOX, -10, W + 10); if (x1 > x0) ctx.rect(x0, 0, x1 - x0, H); }
+  ctx.clip('evenodd'); ctx.setTransform(T);
+  return true;
 }
-// de reuzentak met de enorme liaan; hangt Andy eraan, dan loopt de liaan naar zijn handen
-function drawGiantVine(bx, A) {
-  const ay = TRANS.ay;
-  // de tak komt van linksboven (uit de oude biome)
+const VOID_COL = [4, 5, 14];
+// de afgrond zelf: een donkere leegte, de wereld vervaagt aan beide randen, en twee kliffen met een waterval
+function drawVoid(bx, xL, xR, A, B) {
+  const y0 = camY - 120, y1 = camY + viewH + 120;
+  const P = paletteAt((bx - START_X) / PX_PER_M);
+  const top = rgbStr(mixC(P.skyTopC, VOID_COL, 0.72)), mid = rgbStr(mixC(P.skyTopC, VOID_COL, 0.9)), bot = rgbStr(VOID_COL);
+  const g = ctx.createLinearGradient(0, TRANS.ay, 0, HAZARD_Y + 700);
+  g.addColorStop(0, top); g.addColorStop(0.55, mid); g.addColorStop(1, bot);
+  // de leegte met rafelige randen: de achtergrond houdt daar gewoon op
+  ctx.fillStyle = g; ctx.beginPath();
+  const st = 70, ya = Math.floor(y0 / st) * st, yb = Math.ceil(y1 / st) * st;
+  for (let y = ya; y <= yb; y += st) ctx.lineTo(xL - 20 - hash(y * 0.013 + bx) * 70, y);
+  for (let y = yb; y >= ya; y -= st) ctx.lineTo(xR + 20 + hash(y * 0.017 - bx) * 70, y);
+  ctx.closePath(); ctx.fill();
+  // de wereld vervaagt in de leegte
+  for (const [x, dir] of [[xL - 90, -1], [xR + 90, 1]]) {
+    const f = ctx.createLinearGradient(x + dir * 260, 0, x, 0);
+    f.addColorStop(0, rgbStr(mixC(P.skyTopC, VOID_COL, 0.72), 0)); f.addColorStop(1, rgbStr(mixC(P.skyTopC, VOID_COL, 0.72), 0.9));
+    ctx.fillStyle = f; ctx.fillRect(Math.min(x, x + dir * 260), y0, 260, Math.min(y1, HAZARD_Y) - y0);
+  }
+  // mistflarden die langzaam door de diepte drijven
+  for (let i = 0; i < 7; i++) {
+    const x = xL + ((hash(i * 3.1 + bx) * (xR - xL) + time * (20 + i * 6)) % (xR - xL)), y = HAZARD_Y + 180 + hash(i * 7.7) * 520;
+    ctx.fillStyle = `rgba(150,160,200,${0.05 + hash(i * 1.9) * 0.05})`; ell(x, y, 260 + hash(i) * 200, 40 + hash(i * 2) * 30);
+  }
+  drawCliffFace(xL, -1, A);
+  drawCliffFace(xR, 1, B);
+  // de waterval: het water van de oude biome stort over de rand de diepte in
+  if (camY + viewH > HAZARD_Y - 60) {
+    const wf = ctx.createLinearGradient(0, HAZARD_Y, 0, HAZARD_Y + 620);
+    wf.addColorStop(0, rgbStr(A.rgb.hazTop, 0.95)); wf.addColorStop(0.5, rgbStr(A.rgb.hazBot, 0.6)); wf.addColorStop(1, rgbStr(A.rgb.hazBot, 0));
+    ctx.fillStyle = wf; ctx.beginPath(); ctx.moveTo(xL - 30, HAZARD_Y - 2);
+    ctx.quadraticCurveTo(xL + 40, HAZARD_Y + 4, xL + 60, HAZARD_Y + 120); ctx.lineTo(xL + 80, HAZARD_Y + 640); ctx.lineTo(xL - 4, HAZARD_Y + 640); ctx.lineTo(xL - 12, HAZARD_Y + 60); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.45)';
+    for (let k = 0; k < 10; k++) { const y = HAZARD_Y + ((time * 320 + k * 67) % 560), x = xL + 4 + (k % 4) * 16 + (y - HAZARD_Y) * 0.06; ctx.globalAlpha = clamp(1 - (y - HAZARD_Y) / 560, 0, 1) * 0.8; ctx.fillRect(x, y, 4, 40); }
+    ctx.globalAlpha = 1;
+  }
+}
+// een klifwand die vanaf het wateroppervlak de diepte in loopt (dir -1: links van de afgrond, 1: rechts)
+function drawCliffFace(x, dir, bm) {
+  if (camY + viewH < HAZARD_Y - 120) return;
+  const deep = HAZARD_Y + 900, rim = dir > 0 ? 70 : 0; // rechts steekt de rand wat boven het water uit (met het naambord)
+  const g = ctx.createLinearGradient(0, HAZARD_Y - rim, 0, deep);
+  g.addColorStop(0, shade(bm.c.mid, -0.2)); g.addColorStop(0.35, shade(bm.c.mid, -0.55)); g.addColorStop(1, rgbStr(VOID_COL));
+  ctx.fillStyle = g; ctx.beginPath();
+  const back = x - dir * 140;
+  ctx.moveTo(back, HAZARD_Y - rim * 0.6);
+  ctx.lineTo(x - dir * 30, HAZARD_Y - rim); ctx.lineTo(x + dir * 20, HAZARD_Y - rim * 0.7 + 6);
+  for (let y = HAZARD_Y + 40, i = 0; y <= deep; y += 60, i++) ctx.lineTo(x + dir * (30 + hash(i * 3.3 + x) * 60 - i * 6), y);
+  ctx.lineTo(back, deep); ctx.closePath(); ctx.fill();
+  // gesteentelagen
+  ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 4;
+  for (let k = 0; k < 6; k++) { const y = HAZARD_Y + 50 + k * 110; line(back, y + Math.sin(k) * 10, x + dir * (10 + hash(k + x) * 30), y + 12); }
+  if (rim) { // mos op de rand en het naambord van de nieuwe biome
+    ctx.strokeStyle = bm.c.canopy2; ctx.lineWidth = 14; ctx.lineCap = 'round';
+    line(back + 10, HAZARD_Y - rim * 0.6 - 2, x - dir * 30, HAZARD_Y - rim - 2);
+    const px = x + 70, py = HAZARD_Y - rim * 0.8;
+    ctx.fillStyle = '#5a3a1c'; ctx.fillRect(px - 5, py - 130, 10, 130);
+    ctx.font = '900 30px Trebuchet MS, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const txt = `${bm.icon} ${bm.name.toUpperCase()}`, w = ctx.measureText(txt).width + 40;
+    ctx.fillStyle = 'rgba(20,14,30,.88)'; ctx.fillRect(px - w / 2, py - 184, w, 56);
+    ctx.fillStyle = bm.c.sun; ctx.fillRect(px - w / 2, py - 132, w, 5);
+    ctx.fillStyle = '#ffffff'; ctx.fillText(txt, px, py - 155);
+  }
+}
+// de reuzentak over de hele afgrond met de reuzenlianen; hangt Andy aan een ervan, dan loopt die naar zijn handen
+function drawGiantVines(bx, xL, xR, A, B) {
+  const ay = TRANS.ay, x0 = xL - 500, x1 = xR + 500;
+  if (camY > ay + TRANS.L + 400) return;
   ctx.lineCap = 'round';
-  ctx.strokeStyle = '#3a2614'; ctx.lineWidth = 64; ctx.beginPath(); ctx.moveTo(bx - 1300, ay - 520); ctx.quadraticCurveTo(bx - 500, ay - 60, bx + 160, ay); ctx.stroke();
-  ctx.strokeStyle = '#6b4423'; ctx.lineWidth = 50; ctx.beginPath(); ctx.moveTo(bx - 1300, ay - 520); ctx.quadraticCurveTo(bx - 500, ay - 60, bx + 160, ay); ctx.stroke();
-  ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 12; ctx.beginPath(); ctx.moveTo(bx - 1280, ay - 535); ctx.quadraticCurveTo(bx - 500, ay - 80, bx + 150, ay - 16); ctx.stroke();
-  ctx.fillStyle = A.c.leaf;
-  for (let k = 0; k < 9; k++) { const t = k / 8, x = bx - 1200 + t * 1330, y = ay - 470 * (1 - t) * (1 - t) - 40 + Math.sin(k * 2.1) * 20; ell(x, y - 30, 70, 40, 0.3 * Math.sin(k)); }
-  // de liaan zelf
-  const Au = G && G.auto && G.auto.bx === bx;
-  let ex, ey;
-  if (Au) { ex = G.x + Math.sin(G.angle) * TRANS.hang; ey = G.y - Math.cos(G.angle) * TRANS.hang; }
-  else { const th = -0.25 + Math.sin(time * 0.9 + bx) * 0.06; ex = bx + Math.sin(th) * TRANS.L; ey = ay + Math.cos(th) * TRANS.L; }
-  const mx = (bx + ex) / 2 + (Au ? 0 : 30), my = (ay + ey) / 2 + (Au ? 20 : 40);
-  for (const [col, w] of [['#1f3a12', 26], [A.c.vine, 20], ['rgba(255,255,255,.18)', 5]]) {
-    ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(bx, ay); ctx.quadraticCurveTo(mx, my, ex, ey); ctx.stroke();
+  const branch = (dy, w, col) => { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x0, ay - 420 + dy); ctx.quadraticCurveTo((x0 + x1) / 2, ay + 90 + dy, x1, ay - 420 + dy); ctx.stroke(); };
+  branch(0, 70, '#3a2614'); branch(0, 56, '#6b4423'); branch(-18, 12, 'rgba(255,255,255,.12)');
+  for (let k = 0; k < 16; k++) { const t = k / 15, x = x0 + t * (x1 - x0), y = ay - 420 * (1 - 4 * t * (1 - t)) + 90 * 4 * t * (1 - t) * 0.5 - 40 + Math.sin(k * 2.1) * 20; ctx.fillStyle = (t < 0.5 ? A : B).c.leaf; ell(x, y - 30, 70, 40, 0.3 * Math.sin(k)); }
+  const Au = G && G.auto && !G.auto.fly && G.auto.bx === bx ? G.auto.k : -1;
+  for (let k = 0; k < TRANS.n; k++) {
+    const vx = transVineX(bx, k), bm = k === TRANS.n - 1 ? B : A;
+    if (vx + TRANS.L < camX - 100 || vx - TRANS.L > camX + viewW + 100) continue;
+    let ex, ey;
+    const on = Au === k;
+    if (on) { ex = G.x + Math.sin(G.angle) * TRANS.hang; ey = G.y - Math.cos(G.angle) * TRANS.hang; }
+    else { const th = -0.2 + Math.sin(time * 0.9 + vx) * 0.07; ex = vx + Math.sin(th) * TRANS.L; ey = ay + Math.cos(th) * TRANS.L; }
+    const mx = (vx + ex) / 2 + (on ? 0 : 30), my = (ay + ey) / 2 + (on ? 20 : 40);
+    for (const [col, w] of [['#1f3a12', 26], [bm.c.vine, 20], ['rgba(255,255,255,.18)', 5]]) {
+      ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(vx, ay); ctx.quadraticCurveTo(mx, my, ex, ey); ctx.stroke();
+    }
+    ctx.fillStyle = bm.c.leaf;
+    for (let j = 1; j < 10; j++) { const t = j / 10, u = 1 - t, x = u * u * vx + 2 * u * t * mx + t * t * ex, y = u * u * ay + 2 * u * t * my + t * t * ey; ell(x + (j % 2 ? 16 : -16), y, 16, 8, j % 2 ? 0.5 : -0.5); }
+    if (!on) { ctx.strokeStyle = bm.c.vine; ctx.lineWidth = 10; ctx.beginPath(); ctx.ellipse(ex, ey + 22, 18, 26, 0, 0, Math.PI * 2); ctx.stroke(); }
   }
-  // bladeren langs de liaan en een lus aan het eind
-  ctx.fillStyle = A.c.leaf;
-  for (let k = 1; k < 10; k++) { const t = k / 10, u = 1 - t, x = u * u * bx + 2 * u * t * mx + t * t * ex, y = u * u * ay + 2 * u * t * my + t * t * ey; ell(x + (k % 2 ? 16 : -16), y, 16, 8, k % 2 ? 0.5 : -0.5); }
-  if (!Au) { ctx.strokeStyle = A.c.vine; ctx.lineWidth = 10; ctx.beginPath(); ctx.ellipse(ex, ey + 22, 18, 26, 0, 0, Math.PI * 2); ctx.stroke(); }
 }
 // Filmische titelkaart bij een nieuwe biome (in beeldcoördinaten)
 function drawCinematic() {
@@ -1494,10 +1541,10 @@ function renderScene() {
   if (G) { drawOwnGorilla(); drawParrot(); }
   drawParts();
   if (game.mp) drawStorm();
-  if (!under) drawHazard(P); // onder water tekent drawUnderwater het water (anders zou het over Andy heen vallen)
+  if (!under) { const c = clipVoid(); drawHazard(P); if (c) ctx.restore(); } // onder water tekent drawUnderwater het water (anders zou het over Andy heen vallen); in een afgrond is geen water
   drawTexts();
   ctx.setTransform(S0, 0, 0, S0, VOX, VOY);
-  if (!under) withBaseView(() => { drawForeground(P); if (spW < 0.6) drawAmbient(P); });
+  if (!under) { const c = clipVoid(); withBaseView(() => { drawForeground(P); if (spW < 0.6) drawAmbient(P); }); if (c) ctx.restore(); }
   ctx.setTransform(S, 0, 0, S, VOX, VOY);
   drawWarnings();
   if (game.mp) drawMpOverlay();

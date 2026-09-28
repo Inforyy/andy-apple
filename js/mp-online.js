@@ -12,7 +12,9 @@
 const MP_NAME_KEY = 'andyApples.name';
 const MP_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
 const MP_MAX = 20;          // maximaal aantal spelers in een lobby (host meegeteld)
-const RACE_GRACE = 20;      // race: na de eerste finish krijgen de anderen nog zoveel seconden (bij 3+ spelers)
+const RACE_GRACE = 20;
+const MP_MODE_NAME = { race: 'Race', endurance: 'Endurance', br: 'Battle royale' };
+const mpModeOf = m => MP_MODE_NAME[m] ? m : 'race';      // race: na de eerste finish krijgen de anderen nog zoveel seconden (bij 3+ spelers)
 // De eerste lianen zijn niet gekoppeld: aan het begin hangt iedereen aan dezelfde lianen, en als die bij jou naar de hand
 // van een ander worden getrokken, grijp je mis en val je meteen. Pas vanaf liaan nummer MP_FREE_VINES buigt een liaan mee.
 // (Ruimtelianen hebben een negatief id en worden dus ook nooit gekoppeld.)
@@ -166,7 +168,7 @@ function onLinkMsg(link, m) {
     if (!MP.links.has(link.id)) return;
     switch (m.type) {
       case 'hello': link.name = cleanName(m.name) || 'Speler'; playerFor(link.id, link.name); rosterSend(); lobbyTrack(); mpRender(); break;
-      case 's': case 'ev': case 'quit':
+      case 's': case 'ev': case 'quit': case 'br':
         onPlayerMsg(link.id, m);
         mpSend(Object.assign({}, m, { from: link.id }), link); // doorsturen naar de rest
         break;
@@ -179,14 +181,14 @@ function onLinkMsg(link, m) {
     case 'welcome':
       MP.myId = String(m.you || CLIENT_ID); MP.hostName = cleanName(m.hostName) || MP.hostName || 'Host';
       MP.inRoom = true; MP.busy = false;
-      if (m.mode) MP.sel = { mode: m.mode === 'endurance' ? 'endurance' : 'race', len: [500, 1000, 2000].includes(m.len) ? m.len : 1000 };
+      if (m.mode) MP.sel = { mode: mpModeOf(m.mode), len: [500, 1000, 2000].includes(m.len) ? m.len : 1000 };
       mpMsg(m.playing ? 'Er loopt nog een potje. Je doet mee in de volgende ronde.' : '', true);
       Sfx.buy(); mpRender();
       break;
     case 'roster': applyRoster(m.list); break;
-    case 'lobby': MP.sel = { mode: m.mode === 'endurance' ? 'endurance' : 'race', len: [500, 1000, 2000].includes(m.len) ? m.len : 1000 }; mpRender(); break;
+    case 'lobby': MP.sel = { mode: mpModeOf(m.mode), len: [500, 1000, 2000].includes(m.len) ? m.len : 1000 }; mpRender(); break;
     case 'start': if (Array.isArray(m.ids) && m.ids.includes(MP.myId)) mpStartMatch(m); break;
-    case 's': case 'ev': case 'quit': if (typeof m.from === 'string') onPlayerMsg(m.from, m); break;
+    case 's': case 'ev': case 'quit': case 'br': if (typeof m.from === 'string') onPlayerMsg(m.from, m); break;
     case 'full': mpJoinFail('Deze lobby is vol.'); break;
     case 'bye': mpLost('De host heeft de lobby gesloten.'); break;
   }
@@ -201,12 +203,14 @@ function onPlayerMsg(id, m) {
     P.t = Math.max(P.t, +m.t || 0); P.dist = +m.d || 0; P.apples = m.ap | 0; P.falls = m.f | 0;
   } else if (m.type === 'ev') {
     if (P.ev) return;
-    P.ev = { t: +m.t || 0, d: +m.d || 0 };
+    P.ev = { t: +m.t || 0, d: +m.d || 0, by: typeof m.by === 'string' ? m.by : null };
+    if (M.mode === 'br') brOut(P.id, P.ev.by);
     if (!M.result && game.mode === 'playing' && !M.myEv) {
       if (M.mode === 'race' && !opps(M).some(o => o !== P && o.ev)) showBanner(`${P.name} is bij de finish!`, 'Snel!');
       else if (M.mode === 'endurance') showBanner(`${P.name} is af!`, '');
     }
-  } else if (m.type === 'quit') P.left = true;
+  } else if (m.type === 'br') { brMsg(P, m); return; }
+  else if (m.type === 'quit') P.left = true;
   mpCheck();
 }
 
@@ -235,7 +239,7 @@ function lobbyWatch() {
         if (k === CLIENT_ID) continue;
         for (const p of st[k]) if (p && typeof p.lobby === 'string' && !seen.has(p.lobby)) {
           seen.add(p.lobby);
-          list.push({ id: p.lobby, name: cleanName(p.name) || 'Andy', n: clamp(p.n | 0 || 1, 1, MP_MAX), max: clamp(p.max | 0 || 2, 2, MP_MAX), mode: p.mode === 'endurance' ? 'endurance' : 'race', st: !!p.st, ts: +p.ts || 0 });
+          list.push({ id: p.lobby, name: cleanName(p.name) || 'Andy', n: clamp(p.n | 0 || 1, 1, MP_MAX), max: clamp(p.max | 0 || 2, 2, MP_MAX), mode: mpModeOf(p.mode), st: !!p.st, ts: +p.ts || 0 });
         }
       }
       LOBBY.list = list.sort((x, y) => (x.n >= x.max) - (y.n >= y.max) || y.n - x.n || y.ts - x.ts);
@@ -275,7 +279,7 @@ function lobbyRender() {
   else {
     ul.innerHTML = LOBBY.list.map(l => {
       const full = l.n >= l.max;
-      return `<li><span>${escHtml(l.name)} <small>${l.n}/${l.max} · ${l.mode === 'race' ? 'Race' : 'Endurance'}${l.st ? ' · bezig' : ''}</small></span>` +
+      return `<li><span>${escHtml(l.name)} <small>${l.n}/${l.max} · ${MP_MODE_NAME[l.mode]}${l.st ? ' · bezig' : ''}</small></span>` +
         `<button class="btn green sm" data-lobby="${escHtml(l.id)}"${full ? ' disabled' : ''}>${full ? 'Vol' : 'Meedoen'}</button></li>`;
     }).join('');
     for (const bt of ul.querySelectorAll('button')) on(bt, () => { const l = LOBBY.list.find(x => x.id === bt.dataset.lobby); mpLobbyJoin(bt.dataset.lobby, l && l.name); });
@@ -430,6 +434,7 @@ function mpLost(reason) {
 function mpMsg(text, ok) { const el = $('mpMsg'); el.textContent = text || ''; el.className = 'msg ' + (ok ? 'ok' : 'err'); }
 const MP_MODE_DESC = {
   race: 'Eerst bij de finish wint. Val je, dan kom je terug, maar verlies je tijd.',
+  br: 'Een kleine arena: pak fruitwapens, richt met de muis en klik om te schieten (SPATIE of rechtermuisknop = grijpen; op een telefoon: links = grijpen, rechts tikken = schieten). Zwaaien kan alle kanten op. De storm maakt de arena kleiner; wie als laatste overblijft, wint.',
   endurance: 'Wie het langst volhoudt, wint. Een storm jaagt je op.',
   kiwi: 'Race naar de finish tegen Kiwi.',
   chase: 'Kiwi zit je achterna en wordt steeds sneller. Hoe lang blijf je hem voor?',
@@ -460,6 +465,8 @@ function mpRender() {
   $('btnMpShare').classList.toggle('hidden', !(host && MP.lobby));
   // modus: achtervolging alleen tegen Kiwi; tegen Kiwi verder alleen race (geen keuze), endurance alleen met twee spelers
   if (MP.sel.mode === 'chase' && !vsAi) MP.sel.mode = 'race';
+  if (MP.sel.mode === 'br' && loc) MP.sel.mode = 'race'; // battle royale alleen online (richten met de muis)
+  $('mpModeBr').classList.toggle('hidden', loc);
   if (vsAi && MP.sel.mode === 'endurance') MP.sel.mode = 'race';
   $('mpModeRow').classList.toggle('hidden', vsAi);
   $('mpModeChase').classList.toggle('hidden', !chase);
@@ -511,7 +518,7 @@ const opps = M => [...MP.players.values()].filter(P => M.ids.includes(P.id));
 // hoe vaak per seconde je je stand verstuurt: met veel spelers wat minder vaak (minder dataverkeer voor de host)
 const sendEvery = M => { const n = M ? M.ids.length : 2; return n <= 4 ? 0.05 : n <= 8 ? 0.1 : 0.15; };
 function mpStartMatch(c) {
-  const mode = c.mode === 'endurance' ? 'endurance' : 'race';
+  const mode = mpModeOf(c.mode);
   MP.cfg = { mode, len: [500, 1000, 2000].includes(c.len) ? c.len : 1000 };
   MP.sel = Object.assign({}, MP.cfg);
   const ids = (Array.isArray(c.ids) ? c.ids : []).filter(id => typeof id === 'string').slice(0, MP_MAX);
@@ -524,6 +531,7 @@ function mpStartMatch(c) {
   ghostPin.v = null;
   game.paused = false; game.career = null; game.mp = M;
   resetWorld();
+  if (mode === 'br') brStart(M); else brStop();
   game.mode = 'mpcount';
   input.down = false;
   Music.duck();
@@ -542,7 +550,8 @@ function mpStartMatch(c) {
   tr.classList.toggle('hidden', mode !== 'race');
   lobbyTrack();
   const who = ids.length > 2 ? ` · ${ids.length} spelers` : '';
-  showBanner(mode === 'race' ? `Race · ${M.len} m${who}` : `Endurance${who}`, mode === 'race' ? 'Eerst bij de finish wint' : 'Blijf de storm voor');
+  if (mode === 'br') showBanner(`Battle royale${who}`, IS_MOBILE ? 'Links = grijpen · rechts tikken = schieten' : 'Richt met de muis, klik = schieten · SPATIE = grijpen');
+  else showBanner(mode === 'race' ? `Race · ${M.len} m${who}` : `Endurance${who}`, mode === 'race' ? 'Eerst bij de finish wint' : 'Blijf de storm voor');
 }
 // eigen gebeurtenis: finish (race) of af (endurance)
 function mpFinished() {
@@ -562,8 +571,9 @@ function mpDied() {
     return;
   }
   if (M.myEv) return;
-  M.myEv = { t: M.t, d: run.dist };
-  mpSend({ type: 'ev', id: M.seed, t: M.t, d: run.dist, from: MP.myId });
+  M.myEv = { t: M.t, d: run.dist, by: M.mode === 'br' ? brKiller(M) : null };
+  mpSend({ type: 'ev', id: M.seed, t: M.t, d: run.dist, from: MP.myId, by: M.myEv.by });
+  if (M.mode === 'br') brOut(MP.myId, M.myEv.by);
   if (M.local) floatText(G.x, G.y - 110, 'AF!', '#ffffff', 34);
   else showBanner('Je bent af!', 'Even kijken wie het langst volhoudt…');
   mpCheck();
@@ -630,7 +640,7 @@ function mpShowResult() {
   $('mpResTitle').textContent = M.result === 'conn' ? 'Verbinding verbroken' : M.result === 'win' ? 'Gewonnen!' : n > 2 ? `${M.place}e plaats` : 'Verloren';
   $('mpResSub').textContent = M.reason;
   const fmt = t => fmtTime(t);
-  const val = r => r.left && !r.ev ? 'weg' : M.mode === 'race' ? (r.ev ? fmt(r.ev.t) : `${Math.floor(Math.min(M.len, r.dist))} m`) : (r.ev ? fmt(r.ev.t) : `${Math.floor(r.dist)} m`);
+  const val = r => M.mode === 'br' ? `${r.left && !r.ev ? 'weg · ' : ''}🎯 ${brKills(r.id)}` : r.left && !r.ev ? 'weg' : M.mode === 'race' ? (r.ev ? fmt(r.ev.t) : `${Math.floor(Math.min(M.len, r.dist))} m`) : (r.ev ? fmt(r.ev.t) : `${Math.floor(r.dist)} m`);
   $('mpResTable').innerHTML = M.rank ? `<ol class="rank">${M.rank.map((r, i) => `<li class="${r.me ? 'me' : ''}"><b>${i + 1}</b><i style="background:${r.col}"></i><span>${escHtml(r.name)}${r.me ? ' (jij)' : ''}</span><span>${val(r)}</span></li>`).join('')}</ol>` : '';
   $('mpResScore').textContent = MP.games ? `Jij won ${MP.wins} van ${MP.games} potje${MP.games === 1 ? '' : 's'} in deze lobby.` : '';
   mpAgainRender();
@@ -686,7 +696,8 @@ function mpStep(dt) {
   M.t += dt;
   if (M.mode === 'race' || M.mode === 'chase') {
     if (G.state === 'dead' && G.deadT > 1.2 && !M.myEv) mpRespawn();
-  } else {
+  } else if (M.mode === 'br') brStep(dt);
+  else {
     // de storm komt na een paar tellen op gang en gaat steeds sneller; hij blijft nooit te ver achter
     const sp = M.t < 4 ? 0 : Math.min(1500, 250 + 8 * (M.t - 4));
     M.stormX = Math.max(M.stormX + sp * dt, M.t > 4 && G.state !== 'dead' ? G.x - 2700 : -1e9);
@@ -709,6 +720,8 @@ function mpStep(dt) {
 // wordt elk beeld aangeroepen
 function mpFrame(realDt, gdt) {
   const M = game.mp;
+  const cur = M && M.br && (game.mode === 'playing' || game.mode === 'mpcount') && !curScreen ? 'crosshair' : '';
+  if (canvas.style.cursor !== cur) canvas.style.cursor = cur;
   if (!M) { ghostPin.v = null; return; }
   if (game.mode === 'mpcount') {
     M.count -= realDt;
@@ -742,7 +755,8 @@ function mpSendState() {
   mpSend({ type: 's', id: M.seed, from: MP.myId, t: +M.t.toFixed(3), x: Math.round(G.x), y: Math.round(G.y), vx: Math.round(G.vx), vy: Math.round(G.vy),
     st: G.state, a: +(G.angle + (G.trickRot || 0)).toFixed(3), tr: tr ? tr.id : 0, tk: tr ? +Math.min(1, G.trickT / tr.dur).toFixed(3) : 0,
     hx: Math.round(G.hx), hy: Math.round(G.hy), dv: G.diving ? 1 : 0, sp: G.state === 'hang' ? Math.round(G.om * G.R) : 0, tu: G.turboT > 0 ? 1 : 0,
-    vid: G.state === 'hang' && G.vine ? G.vine.id : -1, k: G.k, d: +run.dist.toFixed(1), ap: Math.max(0, Math.floor(run.earned)), f: M.falls });
+    vid: G.state === 'hang' && G.vine ? G.vine.id : -1, k: G.k, d: +run.dist.toFixed(1), ap: Math.max(0, Math.floor(run.earned)), f: M.falls,
+    ...(M.br ? { hp: M.br.hp, w: M.br.w, am: +M.br.aim.toFixed(2) } : {}) });
 }
 const lerpAng = (a, b, f) => { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return a + d * f; };
 // Andere spelers worden iets in het verleden getekend, tussen twee ontvangen standen in: zo bewegen ze vloeiend
@@ -766,6 +780,7 @@ function mpGhost(P, dt, M) {
   g.state = s.st; g.standT += dt; g.deadT += dt;
   g.diving = !!s.dv; g.turboT = s.tu ? 1 : 0; g.om = s.sp; g.R = 1;
   g.trick = s.tr ? { id: s.tr, dur: 1 } : null; g.trickT = L(a.tk, b.tk);
+  if (M.mode === 'br') { g.brHp = +b.hp; g.brW = BR_WEAPONS[b.w] ? b.w : 'sling'; g.brAim = lerpAng(+a.am || 0, +b.am || 0, f); }
   // hangt hij aan een liaan? dan buigt die liaan bij jou ook mee (één tegelijk)
   if (!ghostPin.v && g.state === 'hang' && s.vid >= 0) {
     const v = vines.find(w => w.id === s.vid);
@@ -794,6 +809,8 @@ function mpHud() {
     $('mpDotMe').style.left = (clamp(run.dist / M.len, 0, 1) * 100).toFixed(1) + '%';
     for (const P of opps(M)) if (P.dot) { P.dot.style.left = (clamp((P.ev ? M.len : P.dist) / M.len, 0, 1) * 100).toFixed(1) + '%'; P.dot.style.opacity = P.left ? 0.3 : 1; }
     info = n > 2 ? `${tm} · plek ${mpPlace(M)} van ${n}` : tm;
+  } else if (M.mode === 'br') {
+    info = `${tm} · 🎯 ${brKills(MP.myId)} · nog ${mpPlace(M)} van ${n} over`;
   } else {
     const gap = Math.max(0, Math.floor((G.x - M.stormX) / PX_PER_M));
     info = `${tm} · 🌩️ ${G.state === 'dead' ? '—' : gap + ' m'} · nog ${mpPlace(M)} van ${n} over`;
@@ -837,6 +854,7 @@ function drawGhost() {
 }
 function drawStorm() {
   const M = game.mp;
+  if (M.br) { drawBr(); return; }
   if (M.mode !== 'endurance') return;
   const sx = M.stormX;
   if (sx < camX - 120) return;
@@ -862,6 +880,7 @@ function drawStorm() {
 // in beeldcoördinaten: pijlen naar spelers buiten beeld (de dichtstbijzijnde drie), stormwaarschuwing
 function drawMpOverlay() {
   const M = game.mp;
+  if (M.br) drawBrOverlay();
   const off = mpOthers().filter(o => o.g && !(o.g.state === 'dead' && o.g.y > HAZARD_Y + 60) && (o.g.x - camX < -20 || o.g.x - camX > viewW + 20))
     .sort((a, b) => Math.abs(a.g.x - G.x) - Math.abs(b.g.x - G.x)).slice(0, 3);
   for (const o of off) {

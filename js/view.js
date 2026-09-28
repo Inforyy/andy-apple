@@ -144,14 +144,13 @@ function updateZoom(dt) {
   if (G && G.state !== 'dead') {
     G.spdAvg = (G.spdAvg || 0) + (Math.max(0, G.vx) - (G.spdAvg || 0)) * Math.min(1, dt * 0.8);
     const k = clamp((G.spdAvg - ZOOM_LO) / (ZOOM_HI - ZOOM_LO), 0, 1);
-    target = k * k * (3 - 2 * k); // zacht begin en einde
+    target = G.auto ? 1 : brOn() ? Math.max(0.55, k * k * (3 - 2 * k)) : k * k * (3 - 2 * k); // zacht begin en einde; boven de afgrond helemaal uitgezoomd
   }
   zoomK += (target - zoomK) * Math.min(1, dt * 0.7);
   applyZoom();
 }
-let introZoom = 1; // even inzoomen op Andy bij de start van Eindeloos (zie playEndless in game.js)
 function applyZoom() {
-  scale = baseScale / (1 + zoomK * ZOOM_OUT) * introZoom;
+  scale = baseScale / (1 + zoomK * ZOOM_OUT);
   const vw = LOCAL.vw || cssW, vh = LOCAL.vh || cssH;
   viewW = vw / scale; viewH = vh / scale;
 }

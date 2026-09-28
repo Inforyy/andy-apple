@@ -9,6 +9,8 @@
 3. Tik op **Installeren**. Play Protect kan waarschuwen dat de app onbekend is (hij komt niet uit de Play Store): kies **Toch installeren**.
 4. Andy Apples staat nu tussen je apps.
 
+**Versie 1.6 heeft een nieuwe sleutel.** Had je een oudere versie (1.5 of eerder) geïnstalleerd, verwijder die dan eerst: Android installeert een app met een andere sleutel niet over de oude heen. Je voortgang in de app gaat daarbij verloren, tenzij je met een **account** speelt (dan staat hij online).
+
 Werkt vanaf **Android 7.0**. Je voortgang wordt in de app zelf bewaard. Die staat los van je voortgang in de browser: log in beide met hetzelfde **account** om hem gelijk te houden.
 
 De app vraagt de hoogste verversingssnelheid van het scherm (90/120 Hz waar dat kan; veel telefoons houden apps anders op 60 Hz), vraagt waar het toestel dat kan om gelijkmatige prestaties, en laat op de achtergrond geen timers doorlopen. Stopt het tekenproces van de WebView onverwacht, dan bouwt de app zich opnieuw op in plaats van te crashen.

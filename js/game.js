@@ -99,9 +99,9 @@ function startReady(level) {
   else if (save.runs < 3) showBanner('Jungle', 'Houd ingedrukt om te springen');
 }
 function retry() { startReady(game.career ? game.career.n : null); }
-// Eindeloos vanuit het hoofdmenu: eerst een korte start-animatie. De knoppen vliegen weg, de camera zoomt in op
-// Andy, die op zijn borst trommelt en brult, en de titel knalt in beeld; daarna begint de run.
-const INTRO = { on: false, t: 0, dur: 0.95 };
+// Eindeloos vanuit het hoofdmenu: eerst een korte, rustige start-animatie. De knoppen schuiven weg, het menu vervaagt
+// en Andy trommelt op zijn borst; de camera blijft gewoon staan (geen zoom). Daarna begint de run.
+const INTRO = { on: false, t: 0, dur: 0.7 };
 function playEndless() {
   if (INTRO.on || curScreen !== 'menu') { if (!INTRO.on) startReady(null); return; }
   INTRO.on = true; INTRO.t = 0;
@@ -111,15 +111,10 @@ function playEndless() {
   const tick = now => {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     INTRO.t += dt;
-    const k = clamp(INTRO.t / INTRO.dur, 0, 1);
-    introZoom = 1 + 0.4 * k * k * (3 - 2 * k);
-    if (k < 1) { requestAnimationFrame(tick); return; }
+    if (INTRO.t < INTRO.dur) { requestAnimationFrame(tick); return; }
     INTRO.on = false;
     $('menu').classList.remove('leaving');
     startReady(null);
-    // en weer rustig terug naar de normale zoom
-    const back = now2 => { introZoom += (1 - introZoom) * 0.12; if (Math.abs(introZoom - 1) > 0.002) requestAnimationFrame(back); else introZoom = 1; };
-    requestAnimationFrame(back);
   };
   requestAnimationFrame(tick);
 }
@@ -314,10 +309,10 @@ function renderShop() {
     const s = upSteps(u.id), l = s / u.tiers, maxed = s >= u.steps, cost = maxed ? 0 : upCost(u, s);
     const card = document.createElement('div');
     card.className = 'card' + (maxed ? ' maxed' : '');
-    card.title = `${u.info}\n${u.fx(l)}${maxed ? '' : ' → ' + u.fx((s + 1) / u.tiers)}`;
+    card.title = `${u.info}\n${upFx(u, l)}${maxed ? '' : ' → ' + upFx(u, (s + 1) / u.tiers)}`;
     let pips = '';
     for (let i = 0; i < u.max; i++) pips += `<i class="${i < Math.floor(l) ? 'on' : ''}" style="--f:${clamp(l - i, 0, 1)}"></i>`;
-    card.innerHTML = `<span class="ic">${u.icon}</span><div class="card-mid"><b>${u.name} <em class="tier">${s}/${u.steps}</em></b><small>${u.fx(l)}${maxed ? '' : ' → ' + u.fx((s + 1) / u.tiers)}</small><div class="pips">${pips}</div></div>`;
+    card.innerHTML = `<span class="ic">${u.icon}</span><div class="card-mid"><b>${u.name} <em class="tier">${s}/${u.steps}</em></b><small>${upFx(u, l)}${maxed ? '' : ' → ' + upFx(u, (s + 1) / u.tiers)}</small><div class="pips">${pips}</div></div>`;
     const b = document.createElement('button');
     const can = !maxed && save.apples >= cost;
     b.className = 'btn buy' + (can ? ' green' : '');
@@ -501,7 +496,64 @@ const DBG_SFX = [
     ['Kist: legendarisch', () => Sfx.crateReveal('legendary')], ['Aftellen', () => Sfx.countdown(2)], ['GO!', () => Sfx.countdown(0)],
     ['Verloren', () => Sfx.lose()], ['Game over', () => Sfx.gameOver()], ['Nieuw record', () => Sfx.record()]]],
 ];
+// ---- Jumpscare: klik 10× snel achter elkaar op de appel linksboven in het hoofdmenu ----
+const SCARE = { n: 0, last: 0, on: false };
+function scareClick() {
+  const now = performance.now();
+  SCARE.n = now - SCARE.last < 1500 ? SCARE.n + 1 : 1; SCARE.last = now;
+  if (SCARE.n >= 10 && !SCARE.on) { SCARE.n = 0; jumpscare(); }
+}
+function jumpscare() {
+  SCARE.on = true;
+  const el = document.createElement('div'), cv = document.createElement('canvas');
+  el.id = 'scare'; el.appendChild(cv); document.body.appendChild(el);
+  const g = cv.getContext('2d'), dp = Math.min(2, window.devicePixelRatio || 1);
+  Sfx.init(); Sfx.scare();
+  try { if (navigator.vibrate) navigator.vibrate([120, 40, 300]); } catch (e) { /* */ }
+  const t0 = performance.now(), DUR = 1.5;
+  const frame = now => {
+    const t = (now - t0) / 1000, W = window.innerWidth, H = window.innerHeight;
+    if (cv.width !== Math.round(W * dp)) { cv.width = Math.round(W * dp); cv.height = Math.round(H * dp); }
+    g.setTransform(dp, 0, 0, dp, 0, 0);
+    const fl = ((t * 30) | 0) % 2;
+    g.fillStyle = fl ? '#2a0000' : '#000'; g.fillRect(0, 0, W, H);
+    // het gezicht knalt op je af en blijft trillen
+    const s = Math.min(W, H) / 400 * (t < 0.1 ? 0.3 + t / 0.1 * 1.05 : 1.35 + Math.sin(t * 9) * 0.03);
+    g.save(); g.translate(W / 2 + (Math.random() - 0.5) * 26, H / 2 - 45 * s + (Math.random() - 0.5) * 26); g.scale(s, s);
+    drawScareFace(g, t);
+    g.restore();
+    // ruis en rode strepen
+    for (let i = 0; i < 40; i++) { g.fillStyle = `rgba(${Math.random() < 0.5 ? '255,0,0' : '255,255,255'},${Math.random() * 0.12})`; g.fillRect(0, Math.random() * H, W, 1 + Math.random() * 4); }
+    el.style.opacity = t > DUR ? Math.max(0, 1 - (t - DUR) / 0.35) : 1;
+    if (t < DUR + 0.35) requestAnimationFrame(frame);
+    else { el.remove(); SCARE.on = false; }
+  };
+  requestAnimationFrame(frame);
+}
+// een boze gorilla met gloeiende ogen en een wijd open bek vol tanden (rond 0,0; ongeveer 400 breed)
+function drawScareFace(g, t) {
+  const E = (x, y, rx, ry, c, r = 0) => { g.fillStyle = c; g.beginPath(); g.ellipse(x, y, rx, ry, r, 0, Math.PI * 2); g.fill(); };
+  E(0, 10, 190, 200, '#120c0c');                 // kop
+  E(-170, -10, 45, 60, '#1c1212'); E(170, -10, 45, 60, '#1c1212'); // oren
+  E(0, 40, 130, 140, '#3a2626');                 // gezicht
+  g.fillStyle = '#0a0606'; g.beginPath(); g.moveTo(-150, -70); g.quadraticCurveTo(0, -40, 150, -70); g.lineTo(140, -30); g.quadraticCurveTo(0, -5, -140, -30); g.fill(); // wenkbrauwen
+  const glow = 0.7 + 0.3 * Math.sin(t * 40);
+  for (const x of [-62, 62]) {
+    g.shadowColor = '#ff0000'; g.shadowBlur = 40;
+    E(x, -18, 34, 22, `rgba(255,${(30 * glow) | 0},0,1)`, x < 0 ? 0.35 : -0.35);
+    g.shadowBlur = 0;
+    E(x, -18, 5, 16, '#fff6d0');
+  }
+  E(-22, 40, 12, 8, '#050303'); E(22, 40, 12, 8, '#050303'); // neusgaten
+  const open = 70 + Math.sin(t * 22) * 8;
+  E(0, 125, 105, open, '#3a0000');              // bek
+  E(0, 140, 70, open * 0.55, '#6a0a0a');         // keel
+  g.fillStyle = '#f4ecd8';
+  for (let i = 0; i < 7; i++) { const x = -84 + i * 28, big = i === 1 || i === 5; g.beginPath(); g.moveTo(x - 11, 125 - open + 8); g.lineTo(x + 11, 125 - open + 8); g.lineTo(x, 125 - open + (big ? 70 : 38)); g.fill(); }
+  for (let i = 0; i < 6; i++) { const x = -70 + i * 28; g.beginPath(); g.moveTo(x - 11, 125 + open - 6); g.lineTo(x + 11, 125 + open - 6); g.lineTo(x, 125 + open - 34); g.fill(); }
+}
 function uiInit() {
+  document.querySelector('.logo-apple').addEventListener('click', scareClick);
   on('btnDebug', () => { $('dbgPass').value = ''; $('dbgMsg').textContent = ''; renderDbg(); showScreen('debug'); if (!DBG.open) setTimeout(() => $('dbgPass').focus(), 50); });
   on('btnDbgUnlock', dbgUnlock);
   $('dbgPass').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); dbgUnlock(); } });
@@ -546,6 +598,7 @@ function uiInit() {
   on('btnMpCancel', () => { if (MP.local) { backToModes(); return; } mpClose(MP.inRoom); mpMsg(''); mpRender(); });
   on('mpModeRace', () => mpSelect('race'));
   on('mpModeEnd', () => mpSelect('endurance'));
+  on('mpModeBr', () => mpSelect('br'));
   on('mpModeChase', () => mpSelect('chase'));
   for (const b of document.querySelectorAll('[data-len]')) on(b, () => mpSelect(null, +b.dataset.len));
   on('btnMpStart', () => MP.local ? localStart(MP.sel, MP.aiLvl) : mpHostStart(MP.sel));
@@ -639,6 +692,7 @@ function inputInit() {
     e.preventDefault();
     if (curScreen) return;
     try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* negeren */ }
+    if (brOn() && game.mp.br) { brPointerDown(e); return; } // battle royale: richten en schieten
     if (LOCAL.on) { // op één scherm: elke speler tikt op zijn eigen helft
       const p = localSide(...toGame(e.clientX, e.clientY));
       localPointers.set(e.pointerId, p);
@@ -649,6 +703,7 @@ function inputInit() {
     press();
   });
   const pointerEnd = e => {
+    if (brPointerUp(e)) return;
     if (localPointers.has(e.pointerId)) {
       const p = localPointers.get(e.pointerId);
       localPointers.delete(e.pointerId);
@@ -658,6 +713,7 @@ function inputInit() {
     pointers.delete(e.pointerId); if (pointers.size === 0) unpress();
   };
   window.addEventListener('pointerup', pointerEnd);
+  window.addEventListener('pointermove', e => { if (brOn()) brPointerMove(e); });
   window.addEventListener('pointercancel', pointerEnd);
   canvas.addEventListener('contextmenu', e => e.preventDefault());
   window.addEventListener('keydown', e => {
@@ -727,7 +783,7 @@ function updateHud() {
   if (M) {
     setText('hudDist', M.mode === 'race' ? `${Math.min(M.len, Math.floor(run.dist))} / ${M.len} m` : Math.floor(run.dist) + ' m');
     setText('hudApples', '🍎 ' + Math.max(0, Math.floor(run.earned + 1e-6)));
-    setText('hudValue', M.mode === 'race' ? 'Race' : 'Endurance'); $('hudValue').style.display = '';
+    setText('hudValue', MP_MODE_NAME[M.mode] || 'Endurance'); $('hudValue').style.display = '';
     setText('hudItems', ''); $('hudItems').style.display = 'none';
     setText('hint', game.mode === 'mpcount' ? 'Houd bij GO! ingedrukt om meteen te springen' : game.mode === 'playing' && G.state === 'stand' ? 'Druk om te springen!' : game.holdLock && G.state === 'hang' ? 'Druk opnieuw en laat los om verder te gaan' : '');
     $('hint').classList.toggle('pulse', game.mode === 'mpcount');

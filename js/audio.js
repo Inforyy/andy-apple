@@ -507,6 +507,15 @@ const Sfx = {
     this.call(n, { k: 0.72, fk: 0.95, growl: (o.growl || 0) + 0.25, v: 0.055 + 0.02 * clamp((speed - 750) / 700, 0, 1), send: 0.15 });
   },
   tarzan() { this.call('tarzan', { force: true }); },
+  // de jumpscare (10× op de appel in het hoofdmenu): een schelle gil, een klap en een diep gebrul tegelijk
+  scare() {
+    if (!this.ok()) return;
+    this.pv = 1; this.gv = 1; this.pp = 0;
+    this.noise(0.5, 0.5, 3200, 0, { type: 'bandpass', q: 0.7, f2: 900, a: 0.002 });
+    this.noise(0.9, 0.45, 180, 0, { pink: true, f2: 60, a: 0.002 });
+    for (const [f, det] of [[880, 0], [932, 30], [1244, -20], [620, 12]]) this.voice({ f, f2: f * 0.55, glide: 1.1, d: 1.2, v: 0.09, type: 'sawtooth', det, a: 0.004, wob: [23, 90], lp: 5000, lp2: 1600 });
+    this.voice({ f: 70, f2: 38, d: 1.3, v: 0.35, type: 'sawtooth', a: 0.01, lp: 400, wob: [9, 60] });
+  },
   // korte reacties van Andy
   hup()   { this.vary(0.06, 1); this.say([{ t: 0, d: 0.13, f: [210, 150], vo: 'u', v: 0.8, h: 0.8 }], { growl: 0.4, v: 0.11, vib: 0 }); },
   hey()   { this.vary(0.05, 1); this.say([{ t: 0, d: 0.3, f: [290, 450], vo: 'e', v: 1, h: 0.9 }], { v: 0.14, drive: 0.2 }); },

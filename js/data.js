@@ -41,41 +41,55 @@ const SPR_RES = 1.25;         // resolutie van voorgetekende sprites
 // (Opnieuw genereren kan niet: de generator werkt alleen vooruit en moet in carrière/multiplayer gelijk blijven.)
 const KEEP_BEHIND = 2400;
 
+// Reuzenlianen boven de afgrond op elke biomegrens (Eindeloos), zie autoSwing in physics.js.
+// TRANS: ay/L = ophangpunt en lengte van de reuzenlianen; before = hoe ver vóór de eerste liaan hij grijpt;
+// grab = hoe lang het vastpakken duurt, swing = één zwaai, fly = de sprong naar de volgende liaan (echte seconden);
+// th1 = hoek bij het loslaten; flyX = extra afstand die hij tussen twee lianen vliegt.
+const TRANS = { ay: CEIL_Y, L: 1400, hang: 46, n: 3, before: 1000, after: 900, grab: 0.4, swing: 1.3, fly: 0.5, th1: 0.9, flyX: 420 };
+TRANS.R = TRANS.L + TRANS.hang;
+TRANS.D = 2 * TRANS.R * Math.sin(TRANS.th1) + TRANS.flyX; // afstand tussen twee reuzenlianen
+TRANS.span = (TRANS.n - 1) / 2 * TRANS.D;                 // van de middelste (op de grens) tot de buitenste liaan
+// x van reuzenliaan k (0 = de eerste) bij biomegrens bx
+const transVineX = (bx, k) => bx - TRANS.span + k * TRANS.D;
+// de randen van de afgrond: tot VOID_L vóór de eerste liaan is er nog land, vanaf VOID_R na de laatste weer
+const VOID_L = 650, VOID_R = 700;
+const voidEdges = bx => [transVineX(bx, 0) - VOID_L, transVineX(bx, TRANS.n - 1) + VOID_R];
+
 // =====================================================================
 //  Biomes
 // =====================================================================
 const BIOMES = [
   { name:'Jungle', bonus:0, icon:'🌿', start:0, tip:'Gouden turbolianen geven extra vaart!', style:'jungle', particle:'leaf', hazardName:'de rivier', shroom:'#e8322b',
     c:{ skyTop:'#4fb8ef', skyMid:'#9fdcf2', skyBot:'#e2f7d2', sun:'#fff3a0', far:'#86bfa0', far2:'#5a9d6c', mid:'#2f7d45', canopy:'#1f6b33', canopy2:'#3f9a45', hazTop:'#46b6e2', hazBot:'#155489', vine:'#4f8f2a', leaf:'#6fc04a' } },
-  { name:'Moeras', bonus:0.5, icon:'🐸', start:600, tip:'Rotte lianen breken! Wespen stelen appels.', style:'swamp', particle:'firefly', hazardName:'het moeras', shroom:'#8a5bd1',
+  { name:'Moeras', bonus:0.25, icon:'🐸', start:600, tip:'Rotte lianen breken! Wespen stelen appels.', style:'swamp', particle:'firefly', hazardName:'het moeras', shroom:'#8a5bd1',
     c:{ skyTop:'#6f8c70', skyMid:'#a9b98e', skyBot:'#dcdca6', sun:'#f0f0b0', far:'#72876a', far2:'#556b48', mid:'#3a4d2e', canopy:'#2e4524', canopy2:'#4d6a33', hazTop:'#6b8a3a', hazBot:'#26331a', vine:'#5f7d2c', leaf:'#8aa04a' } },
-  { name:'Savanne', bonus:1, icon:'🦒', start:1450, tip:'Roze elastieken lianen veren mee!', style:'savanne', particle:'dust', hazardName:'het drijfzand', shroom:'#e07a1f',
+  { name:'Savanne', bonus:0.5, icon:'🦒', start:1450, tip:'Roze elastieken lianen veren mee!', style:'savanne', particle:'dust', hazardName:'het drijfzand', shroom:'#e07a1f',
     c:{ skyTop:'#ef8a3c', skyMid:'#f7b86a', skyBot:'#fde7aa', sun:'#fff0c0', far:'#d9925a', far2:'#b9783f', mid:'#6e5320', canopy:'#5f7a22', canopy2:'#90a83a', hazTop:'#d9a45a', hazBot:'#7a4e1e', vine:'#7d8a2a', leaf:'#a8b84a' } },
-  { name:'IJsbergen', bonus:1.5, icon:'❄️', start:2450, tip:'IJslianen zijn glad – je glijdt omlaag!', style:'ice', particle:'snow', hazardName:'het ijswater', shroom:'#4aa3df',
+  { name:'IJsbergen', bonus:0.75, icon:'❄️', start:2450, tip:'IJslianen zijn glad – je glijdt omlaag!', style:'ice', particle:'snow', hazardName:'het ijswater', shroom:'#4aa3df',
     c:{ skyTop:'#7cbbea', skyMid:'#b4dcf5', skyBot:'#f0f9ff', sun:'#ffffff', far:'#c3d8ec', far2:'#94b4d2', mid:'#2f5d62', canopy:'#d4e7f5', canopy2:'#f4fbff', hazTop:'#8fd0f0', hazBot:'#205d8e', vine:'#5c9aa8', leaf:'#d8f0ff' } },
-  { name:'Vulkaan', bonus:2, icon:'🌋', start:3700, tip:'Vuurballen verbranden je appels!', style:'volcano', particle:'ember', hazardName:'de lava', shroom:'#b83b2b',
+  { name:'Vulkaan', bonus:1, icon:'🌋', start:3700, tip:'Vuurballen verbranden je appels!', style:'volcano', particle:'ember', hazardName:'de lava', shroom:'#b83b2b',
     c:{ skyTop:'#1e0a0e', skyMid:'#5a1c18', skyBot:'#c2481c', sun:'#ffb060', far:'#4a1d1a', far2:'#331311', mid:'#1f0c0c', canopy:'#2e2016', canopy2:'#4d3320', hazTop:'#ffae2a', hazBot:'#a81c0a', vine:'#6b5230', leaf:'#8a6a3a' } },
-  { name:'Sterrennacht', bonus:3, icon:'🌙', start:5200, tip:'Alles komt samen… succes!', style:'night', particle:'star', hazardName:'het nachtmeer', shroom:'#c04ad8',
+  { name:'Sterrennacht', bonus:1.5, icon:'🌙', start:5200, tip:'Alles komt samen… succes!', style:'night', particle:'star', hazardName:'het nachtmeer', shroom:'#c04ad8',
     c:{ skyTop:'#050822', skyMid:'#171a4a', skyBot:'#3b2c70', sun:'#f4f1d8', far:'#1c2152', far2:'#141a40', mid:'#101842', canopy:'#12302e', canopy2:'#1e4a42', hazTop:'#4046b8', hazBot:'#0c1036', vine:'#3c8a6a', leaf:'#5ac08a' } },
-  { name:'Portaalwoud', bonus:4, icon:'🌀', start:6600, tip:'Vlieg door een blauw portaal: je komt met al je vaart uit het oranje!', style:'jungle', particle:'firefly', hazardName:'de energiestroom', shroom:'#ff8a1a',
+  { name:'Portaalwoud', bonus:2, icon:'🌀', start:6600, tip:'Vlieg door een blauw portaal: je komt met al je vaart uit het oranje!', style:'jungle', particle:'firefly', hazardName:'de energiestroom', shroom:'#ff8a1a',
     c:{ skyTop:'#161a45', skyMid:'#3b3b8f', skyBot:'#8fcfe0', sun:'#e6fbff', far:'#4a57a3', far2:'#384385', mid:'#26306c', canopy:'#26586a', canopy2:'#3a9a98', hazTop:'#63e2ff', hazBot:'#1c2a78', vine:'#3f8f86', leaf:'#7fe0c8' } },
   // Vier stijl-biomes: alles wordt anders getekend (blokjes, Paint, 3D, snoep), zie de stijlen in render-bg.js/render-world.js
-  { name:'Kubuswoud', bonus:5, icon:'🟩', start:8000, tip:'Alles is van blokjes, net als in Minecraft!', style:'blocky', particle:'pixel', hazardName:'het blokwater', shroom:'#c0392b',
+  { name:'Kubuswoud', bonus:2.5, icon:'🟩', start:8000, tip:'Alles is van blokjes, net als in Minecraft!', style:'blocky', particle:'pixel', hazardName:'het blokwater', shroom:'#c0392b',
     c:{ skyTop:'#6f9ff7', skyMid:'#8fb6fa', skyBot:'#c3d8fb', sun:'#fffbe0', far:'#7e9a6a', far2:'#5f8a4a', mid:'#3f7a2a', canopy:'#3a7d24', canopy2:'#5aa532', hazTop:'#3f76e4', hazBot:'#1d3f9a', vine:'#4a8a2a', leaf:'#60b538' } },
-  { name:'Tekenland', bonus:6, icon:'🖍️', start:9400, tip:'Alles is getekend in Paint. Pas op voor de verfpot!', style:'paint', particle:'paint', hazardName:'de verfpot', shroom:'#ed1c24',
+  { name:'Tekenland', bonus:3, icon:'🖍️', start:9400, tip:'Alles is getekend in Paint. Pas op voor de verfpot!', style:'paint', particle:'paint', hazardName:'de verfpot', shroom:'#ed1c24',
     c:{ skyTop:'#99d9ea', skyMid:'#a8def0', skyBot:'#d4f1f9', sun:'#fff200', far:'#b5e61d', far2:'#22b14c', mid:'#22b14c', canopy:'#22b14c', canopy2:'#b5e61d', hazTop:'#00a2e8', hazBot:'#3f48cc', vine:'#22b14c', leaf:'#b5e61d' } },
-  { name:'3D-wereld', bonus:7, icon:'🧊', start:10800, tip:'Welkom in de derde dimensie!', style:'poly3d', particle:'cube', hazardName:'de rasterzee', shroom:'#ff3d7f',
+  { name:'3D-wereld', bonus:3.5, icon:'🧊', start:10800, tip:'Welkom in de derde dimensie!', style:'poly3d', particle:'cube', hazardName:'de rasterzee', shroom:'#ff3d7f',
     c:{ skyTop:'#1a1f5c', skyMid:'#5a4fcf', skyBot:'#ff9ecf', sun:'#ffe066', far:'#6a4bc7', far2:'#4a3aa0', mid:'#2e2a6e', canopy:'#3fd0c9', canopy2:'#7af0e0', hazTop:'#ff4fb4', hazBot:'#20124d', vine:'#3fc9b8', leaf:'#8ff5e5' } },
-  { name:'Snoepland', bonus:8, icon:'🍭', start:12300, tip:'Zoete lianen en een rivier van chocola!', style:'candy', particle:'sprinkle', hazardName:'de chocoladerivier', shroom:'#ff5fa2',
+  { name:'Snoepland', bonus:4, icon:'🍭', start:12300, tip:'Zoete lianen en een rivier van chocola!', style:'candy', particle:'sprinkle', hazardName:'de chocoladerivier', shroom:'#ff5fa2',
     c:{ skyTop:'#ffb3d9', skyMid:'#ffd1e8', skyBot:'#fff0f7', sun:'#fff6b0', far:'#f7a8cf', far2:'#e58bbd', mid:'#c76a9f', canopy:'#ff7eb9', canopy2:'#ffc2e0', hazTop:'#8a4b2a', hazBot:'#4a2412', vine:'#e84a8a', leaf:'#7fdc9a' } },
   // Vier nieuwe biomes: woestijn, paddenstoelen, wolken en neon
-  { name:'Woestijn', bonus:9, icon:'🏜️', start:13800, tip:'Cactussen prikken niet, maar de gieren wel!', style:'desert', particle:'dust', hazardName:'het drijfzand', shroom:'#e0703a',
+  { name:'Woestijn', bonus:4.5, icon:'🏜️', start:13800, tip:'Cactussen prikken niet, maar de gieren wel!', style:'desert', particle:'dust', hazardName:'het drijfzand', shroom:'#e0703a',
     c:{ skyTop:'#f39c4a', skyMid:'#f9c784', skyBot:'#fff0cf', sun:'#fff7c2', far:'#e8b27a', far2:'#d99a5c', mid:'#c28448', canopy:'#5f8f34', canopy2:'#86b046', hazTop:'#d9a45a', hazBot:'#8a5a2a', vine:'#8a6a3a', leaf:'#a8c060' } },
-  { name:'Paddenstoelenbos', bonus:10, icon:'🍄', start:15300, tip:'Reuzenpaddenstoelen: stuiter er hoog op!', style:'shroom', particle:'spore', hazardName:'de sporenpoel', shroom:'#ff5a8a',
+  { name:'Paddenstoelenbos', bonus:5, icon:'🍄', start:15300, tip:'Reuzenpaddenstoelen: stuiter er hoog op!', style:'shroom', particle:'spore', hazardName:'de sporenpoel', shroom:'#ff5a8a',
     c:{ skyTop:'#2a1e5c', skyMid:'#6a4a9a', skyBot:'#e3b8ff', sun:'#fff0b0', far:'#7a5aa8', far2:'#5e4490', mid:'#4a3478', canopy:'#c9425e', canopy2:'#f59ac0', hazTop:'#7affc4', hazBot:'#1e5a4a', vine:'#6ac48a', leaf:'#b8f0a0' } },
-  { name:'Wolkenrijk', bonus:11, icon:'☁️', start:16800, tip:'Gouden lianen hangen hier aan de wolken. Pas op voor het onweer!', style:'cloud', particle:'fluff', hazardName:'de onweerswolken', shroom:'#ffb0d8',
+  { name:'Wolkenrijk', bonus:5.5, icon:'☁️', start:16800, tip:'Gouden lianen hangen hier aan de wolken. Pas op voor het onweer!', style:'cloud', particle:'fluff', hazardName:'de onweerswolken', shroom:'#ffb0d8',
     c:{ skyTop:'#5cb8ff', skyMid:'#9fd6ff', skyBot:'#eef8ff', sun:'#fffbe0', far:'#ffffff', far2:'#e3eefa', mid:'#c7ddf2', canopy:'#9ccbee', canopy2:'#ffffff', hazTop:'#5a6788', hazBot:'#232840', vine:'#e8b84a', leaf:'#fff1b8' } },
-  { name:'Neonstad', bonus:12, icon:'🌃', start:18300, tip:'Alles gloeit! Pas op voor de neonzee.', style:'neon', particle:'neon', hazardName:'de neonzee', shroom:'#00e5ff',
+  { name:'Neonstad', bonus:6, icon:'🌃', start:18300, tip:'Alles gloeit! Pas op voor de neonzee.', style:'neon', particle:'neon', hazardName:'de neonzee', shroom:'#00e5ff',
     c:{ skyTop:'#06021a', skyMid:'#2a0845', skyBot:'#ff4fa0', sun:'#ffd84a', far:'#3a0a5a', far2:'#27074a', mid:'#150333', canopy:'#00e5ff', canopy2:'#ff2bd6', hazTop:'#ff2bd6', hazBot:'#1a0030', vine:'#00e5ff', leaf:'#7dffea' } },
 ];
 // Muziek per biome: toonsoort (halve tonen) en of hij in mineur klinkt (ook voor het riedeltje bij een nieuwe biome)
@@ -139,6 +153,11 @@ const UPGRADES = [
   { id:'shroom',  icon:'🍄', name:'Stuiterzwam',    info:'Meer en sterkere paddenstoelen.',  unlock:10, max:3, base:40,  growth:1.9,  fx:l => l ? `+${R0(l * 40)}% paddenstoelen` : 'geen' },
 ];
 for (const u of UPGRADES) { u.tiers = u.whole ? 1 : 3; u.steps = u.max * u.tiers; }
+// Afvlakking: elk volgend niveau helpt iets minder dan het vorige, zodat een volledig ge-upgradede Andy niet te sterk is
+// (op het maximum van 5 niveaus werkt een upgrade als 4,1 niveau). Geldt niet voor tellers (whole). Zie lvl in save.js.
+const UP_DIM = 0.035;
+const upEff = l => l * (1 - UP_DIM * l);
+const upFx = (u, l) => u.fx(u.whole ? l : upEff(l)); // wat de upgrade echt doet, voor de winkel
 // In de carrière tellen upgrades veel minder mee (anders is een volledig ge-upgradede Andy niet te stoppen);
 // de levels worden daar dan ook maar een beetje zwaarder van (zie levelInfo).
 const CAREER_UP = 0.35;
@@ -213,7 +232,9 @@ function levelInfo(n) {
 // hoe zwaar een level is, in 1..5 bolletjes (voor de kaart)
 const levelPips = I => clamp(Math.round(I.diff / 2.9 * 5 + 0.4), 1, 5);
 // prijs van stapje s (0..steps-1): van de oude prijs van niveau 1 tot die van het laatste niveau, verdeeld over alle stapjes
-const upCost = (u, s) => Math.round(u.base * 1.5 * Math.pow(u.growth, u.steps > 1 ? s * (u.max - 1) / (u.steps - 1) : 0) / 5) * 5;
+// UP_PRICE: prijsfactor. Omhoog gezet (was 1,5) nu appels in latere biomes meer opleveren: upgrades waren te makkelijk.
+const UP_PRICE = 2.6;
+const upCost = (u, s) => Math.round(u.base * UP_PRICE * Math.pow(u.growth, u.steps > 1 ? s * (u.max - 1) / (u.steps - 1) : 0) / 5) * 5;
 // =====================================================================
 //  Kisten (loot-boxes) en uiterlijk van Andy
 // =====================================================================
@@ -305,7 +326,7 @@ function biomeSeg(m) {
 function biomeIndexAt(m) { return biomeSeg(m).i; }
 // Een korte, rustige 'buffer' rond elke biomegrens: geen vijanden of lastige lianen, alle drie banen aanwezig,
 // zodat je de overgang (met slow motion en titelkaart, zie physics.js) op je gemak kunt beleven.
-const BUFFER_BEFORE = 35, BUFFER_AFTER = 45;
+const BUFFER_BEFORE = 35 + TRANS.span / PX_PER_M, BUFFER_AFTER = 45 + TRANS.span / PX_PER_M; // plus de afgrond met de reuzenlianen
 function inBiomeBuffer(m) {
   if (game.career || game.mp) return false;
   const s = biomeSeg(m);

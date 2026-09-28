@@ -13,7 +13,8 @@ const MAP = {
 };
 const MAP_SPAN = 3300, MAP_GAP = 1900;      // breedte van een eiland en de zee tussen twee eilanden
 const MAP_PITCH = Math.atan2(400, 700);     // hoe schuin de camera naar beneden kijkt
-const MAP_DIST = Math.hypot(400, 700);      // afstand van de camera tot het punt waar hij naar kijkt
+const MAP_DIST = Math.hypot(400, 700);      // afstand van de camera tot het punt waar hij naar kijkt (bij zoom 1)
+const mapDist = () => MAP_DIST / MAP.zoom;
 const SEA_Y = -70;                          // zeeniveau (de klif loopt van 0 tot hier)
 const worldOf = n => Math.min(WORLDS - 1, Math.floor((n - 1) / LEVELS_PER_WORLD));
 const worldX0 = w => w * (MAP_SPAN + MAP_GAP);
@@ -22,8 +23,11 @@ const mapLevelAt = (w, i) => w * LEVELS_PER_WORLD + i + 1;
 // ---- camera en projectie ----
 const MAPC = { x: 0, y: 0, z: 0, s: Math.sin(MAP_PITCH), c: Math.cos(MAP_PITCH) };
 function mapCamSetup() {
-  MAPC.x = MAP.cam.x; MAPC.y = MAP_DIST * Math.sin(MAP_PITCH); MAPC.z = MAP.cam.z - MAP_DIST * Math.cos(MAP_PITCH);
-  MAP.F = MAP.F0 * MAP.zoom;
+  // MAP.zoom is geen lens-zoom: de camera vliegt echt dichterbij of verder weg (zelfde lens, andere afstand),
+  // zodat dichtbij en ver weg er ook anders uitzien (perspectief), zoals een vliegende camera
+  const d = mapDist();
+  MAPC.x = MAP.cam.x; MAPC.y = d * Math.sin(MAP_PITCH); MAPC.z = MAP.cam.z - d * Math.cos(MAP_PITCH);
+  MAP.F = MAP.F0;
 }
 // wereld -> [schermX, schermY, diepte]
 function mp(x, y, z) {
@@ -491,11 +495,11 @@ function mapUpdate(dt) {
   const A = mapAndyPos(), ty = MAP.walk && (A.dx || A.dz) ? Math.atan2(A.dx, A.dz) : Math.PI - 0.4;
   let dy = ((ty - MAP.yaw) % (Math.PI * 2) + Math.PI * 3) % (Math.PI * 2) - Math.PI;
   MAP.yaw += dy * Math.min(1, dt * 10);
-  // camera volgt Andy (of het filmpje); bij een overtocht zoomt hij uit, bij het kiezen van een level in
+  // camera volgt Andy (of het filmpje); bij een overtocht vliegt hij omhoog, bij het kiezen van een level naar Andy toe
   // zelf rondkijken (slepen) geldt tot Andy weer gaat lopen, een filmpje begint of je een level kiest
   const C = MAP.cine;
   if (MAP.walk || C || MAP.go || MAP.fill) MAP.free = null;
-  const tgt = C && C.cam ? C.cam : MAP.free || { x: A.x + 60, z: 280 + (A.z - 280) * 0.7 };
+  const tgt = C && C.cam ? C.cam : MAP.go ? { x: A.x, z: A.z } : MAP.free || { x: A.x + 60, z: 280 + (A.z - 280) * 0.7 };
   const k = Math.min(1, dt * (C && C.fast ? 1.3 : MAP.free ? 14 : 3.2));
   MAP.cam.x += (tgt.x - MAP.cam.x) * k; MAP.cam.z += (tgt.z - MAP.cam.z) * k;
   const zt = MAP.go ? 2.6 : C && C.fast ? 0.72 : MAP.uz; // uz: zelf in- of uitgezoomd (scrollwiel, knijpen)
@@ -583,7 +587,7 @@ function mapRenderUi() {
   $('mapLevel').textContent = levelLabel(I);
   $('carStars').textContent = st.reduce((a, b) => a + b, 0) + ' / ' + LEVELS * 3;
   const lines = [];
-  if (I.boss) lines.push(`👑 <b>Baasgevecht: ${BOSSES[w].name}</b> · ontwijk zijn aanvallen (${I.up > 0.66 ? 2 : 3} ❤️) en haal de finish`);
+  if (I.boss) lines.push(`👑 <b>Baasgevecht: ${BOSSES[w].name}</b> · hij volgt je en schiet je van je liaan (${I.up > 0.66 ? 2 : 3} ❤️); haal de finish`);
   if (I.tower) lines.push('🏰 <b>Toren</b> · extra zwaar, met twee uitdagingen');
   for (const c of I.ch) lines.push(`${CHALLENGES[c].icon} <b>${CHALLENGES[c].name}</b> · ${CHALLENGES[c].info(I.need)}`);
   if (!lines.length) lines.push('Haal de finish op tijd');
@@ -757,7 +761,7 @@ function mapPinchDist() { const [a, b] = [...MAP.ptr.values()]; return Math.max(
 function mapSetZoom(z) { MAP.uz = clamp(z, 0.55, 2.2); }
 // de camera verschuiven met een sleep (dx, dy in schermpixels), binnen de vrijgespeelde eilanden
 function mapPan(dx, dy) {
-  const k = MAP.F / MAP_DIST, F = MAP.free || (MAP.free = { x: MAP.cam.x, z: MAP.cam.z });
+  const k = MAP.F / mapDist(), F = MAP.free || (MAP.free = { x: MAP.cam.x, z: MAP.cam.z });
   F.x -= dx / k; F.z += dy / (k * 0.55);
   const wu = worldOf(save.career.unlocked);
   F.x = clamp(F.x, worldX0(0) - 300, worldX0(wu) + MAP_SPAN + 300); F.z = clamp(F.z, -100, 1300);

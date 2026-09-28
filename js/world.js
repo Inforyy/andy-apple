@@ -123,7 +123,7 @@ function resetWorld() {
 // =====================================================================
 //  Wereldgenerator
 // =====================================================================
-function genUntil(xMax) { while (gen.x < xMax) genNext(); }
+function genUntil(xMax) { if (brOn()) xMax = Math.min(xMax, BR_X1); while (gen.x < xMax) genNext(); } // battle royale: alleen de kleine arena
 // Past de lengte van een liaan aan zodat hij (ook uitgerekt) niet in de bodem hangt
 function fitVine(ay, len, stretch) {
   const maxLen = (HAZARD_Y - VINE_CLEAR - ay) / stretch;
@@ -189,9 +189,9 @@ function addVine(x, ay, len, type, bi, force) {
 // op logische sprongafstand van elkaar. Hoe verder je komt, hoe groter de afstand en hoe vaker er
 // een bovenste baan ontbreekt; de laagste baan is er altijd, zodat je nooit vastloopt.
 const LANES = [-1000, -540, -80];
-// Rond een biomegrens (bx) hangen geen gewone lianen: van bx - GAP_BEFORE tot bx + GAP_AFTER staat de klif met de
-// reuzenliaan (zie TRANS in physics.js). Geeft de grens terug als x in zo'n gat valt, anders null.
-const GAP_BEFORE = 850, GAP_AFTER = 960;
+// Rond een biomegrens (bx) hangen geen gewone lianen: van bx - GAP_BEFORE tot bx + GAP_AFTER ligt de afgrond met de
+// reuzenlianen (zie TRANS in physics.js). Geeft de grens terug als x in zo'n gat valt, anders null.
+const GAP_BEFORE = TRANS.span + 850, GAP_AFTER = TRANS.span + 960;
 function gapBoundary(x) {
   if (game.career) return null;
   const S = biomeSeg((x - START_X) / PX_PER_M), bn = START_X + S.nextStart * PX_PER_M, bs = START_X + S.start * PX_PER_M;
@@ -210,16 +210,16 @@ function genNext() {
   // meer upgrades = grotere gaten en vaker een ontbrekende liaan; rond een biomegrens juist even rustig (buffer)
   const up = upgradePower() * (game.career ? CAREER_UP : 1), calm = inBiomeBuffer(m); // carrière: upgrades tellen maar voor een deel
   let x = gen.x + grand(470, 520) + dx * grand(40, 140) + fast * grand(140, 260) + (calm ? 0 : up * grand(60, 170));
-  // biomegrens: daar staat een klif met de reuzenliaan (zie TRANS in physics.js). Geen gewone lianen boven de klif:
-  // de eerste kolom komt pas voorbij de plek waar Andy wordt losgelaten. Langs de zwaaiboog hangen appels.
+  // biomegrens: daar ligt een afgrond met reuzenlianen (zie TRANS in physics.js). Geen gewone lianen erboven:
+  // de eerste kolom komt pas voorbij de plek waar Andy wordt losgelaten. Langs de zwaaibogen hangen appels.
   const gapB = gapBoundary(x), gapCol = gapB !== null;
   if (gapCol) {
     x = gapB + GAP_AFTER + grand(0, 40);
     if (gapB !== gen.lastGap) {
       gen.lastGap = gapB;
-      for (let i = 0; i < 10; i++) {
-        const th = -0.7 + i * 0.17, r = TRANS.L + TRANS.hang;
-        apples.push({ x: gapB + Math.sin(th) * r, y: TRANS.ay + Math.cos(th) * r, gold: i % 3 === 2, t: i * 0.6 });
+      for (let k = 0; k < TRANS.n; k++) for (let i = 0; i < 5; i++) {
+        const th = -0.56 + i * 0.28;
+        apples.push({ x: transVineX(gapB, k) + Math.sin(th) * TRANS.R, y: TRANS.ay + Math.cos(th) * TRANS.R, gold: i === 2, t: i * 0.6 });
       }
     }
   }

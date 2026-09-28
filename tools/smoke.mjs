@@ -205,16 +205,16 @@ async function main() {
   check(await js(`(() => { const s = __andy.save, a = s.apples = 600, b = s.boxes; document.getElementById('btnCrates').click(); document.getElementById('btnCrBuy').click(); const ok = s.boxes === b + 1 && s.apples === a - CRATE_PRICE; document.getElementById('btnCrBack').click(); return ok; })()`), 'kist gekocht voor appels');
   check(await js(`(() => { const s = __andy.save; s.upgrades.grip = 7; const b = document.querySelector('[data-reset=upgrades]'); b.click(); b.click(); return s.upgrades.grip === 0 && upSteps('grip') === 0; })()`), 'resetmenu: upgrades terug naar 0');
   check(await js(`(() => { __andy.startReady(20); const t0 = timeScale(); givePow('slow', __andy.G.x, __andy.G.y); const ok = Math.abs(timeScale() - t0 * SLOWMO) < 1e-6; __andy.run.pow = null; return ok; })()`), 'slowmotion-power-up: alles half zo snel');
-  check(await js(`(() => { const u = UP_BY_ID.grip; return u.steps === 15 && upCost(u, 14) <= Math.round(u.base * 1.5 * Math.pow(u.growth, u.max - 1) / 5) * 5; })()`), 'upgrades in stapjes, zonder duurdere aankopen');
+  check(await js(`(() => { const u = UP_BY_ID.grip; return u.steps === 15 && upCost(u, 14) <= Math.round(u.base * UP_PRICE * Math.pow(u.growth, u.max - 1) / 5) * 5; })()`), 'upgrades in stapjes, zonder duurdere aankopen');
 
   console.log('Nieuwe biome, onder water en kisten');
   await js('__andy.startReady(null)'); await sleep(100);
   await js('__andy.press()');
   await until(`__andy.G.state === 'hang'`, 3000);
-  await js(`(() => { const G = __andy.G; __andy.release(); __andy.unpress(); G.state = 'air'; G.x = START_X + BIOMES[2].start * PX_PER_M - 400; G.y = -100; G.vx = 900; G.vy = -500; })()`);
+  await js(`(() => { const G = __andy.G; __andy.release(); __andy.unpress(); G.state = 'air'; G.x = START_X + BIOMES[2].start * PX_PER_M - TRANS.span - 400; G.y = -100; G.vx = 900; G.vy = -500; })()`);
   check(await until('!!__andy.G.auto', 1000), 'biomegrens: Andy grijpt vanzelf de reuzenliaan');
-  check(await until('!!__andy.run.cine && __andy.run.biome === 2', 3000), 'over de klif: filmische overgang naar de Savanne');
-  check(await until('!__andy.G.auto && __andy.G.state === "air" && __andy.G.vx > 1200', 3000), 'losgelaten met extra vaart, binnen 3 seconden');
+  check(await until('!!__andy.run.cine && __andy.run.biome === 2', 6000), 'over de afgrond: filmische overgang naar de Savanne');
+  check(await until('!__andy.G.auto && __andy.G.state === "air" && __andy.G.vx > 1200', 8000), 'over drie reuzenlianen en losgelaten met extra vaart');
   check(await js('biomeSeg(CYCLE_START + 100).i !== biomeSeg(CYCLE_START + CYCLE_LEN + 100).i && biomeSeg(CYCLE_START + 100).i < BIOMES.length'), 'na de laatste biome komen de biomes terug');
   await js('__andy.press()');
   await js(`(() => { const G = __andy.G; G.state = 'air'; G.x = START_X + 1500 * PX_PER_M; G.y = HAZARD_Y + 20; G.vy = 300; enterUnder(); loot.push({ x: G.x + 4, y: G.y, t: 0 }); })()`);
