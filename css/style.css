@@ -223,6 +223,7 @@ h2{font-size:32px;font-weight:900;color:#c2410c;margin-bottom:4px}
 .ib:hover .ib-ic{transform:translateY(-3px)}
 .ib:active .ib-ic{transform:translateY(3px)}
 .ib small{font-size:13px}
+a.ib{text-decoration:none}
 .ib .badge{top:-4px;right:2px}
 /* smal of staand scherm (klassen worden door het spel gezet, zodat ze ook kloppen als het beeld gedraaid is) */
 html.narrow{--narrow:1}

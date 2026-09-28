@@ -526,6 +526,8 @@ function uiInit() {
   on('btnOverLevels', openCareer);
   on('btnShop', () => openShop('menu'));
   on('btnCrates', () => openCrate('menu'));
+  // Android-app downloaden van GitHub (niet in de app zelf, en alleen als er een adres is ingesteld)
+  if (CONFIG.apkUrl && !IN_APP) { $('btnApk').href = CONFIG.apkUrl; $('btnApk').classList.remove('hidden'); }
   on('btnOverCrates', () => openCrate('over'));
   on('btnDoneCrates', () => openCrate('done'));
   on('btnCrBack', () => { refreshMenu(); showScreen(CRATE.ret); });

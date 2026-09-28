@@ -12,4 +12,7 @@ const CONFIG = {
   // Adres waar het spel online staat (bijv. https://jouwnaam.github.io/andy-apple/). Wordt gebruikt voor
   // uitnodigingslinks als het spel als los bestand of in de Android-app draait. Leeg = het huidige adres.
   siteUrl: 'https://stijnbarendse.nl/appel',
+  // Waar de knop "App" in het hoofdmenu de Android-app (.apk) downloadt: de nieuwste versie op GitHub (main).
+  // Leeg = geen knop. In de app zelf is de knop er nooit.
+  apkUrl: 'https://github.com/Stoin3/andy-apple/raw/main/android/AndyApples.apk',
 };
