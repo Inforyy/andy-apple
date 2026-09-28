@@ -1,3 +1,5 @@
+![Andy Apples](art/02-readme-jungle.jpg)
+
 # 🍎 Andy Apples
 
 Een 2D-slingerspel in de browser. Andy de gorilla zwaait aan lianen door elf werelden, verzamelt appels en probeert zo ver mogelijk te komen. Alles (graphics, muziek, geluid en physics) wordt in code gemaakt: geen plaatjes, geen geluidsbestanden, geen installatie.
