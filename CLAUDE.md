@@ -10,7 +10,7 @@ Andy Apples: a 2D vine-swinging browser game. UI text, code comments and READMEs
 - `css/style.css`
 - `js/*.js`: the game, as plain classic scripts (see below)
 - `android/`: wraps the same files in a WebView APK
-- `og.jpg`: the 1200×630 link-preview image (Discord and other sites) referenced by the `og:`/`twitter:` meta tags in `index.html`. Those tags use absolute URLs on `https://stijnbarendse.nl/appel/`; update them if the game moves. It is not packed into the APK.
+- `og-andy.jpg`: the 1200×630 link-preview image (Discord and other sites) referenced by the `og:`/`twitter:` meta tags in `index.html`. Those tags use absolute URLs on `https://stijnbarendse.nl/appel/`; update them if the game moves. It is not packed into the APK.
 
 GitHub Pages deploys from `main` root. Work happens on `claude/*` branches that are merged into `main` via PRs.
 
