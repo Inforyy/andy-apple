@@ -145,6 +145,8 @@ const Sfx = {
     g.gain.linearRampToValueAtTime(v, t + d * att); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
     src.connect(bp).connect(g).connect(ac.destination); src.start(t, Math.random() * 0.5); src.stop(t + d + 0.05);
   },
+  // straaljager: een aanzwellend, laag gebrul met een fluitende zoef
+  jet() { this.whoosh(1.6, 200, 2400, 0.2, 0, 0.8, 0.55); this.tone(90, 1.6, 'sawtooth', 0.05, 160); this.tone(1800, 1.2, 'sine', 0.025, 900, 0.2); this.noise(1.4, 0.12, 900, 0.1); },
   // kist opgepakt: een glinsterend loopje
   lootPick() { [0, 4, 7, 12, 16].forEach((s, i) => this.tone(700 * Math.pow(2, s / 12), 0.12, 'triangle', 0.08, 0, i * 0.045)); this.noise(0.2, 0.04, 7000, 0.05); },
   // onder water: een diepe plons met bubbels; boven komen: een opstijgende zoef

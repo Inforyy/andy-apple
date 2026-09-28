@@ -203,6 +203,19 @@ function drawSpace(w) {
   ctx.fillStyle = eg; ctx.fillRect(0, viewH * 0.4, viewW, viewH * 0.6);
   ctx.restore();
 }
+// Straaljager: grijs toestel met cockpit, vleugels en een vlammende uitlaat; de liaan hangt aan de staart
+function drawJet(v) {
+  const a = v.pts[0], x = a.x, y = a.y;
+  ctx.save(); ctx.translate(x, y - 14);
+  ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(-260, -3, 200, 6); // condensstreep
+  ctx.fillStyle = Math.random() < 0.5 ? '#ffb020' : '#ff6a1f'; ell(-58, 0, 22 + Math.random() * 12, 7); ctx.fillStyle = '#fff3a0'; ell(-50, 0, 10, 4);
+  ctx.fillStyle = '#5d6b7a'; ctx.beginPath(); ctx.moveTo(-10, 0); ctx.lineTo(-38, -34); ctx.lineTo(-24, -34); ctx.lineTo(12, 0); ctx.fill(); // staartvin
+  ctx.fillStyle = '#8a98a8'; ctx.beginPath(); ctx.moveTo(-44, -9); ctx.lineTo(70, -8); ctx.quadraticCurveTo(100, 0, 70, 8); ctx.lineTo(-44, 9); ctx.closePath(); ctx.fill(); // romp
+  ctx.fillStyle = '#6b7888'; ctx.beginPath(); ctx.moveTo(0, 2); ctx.lineTo(-30, 30); ctx.lineTo(-14, 30); ctx.lineTo(30, 2); ctx.fill(); // vleugel
+  ctx.fillStyle = '#9fe3ff'; ell(48, -8, 16, 6); ctx.fillStyle = 'rgba(255,255,255,.7)'; ell(52, -10, 6, 2);
+  ctx.fillStyle = '#e8322b'; ctx.fillRect(-4, -3, 22, 5); // streep
+  ctx.restore();
+}
 function drawBalloon(v) {
   const b = v.balloon, a = v.pts[0], x = a.x, y = a.y;
   // mand
@@ -384,6 +397,7 @@ function drawSpaceObjs() {
 }
 // De tak waar een liaan aan hangt (blijft staan als een rotte liaan breekt)
 function drawBranch(v) {
+  if (v.jet) { drawJet(v); return; }
   if (v.balloon) { drawBalloon(v); return; }
   if (v.space) { drawAsteroid(v.pts[0].x, v.pts[0].y - v.space.r * 0.55, v.space.r, v.space.ph + time * 0.15, v.space.col); return; }
   const style = BIOMES[v.bi].style, c = BIOMES[v.bi].c;
@@ -1208,8 +1222,8 @@ function renderScene() {
   if (spaceObjs.length) drawSpaceObjs();
   drawPortals(false);
   const vx0 = camX - 300, vx1 = camX + viewW + 420, vy0 = camY - 60, vy1 = camY + viewH + 60;
-  for (const v of vines) if (v.x > vx0 && v.rest[2] - 200 < vx1 && v.ay < vy1 && v.rest[3] + 150 > vy0) drawVine(v);
-  for (const v of vines) if (v.x > camX - 80 && v.x < camX + viewW + 80 && v.ay > camY - 220 && v.ay < camY + viewH + 60) drawBranch(v);
+  for (const v of vines) if (v.jet ? v.x > vx0 - 700 && v.x - 900 < vx1 : v.x > vx0 && v.rest[2] - 200 < vx1 && v.ay < vy1 && v.rest[3] + 150 > vy0) drawVine(v); // een straaljager beweegt: niet op zijn startplek (rest) testen
+  for (const v of vines) if (v.x > camX - 300 && v.x < camX + viewW + 300 && v.ay > camY - 220 && v.ay < camY + viewH + 60) drawBranch(v);
   drawPortals(true);
   for (const a of apples) if (a.x > camX - 50 && a.x < camX + viewW + 50 && a.y > camY - 50 && a.y < camY + viewH + 50) drawApple(a);
   if (loot.length) drawLoot();
