@@ -94,7 +94,8 @@ function features(bi) {
 const gripR      = l => 34 + 7 * l;
 const pumpA      = l => 600 * (1 + 0.22 * l);
 const launchM    = l => 1.16 + 0.07 * l;
-const magnetR    = l => l ? 50 + 35 * l : 0;
+const magnetR    = l => l ? 130 + 70 * l : 0;   // bereik in rust (level 5: 480); groeit mee met je snelheid, zie updateApples
+const magnetPull = l => 1500 + 250 * l;         // hoe hard de magneet trekt
 const appleVal   = l => 1 + 0.5 * l;
 const goldChance = l => 0.03 + 0.025 * l;
 const rocketDist = l => 150 * l;
@@ -138,8 +139,8 @@ const upCost = (u, l) => Math.round(u.base * 1.5 * Math.pow(u.growth, l) / 5) * 
 //  Kisten (loot-boxes) en uiterlijk van Andy
 // =====================================================================
 // Kans per kolom lianen dat er een kist hangt (Eindeloos en carrière, niet in multiplayer)
-const LOOT_CHANCE = 0.045;
-const LOOT_GAP = 4000; // minimale afstand tussen twee kisten (wereld-eenheden)
+const LOOT_CHANCE = 0.09;
+const LOOT_GAP = 2200; // minimale afstand tussen twee kisten (wereld-eenheden)
 // Zeldzaamheid: kleur, naam en gewicht (kans) bij het openen van een kist
 const RARITY = {
   common:    { name: 'Gewoon',       col: '#9aa4b1', w: 55 },

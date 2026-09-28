@@ -592,7 +592,8 @@ function updateFoes(dt) {
 }
 
 function updateApples(dt) {
-  const mr = magnetR(lvl('magnet'));
+  // op hoge snelheid reikt de magneet verder (tot 2× bij 1500 px/s), anders vlieg je er in een paar frames langs
+  const ml = lvl('magnet'), mr = magnetR(ml) * (1 + clamp(Math.hypot(G.vx, G.vy) / 1500, 0, 1)), pull = magnetPull(ml);
   const alive = game.mode === 'playing' && (G.state === 'hang' || G.state === 'air' || G.state === 'rocket' || G.state === 'swim');
   for (let i = apples.length - 1; i >= 0; i--) {
     const a = apples[i];
@@ -614,7 +615,7 @@ function updateApples(dt) {
     if (mr && (d < mr || (a.mag && d < mr * 2.5))) {
       a.mag = true; if (a.vine) a.vine = null;
       a.x += G.vx * dt; a.y += G.vy * dt;
-      const s = Math.min(d, (520 + (mr - Math.min(d, mr)) * 6) * dt);
+      const s = Math.min(d, (pull + (mr - Math.min(d, mr)) * 10) * dt);
       a.x += dx / d * s; a.y += dy / d * s;
     }
   }
@@ -755,7 +756,7 @@ function genUnder(U, xMax) {
       for (const [ox, oy] of pts) apples.push({ x: cx + ox, y: cy + oy, gold: Math.random() < 0.12, pearl: true, t: Math.random() * 6 });
     }
     if (Math.random() < 0.55) { const y = rand(UNDER_TOP + 150, UNDER_FLOOR - 150), jx = x + rand(200, 380); foes.push({ type: 'jelly', x0: jx, y0: y, x: jx, y, t: rand(0, 6), r: 20, bi: 0, hue: rand(260, 340) }); }
-    if (!game.mp && Math.random() < 0.05) addLoot(x + rand(150, 400), rand(UNDER_TOP + 150, UNDER_FLOOR - 120));
+    if (!game.mp && Math.random() < 0.12) addLoot(x + rand(150, 400), rand(UNDER_TOP + 150, UNDER_FLOOR - 120));
     U.genX += rand(480, 600);
   }
 }
