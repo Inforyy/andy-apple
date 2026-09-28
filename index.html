@@ -189,6 +189,7 @@
   html.rot .panel{touch-action:auto}
 
   /* ---------- Multiplayer ---------- */
+  .btn.kiwi{background:linear-gradient(#a3d65c,#4caf2e);box-shadow:0 5px 0 #2c6e18}
   .btn.local{background:linear-gradient(#60a5fa,#7c3aed);box-shadow:0 5px 0 #4c1d95}
   #hud.local .hud-col:not(.right),#hud.local #hudItems{display:none!important}
   #hud.local .hud-top{justify-content:flex-end}
@@ -239,6 +240,32 @@
   .mp-code .btn{flex:none}
   .mp-manual{margin-top:8px}
   .mp-manual .mp-step{margin:8px 0}
+  .mpp{max-width:560px}
+  .mp-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+  .mp-top h2{margin:0}
+  .mp-top .mp-name{margin:0}
+  .mp-top .mp-name input{width:140px}
+  .mp-card{background:rgba(122,74,28,.1);border-radius:16px;padding:10px 12px;margin:8px 0;text-align:left}
+  .mp-card-h{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
+  .mp-card h3{font-size:17px;color:#c2410c;margin:0}
+  .mp-count{font-weight:800;color:#7a5a3a;font-size:14px}
+  .btn.sm{font-size:15px;padding:7px 12px;box-shadow:0 3px 0 #166534}
+  .btn.sm:not(.green){box-shadow:0 3px 0 #92400e}
+  .mp-card .row{margin-top:6px}
+  .players{list-style:none;display:flex;flex-wrap:wrap;gap:6px;max-height:min(26vh,160px);overflow:auto;touch-action:pan-y}
+  .players li{display:flex;align-items:center;gap:6px;background:#fff;border:2px solid #e8c98a;border-radius:999px;padding:4px 12px 4px 6px;font-weight:800;font-size:15px}
+  .players li i{width:14px;height:14px;border-radius:50%;flex:none;border:2px solid rgba(0,0,0,.25)}
+  .players li small{color:#7a5a3a;font-weight:700}
+  .players li.me{border-color:#e8322b}
+  .players li.left{opacity:.5;text-decoration:line-through}
+  .mp-status.wait{margin:18px 0}
+  .rank{list-style:none;text-align:left;margin:6px 0;max-height:min(46vh,380px);overflow:auto;touch-action:pan-y}
+  .rank li{display:grid;grid-template-columns:34px 16px 1fr auto;gap:8px;align-items:center;padding:6px 10px;border-radius:10px;font-weight:800}
+  .rank li:nth-child(odd){background:rgba(122,74,28,.08)}
+  .rank li.me{background:#fff3c4;outline:2px solid #e0a82e}
+  .rank li b{color:#c2410c}
+  .rank li i{width:14px;height:14px;border-radius:50%;border:2px solid rgba(0,0,0,.25)}
+  .rank li span:last-child{text-align:right;white-space:nowrap}
   .lobbies{list-style:none;margin:4px 0 0;max-height:min(34vh,240px);overflow:auto;touch-action:pan-y}
   .lobbies li{display:flex;align-items:center;gap:8px;background:#fff;border:2px solid #e8c98a;border-radius:12px;padding:5px 5px 5px 12px;margin:6px 0;font-weight:800}
   .lobbies li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -274,7 +301,7 @@
       <div class="pill small" id="hudItems"></div>
     </div>
   </div>
-  <div id="mpHud" class="hidden"><div class="track"><span class="flag" id="mpFlag">🏁</span><div class="dot opp" id="mpDotOpp"><span class="tag" id="mpTagOpp"></span></div><div class="dot me" id="mpDotMe"><span class="tag">Jij</span></div></div><div class="info" id="mpInfo"></div></div>
+  <div id="mpHud" class="hidden"><div class="track" id="mpTrack"><span class="flag" id="mpFlag">🏁</span><div class="dot me" id="mpDotMe"><span class="tag">Jij</span></div></div><div class="info" id="mpInfo"></div></div>
   <div id="mpCount"></div>
   <div id="banner"><div class="big"></div><div class="small"></div></div>
   <div id="hint"></div>
@@ -321,84 +348,87 @@
 
 <!-- Multiplayer -->
 <div id="mp" class="screen">
-  <div class="panel">
-    <h2>Multiplayer</h2>
-    <div class="mp-status" id="mpStatus"><i></i><span id="mpStatusTxt">Niet verbonden</span></div>
-    <div class="mp-name"><label for="mpName">Naam</label><input id="mpName" maxlength="12" spellcheck="false" autocomplete="off"></div>
+  <div class="panel mpp">
+    <div class="mp-top"><h2 id="mpTitle">Multiplayer</h2><div class="mp-name"><label for="mpName">Naam</label><input id="mpName" maxlength="12" spellcheck="false" autocomplete="off"></div></div>
 
-    <!-- kiezen: lijst met open lobbies -->
-    <div id="mpPick">
-      <div class="mp-step">
-        <h3>Open lobbies</h3>
+    <!-- start: kiezen -->
+    <div id="mpHome">
+      <section class="mp-card" id="mpOnline">
+        <div class="mp-card-h"><h3>Online lobbies</h3><button class="btn green sm" id="btnMpHost">+ Nieuwe lobby</button></div>
         <ul class="lobbies" id="mpLobbies"></ul>
-      </div>
-      <div class="row">
-        <button class="btn green" id="btnMpHost">Lobby maken</button>
-        <button class="btn local" id="btnMpLocal">Op één scherm</button>
-      </div>
+      </section>
+      <section class="mp-card" id="mpDevice">
+        <div class="mp-card-h"><h3>Op dit apparaat</h3></div>
+        <div class="row"><button class="btn local" id="btnMpLocal">2 spelers, één scherm</button><button class="btn kiwi" id="btnMpAi">Tegen Kiwi (AI)</button></div>
+      </section>
+      <details class="mp-manual" id="mpManual">
+        <summary>Handmatig verbinden (zonder server, 2 spelers)</summary>
+        <div class="row" id="mpManPick"><button class="btn" id="btnMpManualHost">Maak uitnodigingscode</button><button class="btn" id="btnMpJoin">Ik heb een code</button></div>
+        <div id="mpManHost" class="hidden">
+          <div class="mp-step">
+            <h3>1. Stuur deze uitnodigingscode</h3>
+            <textarea id="mpOffer" readonly spellcheck="false" placeholder="Code wordt gemaakt…"></textarea>
+            <div class="row"><button class="btn" id="btnMpCopyOffer" disabled>Kopieer</button></div>
+          </div>
+          <div class="mp-step">
+            <h3>2. Plak de antwoordcode</h3>
+            <textarea id="mpAnswerIn" spellcheck="false" placeholder="Plak de antwoordcode…"></textarea>
+            <div class="row"><button class="btn green" id="btnMpConnect">Verbinden</button></div>
+          </div>
+        </div>
+        <div id="mpManJoin" class="hidden">
+          <div class="mp-step">
+            <h3>1. Plak de uitnodigingscode</h3>
+            <textarea id="mpOfferIn" spellcheck="false" placeholder="Plak de uitnodigingscode…"></textarea>
+            <div class="row"><button class="btn green" id="btnMpMakeAnswer">Maak antwoordcode</button></div>
+          </div>
+          <div class="mp-step hidden" id="mpAnswerStep">
+            <h3>2. Stuur deze antwoordcode terug</h3>
+            <textarea id="mpAnswer" readonly spellcheck="false" placeholder="Code wordt gemaakt…"></textarea>
+            <div class="row"><button class="btn" id="btnMpCopyAnswer" disabled>Kopieer</button></div>
+          </div>
+        </div>
+      </details>
     </div>
 
-    <!-- eigen lobby (host), wachten op een speler -->
-    <div id="mpHostBox" class="hidden">
-      <div class="mp-step">
-        <h3>Je lobby staat open</h3>
-        <p>Andere spelers zien hem in hun lijst. Je kunt ook een uitnodiging sturen.</p>
-        <div class="row"><button class="btn green" id="btnMpShare">Kopieer uitnodiging</button></div>
-      </div>
-    </div>
+    <!-- bezig met verbinden / lobby openen -->
+    <div id="mpBusy" class="mp-status wait hidden"><i></i><span id="mpBusyTxt">Verbinden…</span></div>
 
-    <!-- handmatig: codes uitwisselen, werkt zonder server -->
-    <details class="mp-manual" id="mpManual">
-      <summary>Handmatig verbinden (zonder server)</summary>
-      <div class="row" id="mpManPick"><button class="btn" id="btnMpManualHost">Maak uitnodigingscode</button><button class="btn" id="btnMpJoin">Ik heb een code</button></div>
-      <div id="mpManHost" class="hidden">
-        <div class="mp-step">
-          <h3>1. Stuur deze uitnodigingscode</h3>
-          <textarea id="mpOffer" readonly spellcheck="false" placeholder="Code wordt gemaakt…"></textarea>
-          <div class="row"><button class="btn" id="btnMpCopyOffer" disabled>Kopieer</button></div>
+    <!-- in een lobby (of klaar om lokaal te spelen) -->
+    <div id="mpRoom" class="hidden">
+      <section class="mp-card">
+        <div class="mp-card-h"><h3>Spelers</h3><span class="mp-count" id="mpCountTxt"></span></div>
+        <ul class="players" id="mpPlayers"></ul>
+        <div class="row hidden" id="mpShareRow"><button class="btn sm" id="btnMpShare">Uitnodiging kopiëren</button></div>
+      </section>
+      <section class="mp-card">
+        <div class="mp-card-h"><h3>Spelmodus</h3><span class="mp-count" id="mpModeWho"></span></div>
+        <div class="mp-modes">
+          <button class="mp-mode" id="mpModeRace" data-mode="race"><b>Race</b><small>Eerst bij de finish wint. Val je, dan kom je terug (en verlies je tijd).</small></button>
+          <button class="mp-mode" id="mpModeEnd" data-mode="endurance"><b>Endurance</b><small>Wie het langst volhoudt, wint. Een storm jaagt je op.</small></button>
         </div>
-        <div class="mp-step">
-          <h3>2. Plak de antwoordcode</h3>
-          <textarea id="mpAnswerIn" spellcheck="false" placeholder="Plak de antwoordcode…"></textarea>
-          <div class="row"><button class="btn green" id="btnMpConnect">Verbinden</button></div>
+        <div class="mp-lens" id="mpLens">
+          <button class="mp-len" data-len="500">500 m</button>
+          <button class="mp-len" data-len="1000">1000 m</button>
+          <button class="mp-len" data-len="2000">2000 m</button>
         </div>
-      </div>
-      <div id="mpManJoin" class="hidden">
-        <div class="mp-step">
-          <h3>1. Plak de uitnodigingscode</h3>
-          <textarea id="mpOfferIn" spellcheck="false" placeholder="Plak de uitnodigingscode…"></textarea>
-          <div class="row"><button class="btn green" id="btnMpMakeAnswer">Maak antwoordcode</button></div>
+        <div class="mp-lens hidden" id="mpAiLvls">
+          <button class="mp-len" data-ai="0">Makkelijk</button>
+          <button class="mp-len" data-ai="1">Normaal</button>
+          <button class="mp-len" data-ai="2">Moeilijk</button>
+          <button class="mp-len" data-ai="3">Expert</button>
         </div>
-        <div class="mp-step hidden" id="mpAnswerStep">
-          <h3>2. Stuur deze antwoordcode terug</h3>
-          <textarea id="mpAnswer" readonly spellcheck="false" placeholder="Code wordt gemaakt…"></textarea>
-          <div class="row"><button class="btn" id="btnMpCopyAnswer" disabled>Kopieer</button></div>
-        </div>
-      </div>
-    </details>
-
-    <!-- verbonden: lobby -->
-    <div id="mpLobby" class="hidden">
-      <div class="mp-vs"><div class="pl me" id="mpMeName">Jij</div><span>VS</span><div class="pl opp" id="mpOppName">Tegenstander</div></div>
-      <div class="mp-modes">
-        <button class="mp-mode" id="mpModeRace" data-mode="race"><b>Race</b><small>Eerst bij de finish wint. Val je, dan kom je terug (en verlies je tijd).</small></button>
-        <button class="mp-mode" id="mpModeEnd" data-mode="endurance"><b>Endurance</b><small>Wie het langst volhoudt, wint. Een storm jaagt je op.</small></button>
-      </div>
-      <div class="mp-lens" id="mpLens">
-        <button class="mp-len" data-len="500">500 m</button>
-        <button class="mp-len" data-len="1000">1000 m</button>
-        <button class="mp-len" data-len="2000">2000 m</button>
-      </div>
+      </section>
+      <p class="sub hidden" id="mpLocalKeys"><b style="color:#e8322b">Speler 1</b>: <kbd>SPATIE</kbd> of links/boven tikken · <b style="color:#2f7fe0">Speler 2</b>: <kbd>↑</kbd> / <kbd>ENTER</kbd> of rechts/onder tikken</p>
       <div class="row"><button class="btn big green" id="btnMpStart">Start</button></div>
-      <p class="sub hidden" id="mpLocalKeys" style="margin-top:10px"><b style="color:#e8322b">Speler 1</b>: <kbd>SPATIE</kbd> of links/boven tikken · <b style="color:#2f7fe0">Speler 2</b>: <kbd>↑</kbd> / <kbd>ENTER</kbd> of rechts/onder tikken</p>
-      <p class="sub hidden" id="mpGuestWait" style="margin-top:10px">Wachten tot de host start…</p>
+      <p class="sub hidden" id="mpGuestWait">Wachten tot de host start…</p>
     </div>
 
     <div id="mpMsg" class="msg"></div>
     <div class="row">
       <button class="btn ghost" id="btnMpSetup">Uitleg</button>
-      <button class="btn ghost red hidden" id="btnMpCancel">Opnieuw</button>
-      <button class="btn" id="btnMpBack">← Terug</button>
+      <button class="btn ghost red hidden" id="btnMpCancel">Annuleren</button>
+      <button class="btn" id="btnMpBack">← Menu</button>
     </div>
   </div>
 </div>
@@ -409,9 +439,9 @@
     <h2 style="text-align:center">Multiplayer</h2>
     <h3>Online</h3>
     <ol>
-      <li>Kies <b>Lobby maken</b>. Je lobby verschijnt in de lijst van andere spelers; met <b>Kopieer uitnodiging</b> stuur je een link.</li>
-      <li>De andere speler klikt in de lijst op <b>Meedoen</b> (of opent de link).</li>
-      <li>De host kiest <b>Race</b> of <b>Endurance</b> en klikt op <b>Start</b>.</li>
+      <li>Kies <b>+ Nieuwe lobby</b>. Je lobby verschijnt in de lijst van andere spelers; met <b>Uitnodiging kopiëren</b> stuur je ook een link.</li>
+      <li>Anderen klikken in de lijst op <b>Meedoen</b> (of openen de link). Er passen <b>20 spelers</b> in een lobby.</li>
+      <li>De host kiest <b>Race</b> of <b>Endurance</b> en klikt op <b>Start</b>. Na afloop start de host met <b>Nieuwe ronde</b> het volgende potje.</li>
     </ol>
     <div class="tip">Blijft het hangen op <b>Verbinden…</b>? Sommige netwerken blokkeren directe verbindingen. Zet beide apparaten op hetzelfde wifi-netwerk, of probeer <b>Handmatig verbinden</b> (twee codes uitwisselen, werkt zonder server).</div>
     <div class="tip">Laat het spel in beeld: wie tijdens een potje een paar seconden wegklikt, geeft op. Twee tabbladen in één venster werkt niet; gebruik twee aparte vensters.</div>
@@ -432,11 +462,10 @@
   <div class="panel">
     <h2 id="mpResTitle">Gewonnen!</h2>
     <p class="sub" id="mpResSub"></p>
-    <div class="mp-vs"><div class="pl me" id="mpResMe">Jij</div><span>VS</span><div class="pl opp" id="mpResOpp">Tegenstander</div></div>
     <div class="results" id="mpResTable"></div>
     <div id="mpResScore" class="sub"></div>
     <div class="row">
-      <button class="btn big green" id="btnMpAgain">Revanche</button>
+      <button class="btn big green" id="btnMpAgain">Rematch</button>
     </div>
     <div class="row">
       <button class="btn" id="btnMpLobby">Lobby</button>
@@ -739,8 +768,8 @@ function features(bi) {
 //  Upgrades
 // =====================================================================
 const gripR      = l => 34 + 7 * l;
-const pumpA      = l => 520 * (1 + 0.22 * l);
-const launchM    = l => 1.1 + 0.07 * l;
+const pumpA      = l => 600 * (1 + 0.22 * l);
+const launchM    = l => 1.16 + 0.07 * l;
 const magnetR    = l => l ? 50 + 35 * l : 0;
 const appleVal   = l => 1 + 0.5 * l;
 const goldChance = l => 0.03 + 0.025 * l;
@@ -754,8 +783,8 @@ const fmtNum = n => (Math.round(n * 10) / 10).toString().replace('.', ',');
 
 const UPGRADES = [
   { id:'grip',    icon:'✋', name:'Lange armen',    info:'Grijp lianen van verder weg.',                          max:5, base:25,  growth:1.8,  fx:l => `${gripR(l)} bereik` },
-  { id:'swing',   icon:'🌀', name:'Zwaaikracht',    info:'Zwaai harder en sneller.',              max:5, base:30,  growth:1.8,  fx:l => `+${l * 22}% zwaai, max ${1030 + 110 * l}` },
-  { id:'launch',  icon:'💨', name:'Lanceerkracht',  info:'Meer vaart bij het loslaten.',                        max:5, base:40,  growth:1.85, fx:l => `+${l * 7}% vaart, top ${1300 + 110 * l}` },
+  { id:'swing',   icon:'🌀', name:'Zwaaikracht',    info:'Zwaai harder en sneller.',              max:5, base:30,  growth:1.8,  fx:l => `+${l * 22}% zwaai, max ${1250 + 120 * l}` },
+  { id:'launch',  icon:'💨', name:'Lanceerkracht',  info:'Meer vaart bij het loslaten.',                        max:5, base:40,  growth:1.85, fx:l => `+${l * 7}% vaart, top ${1600 + 130 * l}` },
   { id:'magnet',  icon:'🧲', name:'Appelmagneet',   info:'Trekt appels naar je toe.',                 max:5, base:35,  growth:1.8,  fx:l => l ? `${magnetR(l)} bereik` : 'geen' },
   { id:'value',   icon:'🧺', name:'Appeloogst',     info:'Elke appel telt voor meer.', max:5, base:50, growth:1.9, fx:l => `×${fmtNum(appleVal(l))} per appel` },
   { id:'golden',  icon:'✨', name:'Gouden appels',  info:'Meer gouden appels (5 waard).',                  unlock:4, max:4, base:45,  growth:1.9,  fx:l => `${Math.round(goldChance(l) * 100)}% kans` },
@@ -889,14 +918,18 @@ const $ = id => document.getElementById(id);
 function biomeIndexAt(m) { if (game.career) return game.career.bi; let i = 0; for (let j = 0; j < BIOMES.length; j++) if (m >= BIOMES[j].start) i = j; return i; }
 // Eindeloos (en multiplayer): de moeilijkheid loopt geleidelijk op en vlakt af naar een plafond,
 // zodat het spel altijd te doen blijft (meer gaten, grotere afstanden, meer vijanden, minder appels).
-const DIFF_MAX = 1.2, DIFF_RAMP = 3000;
-function diffAt(m) { if (game.career) return clamp(game.career.diff + Math.max(0, m) / game.career.L * 0.08, 0, 1.4); return DIFF_MAX * (1 - Math.exp(-Math.max(0, m) / DIFF_RAMP)); }
+// DIFF_START: ook aan het begin is het al iets lastiger dan de allereerste versie.
+const DIFF_START = 0.2, DIFF_MAX = 1.3, DIFF_RAMP = 3000;
+function diffAt(m) {
+  if (game.career) return clamp(game.career.diff + 0.08 + Math.max(0, m) / game.career.L * 0.08, 0, 1.45);
+  return DIFF_START + (DIFF_MAX - DIFF_START) * (1 - Math.exp(-Math.max(0, m) / DIFF_RAMP));
+}
 // Eindeloos: het tempo gaat ook iets omhoog naarmate je verder komt, tot maximaal +12%% (bij 4000 m).
 // Debug-snelheid telt overal mee, behalve online (dan moeten beide spelers gelijk zijn).
 const TEMPO_MAX = 0.12, TEMPO_DIST = 4000;
-// Standaardtempo van het spel: 70% van het oude tempo (wat vroeger "70%" in het debugmenu was).
+// Standaardtempo van het spel (100% in het debugmenu).
 // Werkt als tijdschaal: de physics-stappen blijven gelijk, er gaan er alleen minder per seconde.
-const BASE_SPEED = 0.7;
+const BASE_SPEED = 0.56; // = 80% van het vorige standaardtempo (0,7)
 function timeScale() {
   let k = BASE_SPEED * (game.mp && !game.mp.local ? 1 : DBG.speed);
   if (!game.career && !game.mp && run) { const t = clamp(run.dist / TEMPO_DIST, 0, 1); k *= 1 + TEMPO_MAX * t * t * (3 - 2 * t); }
@@ -993,6 +1026,8 @@ const Sfx = {
   },
   // "Hoe-hoe-WOE-HOEEE!": een apenroep. Een stembron met natuurlijke boventonen, adem, toonhoogte-jitter
   // en een ruw randje gaat door klinkerfilters (formanten); de lettergrepen stijgen zoals bij een echte aap.
+  // duiken: korte, dalende zoef
+  dive() { this.noise(0.25, 0.08, 1800, 0.02); this.tone(700, 0.22, 'triangle', 0.05, 220); },
   woohoo() {
     if (!save.sound || !this.ac) return;
     const ac = this.ac, t0 = ac.currentTime + 0.01, k = 0.93 + Math.random() * 0.15, end = t0 + 1.1;
@@ -1246,7 +1281,7 @@ function resize() {
   canvas.width = Math.round(cssW * pr); canvas.height = Math.round(cssH * pr);
   canvas.style.width = cssW + 'px'; canvas.style.height = cssH + 'px';
   let vw = cssW, vh = cssH;
-  if (LOCAL.on) { // naast elkaar op een breed scherm, boven elkaar op een smal/staand scherm
+  if (LOCAL.on && !LOCAL.ai) { // naast elkaar op een breed scherm, boven elkaar op een smal/staand scherm
     LOCAL.split = cssW >= cssH * 1.1 ? 'v' : 'h';
     if (LOCAL.split === 'v') vw = (cssW - 4) / 2; else vh = (cssH - 4) / 2;
   }
@@ -1617,7 +1652,7 @@ function simVine(v, dt) {
 }
 // ---- Zwaaien als echte slinger: hoek en hoeksnelheid rond het ophangpunt ----
 // x = anker + R·sin(θ), y = anker + R·cos(θ). De energie blijft behouden, dus zwaaien voelt vloeiend.
-const swingCap = () => 1030 + 110 * lvl('swing'); // iets lager zonder upgrade: de standaardsnelheid ligt wat rustiger
+const swingCap = () => 1250 + 120 * lvl('swing'); // tot hier kun je vaart opbouwen door te zwaaien
 function setHand() { G.hx = G.x - Math.sin(G.th) * ARM_LEN; G.hy = G.y - Math.cos(G.th) * ARM_LEN; }
 function freeHand(v, k) { // hand los: het touwpunt wordt weer gewoon touw en krijgt Andy's vaart mee
   if (!v || !v.pts[k]) return;
@@ -1700,7 +1735,7 @@ function attach(v, k) {
   const vt = (G.vx - (v.balloon ? v.balloon.vx : 0)) * c - G.vy * sn;
   let dir = Math.abs(c) > 0.2 ? Math.sign(c) : -Math.sign(sn) || 1;
   if (G.vx < -250 && Math.sign(vt) === -dir) dir = -dir;
-  G.om = dir * Math.max(speed, 420) / G.R;
+  G.om = dir * Math.max(speed, 480) / G.R;
   setHand();
   Sfx.grab();
   if (v.type === 'turbo' && game.mode === 'playing') Sfx.turboCharge();
@@ -1962,25 +1997,30 @@ function updateGorilla(dt, holdHang, holdAir) {
   } else if (G.state === 'air') {
     G.airT += dt;
     if (G.noDive && G.airT > 1.2) G.noDive = false;
-    // duiken gaat geleidelijk: eerst rustig, daarna steeds sneller naarmate je langer ingedrukt houdt
+    // duiken: meteen merkbaar (een duw omlaag en een zoef), en hoe langer je vasthoudt, hoe harder
     const diveHold = holdAir && !G.noDive;
+    if (diveHold && G.diveT === 0) {
+      G.vy = Math.max(G.vy + 260, Math.min(G.vy, 0) + 320);
+      Sfx.dive();
+      for (let i = 0; i < 6; i++) addPart({ type: 'streak', x: G.x + rand(-14, 14), y: G.y - rand(10, 30), vx: 0, vy: -rand(200, 400), life: 0.25, max: 0.25, col: 'rgba(255,255,255,.8)', r: 2.5, g: 0 });
+    }
     G.diveT = diveHold ? G.diveT + dt : 0;
-    const e = clamp((G.diveT - 0.04) / 0.5, 0, 1);
-    G.dive += (e * e - G.dive) * Math.min(1, dt * (diveHold ? 30 : 12));
+    const e = diveHold ? 0.45 + 0.55 * clamp(G.diveT / 0.35, 0, 1) : 0;
+    G.dive += (e - G.dive) * Math.min(1, dt * (diveHold ? 30 : 12));
     G.diving = G.dive > 0.25;
     const falling = G.vy > 0 && G.dive < 0.1, wing = lvl('wingsuit');
     const glide = falling ? 1 - 0.07 * wing : 1;
     const space = run.space && G.y < SPACE_Y;
-    G.vy += AIR_G * glide * (space ? 0.45 : 1) * (1 + 1.6 * G.dive) * dt;
+    G.vy += AIR_G * glide * (space ? 0.45 : 1) * (1 + 2.8 * G.dive) * dt;
     // ook zonder wingsuit-upgrade drijft Andy een klein beetje naar voren: zo kom je nooit hulpeloos
     // recht naar beneden vast te zitten tussen twee lianen in
     G.vx += 55 * dt;
     // wingsuit: een deel van de valsnelheid wordt voorwaartse vaart
     if (wing && falling && G.vx > 0) { const dv = Math.min(G.vy, 700) * 0.32 * wing * dt; G.vy -= dv; G.vx += dv * 0.85; }
-    const maxFall = MAX_FALL * glide * (1 + 0.8 * G.dive);
+    const maxFall = MAX_FALL * glide * (1 + 1.1 * G.dive);
     if (G.vy > maxFall) G.vy += (maxFall - G.vy) * Math.min(1, dt * 6);
     G.vx -= G.vx * 0.015 * dt;
-    const sp = Math.hypot(G.vx, G.vy), maxS = maxSpeed() * (G.turboT > 0 ? 1.4 : 1) * (space ? 1.3 : 1);
+    const sp = Math.hypot(G.vx, G.vy), maxS = maxSpeed() * (G.turboT > 0 ? 1.4 : 1) * (space ? 1.3 : 1) * (1 + 0.5 * G.dive); // duiken remt je voorwaartse vaart niet af
     if (sp > maxS) { G.vx *= maxS / sp; G.vy *= maxS / sp; }
     const prevFeet = G.y + FEET, prevX = G.x;
     G.x += G.vx * dt; G.y += G.vy * dt;
@@ -2161,7 +2201,7 @@ function collect(a) {
   }
 }
 
-const maxSpeed = () => 1300 + 110 * lvl('launch'); // iets lager zonder upgrade: de standaardsnelheid ligt wat rustiger
+const maxSpeed = () => 1600 + 130 * lvl('launch'); // topsnelheid in de lucht: ruimte om momentum op te bouwen
 // ---- Trucs: bij een lange luchtvlucht doet Andy vanzelf salto's en andere kunstjes ----
 const TRICKS = [
   { id: 'salto', name: 'Salto!', dur: 0.62, rot: -Math.PI * 2 },
@@ -3387,7 +3427,7 @@ function drawGorilla() {
   let h1, h2, f1 = [-8, 25], f2 = [8, 25], mouth = 'smile';
   const sw = Math.sin(time * 10);
   if (G.state === 'hang') {
-    const d = Math.hypot(G.hx - G.x, G.hy - G.y) / G_DRAW;
+    const d = Math.min(Math.hypot(G.hx - G.x, G.hy - G.y) / G_DRAW, 42); // nooit een uitgerekte arm tekenen
     h1 = [-3, -d]; h2 = [3, -d + 3];
     f1 = [-7 + sw * 2, 26]; f2 = [8 - sw * 2, 25]; mouth = Math.abs(G.om * G.R) > 700 ? 'open' : 'smile';
   } else if (G.state === 'stand') {
@@ -3461,13 +3501,24 @@ function drawGorilla() {
     ctx.fillStyle = '#ffffff'; ctx.fillRect(-4, -8, 8, 1.6);
     if (mouth === 'open') { ctx.fillStyle = '#c0394b'; ell(0, -4.8, 2.5, 1.2); }
   } else { ctx.strokeStyle = GC.ink; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(0, -9.5, 4, 0.3, Math.PI - 0.3); ctx.stroke(); }
+  if (GC.kiwi) { // Kiwi heeft een wilde oranje kuif en grote oorbellen-bakkebaarden
+    ctx.fillStyle = GC.ink; for (const [x, a] of [[-5, -0.5], [0, 0], [5, 0.5]]) { ctx.save(); ctx.translate(x, -30); ctx.rotate(a); ctx.beginPath(); ctx.moveTo(-3.4, 2); ctx.lineTo(0, -9.5); ctx.lineTo(3.4, 2); ctx.fill(); ctx.restore(); }
+    ctx.fillStyle = GC.furL; for (const [x, a] of [[-5, -0.5], [0, 0], [5, 0.5]]) { ctx.save(); ctx.translate(x, -30); ctx.rotate(a); ctx.beginPath(); ctx.moveTo(-2.2, 1.5); ctx.lineTo(0, -7.5); ctx.lineTo(2.2, 1.5); ctx.fill(); ctx.restore(); }
+    ctx.fillStyle = GC.furL; ell(-11.5, -8, 3.2, 5, 0.3); ell(11.5, -8, 3.2, 5, -0.3);
+  }
   // bandana met appelspeldje
   ctx.strokeStyle = GC.ink; ctx.lineWidth = 6.4; ctx.beginPath(); ctx.arc(0, -17, 12.6, Math.PI * 1.12, Math.PI * 1.88); ctx.stroke();
   ctx.strokeStyle = GC.band; ctx.lineWidth = 4.4; ctx.beginPath(); ctx.arc(0, -17, 12.6, Math.PI * 1.12, Math.PI * 1.88); ctx.stroke();
   ctx.fillStyle = 'rgba(255,255,255,.85)'; for (const a of [1.25, 1.45, 1.62, 1.78]) circ(Math.cos(Math.PI * a) * 12.6, -17 + Math.sin(Math.PI * a) * 12.6, 0.9);
   ctx.fillStyle = GC.ink; circ(-11.4, -23.5, 3.6); ctx.fillStyle = GC.band; circ(-11.4, -23.5, 2.6);
-  ctx.fillStyle = GC.ink; circ(0, -29.6, 3.3); ctx.fillStyle = '#e8322b'; circ(-0.9, -29.4, 2); circ(0.9, -29.4, 2);
-  ctx.fillStyle = '#4caf50'; ell(1.6, -32, 1.6, 0.8, -0.5);
+  if (GC.kiwi) { // Kiwi: een kiwischijfje als speld
+    ctx.fillStyle = GC.ink; circ(0, -29.6, 3.9); ctx.fillStyle = '#7a5230'; circ(0, -29.6, 3.1);
+    ctx.fillStyle = '#8cc63f'; circ(0, -29.6, 2.5); ctx.fillStyle = '#f4f1c8'; circ(0, -29.6, 0.9);
+    ctx.fillStyle = '#1b1b1b'; for (let i = 0; i < 6; i++) circ(Math.cos(i * 1.05) * 1.6, -29.6 + Math.sin(i * 1.05) * 1.6, 0.35);
+  } else {
+    ctx.fillStyle = GC.ink; circ(0, -29.6, 3.3); ctx.fillStyle = '#e8322b'; circ(-0.9, -29.4, 2); circ(0.9, -29.4, 2);
+    ctx.fillStyle = '#4caf50'; ell(1.6, -32, 1.6, 0.8, -0.5);
+  }
   ctx.restore();
 }
 function drawParrot() {
@@ -3722,20 +3773,36 @@ function renderScene() {
   if (clip) { if (game.mp) drawLocalHud(); mainCtx.restore(); }
 }
 // =====================================================================
-//  Multiplayer
-//  Twee spelers verbinden direct met elkaar (WebRTC). Er is geen server nodig: de host maakt een
-//  uitnodigingscode, de ander een antwoordcode, en die wisselen ze via bijv. WhatsApp uit.
-//  Beide spelers krijgen dezelfde seed en dus precies dezelfde wereld. Iedereen simuleert zijn
-//  eigen Andy en stuurt 20× per seconde zijn positie; de tegenstander wordt als tweede gorilla getekend.
+//  Multiplayer (online): lobbies voor 2 tot 20 spelers
+//  Het netwerk is een ster: elke gast heeft één directe WebRTC-verbinding met de host, en de host
+//  stuurt de standen van iedereen door naar de rest. Iedereen speelt in precies dezelfde wereld
+//  (dezelfde seed), simuleert zijn eigen Andy en stuurt zijn positie; de anderen worden als extra
+//  gorilla's getekend. Supabase (optioneel) wordt alleen gebruikt om lobbies te vinden en om de
+//  verbinding op te zetten; zonder Supabase kun je nog met z'n tweeën handmatig codes uitwisselen.
 // =====================================================================
 const MP_NAME_KEY = 'andyApples.name';
 const MP_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
-const MP = { pc: null, dc: null, sig: null, lobby: null, joinId: null, peerId: null, hostId: null, iceQ: [], manual: false, joinTimer: 0, role: null, connected: false, busy: false, local: false, oppName: 'Tegenstander',
-  sel: { mode: 'race', len: 1000 }, cfg: null, match: null, snaps: [], rt: null, ghost: null,
-  lastMsg: 0, sendAcc: 0, again: false, oppAgain: false, score: { me: 0, opp: 0 }, hideTimer: 0 };
+const MP_MAX = 20;          // maximaal aantal spelers in een lobby (host meegeteld)
+const RACE_GRACE = 20;      // race: na de eerste finish krijgen de anderen nog zoveel seconden (bij 3+ spelers)
+const randHex = n => { const b = new Uint8Array(n); try { crypto.getRandomValues(b); } catch (e) { for (let i = 0; i < n; i++) b[i] = Math.random() * 256; } return Array.from(b, x => x.toString(16).padStart(2, '0')).join(''); };
+const CLIENT_ID = randHex(8); // per tabblad: wie is wie
+const MP = { role: null, manual: false, busy: false, local: false, aiLvl: null, inRoom: false, myId: CLIENT_ID,
+  links: new Map(),   // host: id -> verbinding met een gast
+  link: null,         // gast: verbinding met de host
+  players: new Map(), // alle andere spelers in de lobby: id -> speler
+  hostName: '', hostSig: null, sig: null, lobby: null, joinId: null, joinTimer: 0, manLink: null,
+  sel: { mode: 'race', len: 1000 }, cfg: null, match: null, sendAcc: 0, hideTimer: 0, wins: 0, games: 0 };
 let ghostPin = { v: null, k: 0, x: 0, y: 0 };
 const GC1 = GC;
 const GC2 = Object.assign({}, GC, { band: '#2f7fe0', bandD: '#17498f', fur: '#4a3a30', furD: '#30251d', furL: '#7a6452' });
+// Kiwi (de AI-tegenstander): een oranje orang-oetan met groene bandana en een kiwischijfje
+const GCK = Object.assign({}, GC, { kiwi: true, fur: '#b5561d', furD: '#7f3a12', furL: '#e8894a', skin: '#e9c39b', skinD: '#c0936c', band: '#4caf2e', bandD: '#2c6e18', cape: '#4caf2e', capeD: '#2c6e18' });
+const oppPal = () => LOCAL.ai ? GCK : GC2;
+// elke online speler krijgt een eigen bandanakleur (rood is voor jezelf)
+const MP_COLS = ['#2f7fe0', '#8e44ad', '#16a085', '#f39c12', '#e84393', '#00a8b5', '#6c5ce7', '#27ae60', '#d35400', '#34495e', '#c0392b', '#1abc9c', '#9b59b6', '#f1c40f', '#2980b9', '#e67e22', '#7f8c8d', '#ff6b81', '#10ac84', '#5f27cd'];
+const colorOf = id => { let h = 0; for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0; return MP_COLS[h % MP_COLS.length]; };
+const palCache = new Map();
+const palOf = col => { let p = palCache.get(col); if (!p) { p = Object.assign({}, GC2, { band: col, bandD: shade(col, -0.35) }); palCache.set(col, p); } return p; };
 const cleanName = n => String(n || '').replace(/[<>&"]/g, '').trim().slice(0, 12);
 function myName() { let n = ''; try { n = localStorage.getItem(MP_NAME_KEY) || ''; } catch (e) { /* geen opslag */ } return cleanName(n) || 'Andy'; }
 const escHtml = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -3777,128 +3844,162 @@ function waitIce(pc) {
   });
 }
 
-// ---- verbinding ----
-function mpNewPc() {
+// ---- verbindingen ----
+// Een "link" is één WebRTC-verbinding: bij de host één per gast, bij een gast alleen die met de host.
+function newLink(id, name) { return { id, name: name || 'Speler', pc: null, dc: null, open: false, iceQ: [], lastMsg: performance.now(), timer: 0 }; }
+function linkPc(link, onIce) {
   if (typeof RTCPeerConnection !== 'function') throw new Error('Deze browser ondersteunt geen multiplayer (WebRTC).');
   const pc = new RTCPeerConnection({ iceServers: MP_ICE });
-  MP.pc = pc;
+  link.pc = pc;
+  if (onIce) pc.onicecandidate = e => { if (e.candidate) onIce(e.candidate.toJSON()); };
   pc.addEventListener('connectionstatechange', () => {
-    if (MP.pc !== pc) return;
-    if (pc.connectionState === 'failed' && MP.role === 'host' && !MP.manual && !MP.connected) { hostReset(); mpMsg('Verbinden met die speler lukte niet. Je lobby staat weer open.', false); }
-    else if (pc.connectionState === 'failed') mpLost(MP.connected ? 'De verbinding is weggevallen.' : 'Verbinden is mislukt. Tip: zet beide apparaten op hetzelfde wifi-netwerk en probeer het opnieuw.');
-    else if (pc.connectionState === 'connecting') mpRender();
+    if (pc.connectionState === 'failed') linkDown(link, link.open ? 'De verbinding is weggevallen.' : 'Verbinden is mislukt. Tip: zet de apparaten op hetzelfde wifi-netwerk en probeer het opnieuw.');
   });
   return pc;
 }
-function mpOpened() {
-  clearTimeout(MP.joinTimer);
-  sigClose();
-  MP.connected = true; MP.lastMsg = performance.now(); MP.score = { me: 0, opp: 0 };
-  mpSend({ type: 'hello', name: myName() });
-  if (MP.role === 'host') mpSend({ type: 'lobby', mode: MP.sel.mode, len: MP.sel.len });
-  mpMsg('');
-  Sfx.buy();
-  lobbyTrack(); // de lobby is vol: uit de lijst halen
+function bindDc(link, dc) {
+  link.dc = dc;
+  dc.onopen = () => linkUp(link);
+  dc.onclose = () => linkDown(link, 'De verbinding is verbroken.');
+  dc.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (x) { return; } link.lastMsg = performance.now(); onLinkMsg(link, m); };
+}
+function addIce(link, c) {
+  if (!link || !c) return;
+  if (link.pc && link.pc.remoteDescription) link.pc.addIceCandidate(c).catch(() => { /* ongeldige kandidaat */ });
+  else link.iceQ.push(c);
+}
+function flushIce(link) { const q = link.iceQ.splice(0); for (const c of q) addIce(link, c); }
+function closeLink(link, delay) {
+  clearTimeout(link.timer);
+  const { pc, dc } = link;
+  link.open = false; link.pc = null; link.dc = null;
+  setTimeout(() => { try { if (dc) dc.close(); } catch (e) { /* */ } try { if (pc) pc.close(); } catch (e) { /* */ } }, delay || 0);
+}
+function sendLink(link, m) { const dc = link && link.dc; if (dc && dc.readyState === 'open') { try { dc.send(typeof m === 'string' ? m : JSON.stringify(m)); } catch (e) { /* negeren */ } } }
+// host: naar alle gasten (behalve "except"); gast: naar de host
+function mpSend(m, except) {
+  if (MP.role === 'host') { const t = JSON.stringify(m); for (const l of MP.links.values()) if (l.open && l !== except) sendLink(l, t); }
+  else if (MP.link) sendLink(MP.link, m);
+}
+const openLinks = () => [...MP.links.values()].filter(l => l.open);
+function linkUp(link) {
+  link.open = true; link.lastMsg = performance.now();
+  clearTimeout(link.timer);
+  if (MP.role === 'host') {
+    MP.inRoom = true; MP.busy = false;
+    playerFor(link.id, link.name).inRoster = true;
+    const M = MP.match;
+    sendLink(link, { type: 'welcome', you: link.id, host: MP.myId, hostName: myName(), mode: MP.sel.mode, len: MP.sel.len, playing: M && !M.result ? 1 : 0 });
+    rosterSend(); lobbyTrack();
+    Sfx.buy();
+  } else if (link === MP.link) {
+    clearTimeout(MP.joinTimer);
+    sigClose();
+    sendLink(link, { type: 'hello', name: myName() });
+  }
   mpRender();
 }
-function mpData(text) { let m; try { m = JSON.parse(text); } catch (err) { return; } mpOnMsg(m); }
-function mpSetupDc(dc) {
-  MP.dc = dc;
-  dc.onopen = () => { if (MP.dc === dc) mpOpened(); };
-  dc.onclose = () => { if (MP.dc === dc) mpLost('De verbinding is verbroken.'); };
-  dc.onmessage = e => { if (MP.dc === dc) mpData(e.data); };
+function linkDown(link, reason) {
+  if (MP.role === 'host') {
+    if (MP.links.get(link.id) !== link) return;
+    MP.links.delete(link.id);
+    closeLink(link);
+    if (link === MP.manLink) MP.manLink = null;
+    const P = MP.players.get(link.id);
+    if (P) {
+      P.inRoster = false;
+      const M = MP.match;
+      if (M && !M.result && M.ids.includes(P.id)) { P.left = true; showBanner(`${P.name} is weg`, ''); mpCheck(); }
+      else MP.players.delete(P.id);
+    }
+    if (!MP.lobby && !MP.links.size) { mpLost(reason || 'De andere speler is weg.'); return; } // handmatig: alleen die ene gast
+    rosterSend(); lobbyTrack(); mpRender();
+  } else if (link === MP.link) mpLost(MP.inRoom ? 'De verbinding met de host is weg.' : reason);
 }
-function mpSend(m) { const dc = MP.dc; if (dc && dc.readyState === 'open') { try { dc.send(JSON.stringify(m)); } catch (e) { /* negeren */ } } }
-function mpClose(sayBye) {
-  if (sayBye) mpSend({ type: 'bye' });
-  const pc = MP.pc, dc = MP.dc;
-  MP.pc = null; MP.dc = null; MP.connected = false; MP.role = null; MP.busy = false; MP.manual = false;
-  MP.lobby = null; MP.joinId = null; MP.peerId = null; MP.hostId = null; MP.iceQ = [];
-  MP.again = MP.oppAgain = false;
-  clearTimeout(MP.joinTimer);
-  sigClose();
-  lobbyTrack();
-  // het afsluiten iets uitstellen, zodat het "bye"-bericht nog weg kan
-  setTimeout(() => { try { if (dc) dc.close(); } catch (e) { /* */ } try { if (pc) pc.close(); } catch (e) { /* */ } }, sayBye ? 300 : 0);
+
+// ---- spelers ----
+function playerFor(id, name) {
+  let P = MP.players.get(id);
+  if (!P) { P = { id, name: 'Speler', col: colorOf(id), snaps: [], rt: null, ghost: null, t: 0, dist: 0, apples: 0, falls: 0, ev: null, left: false, inRoster: true, lastMsg: performance.now() }; MP.players.set(id, P); }
+  if (name) P.name = cleanName(name) || P.name;
+  return P;
 }
-const mpActive = () => !!(MP.pc || MP.dc || MP.sig);
-// verbinding kwijt: tijdens een potje eindigt dat zonder winnaar
-function mpLost(reason) {
-  const wasConnected = MP.connected || MP.role;
-  mpClose(false);
-  const M = MP.match;
-  if (M && !M.result && game.mp === M) mpEnd('conn', reason);
-  else if (curScreen === 'mpRes') { $('btnMpAgain').disabled = true; $('btnMpAgain').textContent = 'Verbinding verbroken'; }
-  if (wasConnected) mpMsg(reason, false);
+// host: de lijst met spelers naar iedereen sturen
+function rosterSend() {
+  if (MP.role !== 'host') return;
+  const list = [{ id: MP.myId, name: myName(), host: 1 }].concat(openLinks().map(l => ({ id: l.id, name: MP.players.has(l.id) ? MP.players.get(l.id).name : l.name })));
+  mpSend({ type: 'roster', list });
+}
+// gast: de lijst van de host overnemen
+function applyRoster(list) {
+  if (!Array.isArray(list)) return;
+  const ids = new Set(), M = MP.match;
+  for (const r of list) {
+    if (!r || typeof r.id !== 'string') continue;
+    ids.add(r.id);
+    if (r.host) MP.hostName = cleanName(r.name) || MP.hostName;
+    if (r.id === MP.myId) continue;
+    const P = playerFor(r.id, r.name); P.inRoster = true; P.host = !!r.host;
+  }
+  for (const P of [...MP.players.values()]) {
+    if (ids.has(P.id)) continue;
+    P.inRoster = false;
+    if (M && !M.result && M.ids.includes(P.id)) { if (!P.left) { P.left = true; showBanner(`${P.name} is weg`, ''); } mpCheck(); }
+    else MP.players.delete(P.id);
+  }
   mpRender();
 }
-async function mpHost() {
-  if (MP.busy) return;
-  mpClose(false);
-  MP.role = 'host'; MP.busy = true; MP.manual = true;
-  $('mpManual').open = true;
-  $('mpOffer').value = ''; $('mpAnswerIn').value = ''; $('btnMpCopyOffer').disabled = true;
-  mpMsg(''); mpRender();
-  try {
-    const pc = mpNewPc();
-    mpSetupDc(pc.createDataChannel('andy', { ordered: true }));
-    await pc.setLocalDescription(await pc.createOffer());
-    await waitIce(pc);
-    if (MP.pc !== pc) return;
-    $('mpOffer').value = await packCode(pc.localDescription);
-    $('btnMpCopyOffer').disabled = false;
-  } catch (e) { mpClose(false); mpMsg('Hosten mislukt: ' + e.message, false); }
-  MP.busy = false; mpRender();
+const roomCount = () => 1 + [...MP.players.values()].filter(P => P.inRoster).length;
+
+// ---- berichten ----
+function onLinkMsg(link, m) {
+  if (!m || typeof m.type !== 'string') return;
+  if (MP.role === 'host') {
+    if (!MP.links.has(link.id)) return;
+    switch (m.type) {
+      case 'hello': link.name = cleanName(m.name) || 'Speler'; playerFor(link.id, link.name); rosterSend(); lobbyTrack(); mpRender(); break;
+      case 's': case 'ev': case 'quit':
+        onPlayerMsg(link.id, m);
+        mpSend(Object.assign({}, m, { from: link.id }), link); // doorsturen naar de rest
+        break;
+      case 'bye': linkDown(link, ''); break;
+    }
+    return;
+  }
+  if (link !== MP.link) return;
+  switch (m.type) {
+    case 'welcome':
+      MP.myId = String(m.you || CLIENT_ID); MP.hostName = cleanName(m.hostName) || MP.hostName || 'Host';
+      MP.inRoom = true; MP.busy = false;
+      if (m.mode) MP.sel = { mode: m.mode === 'endurance' ? 'endurance' : 'race', len: [500, 1000, 2000].includes(m.len) ? m.len : 1000 };
+      mpMsg(m.playing ? 'Er loopt nog een potje. Je doet mee in de volgende ronde.' : '', true);
+      Sfx.buy(); mpRender();
+      break;
+    case 'roster': applyRoster(m.list); break;
+    case 'lobby': MP.sel = { mode: m.mode === 'endurance' ? 'endurance' : 'race', len: [500, 1000, 2000].includes(m.len) ? m.len : 1000 }; mpRender(); break;
+    case 'start': if (Array.isArray(m.ids) && m.ids.includes(MP.myId)) mpStartMatch(m); break;
+    case 's': case 'ev': case 'quit': if (typeof m.from === 'string') onPlayerMsg(m.from, m); break;
+    case 'full': mpJoinFail('Deze lobby is vol.'); break;
+    case 'bye': mpLost('De host heeft de lobby gesloten.'); break;
+  }
 }
-async function mpConnect() {
-  const pc = MP.pc;
-  if (!pc || MP.role !== 'host') return;
-  try {
-    const d = await unpackCode($('mpAnswerIn').value);
-    if (d.type !== 'answer') throw new Error('Dit is een uitnodigingscode. Je hebt de ANTWOORDcode van je vriend nodig.');
-    if (pc.signalingState !== 'have-local-offer') throw new Error('Deze uitnodiging is al gebruikt. Klik op Opnieuw.');
-    await pc.setRemoteDescription(d);
-    mpMsg('Verbinden…', true);
-    mpRender();
-  } catch (e) { mpMsg(e.message, false); }
-}
-function mpJoinStart() {
-  mpClose(false); MP.role = 'guest'; MP.manual = true;
-  $('mpOfferIn').value = ''; $('mpAnswer').value = '';
-  mpMsg(''); mpRender();
-  setTimeout(() => $('mpOfferIn').focus(), 50);
-}
-async function mpMakeAnswer() {
-  if (MP.busy) return;
-  let d;
-  try {
-    d = await unpackCode($('mpOfferIn').value);
-    if (d.type !== 'offer') throw new Error('Dit is een antwoordcode. Je hebt de UITNODIGINGScode van de host nodig.');
-  } catch (e) { mpMsg(e.message, false); return; }
-  mpClose(false);
-  MP.role = 'guest'; MP.busy = true; MP.manual = true;
-  $('mpAnswer').value = ''; $('btnMpCopyAnswer').disabled = true;
-  mpMsg(''); mpRender();
-  try {
-    const pc = mpNewPc();
-    pc.ondatachannel = e => mpSetupDc(e.channel);
-    await pc.setRemoteDescription(d);
-    await pc.setLocalDescription(await pc.createAnswer());
-    await waitIce(pc);
-    if (MP.pc !== pc) return;
-    $('mpAnswer').value = await packCode(pc.localDescription);
-    $('btnMpCopyAnswer').disabled = false;
-  } catch (e) { mpClose(false); MP.role = 'guest'; mpMsg('Antwoordcode maken mislukt: ' + e.message, false); }
-  MP.busy = false; mpRender();
-}
-function mpCopy(id) {
-  const ta = $(id), code = ta.value;
-  if (!code) return;
-  ta.focus(); ta.select();
-  const done = () => mpMsg('✔ Gekopieerd! Plak de code in een bericht aan je vriend.', true);
-  if (IN_APP) { AndroidBridge.copy(code); done(); }
-  else if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, () => { try { document.execCommand('copy'); done(); } catch (e) { mpMsg('Selecteer en kopieer de code handmatig.', true); } });
-  else { try { document.execCommand('copy'); done(); } catch (e) { mpMsg('Selecteer en kopieer de code handmatig.', true); } }
+function onPlayerMsg(id, m) {
+  const M = MP.match, P = MP.players.get(id);
+  if (!P) return;
+  P.lastMsg = performance.now();
+  if (!M || m.id !== M.seed || !M.ids.includes(id)) return;
+  if (m.type === 's') {
+    P.snaps.push(m); if (P.snaps.length > 40) P.snaps.shift();
+    P.t = Math.max(P.t, +m.t || 0); P.dist = +m.d || 0; P.apples = m.ap | 0; P.falls = m.f | 0;
+  } else if (m.type === 'ev') {
+    if (P.ev) return;
+    P.ev = { t: +m.t || 0, d: +m.d || 0 };
+    if (!M.result && game.mode === 'playing' && !M.myEv) {
+      if (M.mode === 'race' && !opps(M).some(o => o !== P && o.ev)) showBanner(`${P.name} is bij de finish!`, 'Snel!');
+      else if (M.mode === 'endurance') showBanner(`${P.name} is af!`, '');
+    }
+  } else if (m.type === 'quit') P.left = true;
+  mpCheck();
 }
 
 // ---- Supabase (optioneel): één client voor accounts, lobbies en de ranglijst ----
@@ -3925,16 +4026,15 @@ function getSb() {
   })();
   return sbLoading;
 }
-const randHex = n => { const b = new Uint8Array(n); try { crypto.getRandomValues(b); } catch (e) { for (let i = 0; i < n; i++) b[i] = Math.random() * 256; } return Array.from(b, x => x.toString(16).padStart(2, '0')).join(''); };
-const CLIENT_ID = randHex(8); // per tabblad: wie is wie in een lobby
 
-// ---- Lobbies (Supabase Realtime) ----
-// Iedereen in het multiplayermenu luistert naar het kanaal "andy-lobbies". Wie een lobby maakt, meldt
-// zich daar aan (presence) en verschijnt zo in de lijst van de anderen. Wie op Meedoen klikt, stuurt via
-// het kanaal van die lobby een verzoek; de twee browsers wisselen daar hun WebRTC-gegevens uit en
-// verbinden daarna direct met elkaar. De server ziet dus alleen het opzetten, niet het spel zelf.
-const LOBBY = { ch: null, status: 'off', list: [], tracked: false };
-function lobbyInfo() { return { lobby: MP.lobby.id, name: myName(), ts: MP.lobby.ts, v: 1 }; }
+// ---- Lobbylijst (Supabase Realtime presence) ----
+// Iedereen in het multiplayermenu luistert naar het kanaal "andy-lobbies". Een host meldt zijn lobby
+// daar aan (naam, aantal spelers, modus) en verschijnt zo in de lijst van de anderen.
+const LOBBY = { ch: null, status: 'off', list: [], tracked: false, ready: null };
+function lobbyInfo() {
+  const M = MP.match;
+  return { lobby: MP.lobby.id, name: myName(), n: roomCount(), max: MP_MAX, mode: MP.sel.mode, st: M && !M.result ? 1 : 0, ts: MP.lobby.ts, v: 2 };
+}
 function lobbyWatch() {
   if (!sbOn()) { LOBBY.status = 'off'; lobbyRender(); return Promise.resolve(false); }
   if (LOBBY.ch) return LOBBY.ready || Promise.resolve(LOBBY.status === 'on');
@@ -3950,15 +4050,18 @@ function lobbyWatch() {
       const st = ch.presenceState(), seen = new Set(), list = [];
       for (const k in st) {
         if (k === CLIENT_ID) continue;
-        for (const p of st[k]) if (p && typeof p.lobby === 'string' && !seen.has(p.lobby)) { seen.add(p.lobby); list.push({ id: p.lobby, name: cleanName(p.name) || 'Andy', ts: +p.ts || 0 }); }
+        for (const p of st[k]) if (p && typeof p.lobby === 'string' && !seen.has(p.lobby)) {
+          seen.add(p.lobby);
+          list.push({ id: p.lobby, name: cleanName(p.name) || 'Andy', n: clamp(p.n | 0 || 1, 1, MP_MAX), max: clamp(p.max | 0 || 2, 2, MP_MAX), mode: p.mode === 'endurance' ? 'endurance' : 'race', st: !!p.st, ts: +p.ts || 0 });
+        }
       }
-      LOBBY.list = list.sort((x, y) => y.ts - x.ts);
+      LOBBY.list = list.sort((x, y) => (x.n >= x.max) - (y.n >= y.max) || y.n - x.n || y.ts - x.ts);
       lobbyRender();
     });
     return new Promise(res => {
       ch.subscribe(status => {
         if (LOBBY.ch !== ch) return;
-        if (status === 'SUBSCRIBED') { LOBBY.status = 'on'; lobbyTrack(); res(true); }
+        if (status === 'SUBSCRIBED') { LOBBY.status = 'on'; LOBBY.tracked = false; lobbyTrack(); res(true); }
         else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') { LOBBY.status = 'err'; LOBBY.tracked = false; res(false); }
         lobbyRender();
       });
@@ -3971,9 +4074,9 @@ function lobbyUnwatch() {
   LOBBY.ch = null; LOBBY.ready = null; LOBBY.list = []; LOBBY.status = 'off'; LOBBY.tracked = false;
   if (ch && sbClient) { try { sbClient.removeChannel(ch); } catch (e) { /* */ } }
 }
-// eigen lobby aan- of afmelden in de lijst (alleen zolang je als host op een speler wacht)
+// eigen lobby aan-, bij- of afmelden in de lijst
 function lobbyTrack() {
-  const ch = LOBBY.ch, want = !!(MP.lobby && MP.role === 'host' && !MP.connected);
+  const ch = LOBBY.ch, want = !!(MP.lobby && MP.role === 'host');
   if (!ch || LOBBY.status !== 'on') return;
   if (want) { LOBBY.tracked = true; ch.track(lobbyInfo()).catch(() => { /* */ }); }
   else if (LOBBY.tracked) { LOBBY.tracked = false; ch.untrack().catch(() => { /* */ }); }
@@ -3982,12 +4085,16 @@ function lobbyRender() {
   const ul = $('mpLobbies');
   if (!ul) return;
   const empty = t => `<li class="empty">${t}</li>`;
-  if (!sbOn()) ul.innerHTML = empty('Online lobbies zijn nog niet ingesteld. Speel op één scherm of verbind handmatig.');
-  else if (LOBBY.status === 'loading' || LOBBY.status === 'off') ul.innerHTML = empty('Laden…');
+  if (!sbOn()) ul.innerHTML = empty('Online lobbies zijn nog niet ingesteld. Speel op dit apparaat of verbind handmatig.');
+  else if (LOBBY.status === 'loading' || LOBBY.status === 'off') ul.innerHTML = empty('Lobbies zoeken…');
   else if (LOBBY.status === 'err') ul.innerHTML = empty('Geen verbinding met de server. Heb je internet?');
   else if (!LOBBY.list.length) ul.innerHTML = empty('Nog geen open lobbies. Maak er zelf een!');
   else {
-    ul.innerHTML = LOBBY.list.map(l => `<li><span>${escHtml(l.name)} <small>zoekt een tegenstander</small></span><button class="btn green" data-lobby="${escHtml(l.id)}">Meedoen</button></li>`).join('');
+    ul.innerHTML = LOBBY.list.map(l => {
+      const full = l.n >= l.max;
+      return `<li><span>${escHtml(l.name)} <small>${l.n}/${l.max} · ${l.mode === 'race' ? 'Race' : 'Endurance'}${l.st ? ' · bezig' : ''}</small></span>` +
+        `<button class="btn green sm" data-lobby="${escHtml(l.id)}"${full ? ' disabled' : ''}>${full ? 'Vol' : 'Meedoen'}</button></li>`;
+    }).join('');
     for (const bt of ul.querySelectorAll('button')) on(bt, () => { const l = LOBBY.list.find(x => x.id === bt.dataset.lobby); mpLobbyJoin(bt.dataset.lobby, l && l.name); });
   }
   $('btnMpHost').disabled = !sbOn() || LOBBY.status !== 'on';
@@ -4015,75 +4122,58 @@ function sigSend(m) {
   const ch = MP.sig;
   if (ch) ch.send({ type: 'broadcast', event: 'sig', payload: Object.assign({ from: CLIENT_ID }, m) }).catch(() => { /* */ });
 }
-function addIce(c) {
-  const pc = MP.pc;
-  if (!c) return;
-  if (pc && pc.remoteDescription) pc.addIceCandidate(c).catch(() => { /* ongeldige kandidaat: negeren */ });
-  else MP.iceQ.push(c);
-}
-function flushIce() { const q = MP.iceQ.splice(0); for (const c of q) addIce(c); }
-function mpPc(to) {
-  const pc = mpNewPc();
-  MP.iceQ = [];
-  pc.onicecandidate = e => { if (e.candidate && MP.pc === pc) sigSend({ t: 'ice', to, c: e.candidate.toJSON() }); };
-  return pc;
-}
-// host: een speler wil meedoen
+// host: iemand wil meedoen -> een eigen verbinding voor die speler opzetten
 async function hostAccept(from, name) {
-  MP.peerId = from; MP.oppName = cleanName(name) || 'Tegenstander';
-  clearTimeout(MP.joinTimer);
-  // lukt het niet binnen 20 s, dan staat de lobby weer open voor een ander
-  MP.joinTimer = setTimeout(() => { if (MP.role === 'host' && !MP.connected && MP.peerId === from) hostReset(); }, 20000);
+  const link = newLink(from, cleanName(name) || 'Speler');
+  MP.links.set(from, link);
+  link.timer = setTimeout(() => { if (!link.open) linkDown(link, ''); }, 20000); // lukt het niet: plek weer vrij
   try {
-    const pc = mpPc(from);
-    mpSetupDc(pc.createDataChannel('andy', { ordered: true }));
+    const pc = linkPc(link, c => sigSend({ t: 'ice', to: from, c }));
+    bindDc(link, pc.createDataChannel('andy', { ordered: true }));
     await pc.setLocalDescription(await pc.createOffer());
-    if (MP.pc === pc) sigSend({ t: 'offer', to: from, sdp: pc.localDescription.sdp });
-  } catch (e) { hostReset(); }
-  mpRender();
-}
-function hostReset() {
-  const pc = MP.pc, dc = MP.dc;
-  MP.pc = null; MP.dc = null; MP.peerId = null; MP.iceQ = [];
-  try { if (dc) dc.close(); } catch (e) { /* */ } try { if (pc) pc.close(); } catch (e) { /* */ }
+    if (link.pc === pc) sigSend({ t: 'offer', to: from, sdp: pc.localDescription.sdp });
+  } catch (e) { linkDown(link, ''); }
   mpRender();
 }
 // gast: de host stuurt zijn aanbod
 async function guestOffer(m) {
-  if (MP.pc) return;
-  MP.hostId = m.from;
-  const id = MP.joinId;
+  if (MP.link) return;
+  MP.hostSig = m.from;
+  const link = MP.link = newLink('host', MP.hostName), id = MP.joinId;
   clearTimeout(MP.joinTimer);
-  MP.joinTimer = setTimeout(() => { if (MP.joinId === id && !MP.connected) mpJoinFail('Verbinden is mislukt. Tip: zet beide apparaten op hetzelfde wifi-netwerk.'); }, 20000);
+  MP.joinTimer = setTimeout(() => { if (MP.joinId === id && !MP.inRoom) mpJoinFail('Verbinden is mislukt. Tip: zet de apparaten op hetzelfde wifi-netwerk.'); }, 20000);
   try {
-    const pc = mpPc(m.from);
-    pc.ondatachannel = e => mpSetupDc(e.channel);
+    const pc = linkPc(link, c => sigSend({ t: 'ice', to: m.from, c }));
+    pc.ondatachannel = e => bindDc(link, e.channel);
     await pc.setRemoteDescription({ type: 'offer', sdp: m.sdp });
-    flushIce();
+    flushIce(link);
     await pc.setLocalDescription(await pc.createAnswer());
-    if (MP.pc === pc) sigSend({ t: 'answer', to: m.from, sdp: pc.localDescription.sdp });
+    if (MP.link === link) sigSend({ t: 'answer', to: m.from, sdp: pc.localDescription.sdp });
   } catch (e) { mpJoinFail('Verbinden is mislukt.'); }
+  mpRender();
 }
 function sigOnMsg(m) {
   if (!m || typeof m.from !== 'string' || (m.to && m.to !== CLIENT_ID)) return;
-  if (MP.role === 'host' && !MP.manual) {
+  if (MP.role === 'host' && MP.lobby) {
+    const link = MP.links.get(m.from);
     if (m.t === 'join') {
-      if (MP.connected || (MP.peerId && MP.peerId !== m.from)) { sigSend({ t: 'full', to: m.from }); return; }
-      if (MP.peerId !== m.from) hostAccept(m.from, m.name);
-    } else if (m.from !== MP.peerId || !MP.pc) return;
-    else if (m.t === 'answer' && typeof m.sdp === 'string') MP.pc.setRemoteDescription({ type: 'answer', sdp: m.sdp }).then(flushIce, () => hostReset());
-    else if (m.t === 'ice') addIce(m.c);
+      if (link) return; // al bezig
+      if (roomCount() + [...MP.links.values()].filter(l => !l.open).length >= MP_MAX) { sigSend({ t: 'full', to: m.from }); return; }
+      hostAccept(m.from, m.name);
+    } else if (!link || !link.pc) return;
+    else if (m.t === 'answer' && typeof m.sdp === 'string') link.pc.setRemoteDescription({ type: 'answer', sdp: m.sdp }).then(() => flushIce(link), () => linkDown(link, ''));
+    else if (m.t === 'ice') addIce(link, m.c);
   } else if (MP.role === 'guest' && !MP.manual) {
-    if (MP.hostId && m.from !== MP.hostId) return;
-    if (m.t === 'full') mpJoinFail('Deze lobby is al vol.');
+    if (MP.hostSig && m.from !== MP.hostSig) return;
+    if (m.t === 'full') mpJoinFail('Deze lobby is vol.');
     else if (m.t === 'offer' && typeof m.sdp === 'string') guestOffer(m);
-    else if (m.t === 'ice') addIce(m.c);
+    else if (m.t === 'ice') addIce(MP.link, m.c);
   }
 }
 async function mpLobbyHost() {
   if (MP.busy) return;
   mpClose(false);
-  MP.role = 'host'; MP.manual = false; MP.busy = true; MP.lobby = { id: randHex(5), ts: Date.now() };
+  MP.role = 'host'; MP.busy = true; MP.lobby = { id: randHex(5), ts: Date.now() };
   const id = MP.lobby.id;
   mpMsg(''); mpRender();
   try {
@@ -4091,20 +4181,20 @@ async function mpLobbyHost() {
     await sigOpen(id);
   } catch (e) { if (MP.lobby && MP.lobby.id === id) { mpClose(false); mpMsg(e.message, false); } mpRender(); return; }
   if (!MP.lobby || MP.lobby.id !== id) return;
-  MP.busy = false;
+  MP.busy = false; MP.inRoom = true;
   lobbyTrack();
   mpRender();
 }
 async function mpLobbyJoin(id, name) {
   if (!/^[0-9a-f]{6,16}$/.test(id || '')) return;
   mpClose(false);
-  MP.role = 'guest'; MP.manual = false; MP.busy = true; MP.joinId = id; MP.hostId = null; MP.oppName = cleanName(name) || 'Tegenstander';
+  MP.role = 'guest'; MP.busy = true; MP.joinId = id; MP.hostName = cleanName(name) || 'de host';
   mpMsg(''); mpRender();
   try { await sigOpen(id); } catch (e) { if (MP.joinId === id) mpJoinFail(e.message); return; }
   if (MP.joinId !== id) return;
   sigSend({ t: 'join', name: myName() });
-  // geen antwoord binnen 8 s: de lobby is gesloten of al vol (daarna krijgt het verbinden zelf 20 s)
-  MP.joinTimer = setTimeout(() => { if (MP.joinId === id && !MP.connected && !MP.pc) mpJoinFail('Deze lobby is niet meer beschikbaar.'); }, 8000);
+  // geen antwoord binnen 8 s: de lobby is gesloten (daarna krijgt het verbinden zelf 20 s)
+  MP.joinTimer = setTimeout(() => { if (MP.joinId === id && !MP.inRoom && !MP.link) mpJoinFail('Deze lobby is niet meer beschikbaar.'); }, 8000);
 }
 function mpJoinFail(msg) { mpClose(false); mpMsg(msg, false); mpRender(); }
 function mpInviteLink() {
@@ -4113,84 +4203,163 @@ function mpInviteLink() {
 }
 function mpShare() {
   const link = mpInviteLink();
-  if (!link) { mpMsg('Vraag je vriend om je lobby in de lijst te kiezen.', true); return; }
-  const text = `Speel Andy Apples tegen mij! ${link}`;
-  const done = () => mpMsg('Uitnodiging gekopieerd. Plak hem in een bericht aan je vriend.', true);
+  if (!link) { mpMsg('Vraag je vrienden om je lobby in de lijst te kiezen.', true); return; }
+  const text = `Speel Andy Apples met mij! ${link}`;
+  const done = () => mpMsg('Uitnodiging gekopieerd. Plak hem in een bericht.', true);
   if (IN_APP) { AndroidBridge.copy(text); done(); return; }
-  if (navigator.share && IS_MOBILE) { navigator.share({ title: 'Andy Apples', text: 'Speel Andy Apples tegen mij!', url: link }).catch(() => { /* geannuleerd */ }); return; }
+  if (navigator.share && IS_MOBILE) { navigator.share({ title: 'Andy Apples', text: 'Speel Andy Apples met mij!', url: link }).catch(() => { /* geannuleerd */ }); return; }
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, () => mpMsg(link, true));
   else mpMsg(link, true);
 }
 
-// ---- berichten ----
-function mpOnMsg(m) {
-  MP.lastMsg = performance.now();
-  const M = MP.match, cur = M && m.id === M.seed;
-  switch (m.type) {
-    case 'hello': MP.oppName = cleanName(m.name) || 'Tegenstander'; mpRender(); break;
-    case 'lobby': if (MP.role === 'guest') { MP.sel = { mode: m.mode === 'endurance' ? 'endurance' : 'race', len: [500, 1000, 2000].includes(m.len) ? m.len : 1000 }; mpRender(); } break;
-    case 'start': if (MP.role === 'guest') mpStartMatch(m); break;
-    case 's':
-      if (!cur) break;
-      MP.snaps.push(m); if (MP.snaps.length > 40) MP.snaps.shift();
-      M.oppT = Math.max(M.oppT, m.t || 0); M.oppDist = m.d || 0; M.oppApples = m.ap || 0; M.oppFalls = m.f || 0;
-      mpCheck();
-      break;
-    case 'ev':
-      if (!cur || M.oppEv) break;
-      M.oppEv = { t: m.t, d: m.d };
-      if (!M.result && game.mode === 'playing') {
-        if (M.mode === 'race') showBanner(`${MP.oppName} is bij de finish!`, 'Snel!');
-        else showBanner(`${MP.oppName} is af!`, 'Houd nog even vol…');
-      }
-      mpCheck();
-      break;
-    case 'quit': if (cur && !M.result) mpEnd('win', `${MP.oppName} heeft opgegeven.`); break;
-    case 'again': MP.oppAgain = true; mpAgainCheck(); break;
-    case 'bye': mpLost(`${MP.oppName} heeft de verbinding verbroken.`); break;
-    case 'full': mpLost('Deze host speelt al met iemand anders.'); break;
-  }
+// ---- handmatig verbinden (zonder server): twee codes uitwisselen, alleen met z'n tweeën ----
+async function mpHost() {
+  if (MP.busy) return;
+  mpClose(false);
+  MP.role = 'host'; MP.busy = true; MP.manual = true;
+  $('mpManual').open = true;
+  $('mpOffer').value = ''; $('mpAnswerIn').value = ''; $('btnMpCopyOffer').disabled = true;
+  mpMsg(''); mpRender();
+  try {
+    const link = MP.manLink = newLink('m' + randHex(4), 'Speler');
+    MP.links.set(link.id, link);
+    const pc = linkPc(link);
+    bindDc(link, pc.createDataChannel('andy', { ordered: true }));
+    await pc.setLocalDescription(await pc.createOffer());
+    await waitIce(pc);
+    if (link.pc !== pc) return;
+    $('mpOffer').value = await packCode(pc.localDescription);
+    $('btnMpCopyOffer').disabled = false;
+  } catch (e) { mpClose(false); mpMsg('Hosten mislukt: ' + e.message, false); }
+  MP.busy = false; mpRender();
+}
+async function mpConnect() {
+  const link = MP.manLink, pc = link && link.pc;
+  if (!pc || MP.role !== 'host') return;
+  try {
+    const d = await unpackCode($('mpAnswerIn').value);
+    if (d.type !== 'answer') throw new Error('Dit is een uitnodigingscode. Je hebt de ANTWOORDcode van je vriend nodig.');
+    if (pc.signalingState !== 'have-local-offer') throw new Error('Deze uitnodiging is al gebruikt. Klik op Annuleren en begin opnieuw.');
+    await pc.setRemoteDescription(d);
+    mpMsg('Verbinden…', true);
+    mpRender();
+  } catch (e) { mpMsg(e.message, false); }
+}
+function mpJoinStart() {
+  mpClose(false); MP.role = 'guest'; MP.manual = true;
+  $('mpOfferIn').value = ''; $('mpAnswer').value = '';
+  mpMsg(''); mpRender();
+  setTimeout(() => $('mpOfferIn').focus(), 50);
+}
+async function mpMakeAnswer() {
+  if (MP.busy) return;
+  let d;
+  try {
+    d = await unpackCode($('mpOfferIn').value);
+    if (d.type !== 'offer') throw new Error('Dit is een antwoordcode. Je hebt de UITNODIGINGScode van de host nodig.');
+  } catch (e) { mpMsg(e.message, false); return; }
+  mpClose(false);
+  MP.role = 'guest'; MP.busy = true; MP.manual = true; MP.hostName = 'de host';
+  $('mpAnswer').value = ''; $('btnMpCopyAnswer').disabled = true;
+  mpMsg(''); mpRender();
+  try {
+    const link = MP.link = newLink('host', 'Host');
+    const pc = linkPc(link);
+    pc.ondatachannel = e => bindDc(link, e.channel);
+    await pc.setRemoteDescription(d);
+    await pc.setLocalDescription(await pc.createAnswer());
+    await waitIce(pc);
+    if (link.pc !== pc) return;
+    $('mpAnswer').value = await packCode(pc.localDescription);
+    $('btnMpCopyAnswer').disabled = false;
+  } catch (e) { mpClose(false); MP.role = 'guest'; MP.manual = true; mpMsg('Antwoordcode maken mislukt: ' + e.message, false); }
+  MP.busy = false; mpRender();
+}
+function mpCopy(id) {
+  const ta = $(id), code = ta.value;
+  if (!code) return;
+  ta.focus(); ta.select();
+  const done = () => mpMsg('Gekopieerd! Plak de code in een bericht aan je vriend.', true);
+  if (IN_APP) { AndroidBridge.copy(code); done(); }
+  else if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, () => { try { document.execCommand('copy'); done(); } catch (e) { mpMsg('Selecteer en kopieer de code handmatig.', true); } });
+  else { try { document.execCommand('copy'); done(); } catch (e) { mpMsg('Selecteer en kopieer de code handmatig.', true); } }
 }
 
-// ---- lobby ----
+// ---- sluiten ----
+function mpClose(sayBye) {
+  if (sayBye) mpSend({ type: 'bye' });
+  for (const l of MP.links.values()) closeLink(l, sayBye ? 300 : 0);
+  if (MP.link) closeLink(MP.link, sayBye ? 300 : 0);
+  MP.links = new Map(); MP.link = null; MP.manLink = null; MP.players.clear();
+  MP.role = null; MP.manual = false; MP.busy = false; MP.inRoom = false; MP.myId = CLIENT_ID;
+  MP.lobby = null; MP.joinId = null; MP.hostSig = null; MP.hostName = ''; MP.wins = 0; MP.games = 0;
+  clearTimeout(MP.joinTimer);
+  sigClose();
+  lobbyTrack();
+}
+const mpActive = () => !!(MP.role || MP.sig || MP.link || MP.links.size);
+// venster dicht of weg: meteen laten weten dat je weg bent (anders duurt het tot de time-out)
+window.addEventListener('pagehide', () => { if (MP.inRoom) mpSend({ type: 'bye' }); });
+// verbinding kwijt: tijdens een potje eindigt dat zonder winnaar
+function mpLost(reason) {
+  const was = MP.inRoom || MP.role, M = MP.match;
+  mpClose(false);
+  if (M && !M.result && game.mp === M) mpEnd(reason, 'conn');
+  else if (curScreen === 'mpRes') mpAgainRender();
+  if (was && reason) mpMsg(reason, false);
+  mpRender();
+}
+
+// ---- lobby-scherm ----
 function mpMsg(text, ok) { const el = $('mpMsg'); el.textContent = text || ''; el.className = 'msg ' + (ok ? 'ok' : 'err'); }
 function mpRender() {
-  const st = $('mpStatus'), loc = !!MP.local, host = MP.role === 'host' || loc, guest = MP.role === 'guest', con = MP.connected || loc, man = MP.manual;
-  const connecting = !con && ((MP.pc && (MP.pc.connectionState === 'connecting' || (host && MP.pc.signalingState === 'stable' && !man))) || (guest && !man && MP.busy) || (host && !man && MP.peerId));
-  st.className = 'mp-status' + (con ? ' on' : MP.role ? ' wait' : '');
-  $('mpLocalKeys').classList.toggle('hidden', !loc);
-  $('mpStatusTxt').textContent = loc ? 'Op één scherm · 2 spelers' : con ? `Verbonden met ${MP.oppName}`
-    : connecting ? (guest ? `Verbinden met ${MP.oppName}…` : `${MP.oppName} doet mee, verbinden…`)
-    : host ? (MP.busy ? 'Lobby openen…' : 'Wachten op een speler…') : guest ? 'Code van de host plakken' : 'Niet verbonden';
-  $('mpPick').classList.toggle('hidden', !!MP.role || con);
-  $('mpHostBox').classList.toggle('hidden', !host || con || man || loc || MP.busy);
-  $('mpManual').classList.toggle('hidden', con || (!!MP.role && !man));
+  const loc = !!MP.local, vsAi = loc && MP.aiLvl != null, host = MP.role === 'host', guest = MP.role === 'guest', man = MP.manual;
+  const room = loc || MP.inRoom, busy = !room && !!MP.role && !man;
+  $('mpTitle').textContent = vsAi ? 'Tegen Kiwi' : loc ? 'Op één scherm' : room ? (host ? 'Jouw lobby' : `Lobby van ${MP.hostName || 'de host'}`) : 'Multiplayer';
+  $('mpHome').classList.toggle('hidden', room || busy);
+  $('mpOnline').classList.toggle('hidden', man);
+  $('mpDevice').classList.toggle('hidden', man);
   $('mpManPick').classList.toggle('hidden', !!MP.role);
   $('mpManHost').classList.toggle('hidden', !(host && man));
   $('mpManJoin').classList.toggle('hidden', !(guest && man));
   $('mpAnswerStep').classList.toggle('hidden', !guest || (!MP.busy && !$('mpAnswer').value));
-  $('mpLobby').classList.toggle('hidden', !con);
-  $('btnMpCancel').classList.toggle('hidden', !MP.role && !con);
-  $('btnMpCancel').textContent = loc ? 'Terug' : con ? 'Verbreken' : host && !man ? 'Lobby sluiten' : 'Annuleren';
+  $('mpBusy').classList.toggle('hidden', !busy);
+  $('mpBusyTxt').textContent = guest ? (MP.link ? `Verbinden met de lobby van ${MP.hostName}…` : `Lobby van ${MP.hostName} zoeken…`) : 'Lobby openen…';
+  $('mpRoom').classList.toggle('hidden', !room);
+  $('btnMpCancel').classList.toggle('hidden', !room && !MP.role);
+  $('btnMpCancel').textContent = loc ? 'Andere modus' : room ? (host ? 'Lobby sluiten' : 'Lobby verlaten') : 'Annuleren';
+  document.querySelector('.mp-top .mp-name').classList.toggle('hidden', loc && !vsAi);
   lobbyRender();
-  document.querySelector('.mp-name').classList.toggle('hidden', loc);
-  if (con) {
-    $('mpMeName').textContent = loc ? 'Speler 1' : myName() + (host ? ' (host)' : '');
-    $('mpOppName').textContent = loc ? 'Speler 2' : MP.oppName + (host ? '' : ' (host)');
-    $('mpModeRace').classList.toggle('sel', MP.sel.mode === 'race');
-    $('mpModeEnd').classList.toggle('sel', MP.sel.mode === 'endurance');
-    $('mpModeRace').disabled = $('mpModeEnd').disabled = !host;
-    $('mpLens').classList.toggle('hidden', MP.sel.mode !== 'race');
-    for (const b of document.querySelectorAll('.mp-len')) { b.classList.toggle('sel', +b.dataset.len === MP.sel.len); b.disabled = !host; }
-    $('btnMpStart').classList.toggle('hidden', !host);
-    $('mpGuestWait').classList.toggle('hidden', host);
-  }
+  if (!room) return;
+  // spelers
+  const list = loc ? (vsAi ? [{ name: myName(), col: '#e8322b', me: 1 }, { name: 'Kiwi', col: GCK.band }] : [{ name: 'Speler 1', col: '#e8322b' }, { name: 'Speler 2', col: '#2f7fe0' }])
+    : [{ name: myName(), col: '#e8322b', me: 1, host }].concat([...MP.players.values()].filter(P => P.inRoster).map(P => ({ name: P.name, col: P.col, host: guest && P.host })));
+  $('mpPlayers').innerHTML = list.map(p => `<li class="${p.me ? 'me' : ''}"><i style="background:${p.col}"></i>${escHtml(p.name)}${p.me ? ' <small>(jij)</small>' : ''}${p.host ? ' <small>host</small>' : ''}</li>`).join('');
+  $('mpCountTxt').textContent = loc ? '' : `${list.length} / ${MP_MAX}`;
+  $('mpShareRow').classList.toggle('hidden', !(host && MP.lobby));
+  // modus
+  const canPick = host || loc;
+  $('mpModeWho').textContent = canPick ? '' : 'de host kiest';
+  $('mpModeRace').classList.toggle('sel', MP.sel.mode === 'race');
+  $('mpModeEnd').classList.toggle('sel', MP.sel.mode === 'endurance');
+  $('mpModeRace').disabled = $('mpModeEnd').disabled = !canPick;
+  $('mpLens').classList.toggle('hidden', MP.sel.mode !== 'race');
+  for (const b of document.querySelectorAll('[data-len]')) { b.classList.toggle('sel', +b.dataset.len === MP.sel.len); b.disabled = !canPick; }
+  $('mpAiLvls').classList.toggle('hidden', !vsAi);
+  for (const b of document.querySelectorAll('[data-ai]')) b.classList.toggle('sel', +b.dataset.ai === MP.aiLvl);
+  $('mpLocalKeys').classList.toggle('hidden', !loc || vsAi);
+  // start
+  const enough = loc || list.length >= 2;
+  $('btnMpStart').classList.toggle('hidden', !canPick);
+  $('btnMpStart').disabled = !enough;
+  $('btnMpStart').textContent = enough ? 'Start' : 'Wachten op spelers…';
+  $('mpGuestWait').classList.toggle('hidden', canPick);
 }
 function openMp() {
   localExit();
   game.mp = null; MP.match = null;
+  for (const P of [...MP.players.values()]) if (!P.inRoster) MP.players.delete(P.id);
   if (game.mode !== 'menu') { game.career = null; resetWorld(); game.mode = 'menu'; }
-  MP.again = MP.oppAgain = false;
   $('mpName').value = myName();
   mpRender();
   showScreen('mp');
@@ -4200,44 +4369,63 @@ function mpSelect(mode, len) {
   if (MP.role !== 'host' && !MP.local) return;
   if (mode) MP.sel.mode = mode;
   if (len) MP.sel.len = len;
-  mpSend({ type: 'lobby', mode: MP.sel.mode, len: MP.sel.len });
+  if (MP.role === 'host') { mpSend({ type: 'lobby', mode: MP.sel.mode, len: MP.sel.len }); lobbyTrack(); }
   mpRender();
 }
 function mpHostStart(cfg) {
-  if (MP.role !== 'host' || !MP.connected) return;
-  const c = { type: 'start', mode: cfg.mode, len: cfg.len, seed: 1 + ((Math.random() * 2147483000) | 0) };
+  if (MP.role !== 'host' || !openLinks().length) return;
+  const ids = [MP.myId].concat(openLinks().map(l => l.id).filter(id => MP.players.has(id)));
+  const c = { type: 'start', mode: cfg.mode, len: cfg.len, seed: 1 + ((Math.random() * 2147483000) | 0), ids };
   mpSend(c);
   mpStartMatch(c);
 }
 
 // ---- een potje ----
+const opps = M => [...MP.players.values()].filter(P => M.ids.includes(P.id));
+// hoe vaak per seconde je je stand verstuurt: met veel spelers wat minder vaak (minder dataverkeer voor de host)
+const sendEvery = M => { const n = M ? M.ids.length : 2; return n <= 4 ? 0.05 : n <= 8 ? 0.1 : 0.15; };
 function mpStartMatch(c) {
   const mode = c.mode === 'endurance' ? 'endurance' : 'race';
   MP.cfg = { mode, len: [500, 1000, 2000].includes(c.len) ? c.len : 1000 };
-  const M = { mode, len: mode === 'race' ? MP.cfg.len : 0, seed: c.seed | 0, t: 0, count: 3.5, lastCount: 99,
-    myEv: null, oppEv: null, oppT: 0, oppDist: 0, oppApples: 0, oppFalls: 0, falls: 0, result: null, reason: '',
-    stormX: START_X - 1100, bolt: 0, boltX: 0 };
-  MP.match = M; MP.snaps = []; MP.rt = null; MP.ghost = null; MP.again = MP.oppAgain = false; MP.sendAcc = 0;
-  MP.lastMsg = performance.now();
+  MP.sel = Object.assign({}, MP.cfg);
+  const ids = (Array.isArray(c.ids) ? c.ids : []).filter(id => typeof id === 'string').slice(0, MP_MAX);
+  const M = { mode, len: mode === 'race' ? MP.cfg.len : 0, seed: c.seed | 0, t: 0, count: 3.5, lastCount: 99, ids,
+    myEv: null, falls: 0, result: null, reason: '', rank: null, place: 0, stormX: START_X - 1100, bolt: 0, boltX: 0 };
+  for (const P of MP.players.values()) Object.assign(P, { snaps: [], rt: null, ghost: null, ev: null, left: !ids.includes(P.id) || !P.inRoster, t: 0, dist: 0, apples: 0, falls: 0, lastMsg: performance.now() });
+  for (const l of MP.links.values()) l.lastMsg = performance.now();
+  if (MP.link) MP.link.lastMsg = performance.now();
+  MP.match = M; MP.sendAcc = 0;
   ghostPin.v = null;
   game.paused = false; game.career = null; game.mp = M;
   resetWorld();
   game.mode = 'mpcount';
   input.down = false;
   Music.duck();
+  mpMsg('');
   showScreen(null);
+  // HUD: een stip per speler op de racebalk
+  const tr = $('mpTrack');
+  for (const d of tr.querySelectorAll('.dot.opp')) d.remove();
+  for (const P of opps(M)) {
+    const d = document.createElement('div');
+    d.className = 'dot opp'; d.style.background = P.col; d.title = P.name;
+    if (ids.length <= 4) { const t = document.createElement('span'); t.className = 'tag'; t.textContent = P.name; d.appendChild(t); }
+    tr.insertBefore(d, $('mpDotMe')); P.dot = d;
+  }
   $('mpHud').classList.remove('hidden');
-  $('mpTagOpp').textContent = MP.oppName;
-  $('mpHud').querySelector('.track').classList.toggle('hidden', mode !== 'race');
-  showBanner(mode === 'race' ? `Race · ${M.len} m` : 'Endurance', mode === 'race' ? 'Eerst bij de finish wint' : 'Blijf de storm voor');
+  tr.classList.toggle('hidden', mode !== 'race');
+  lobbyTrack();
+  const who = ids.length > 2 ? ` · ${ids.length} spelers` : '';
+  showBanner(mode === 'race' ? `Race · ${M.len} m${who}` : `Endurance${who}`, mode === 'race' ? 'Eerst bij de finish wint' : 'Blijf de storm voor');
 }
 // eigen gebeurtenis: finish (race) of af (endurance)
 function mpFinished() {
   const M = game.mp;
   if (!M || M.myEv || M.result) return;
   M.myEv = { t: M.t, d: run.dist };
-  mpSend({ type: 'ev', id: M.seed, t: M.t, d: run.dist });
+  mpSend({ type: 'ev', id: M.seed, t: M.t, d: run.dist, from: MP.myId });
   confetti(G.x + 100, G.y - 150, 100); flashT = 0.3;
+  if (!M.local && opps(M).some(P => !P.ev && !P.left)) showBanner('Finish!', 'Even wachten op de anderen…');
   mpCheck();
 }
 function mpDied() {
@@ -4249,93 +4437,95 @@ function mpDied() {
   }
   if (M.myEv) return;
   M.myEv = { t: M.t, d: run.dist };
-  mpSend({ type: 'ev', id: M.seed, t: M.t, d: run.dist });
+  mpSend({ type: 'ev', id: M.seed, t: M.t, d: run.dist, from: MP.myId });
   if (M.local) floatText(G.x, G.y - 110, 'AF!', '#ffffff', 34);
-  else showBanner('Je bent af!', 'Even kijken wie het langst volhield…');
+  else showBanner('Je bent af!', 'Even kijken wie het langst volhoudt…');
   mpCheck();
 }
-// Wie wint? Beide spelers meten hun eigen tijd vanaf hun eigen GO. Omdat de berichten op volgorde
-// aankomen, komen beide kanten altijd tot dezelfde uitslag.
+// Is het potje klaar? Iedereen meet zijn eigen tijd vanaf zijn eigen GO; de uitslag volgt uit die tijden.
 function mpCheck() {
   const M = game.mp;
   if (!M || M.local || M.result || game.mode !== 'playing') return;
-  const me = M.myEv, op = M.oppEv, host = MP.role === 'host', on = MP.oppName;
+  const all = [{ me: 1, ev: M.myEv, left: false, t: M.t }].concat(opps(M).map(P => ({ ev: P.ev, left: P.left, t: P.ev ? Math.max(P.t, P.ev.t) : P.t })));
+  const busy = all.filter(x => !x.ev && !x.left);
   if (M.mode === 'race') {
-    if (me && op) return mpEnd(me.t < op.t || (me.t === op.t && host) ? 'win' : 'lose', me.t < op.t ? 'Jij was als eerste bij de finish!' : `${on} was net iets sneller.`);
-    if (op && M.t > op.t) return mpEnd('lose', `${on} was als eerste bij de finish.`);
-    if (me && M.oppT > me.t) return mpEnd('win', 'Jij was als eerste bij de finish!');
+    const evs = all.filter(x => x.ev).map(x => x.ev.t), first = evs.length ? Math.min(...evs) : null;
+    const grace = all.length <= 2 ? 0 : RACE_GRACE;
+    if (!busy.length || (first !== null && busy.every(x => x.t > first + grace))) mpEnd();
   } else {
-    if (me && op) return mpEnd(me.t > op.t || (me.t === op.t && host) ? 'win' : 'lose', me.t > op.t ? 'Jij hield het langst vol!' : `${on} hield het langer vol.`);
-    if (op && M.t > op.t) return mpEnd('win', `Jij hield het langst vol! ${on} viel eerder.`);
-    if (me && M.oppT > me.t) return mpEnd('lose', `${on} hield het langer vol.`);
+    const dead = all.filter(x => x.ev).map(x => x.ev.t), last = dead.length ? Math.max(...dead) : 0;
+    if (!busy.length || (busy.length === 1 && all.length > 1 && busy[0].t > last)) mpEnd();
   }
 }
-function mpEnd(result, reason) {
+// eindstand: race = finishtijd (daarna afstand), endurance = wie het langst volhield
+function mpRanking(M, forfeit) {
+  const rows = [{ id: MP.myId, name: myName(), col: '#e8322b', me: true, ev: M.myEv, left: !!forfeit, dist: run.dist, apples: Math.max(0, Math.floor(run.earned)), falls: M.falls, t: M.t }]
+    .concat(opps(M).map(P => ({ id: P.id, name: P.name, col: P.col, ev: P.ev, left: P.left, dist: P.ev ? Math.max(P.ev.d, P.dist) : P.dist, apples: P.apples, falls: P.falls, t: P.t })));
+  const tie = (a, b) => a.id < b.id ? -1 : 1;
+  const key = r => M.mode === 'race'
+    ? (r.ev ? [0, r.ev.t] : [r.left ? 2 : 1, -r.dist])
+    : (!r.ev && !r.left ? [0, -r.dist] : r.ev ? [1, -r.ev.t] : [2, -r.dist]);
+  return rows.sort((a, b) => { const ka = key(a), kb = key(b); return ka[0] - kb[0] || ka[1] - kb[1] || tie(a, b); });
+}
+function mpEnd(reason, kind) {
   const M = MP.match;
   if (!M || M.result) return;
-  M.result = result; M.reason = reason; M.endT = M.t;
+  M.endT = M.t;
   if (game.mp === M) game.mode = 'mpend';
-  mpSendState(); // laatste stand meteen versturen, zodat de ander ook direct de uitslag weet
-  if (result === 'win' || result === 'lose') {
-    save.mpGames++; if (result === 'win') save.mpWins++;
+  mpSendState(); // laatste stand meteen versturen
+  lobbyTrack();
+  if (kind === 'conn') {
+    M.result = 'conn'; M.reason = reason || 'De verbinding is verbroken.';
+    showBanner('Verbinding verbroken', M.reason);
+  } else {
+    M.rank = mpRanking(M, kind === 'forfeit');
+    M.place = M.rank.findIndex(r => r.me) + 1;
+    M.result = M.place === 1 ? 'win' : 'lose';
+    const w = M.rank[0], n = M.rank.length;
+    M.reason = reason || (M.mode === 'race'
+      ? (w.ev ? `${w.me ? 'Jij was' : w.name + ' was'} als eerste bij de finish.` : `${w.me ? 'Jij kwam' : w.name + ' kwam'} het verst.`)
+      : `${w.me ? 'Jij hield' : w.name + ' hield'} het langst vol.`);
+    save.mpGames++; MP.games++;
+    if (M.result === 'win') { save.mpWins++; MP.wins++; }
     persist();
-    MP.score[result === 'win' ? 'me' : 'opp']++;
+    if (M.result === 'win') { showBanner('Gewonnen!', M.reason); confetti(G.x + 60, G.y - 160, 140); Sfx.jingle(2); flashT = 0.3; }
+    else {
+      showBanner(n > 2 ? `${M.place}e van ${n}` : 'Verloren', M.reason);
+      Sfx.tone(392, 0.25, 'triangle', 0.1); Sfx.tone(330, 0.25, 'triangle', 0.1, 0, 0.22); Sfx.tone(262, 0.5, 'triangle', 0.1, 0, 0.44);
+    }
   }
-  if (result === 'win') { showBanner('Gewonnen!', reason); confetti(G.x + 60, G.y - 160, 140); Sfx.jingle(2); flashT = 0.3; }
-  else if (result === 'lose') { showBanner('😢 Verloren', reason); Sfx.tone(392, 0.25, 'triangle', 0.1); Sfx.tone(330, 0.25, 'triangle', 0.1, 0, 0.22); Sfx.tone(262, 0.5, 'triangle', 0.1, 0, 0.44); }
-  else showBanner('Verbinding verbroken', reason);
-  setTimeout(() => { if (MP.match === M && game.mp === M) mpShowResult(); }, result === 'conn' ? 1200 : 2200);
+  setTimeout(() => { if (MP.match === M && game.mp === M) mpShowResult(); }, kind === 'conn' ? 1200 : 2200);
 }
 function mpShowResult() {
   const M = MP.match;
   $('mpHud').classList.add('hidden');
   $('mpCount').textContent = '';
-  const title = { win: 'Gewonnen!', lose: 'Verloren', conn: 'Verbinding verbroken' }[M.result];
-  $('mpResTitle').textContent = title;
+  const n = M.rank ? M.rank.length : 0;
+  $('mpResTitle').textContent = M.result === 'conn' ? 'Verbinding verbroken' : M.result === 'win' ? 'Gewonnen!' : n > 2 ? `${M.place}e plaats` : 'Verloren';
   $('mpResSub').textContent = M.reason;
-  $('mpResMe').textContent = myName();
-  $('mpResOpp').textContent = MP.oppName;
-  const fmt = t => t == null ? '—' : fmtTime(t);
-  const row = (label, a, b) => `<div><span style="flex:1">${label}</span><b style="color:#e8322b;min-width:80px;text-align:right">${a}</b><b style="color:#2f7fe0;min-width:90px;text-align:right">${b}</b></div>`;
-  let h = row('', 'Jij', escHtml(MP.oppName));
-  const oppD = Math.floor(M.oppEv ? Math.max(M.oppEv.d, M.oppDist) : M.oppDist);
-  if (M.mode === 'race') {
-    h += row('Finishtijd', fmt(M.myEv && M.myEv.t), fmt(M.oppEv && M.oppEv.t));
-    h += row('📏 Afstand', Math.min(M.len, Math.floor(run.dist)) + ' m', Math.min(M.len, oppD) + ' m');
-    h += row('Gevallen', M.falls + '×', M.oppFalls + '×');
-  } else {
-    h += row('Volgehouden', fmt(M.myEv ? M.myEv.t : M.endT), fmt(M.oppEv ? M.oppEv.t : Math.max(M.oppT, M.endT)));
-    h += row('📏 Afstand', Math.floor(run.dist) + ' m', oppD + ' m');
-  }
-  h += row('Appels', Math.max(0, Math.floor(run.earned)), M.oppApples);
-  $('mpResTable').innerHTML = h;
-  $('mpResScore').textContent = MP.connected || M.result !== 'conn' ? `Stand: ${myName()} ${MP.score.me} – ${MP.score.opp} ${MP.oppName}` : '';
+  const fmt = t => fmtTime(t);
+  const val = r => r.left && !r.ev ? 'weg' : M.mode === 'race' ? (r.ev ? fmt(r.ev.t) : `${Math.floor(Math.min(M.len, r.dist))} m`) : (r.ev ? fmt(r.ev.t) : `${Math.floor(r.dist)} m`);
+  $('mpResTable').innerHTML = M.rank ? `<ol class="rank">${M.rank.map((r, i) => `<li class="${r.me ? 'me' : ''}"><b>${i + 1}</b><i style="background:${r.col}"></i><span>${escHtml(r.name)}${r.me ? ' (jij)' : ''}</span><span>${val(r)}</span></li>`).join('')}</ol>` : '';
+  $('mpResScore').textContent = MP.games ? `Jij won ${MP.wins} van ${MP.games} potje${MP.games === 1 ? '' : 's'} in deze lobby.` : '';
   mpAgainRender();
   showScreen('mpRes');
 }
 function mpAgainRender() {
   const b = $('btnMpAgain');
-  if (LOCAL.on) { b.disabled = false; b.textContent = 'Revanche'; return; }
-  if (!MP.connected) { b.disabled = true; b.textContent = 'Verbinding verbroken'; return; }
-  b.disabled = MP.again;
-  b.textContent = MP.again ? 'Wachten op ' + MP.oppName + '…' : MP.oppAgain ? `Revanche! (${MP.oppName} wil ook)` : 'Revanche';
+  if (LOCAL.on) { b.disabled = false; b.textContent = 'Rematch'; return; }
+  if (!MP.inRoom) { b.disabled = true; b.textContent = 'Verbinding verbroken'; return; }
+  if (MP.role === 'host') { const ok = openLinks().length > 0; b.disabled = !ok; b.textContent = ok ? 'Nieuwe ronde' : 'Niemand meer in de lobby'; }
+  else { b.disabled = true; b.textContent = 'Wachten op de host…'; }
 }
 function mpAgain() {
-  if (LOCAL.on) { localStart(LOCAL.cfg); return; }
-  if (!MP.connected || MP.again) return;
-  MP.again = true;
-  mpSend({ type: 'again' });
-  mpAgainCheck();
-}
-function mpAgainCheck() {
-  if (curScreen === 'mpRes') mpAgainRender();
-  if (MP.again && MP.oppAgain && MP.role === 'host' && MP.cfg) mpHostStart(MP.cfg);
+  if (LOCAL.on) { localStart(LOCAL.cfg, LOCAL.ai ? LOCAL.ai.lvl : null); return; }
+  if (MP.role === 'host') mpHostStart(MP.cfg || MP.sel);
 }
 function mpForfeit(reason) {
   const M = game.mp;
-  if (!M || M.result) return;
-  mpSend({ type: 'quit', id: M.seed });
-  mpEnd('lose', reason || 'Je hebt opgegeven.');
+  if (!M || M.result || M.local) return;
+  mpSend({ type: 'quit', id: M.seed, from: MP.myId });
+  mpEnd(reason || 'Je hebt opgegeven.', 'forfeit');
 }
 function fmtTime(t) {
   const m = Math.floor(t / 60), s = t - m * 60;
@@ -4406,46 +4596,52 @@ function mpFrame(realDt, gdt) {
       if (c <= 0) { game.mode = 'playing'; setTimeout(() => { if ($('mpCount').textContent === 'GO!') $('mpCount').textContent = ''; }, 800); }
     }
   }
-  // positie versturen (20× per seconde)
+  // eigen stand versturen
   MP.sendAcc += realDt;
-  if (MP.sendAcc >= 0.05) { MP.sendAcc = 0; mpSendState(); }
-  // tegenstander te lang stil tijdens een potje: verbinding weg
-  if (!M.result && performance.now() - MP.lastMsg > 8000) mpLost(`${MP.oppName} reageert niet meer.`);
-  mpGhost(gdt);
+  if (MP.sendAcc >= sendEvery(M)) { MP.sendAcc = 0; mpSendState(); }
+  // wie te lang niets van zich laat horen, is weg
+  if (!M.result) {
+    const now = performance.now();
+    if (MP.role === 'host') { for (const l of openLinks()) if (M.ids.includes(l.id) && now - l.lastMsg > 8000) linkDown(l, ''); }
+    else if (MP.link && now - MP.link.lastMsg > 8000) mpLost('De host reageert niet meer.');
+  }
+  ghostPin.v = null;
+  for (const P of opps(M)) mpGhost(P, gdt, M);
   mpHud();
 }
 function mpSendState() {
   const M = MP.match;
-  if (!M || !G || !MP.connected) return;
+  if (!M || !G || !MP.inRoom) return;
   const tr = G.trick;
-  mpSend({ type: 's', id: M.seed, t: +M.t.toFixed(3), x: Math.round(G.x), y: Math.round(G.y), vx: Math.round(G.vx), vy: Math.round(G.vy),
+  mpSend({ type: 's', id: M.seed, from: MP.myId, t: +M.t.toFixed(3), x: Math.round(G.x), y: Math.round(G.y), vx: Math.round(G.vx), vy: Math.round(G.vy),
     st: G.state, a: +(G.angle + (G.trickRot || 0)).toFixed(3), tr: tr ? tr.id : 0, tk: tr ? +Math.min(1, G.trickT / tr.dur).toFixed(3) : 0,
     hx: Math.round(G.hx), hy: Math.round(G.hy), dv: G.diving ? 1 : 0, sp: G.state === 'hang' ? Math.round(G.om * G.R) : 0, tu: G.turboT > 0 ? 1 : 0,
     vid: G.state === 'hang' && G.vine ? G.vine.id : -1, k: G.k, d: +run.dist.toFixed(1), ap: Math.max(0, Math.floor(run.earned)), f: M.falls });
 }
 const lerpAng = (a, b, f) => { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return a + d * f; };
-// De tegenstander wordt iets (~0,1 s) in het verleden getekend, tussen twee ontvangen standen in: zo beweegt hij vloeiend
-function mpGhost(dt) {
-  const S = MP.snaps;
-  ghostPin.v = null;
+// Andere spelers worden iets in het verleden getekend, tussen twee ontvangen standen in: zo bewegen ze vloeiend
+function mpGhost(P, dt, M) {
+  const S = P.snaps;
   if (!S.length) return;
-  const newest = S[S.length - 1], target = newest.t - 0.12;
-  if (MP.rt === null || Math.abs(MP.rt - target) > 0.6) MP.rt = target;
-  else MP.rt += dt + (target - MP.rt) * 0.08;
-  while (S.length > 2 && S[1].t <= MP.rt) S.shift();
+  const newest = S[S.length - 1], target = newest.t - (0.07 + 1.5 * sendEvery(M));
+  if (P.rt === null || Math.abs(P.rt - target) > 0.6) P.rt = target;
+  else P.rt += dt + (target - P.rt) * 0.08;
+  while (S.length > 2 && S[1].t <= P.rt) S.shift();
   const a = S[0], b = S[1] || a;
-  let f = b.t > a.t ? clamp((MP.rt - a.t) / (b.t - a.t), 0, 1) : 1;
+  let f = b.t > a.t ? clamp((P.rt - a.t) / (b.t - a.t), 0, 1) : 1;
   if (Math.hypot(b.x - a.x, b.y - a.y) > 500) f = f < 0.5 ? 0 : 1; // teruggezet na een val: niet schuiven
   const s = f < 0.5 ? a : b, L = (p, q) => p + (q - p) * f;
-  const g = MP.ghost || (MP.ghost = { balloonT: 0, invuln: 0, standT: 0, deadT: 0, trickRot: 0, R: 1, om: 0, turboT: 0, trick: null, trickT: 0 });
+  const g = P.ghost || (P.ghost = { balloonT: 0, invuln: 0, standT: 0, deadT: 0, trickRot: 0, R: 1, om: 0, turboT: 0, trick: null, trickT: 0 });
   g.x = L(a.x, b.x); g.y = L(a.y, b.y); g.vx = L(a.vx, b.vx); g.vy = L(a.vy, b.vy);
-  g.hx = L(a.hx, b.hx); g.hy = L(a.hy, b.hy); g.angle = lerpAng(a.a, b.a, f);
+  // hand alleen interpoleren als hij in beide standen aan dezelfde liaan hangt (anders is de oude handpositie verouderd)
+  if (a.st === 'hang' && b.st === 'hang' && a.vid === b.vid) { g.hx = L(a.hx, b.hx); g.hy = L(a.hy, b.hy); } else { g.hx = s.hx; g.hy = s.hy; }
+  g.angle = lerpAng(a.a, b.a, f);
   if (g.state !== s.st) { g.standT = 0; g.deadT = 0; }
   g.state = s.st; g.standT += dt; g.deadT += dt;
   g.diving = !!s.dv; g.turboT = s.tu ? 1 : 0; g.om = s.sp; g.R = 1;
   g.trick = s.tr ? { id: s.tr, dur: 1 } : null; g.trickT = L(a.tk, b.tk);
-  // hangt hij aan een liaan? dan buigt die liaan bij jou ook mee
-  if (g.state === 'hang' && s.vid >= 0) {
+  // hangt hij aan een liaan? dan buigt die liaan bij jou ook mee (één tegelijk)
+  if (!ghostPin.v && g.state === 'hang' && s.vid >= 0) {
     const v = vines.find(w => w.id === s.vid);
     if (v && v !== G.vine && v.anchored && s.k < v.pts.length) {
       const an = v.pts[0], reach = s.k * SEG_LEN * (v.type === 'elastic' ? ELASTIC_STRETCH : 1) + 60;
@@ -4453,48 +4649,65 @@ function mpGhost(dt) {
     }
   }
 }
+// jouw plek op dit moment (race: wie het verst is; endurance: hoeveel er nog over zijn)
+function mpPlace(M) {
+  const O = opps(M);
+  if (M.mode === 'race') {
+    const score = (ev, d) => ev ? 1e6 - ev.t : Math.min(M.len, d);
+    const me = score(M.myEv, run.dist);
+    return 1 + O.filter(P => !P.left && score(P.ev, P.dist) > me).length;
+  }
+  return O.filter(P => !P.ev && !P.left).length + (M.myEv ? 0 : 1);
+}
 function mpHud() {
   const M = game.mp;
   if (!M) return;
+  const tm = '⏱ ' + fmtTime(M.result ? M.endT : M.t).slice(0, -1), n = M.ids.length;
   let info;
   if (M.mode === 'race') {
-    const me = clamp(run.dist / M.len, 0, 1), op = clamp(M.oppDist / M.len, 0, 1);
-    $('mpDotMe').style.left = (me * 100).toFixed(1) + '%';
-    $('mpDotOpp').style.left = (op * 100).toFixed(1) + '%';
-    info = '⏱ ' + fmtTime(M.result ? M.endT : M.t).slice(0, -1);
+    $('mpDotMe').style.left = (clamp(run.dist / M.len, 0, 1) * 100).toFixed(1) + '%';
+    for (const P of opps(M)) if (P.dot) { P.dot.style.left = (clamp((P.ev ? M.len : P.dist) / M.len, 0, 1) * 100).toFixed(1) + '%'; P.dot.style.opacity = P.left ? 0.3 : 1; }
+    info = n > 2 ? `${tm} · plek ${mpPlace(M)} van ${n}` : tm;
   } else {
     const gap = Math.max(0, Math.floor((G.x - M.stormX) / PX_PER_M));
-    const opp = M.oppEv ? `${MP.oppName}: af` : `${MP.oppName}: ${Math.floor(M.oppDist)} m`;
-    info = `⏱ ${fmtTime(M.result ? M.endT : M.t).slice(0, -1)} · 🌩️ ${G.state === 'dead' ? '—' : gap + ' m'} · ${opp}`;
+    info = `${tm} · 🌩️ ${G.state === 'dead' ? '—' : gap + ' m'} · nog ${mpPlace(M)} van ${n} over`;
   }
   setText('mpInfo', info);
 }
 
 // ---- tekenen ----
-// de tegenstander: online de ontvangen stand, op één scherm de gorilla van de andere speler
-const ghostOf = () => { const M = game.mp; return M && M.local ? LOCAL.worlds[1 - M.idx].G : MP.ghost; };
-const oppNameOf = () => { const M = game.mp; return M && M.local ? `Speler ${2 - M.idx}` : MP.oppName; };
+const localName = i => LOCAL.ai ? (i ? 'Kiwi' : 'Jij') : `Speler ${i + 1}`;
 function drawOwnGorilla() {
   const M = game.mp;
   if (!(M && M.local && M.idx === 1)) { drawGorilla(); return; }
-  const pal = GC; GC = GC2; // speler 2 is altijd de blauwe
+  const pal = GC; GC = oppPal(); // speler 2 is altijd de blauwe (of Kiwi)
   try { drawGorilla(); } finally { GC = pal; }
 }
+// de andere gorilla's: op één scherm de gorilla van de andere speler, online die van iedereen in het potje
+function mpOthers() {
+  const M = game.mp;
+  if (!M) return [];
+  if (M.local) return [{ g: LOCAL.worlds[1 - M.idx].G, name: localName(1 - M.idx), pal: M.idx === 1 ? GC1 : oppPal(), tag: M.idx === 1 ? '#a8141c' : (LOCAL.ai ? '#2c6e18' : '#17498f'), local: true }];
+  return opps(M).filter(P => P.ghost && !(P.left && !P.ev)).map(P => ({ g: P.ghost, name: P.name, pal: palOf(P.col), tag: shade(P.col, -0.35) }));
+}
 function drawGhost() {
-  const g = ghostOf(), M = game.mp;
-  if (!g || g.x < camX - 200 || g.x > camX + viewW + 200) return;
-  const me = G, pal = GC, ip = M.local && ipApply(g); // op één scherm: ook de andere gorilla vloeiend
-  G = g; GC = M.local && M.idx === 1 ? GC1 : GC2;
-  try { drawGorilla(); } finally { G = me; GC = pal; if (ip) ipRestore(g); }
-  if (g.state === 'dead' && g.y > HAZARD_Y + 60) return;
-  // naamkaartje
-  const name = oppNameOf();
-  ctx.font = '900 17px Trebuchet MS, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  const w = ctx.measureText(name).width + 18, y = g.y - 72;
-  ctx.fillStyle = M.local && M.idx === 1 ? 'rgba(168,20,28,.85)' : 'rgba(23,73,143,.85)';
-  ctx.beginPath(); ctx.moveTo(g.x - w / 2 + 10, y - 12); ctx.arcTo(g.x + w / 2, y - 12, g.x + w / 2, y + 12, 10); ctx.arcTo(g.x + w / 2, y + 12, g.x - w / 2, y + 12, 10);
-  ctx.arcTo(g.x - w / 2, y + 12, g.x - w / 2, y - 12, 10); ctx.arcTo(g.x - w / 2, y - 12, g.x + w / 2, y - 12, 10); ctx.fill();
-  ctx.fillStyle = '#fff'; ctx.fillText(name, g.x, y + 1);
+  const list = mpOthers(), many = list.length > 6;
+  for (const o of list) {
+    const g = o.g;
+    if (!g || g.x < camX - 200 || g.x > camX + viewW + 200) continue;
+    const me = G, pal = GC, ip = o.local && ipApply(g); // op één scherm: ook de andere gorilla vloeiend
+    G = g; GC = o.pal;
+    if (many) ctx.globalAlpha = 0.85;
+    try { drawGorilla(); } finally { G = me; GC = pal; if (ip) ipRestore(g); ctx.globalAlpha = 1; }
+    if (g.state === 'dead' && g.y > HAZARD_Y + 60) continue;
+    // naamkaartje
+    ctx.font = '900 17px Trebuchet MS, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const w = ctx.measureText(o.name).width + 18, y = g.y - 72;
+    ctx.fillStyle = o.tag; ctx.globalAlpha = 0.88;
+    ctx.beginPath(); ctx.moveTo(g.x - w / 2 + 10, y - 12); ctx.arcTo(g.x + w / 2, y - 12, g.x + w / 2, y + 12, 10); ctx.arcTo(g.x + w / 2, y + 12, g.x - w / 2, y + 12, 10);
+    ctx.arcTo(g.x - w / 2, y + 12, g.x - w / 2, y - 12, 10); ctx.arcTo(g.x - w / 2, y - 12, g.x + w / 2, y - 12, 10); ctx.fill();
+    ctx.globalAlpha = 1; ctx.fillStyle = '#fff'; ctx.fillText(o.name, g.x, y + 1);
+  }
 }
 function drawStorm() {
   const M = game.mp;
@@ -4520,21 +4733,22 @@ function drawStorm() {
     ctx.fillStyle = `rgba(220,210,255,${M.bolt})`; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
   }
 }
-// in beeldcoördinaten: pijl naar de tegenstander als die buiten beeld is, stormwaarschuwing
+// in beeldcoördinaten: pijlen naar spelers buiten beeld (de dichtstbijzijnde drie), stormwaarschuwing
 function drawMpOverlay() {
-  const M = game.mp, g = ghostOf();
-  if (g && !(g.state === 'dead' && g.y > HAZARD_Y + 60)) {
-    const sx = g.x - camX, left = sx < -20, right = sx > viewW + 20;
-    if (left || right) {
-      const y = clamp(g.y - camY, 70, viewH - 70), x = left ? 34 : viewW - 34, dir = left ? -1 : 1;
-      const dm = Math.round((g.x - G.x) / PX_PER_M);
-      ctx.fillStyle = 'rgba(23,73,143,.88)';
-      ctx.beginPath(); ctx.moveTo(x + dir * 22, y); ctx.lineTo(x - dir * 8, y - 18); ctx.lineTo(x - dir * 8, y + 18); ctx.closePath(); ctx.fill();
-      ctx.font = '900 14px Trebuchet MS, sans-serif'; ctx.textBaseline = 'middle'; ctx.textAlign = left ? 'left' : 'right';
-      ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.lineWidth = 3;
-      const txt = `${oppNameOf()} ${dm > 0 ? '+' : ''}${dm} m`, tx = x - dir * 14;
-      ctx.strokeText(txt, tx, y - 28); ctx.fillText(txt, tx, y - 28);
-    }
+  const M = game.mp;
+  const off = mpOthers().filter(o => o.g && !(o.g.state === 'dead' && o.g.y > HAZARD_Y + 60) && (o.g.x - camX < -20 || o.g.x - camX > viewW + 20))
+    .sort((a, b) => Math.abs(a.g.x - G.x) - Math.abs(b.g.x - G.x)).slice(0, 3);
+  for (const o of off) {
+    const g = o.g, left = g.x - camX < -20;
+    const y = clamp(g.y - camY, 70, viewH - 70), x = left ? 34 : viewW - 34, dir = left ? -1 : 1;
+    const dm = Math.round((g.x - G.x) / PX_PER_M);
+    ctx.fillStyle = o.tag; ctx.globalAlpha = 0.9;
+    ctx.beginPath(); ctx.moveTo(x + dir * 22, y); ctx.lineTo(x - dir * 8, y - 18); ctx.lineTo(x - dir * 8, y + 18); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.font = '900 14px Trebuchet MS, sans-serif'; ctx.textBaseline = 'middle'; ctx.textAlign = left ? 'left' : 'right';
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.lineWidth = 3;
+    const txt = `${o.name} ${dm > 0 ? '+' : ''}${dm} m`, tx = x - dir * 14;
+    ctx.strokeText(txt, tx, y - 28); ctx.fillText(txt, tx, y - 28);
   }
   if (M.mode === 'endurance' && G.state !== 'dead' && game.mode === 'playing') {
     const gap = G.x - M.stormX;
@@ -4575,8 +4789,11 @@ function freshWorld(i, cfg, seed) {
     mp: { local: true, idx: i, mode: cfg.mode, len: cfg.mode === 'race' ? cfg.len : 0, seed, t: 0, myEv: null, falls: 0, result: null,
       stormX: START_X - 1100, bolt: 0, boltX: 0, oppEv: null, oppT: 0 } };
 }
-function localStart(cfg) {
+function localStart(cfg, aiLvl) {
   const mode = cfg.mode === 'endurance' ? 'endurance' : 'race';
+  const ai = aiLvl != null && aiLvl >= 0 ? { lvl: clamp(aiLvl | 0, 0, AI_LV.length - 1) } : null;
+  if (LOCAL.on && !!LOCAL.ai !== !!ai) LOCAL.score = [0, 0];
+  LOCAL.ai = ai;
   LOCAL.cfg = { mode, len: [500, 1000, 2000].includes(cfg.len) ? cfg.len : 1000 };
   if (!LOCAL.on) { LOCAL.base = grabWorld(); LOCAL.on = true; LOCAL.score = [0, 0]; }
   curW = -1;
@@ -4597,7 +4814,7 @@ function localStart(cfg) {
 function localExit() {
   if (!LOCAL.on) return;
   putWorld(LOCAL.base);
-  curW = -1; LOCAL.on = false; LOCAL.worlds = null; LOCAL.base = null;
+  curW = -1; LOCAL.on = false; LOCAL.worlds = null; LOCAL.base = null; LOCAL.ai = null;
   game.mp = null;
   localPointers.clear();
   $('hud').classList.remove('local');
@@ -4608,8 +4825,8 @@ function localExit() {
 const localPointers = new Map();
 function localPress(p) { const c = curW; useWorld(p); press(); if (c >= 0) useWorld(c); }
 function localUnpress(p) { const c = curW; useWorld(p); unpress(); if (c >= 0) useWorld(c); }
-function localKey(code) { return code === 'Space' || code === 'KeyA' || code === 'KeyW' ? 0 : (code === 'ArrowUp' || code === 'ArrowDown' || code === 'Enter' || code === 'NumpadEnter' || code === 'KeyL') ? 1 : -1; }
-const localSide = (x, y) => (LOCAL.split === 'v' ? x > cssW / 2 : y > cssH / 2) ? 1 : 0;
+function localKey(code) { if (LOCAL.ai) return code === 'Space' || code === 'ArrowUp' || code === 'ArrowDown' || code === 'Enter' || code === 'NumpadEnter' ? 0 : -1; return code === 'Space' || code === 'KeyA' || code === 'KeyW' ? 0 : (code === 'ArrowUp' || code === 'ArrowDown' || code === 'Enter' || code === 'NumpadEnter' || code === 'KeyL') ? 1 : -1; }
+const localSide = (x, y) => LOCAL.ai ? 0 : (LOCAL.split === 'v' ? x > cssW / 2 : y > cssH / 2) ? 1 : 0;
 
 // wordt elk beeld aangeroepen in plaats van de gewone lus
 function localLoop(dt) {
@@ -4634,7 +4851,7 @@ function localLoop(dt) {
     renderAlpha = acc / STEP;
     for (const i of [0, 1]) {
       useWorld(i);
-      for (let k = 0; k < n; k++) step(DT);
+      for (let k = 0; k < n; k++) { if (LOCAL.ai && i === 1) aiThink(); step(DT); }
       updateEffects(gdt);
       const oy = camY;
       interpBegin(true); updateCamera(gdt); interpEnd();
@@ -4652,7 +4869,7 @@ function localLoop(dt) {
   // tekenen: eerst een donkere scheidingslijn, dan beide beelden
   mainCtx.setTransform(1, 0, 0, 1, 0, 0);
   mainCtx.fillStyle = '#10261a'; mainCtx.fillRect(0, 0, canvas.width, canvas.height);
-  for (const i of [0, 1]) {
+  for (const i of LOCAL.ai ? [0] : [0, 1]) { // tegen Kiwi: alleen jouw beeld, schermvullend
     useWorld(i);
     VOX = i && LOCAL.split === 'v' ? canvas.width - RW : 0;
     VOY = i && LOCAL.split === 'h' ? canvas.height - RH : 0;
@@ -4660,6 +4877,83 @@ function localLoop(dt) {
   }
   VOX = VOY = 0;
 }
+// =====================================================================
+//  Kiwi: de AI-tegenstander (speelt in zijn eigen wereld met dezelfde seed)
+// =====================================================================
+// Kiwi "drukt" net als een speler: vasthouden aan een liaan, loslaten om te springen, en in de lucht
+// ingedrukt houden om een liaan te grijpen. Om te beslissen wanneer hij loslaat, rekent hij vooruit waar
+// hij terecht zou komen als hij nú loslaat, en springt hij op het moment dat dat het verst oplevert.
+// De niveaus verschillen in reactietijd, timing, fouten en hoe goed hij vaart opbouwt.
+const AI_LV = [
+  { name: 'Makkelijk', react: 0.28, late: [0.1, 0.4],   oops: 0.25, grab: 0.62, patience: 0 },
+  { name: 'Normaal',   react: 0.1,  late: [0.02, 0.16], oops: 0.06, grab: 0.88, patience: 0.5 },
+  { name: 'Moeilijk',  react: 0.04, late: [0, 0.07],    oops: 0.02, grab: 1,    patience: 0.8 },
+  { name: 'Expert',    react: 0,    late: [0, 0.02],    oops: 0,    grab: 1,    patience: 1 },
+];
+function aiSet(down) { if (down && !input.down) press(); else if (!down && input.down) unpress(); }
+// waar komt Kiwi uit als hij nu loslaat? (vooruitgerekende vlucht; 0 = nergens te grijpen)
+function aiScore(L) {
+  const m = launchM(0);
+  let vx = G.vx * m + (G.vx > 0 ? 60 : 0), vy = G.vy * m - 50, x = G.x, y = G.y;
+  const R = gripR(0) * L.grab, R2 = R * R, h = 1 / 30;
+  const cand = vines.filter(v => v !== G.vine && v.anchored && v.x > G.x + 40 && v.x < G.x + 1700);
+  if (!cand.length) return 0;
+  for (let i = 0; i < 80; i++) {
+    vy = Math.min(vy + AIR_G * h, MAX_FALL); vx += 55 * h; x += vx * h; y += vy * h;
+    if (y > HAZARD_Y - 40) return 0;
+    for (const v of cand) {
+      if (Math.abs(v.rest[0] - x) > 520) continue;
+      const p = v.pts;
+      for (let j = 3; j < p.length; j += 2) { const dx = p[j].x - x, dy = p[j].y - y; if (dx * dx + dy * dy < R2) return Math.max(1, x - G.x + (j / p.length) * 60); }
+    }
+  }
+  return 0;
+}
+function aiThink() {
+  const A = LOCAL.ai, L = AI_LV[A.lvl];
+  if (!G || game.mode !== 'playing' || G.state === 'dead') { A.relAt = 0; if (input.down && game.mode === 'playing') aiSet(false); return; }
+  A.t = (A.t || 0) + DT;
+  if (G.state === 'stand') { aiSet(!input.down); return; }  // springen van de rots
+  if (G.state === 'rocket') return;
+  if (G.state === 'hang') {
+    A.air = 0;
+    if (!input.down) { if (A.t - (A.lastRel || 0) > 0.05) aiSet(true); return; }
+    if (A.relAt) { if (A.t >= A.relAt) { A.relAt = 0; A.lastRel = A.t; aiSet(false); } return; }
+    const fwd = G.vx > 60;
+    if (!fwd) { A.prev = 0; A.swing = 0; return; }
+    if (!A.swing) { // begin van een voorwaartse zwaai
+      A.swing = 1; A.prev = 0;
+      if (Math.random() < L.oops) { A.relAt = A.t + rand(0.05, 0.25); return; } // foutje: te vroeg los
+    }
+    if ((A.k = (A.k || 0) + 1) % 3) return;
+    const sc = aiScore(L), sp = Math.hypot(G.vx, G.vy);
+    // voorbij het beste moment van deze zwaai: loslaten (met een beetje vertraging, afhankelijk van het niveau)
+    if (A.prev > 0 && sc < A.prev * 0.97) {
+      // goede spelers bouwen eerst meer vaart op als de sprong kort is
+      const short = A.prev < 420 && sp < swingCap() * 0.85 && Math.random() < L.patience;
+      if (!short) A.relAt = A.t + L.react * 0.5 + rand(L.late[0], L.late[1]);
+      A.prev = 0;
+      return;
+    }
+    // niets binnen bereik, maar wel volle vaart: dan maar blind een mooie sprong (rond 40°)
+    if (!sc && !A.prev && sp > swingCap() * 0.9 && G.vy < 0 && Math.abs(G.vy) > G.vx * 0.7) A.relAt = A.t + rand(L.late[0], L.late[1]);
+    if (sc > 0) A.prev = Math.max(A.prev, sc);
+    return;
+  }
+  // in de lucht: ingedrukt houden zodra er een liaan binnen grijpbereik komt (na zijn reactietijd)
+  A.air = (A.air || 0) + DT;
+  const R = gripR(0) + 30;
+  let near = false;
+  for (const v of vines) {
+    if (!v.anchored || Math.abs(v.x - G.x) > 650 || (v === G.lastVine && G.releaseT > 0)) continue;
+    const p = v.pts;
+    for (let j = 2; j < p.length && !near; j += 2) { const dx = p[j].x - G.x, dy = p[j].y - G.y; near = dx * dx + dy * dy < R * R; }
+    if (near) break;
+  }
+  if (near) { A.nearT = (A.nearT || 0) + DT; if (A.nearT >= L.react) aiSet(true); }
+  else { A.nearT = 0; if (A.air > 0.15) aiSet(false); }
+}
+
 // hangt de andere speler aan een liaan, dan buigt die liaan in jouw wereld ook mee
 function localPin(i) {
   const o = LOCAL.worlds[1 - i].G;
@@ -4687,9 +4981,10 @@ function localEnd(w) {
   M.endT = M.t;
   if (w >= 0) LOCAL.score[w]++;
   const race = M.mode === 'race';
-  const why = w < 0 ? (race ? 'Tegelijk over de finish!' : 'Tegelijk gevallen!') : race ? `Speler ${w + 1} was als eerste bij de finish.` : `Speler ${w + 1} hield het langst vol.`;
+  const nm = localName(w), jij = LOCAL.ai && w === 0;
+  const why = w < 0 ? (race ? 'Tegelijk over de finish!' : 'Tegelijk gevallen!') : race ? `${nm} ${jij ? 'was' : 'was'} als eerste bij de finish.` : `${nm} hield het langst vol.`;
   LOCAL.why = why;
-  showBanner(w < 0 ? 'Gelijkspel!' : `Speler ${w + 1} wint!`, why);
+  showBanner(w < 0 ? 'Gelijkspel!' : jij ? 'Gewonnen!' : `${nm} wint!`, why);
   Sfx.jingle(2);
   const c = curW;
   if (w >= 0) { useWorld(w); confetti(G.x + 60, G.y - 160, 140); flashT = 0.3; }
@@ -4700,14 +4995,12 @@ function localEnd(w) {
 function localShowResult() {
   const w = LOCAL.result, race = LOCAL.cfg.mode === 'race';
   $('mpCount').textContent = '';
-  $('mpResTitle').textContent = w < 0 ? 'Gelijkspel!' : `Speler ${w + 1} wint!`;
-  $('mpResSub').textContent = LOCAL.why;
-  $('mpResMe').textContent = 'Speler 1';
-  $('mpResOpp').textContent = 'Speler 2';
+  $('mpResTitle').textContent = w < 0 ? 'Gelijkspel!' : LOCAL.ai && w === 0 ? 'Gewonnen!' : `${localName(w)} wint!`;
+  $('mpResSub').textContent = LOCAL.why + (LOCAL.ai ? ` (Kiwi: ${AI_LV[LOCAL.ai.lvl].name.toLowerCase()})` : '');
   const P = [0, 1].map(i => { const W = i === curW ? grabWorld() : LOCAL.worlds[i]; return { M: W.mp, run: W.run }; });
   const row = (label, a, b) => `<div><span style="flex:1">${label}</span><b style="color:#e8322b;min-width:80px;text-align:right">${a}</b><b style="color:#2f7fe0;min-width:90px;text-align:right">${b}</b></div>`;
   const fmt = t => t == null ? '—' : fmtTime(t);
-  let h = row('', 'Speler 1', 'Speler 2');
+  let h = row('', localName(0), localName(1));
   const d = p => Math.floor(race ? Math.min(p.M.len, p.run.dist) : p.run.dist) + ' m';
   if (race) {
     h += row('Finishtijd', fmt(P[0].M.myEv && P[0].M.myEv.t), fmt(P[1].M.myEv && P[1].M.myEv.t));
@@ -4719,7 +5012,7 @@ function localShowResult() {
   }
   h += row('Appels', Math.max(0, Math.floor(P[0].run.earned)), Math.max(0, Math.floor(P[1].run.earned)));
   $('mpResTable').innerHTML = h;
-  $('mpResScore').textContent = `Stand: Speler 1 ${LOCAL.score[0]} – ${LOCAL.score[1]} Speler 2`;
+  $('mpResScore').textContent = `Stand: ${localName(0)} ${LOCAL.score[0]} – ${LOCAL.score[1]} ${localName(1)}`;
   mpAgainRender();
   showScreen('mpRes');
 }
@@ -4735,7 +5028,7 @@ function drawLocalHud() {
   let extra = '⏱ ' + t;
   if (M.mode === 'endurance') extra += G.state === 'dead' ? ' · af' : ` · 🌩️ ${Math.max(0, Math.floor((G.x - M.stormX) / PX_PER_M))} m`;
   ctx.font = `900 ${18 * u}px Trebuchet MS, sans-serif`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
-  const label = `Speler ${M.idx + 1}`, lw = ctx.measureText(label).width;
+  const label = localName(M.idx), lw = ctx.measureText(label).width;
   const pill = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(x + h / 2, y); ctx.arcTo(x + w, y, x + w, y + h, h / 2); ctx.arcTo(x + w, y + h, x, y + h, h / 2); ctx.arcTo(x, y + h, x, y, h / 2); ctx.arcTo(x, y, x + w, y, h / 2); ctx.fill(); };
   const x0 = 12 * u, y0 = 12 * u, h = 30 * u;
   pill(x0, y0, lw + 22 * u, h, col);
@@ -5280,24 +5573,26 @@ on('btnMpHost', () => { MP.local = false; mpLobbyHost(); });
 on('btnMpShare', mpShare);
 on('btnMpManualHost', () => { MP.local = false; mpHost(); });
 on('btnMpJoin', () => { MP.local = false; mpJoinStart(); });
-on('btnMpLocal', () => { mpClose(false); MP.local = true; mpMsg(''); mpRender(); });
+on('btnMpLocal', () => { mpClose(false); MP.local = true; MP.aiLvl = null; mpMsg(''); mpRender(); });
+const AI_KEY = 'andyApples.aiLevel';
+on('btnMpAi', () => { mpClose(false); MP.local = true; let l = 1; try { l = clamp(+(localStorage.getItem(AI_KEY) || 1), 0, 3); } catch (e) { /* */ } MP.aiLvl = l; mpMsg(''); mpRender(); });
+for (const b of document.querySelectorAll('[data-ai]')) on(b, () => { MP.aiLvl = +b.dataset.ai; try { localStorage.setItem(AI_KEY, MP.aiLvl); } catch (e) { /* */ } mpRender(); });
 on('btnMpConnect', mpConnect);
 on('btnMpMakeAnswer', mpMakeAnswer);
 on('btnMpCopyOffer', () => mpCopy('mpOffer'));
 on('btnMpCopyAnswer', () => mpCopy('mpAnswer'));
-on('btnMpCancel', () => { if (MP.local) MP.local = false; else mpClose(MP.connected); mpMsg(''); mpRender(); });
+on('btnMpCancel', () => { if (MP.local) { MP.local = false; MP.aiLvl = null; } else mpClose(MP.inRoom); mpMsg(''); mpRender(); });
 on('mpModeRace', () => mpSelect('race'));
 on('mpModeEnd', () => mpSelect('endurance'));
-for (const b of document.querySelectorAll('.mp-len')) on(b, () => mpSelect(null, +b.dataset.len));
-on('btnMpStart', () => MP.local ? localStart(MP.sel) : mpHostStart(MP.sel));
+for (const b of document.querySelectorAll('[data-len]')) on(b, () => mpSelect(null, +b.dataset.len));
+on('btnMpStart', () => MP.local ? localStart(MP.sel, MP.aiLvl) : mpHostStart(MP.sel));
 on('btnMpAgain', mpAgain);
 on('btnMpLobby', () => { mpLeaveMatch(); openMp(); });
 on('btnMpLeave', toMenu);
 $('mpName').addEventListener('input', e => {
   const n = setMyName(e.target.value);
-  mpSend({ type: 'hello', name: n || 'Andy' });
-  lobbyTrack();
-  if (MP.connected) mpRender();
+  if (MP.role === 'host') { rosterSend(); lobbyTrack(); } else mpSend({ type: 'hello', name: n || 'Andy' });
+  if (MP.inRoom) mpRender();
 });
 on('btnCareer', openCareer);
 on('btnCareerBack', toMenu);
@@ -5478,7 +5773,7 @@ function updateHud() {
   if (!run) return;
   const M = game.mp;
   if (M && M.local) {
-    setText('hint', game.mode === 'mpcount' ? 'Speler 1: SPATIE (of links tikken) · Speler 2: ↑ of ENTER (of rechts tikken)' : '');
+    setText('hint', game.mode === 'mpcount' ? (LOCAL.ai ? 'Houd bij GO! ingedrukt om meteen te springen' : 'Speler 1: SPATIE (of links tikken) · Speler 2: ↑ of ENTER (of rechts tikken)') : '');
     $('hint').classList.toggle('pulse', game.mode === 'mpcount');
     return;
   }

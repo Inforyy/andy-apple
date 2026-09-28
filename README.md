@@ -12,20 +12,25 @@ In [`android/`](android/) staat **`AndyApples.apk`**: het spel als Android-app (
 
 ## Multiplayer
 
-Speel met z'n tweeën, op twee manieren:
+Speel met anderen (tot 20 online), met z'n tweeën op één scherm, of tegen de computer:
 
-- **Op één scherm**: twee spelers op hetzelfde apparaat met een gedeeld scherm. **Speler 1** speelt met `Spatie` (of tikt op de linker/bovenste helft), **Speler 2** met `↑` of `Enter` (of tikt op de rechter/onderste helft). Geen internet nodig.
-- **Online op twee apparaten** via lobbies: maak er een of doe mee met een lobby uit de lijst.
+- **2 spelers, één scherm**: twee spelers op hetzelfde apparaat met een gedeeld scherm. **Speler 1** speelt met `Spatie` (of tikt op de linker/bovenste helft), **Speler 2** met `↑` of `Enter` (of tikt op de rechter/onderste helft). Geen internet nodig.
+- **Tegen Kiwi (AI)**: Kiwi is een oranje orang-oetan met een kiwischijfje op zijn bandana. Kies een niveau: *Makkelijk*, *Normaal*, *Moeilijk* of *Expert*. Kiwi rekent vooruit waar hij uitkomt als hij loslaat; op lagere niveaus reageert hij trager, mist hij vaker zijn timing en bouwt hij minder vaart op.
+- **Online** via lobbies met maximaal 20 spelers: maak er een of doe mee met een lobby uit de lijst.
 
 Spelmodi: **Race** (eerst bij de finish van 500, 1000 of 2000 m wint) en **Endurance** (wie het langst volhoudt; een storm jaagt je op). Upgrades staan uit, appels en XP tellen niet mee voor je save. Jullie spelen in dezelfde wereld en zien elkaar als tweede gorilla.
 
-### Online spelen (lobbies)
+### Online spelen (lobbies, tot 20 spelers)
 
-1. **Speler 1** kiest **Multiplayer → Lobby maken**. De lobby verschijnt meteen in de lijst van iedereen die het multiplayermenu open heeft. Met **Kopieer uitnodiging** stuur je ook een link.
-2. **Speler 2** klikt in de lijst **Open lobbies** op **Meedoen** (of opent de link).
-3. De host kiest Race of Endurance en klikt op **Start**.
+1. Kies **Multiplayer → + Nieuwe lobby**. Je lobby verschijnt meteen in de lijst van iedereen die het multiplayermenu open heeft (met het aantal spelers, bijv. *3/20*). Met **Uitnodiging kopiëren** stuur je ook een link.
+2. Anderen klikken in **Online lobbies** op **Meedoen** (of openen de link). Er passen **20 spelers** in een lobby; een volle lobby staat als *Vol* in de lijst.
+3. De host kiest Race of Endurance en klikt op **Start** (vanaf 2 spelers). Na afloop ziet iedereen de ranglijst en start de host met **Nieuwe ronde** het volgende potje. Wie tijdens een potje binnenkomt, doet mee vanaf de volgende ronde.
 
-Lobbies lopen via Supabase Realtime (zie *Supabase instellen*): de server koppelt alleen de twee spelers, daarna praten de browsers direct met elkaar (WebRTC). Een volle lobby verdwijnt uit de lijst. Blokkeert een netwerk directe verbindingen, gebruik dan **Handmatig verbinden (zonder server)**: dan wissel je een uitnodigings- en antwoordcode uit.
+- **Race**: wie het eerst bij de finish is, wint. Met 3 of meer spelers krijgen de anderen daarna nog 20 seconden om ook te finishen; wie dan nog onderweg is, wordt op afstand gerangschikt.
+- **Endurance**: de laatste die overblijft, wint; de rest wordt gerangschikt op hoe lang ze het volhielden.
+- Elke speler krijgt een eigen bandanakleur. Spelers buiten beeld zie je als pijl aan de rand (de drie dichtstbijzijnde).
+
+Hoe het werkt: Supabase Realtime (zie *Supabase instellen*) wordt alleen gebruikt om lobbies te vinden en de verbinding op te zetten. Daarna heeft elke speler een directe verbinding (WebRTC) met de host, en de host stuurt de standen van iedereen door. Bij grote lobbies verstuurt het spel de standen minder vaak (tot 20× per seconde bij 4 spelers, ~7× per seconde vanaf 9 spelers); de host heeft bij 20 spelers wel een goede (wifi-)verbinding nodig. Blokkeert een netwerk directe verbindingen, gebruik dan **Handmatig verbinden (zonder server, 2 spelers)**.
 
 ## Supabase instellen (accounts, lobbies, ranglijst)
 
@@ -103,7 +108,7 @@ Accounts, online lobbies en de ranglijst gebruiken één gratis [Supabase](https
 | Van de startrots naar de eerste liaan springen | `Spatie` ingedrukt houden | scherm ingedrukt houden |
 | Aan een liaan blijven hangen | `Spatie` ingedrukt houden | scherm ingedrukt houden |
 | Loslaten / springen | `Spatie` loslaten | loslaten |
-| Duiken (in de lucht, begint rustig en versnelt) | `Spatie` ingedrukt houden | scherm ingedrukt houden |
+| Duiken (in de lucht: meteen een duw omlaag, en steeds sneller) | `Spatie` ingedrukt houden | scherm ingedrukt houden |
 | Liaan grijpen | ingedrukt houden terwijl je een liaan raakt | idem |
 | Pauze | `P` of `Esc` | ❚❚-knop |
 
@@ -134,6 +139,7 @@ Accounts, online lobbies en de ranglijst gebruiken één gratis [Supabase](https
   Bij elke nieuwe biome speelt een riedeltje en tellen appels voor meer: +0,5 / +1 / +1,5 / +2 / +3 / +4 per appel, bovenop de Appeloogst-upgrade.
 - **Levendige wereld**: meerdere parallaxlagen (bergen, heuvels, boomlijn, gedetailleerde bomen, reuzenstammen, voorgrond), een zon met stralen, wolken, noorderlicht en sterren, en daarnaast vogelzwermen, vlinders, papegaaien, giraffen, springende vissen en vallende sterren.
 - **Muziek en geluid**: een procedurele jungle-groove (marimba, conga's, shaker, bas) met een eigen toonsoort per biome. Muziek en geluid staan los van elkaar aan/uit.
+- **Tempo en momentum**: het spel loopt standaard op een rustiger tempo (0,56× het oorspronkelijke), maar je kunt door te zwaaien veel meer vaart opbouwen (zwaaien tot 1250, topsnelheid 1600, met upgrades meer).
 - **Accounts, online lobbies en een ranglijst** voor Eindeloos (zie *Supabase instellen*).
 - **XP en spelerslevels**: hoe verder je komt, hoe meer XP. Direct te koop zijn Wingsuit, Lange armen, Zwaaikracht, Lanceerkracht, Appelmagneet, Appeloogst en Reddingsballon; de rest ontgrendel je langzaam met spelerslevels: Gouden appels (level 4), Helm (6), Comboketting (8), Stuiterzwam (10), Liaankenner (12), Papegaaimaatje (14), Appelregen (16) en Raketstart (20).
 - **15 permanente upgrades**, betaald met 🍎 appels. Snelheid moet je verdienen: Zwaaikracht en Lanceerkracht verhogen ook je topsnelheid. Naast de basis-upgrades (en Gouden appels, Helm, Raketstart):
