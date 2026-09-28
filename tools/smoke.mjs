@@ -103,6 +103,27 @@ async function main() {
   check(await js('__andy.curScreen') === 'debug', 'debugscherm opent');
   await js(`document.getElementById('btnDebugBack').click(); document.getElementById('btnSettingsBack').click()`);
 
+  // De beslissing per meetvenster van 2 s, met nep-metingen (in het menu meet de echte lus niet mee)
+  console.log('Automatische kwaliteit');
+  const qw = (frac, avg) => js(`__andy.qualityWindow(${frac}, ${avg})`);
+  const qFrom = l => js(`__andy.setQualityChoice(1); __andy.setQualityChoice(0); __andy.perfReset(); __andy.setQuality(${l})`);
+  const qp = () => js('__andy.perf');
+  await qFrom(3);
+  await qw(1, 33.4); await qw(1, 33.4); await qw(1, 33.4);
+  let p = await qp();
+  check(p.quality === 3 && p.capped && p.max === 4, 'begrensd op 30 fps: stap omlaag hielp niet, dus terug en niet verder omlaag');
+  await qFrom(3);
+  await qw(1, 40); await qw(0, 15); await qw(0, 15); await qw(0, 15);
+  p = await qp();
+  check(p.quality === 2 && p.max === 2 && !p.capped, 'echt te zwaar: stap omlaag hielp en blijft staan');
+  await qFrom(3);
+  await qw(1, 60);
+  check((await qp()).quality === 1, 'zwaar haperen: twee stappen tegelijk omlaag');
+  await qFrom(2);
+  await qw(0, 10); await qw(0, 10);
+  check((await qp()).quality === 3, 'soepel: na twee vensters een stap omhoog');
+  await qFrom(3);
+
   // Houdt de knop in/los in een vast ritme: grijpen, zwaaien, loslaten
   const swing = (pressFn, unpressFn, secs) => js(`(async () => {
     const end = performance.now() + ${secs * 1000};

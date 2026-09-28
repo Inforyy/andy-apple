@@ -22,15 +22,18 @@ const QUALITY = [
   { px: 3.6e6,  bg: 0.6,  bgEvery: 1, rays: true,  clouds: true,  parts: 900, amb: 70 },
 ];
 const QUALITY_NAMES = ['minimaal', 'laag', 'middel', 'hoog', 'maximaal'];
-// Nieuwe sleutel: oude automatische standen (vaak onterecht op de laagste stand blijven hangen) vervallen.
 // qAuto = het spel kiest zelf (standaard); anders heeft de speler in Instellingen een vaste stand gekozen.
-const QKEY = 'andyApples.quality4';
+// Sleutel 5: een automatische stand is pas bewaard sinds een stap omlaag wordt gecontroleerd (zie adaptQuality).
+const QKEY = 'andyApples.quality5', QKEY_OLD = 'andyApples.quality4';
 // eerste keer: op een telefoon/tablet beginnen op 'middel' (schermen zijn klein en scherp; auto gaat vanzelf omhoog als het kan)
 let qLevel = navigator.maxTouchPoints > 0 && Math.min(screen.width, screen.height) < 900 ? 2 : 3, qMax = 4, qAuto = true;
 try {
-  const q = JSON.parse(localStorage.getItem(QKEY));
-  // automatisch: begin nooit lager dan 'middel'; is dat te zwaar, dan schakelt het spel binnen een paar seconden terug
-  if (q && q.l >= 0 && q.l <= 4) { qAuto = q.auto !== false; qLevel = qAuto ? Math.max(2, q.l) : q.l; }
+  let q = JSON.parse(localStorage.getItem(QKEY)), old = false;
+  if (!q) { q = JSON.parse(localStorage.getItem(QKEY_OLD)); old = true; }
+  // automatisch: beginnen op de bewaarde stand (een stap omlaag telt alleen als die echt hielp, dus die is betrouwbaar;
+  // was hij toch te laag, dan gaat het spel in de eerste halve minuut snel omhoog). Een oude automatische stand kan
+  // onterecht laag zijn (bijv. door een telefoon in energiebesparing): daarvan beginnen we op minstens 'middel'.
+  if (q && q.l >= 0 && q.l <= 4) { qAuto = q.auto !== false; qLevel = qAuto && old ? Math.max(2, q.l) : q.l; }
 } catch (e) { /* geen voorkeur */ }
 let Q = QUALITY[qLevel];
 // ---- Debug-instellingen (achter een wachtwoord): zoom, snelheid en FPS-meter ----
@@ -172,7 +175,7 @@ const QUALITY_CHOICES = [null, 1, 3, 4];
 const qualityChoice = () => qAuto ? 0 : qLevel >= 4 ? 3 : qLevel >= 2 ? 2 : 1;
 function setQualityChoice(i) {
   if (i === qualityChoice()) return;
-  if (i === 0) { qAuto = true; qMax = 4; setQuality(Math.max(2, qLevel)); }
+  if (i === 0) { qAuto = true; qMax = 4; perf.capped = false; perf.check = null; setQuality(Math.max(2, qLevel)); }
   else { qAuto = false; setQuality(QUALITY_CHOICES[i]); }
 }
 // Tekent de browser zonder grafische kaart (software)? Browsers zeggen niet of canvas-tekenen versneld is,

@@ -121,7 +121,7 @@ Online gebruikt het spel Supabase alleen om lobbies te vinden en de verbinding o
 
 Instellingen open je met het tandwiel rechtsboven in het hoofdmenu, of in het pauzescherm.
 
-- **Grafische kwaliteit**: een schuifje met *AI* (standaard: het spel meet de framerate en kiest zelf), *Laag*, *Normaal* en *Hoog*. Tekent je browser zonder grafische versnelling, of moet het spel naar de laagste stand, dan krijg je in het menu een melding met een tip.
+- **Grafische kwaliteit**: een schuifje met *AI* (standaard: het spel meet de framerate en kiest zelf), *Laag*, *Normaal* en *Hoog*. *AI* schakelt alleen terug als dat echt helpt: een telefoon in energiebesparing (vast op 30 fps) houdt dus gewoon mooi beeld. Tekent je browser zonder grafische versnelling, of moet het spel naar de laagste stand, dan krijg je in het menu een melding met een tip.
 - **Liggend spelen**: op telefoons standaard aan. Waar het kan wordt het scherm liggend vastgezet; anders draait het spel het beeld zelf een kwartslag.
 - **Volledig scherm**, **geluid** en **muziek**: los aan en uit te zetten. Geluidseffecten en muziek hebben elk een eigen volumeschuifje.
 
@@ -159,6 +159,7 @@ Er is geen build-stap en geen npm. `index.html` bevat de schermen, `css/style.cs
 | `game.js`, `main.js` | spelverloop, menu's, invoer en HUD; hoofdlus en opstarten |
 
 - **Testen**: `node tools/smoke.mjs` (Node 18+ en Chrome/Chromium). Klikt door de menu's, speelt alle modi en faalt bij elke JavaScript-fout.
+- **Prestaties meten**: `node tools/perf.mjs`. Meet per kwaliteitsniveau en wereld de framerate en rekentijd, en hoeveel geheugen de achtergrond gebruikt. Vergelijk vóór en na een wijziging op dezelfde computer.
 - **Android-app bouwen**: zie [`android/README.md`](android/README.md). De APK in de repo wordt niet vanzelf bijgewerkt als het spel verandert.
 - **Ander debug-wachtwoord**: reken de nieuwe waarde voor `DBG_HASH` in `js/view.js` uit met:
   ```sh

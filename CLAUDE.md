@@ -20,6 +20,7 @@ GitHub Pages deploys from `main` root. Work happens on `claude/*` branches that 
   - It clicks through the menus and plays Endless (with a head-start, a trip to space, a biome transition, going underwater and opening a loot box), career levels (including the four style biomes), split-screen, Kiwi and the chase mode.
   - It fails on any JS exception or `console.error`.
   - `ANDY_URL=http://localhost:8000/ node tools/smoke.mjs` runs the same test against a server, as GitHub Pages would serve it.
+- **Benchmark**: `node tools/perf.mjs` (same setup as the smoke test) prints fps, p95, simulation/render time and the cost of the background buffer per quality level and biome, plus the tile-cache size after 30 s. Headless Chromium usually renders in software (SwiftShader), so compare before/after on the same machine rather than reading the absolute numbers.
 - **Build the APK** (in `android/`; needs Python 3, JDK 17+ and three Maven jars in `tools/`, see `android/README.md`):
   ```sh
   python3 build_apk.py --tools tools --keystore andy.p12 --storepass PASS --version 1.3 --code 4
@@ -82,7 +83,10 @@ Top-level `let`/`const`/`function` in these classic scripts share the global lex
   - Always go through `normalizeSave()` (it validates and clamps every field and migrates old saves) and `persist()` (which also marks the cloud save dirty).
   - A new save field needs `defaultSave()` + `normalizeSave()`. There is no export/import UI: saving is silent (browser), and online saving requires an account.
 - **Supabase is optional**. When it isn't configured, the Account and Leaderboard buttons are hidden. `sbOn()`/`lbOn()` guard all online code. The required SQL (tables `saves`, `scores`, RPC `submit_score`) is in `README.md`; keep it in sync with the client's queries.
-- **Adaptive quality**: `adaptQuality()` steps `qLevel` (0–4) up and down and remembers it. Heavy visuals should respect `Q`/`qLevel`.
+- **Adaptive quality**: `adaptQuality()` measures 2-s windows and `qualityWindow()` steps `qLevel` (0–4) up and down and remembers it (`andyApples.quality5`).
+  - A step down is verified: if the next window isn't clearly better, the step is undone and `perf.capped` stops further downgrades that session (e.g. a phone capping rAF at 30 fps in power-saving mode).
+  - Heavy visuals should respect `Q`/`qLevel`.
+- **Background tiles**: `tileLayer()` in `render-bg.js` only copies the part of a tile between the layer's content top (`L.top`) and the line below which a later opaque layer covers it (`bgCover`). Tiles of biomes no longer in view and tiles far behind the camera are dropped right away. If you change a layer's shapes, keep `L.top`, `L.empty` and `bgCover` true to what is actually drawn.
 - **Android bridge**: `IN_APP` (the user agent contains `AndyApplesApp` and `window.AndroidBridge` exists) routes copying to the bridge. `window.__andyBack` is called from `MainActivity.java`; keep it intact.
 - **Test hook**: `window.__andy` (in `main.js`) exposes state and functions for the smoke test and console debugging. Extend it when a test needs more.
 
