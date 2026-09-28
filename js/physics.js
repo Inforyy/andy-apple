@@ -298,12 +298,15 @@ function hitHazard() {
     splash(G.x, 14);
     floatText(G.x, G.y - 70, 'Gered! 🎈', '#ffffff', 24);
     Sfx.balloon(); Sfx.phew();
+  } else if (powOn('wings')) { // power-up vleugels: je stuitert van het water weer omhoog
+    G.y = HAZARD_Y - G_R; G.vy = -1300; G.vx = Math.max(G.vx, 520);
+    splash(G.x, 12); floatText(G.x, G.y - 60, '🪽 Wiek!', '#bfefff', 22); Sfx.boing();
   } else if (canGoUnder()) enterUnder();
   else die();
 }
 // Vijanden kunnen Andy NOOIT laten vallen of doodgaan: ze stelen alleen appels.
 function hitFoe(f) {
-  if (G.invuln > 0 || G.state === 'rocket' || f.done) return;
+  if (G.invuln > 0 || G.state === 'rocket' || f.done || powOn('star')) return;
   f.done = true;
   G.invuln = 1.4;
   if (G.helmets > 0) {
@@ -377,6 +380,7 @@ function step(dt) {
   updateSpace(dt);
   updateJets(dt);
   if (game.mp) mpStep(dt);
+  if (game.career) updateCareer(dt);
 }
 
 function updateGorilla(dt, holdHang, holdAir) {
@@ -603,7 +607,8 @@ function updateFoes(dt) {
 
 function updateApples(dt) {
   // op hoge snelheid reikt de magneet verder (tot 2× bij 1500 px/s), anders vlieg je er in een paar frames langs
-  const ml = lvl('magnet'), mr = magnetR(ml) * (1 + clamp(Math.hypot(G.vx, G.vy) / 1500, 0, 1)), pull = magnetPull(ml);
+  const sm = powOn('magnet'), ml = sm ? 5 : lvl('magnet'); // power-up supermagneet: even de sterkste magneet
+  const mr = magnetR(ml) * (sm ? 1.3 : 1) * (1 + clamp(Math.hypot(G.vx, G.vy) / 1500, 0, 1)), pull = magnetPull(ml);
   const alive = game.mode === 'playing' && (G.state === 'hang' || G.state === 'air' || G.state === 'rocket' || G.state === 'swim');
   for (let i = apples.length - 1; i >= 0; i--) {
     const a = apples[i];

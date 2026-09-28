@@ -128,11 +128,56 @@ const UPGRADES = [
 const xpNeed = L => Math.round(260 * Math.pow(L, 1.6)); // XP nodig om van level L naar L+1 te gaan
 function playerLevel(xp) { let L = 1; while (xp >= xpNeed(L)) { xp -= xpNeed(L); L++; } return { L, into: xp, need: xpNeed(L) }; }
 const unlocked = u => !u.unlock || playerLevel(save.xp).L >= u.unlock;
-// ---- Carrière: levels met een start en een finish; hoe hoger, hoe moeilijker ----
-const LEVELS = 55; // 5 per biome
+// ---- Carrière: werelden met levels op een kaart (zie career.js); hoe verder, hoe AANZIENLIJK moeilijker ----
+// Elke biome is een wereld met LEVELS_PER_WORLD levels; het laatste level van een wereld is een baasgevecht.
+const LEVELS_PER_WORLD = 5, WORLDS = BIOMES.length, LEVELS = WORLDS * LEVELS_PER_WORLD;
+// Uitdagingen: een extra opdracht of tegenwerking in een level (zie career.js)
+const CHALLENGES = {
+  apples: { icon: '🍎', name: 'Appeljacht',  info: n => `Pak minstens ${n} appels vóór de finish` },
+  wind:   { icon: '💨', name: 'Tegenwind',   info: () => 'In de lucht blaast de wind je terug' },
+  fog:    { icon: '🌫️', name: 'Mist',        info: () => 'Je ziet maar een klein stukje om je heen' },
+  rotten: { icon: '🪵', name: 'Rotte boel',  info: () => 'Veel rotte en gladde lianen' },
+  swarm:  { icon: '🐝', name: 'Wespennest',  info: () => 'Veel meer vijanden' },
+  rush:   { icon: '⏱️', name: 'Tijdrit',     info: () => 'Veel minder tijd' },
+};
+const CHALLENGE_ORDER = ['apples', 'wind', 'rotten', 'fog', 'swarm', 'rush'];
+// De baas van elke wereld (zie career.js): naam, kleur en aanvalstype (throw = gooit, dive = duikt, rain = laat vallen)
+const BOSSES = [
+  { name: 'Kokosbaron',    col: '#8a5a2e', proj: 'kokos',  moves: ['throw'] },
+  { name: 'Koning Wesp',   col: '#f2b705', proj: 'angel',  moves: ['throw', 'dive'] },
+  { name: 'Grote Gier',    col: '#6e5236', proj: 'bot',    moves: ['dive', 'throw'] },
+  { name: 'IJskoningin',   col: '#8fcfe6', proj: 'ijs',    moves: ['rain', 'throw'] },
+  { name: 'Lavadraak',     col: '#c2481c', proj: 'vuur',   moves: ['throw', 'rain', 'dive'] },
+  { name: 'Nachtuil',      col: '#3b2c70', proj: 'ster',   moves: ['dive', 'rain'] },
+  { name: 'Portaalgeest',  col: '#3a9a98', proj: 'orb',    moves: ['throw', 'dive', 'rain'] },
+  { name: 'Blokgolem',     col: '#5aa532', proj: 'blok',   moves: ['throw', 'rain'] },
+  { name: 'Gumgum',        col: '#ed1c24', proj: 'verf',   moves: ['dive', 'throw', 'rain'] },
+  { name: 'Polygoon',      col: '#ff4fb4', proj: 'kubus',  moves: ['throw', 'dive', 'rain'] },
+  { name: 'Suikerspinner', col: '#ff7eb9', proj: 'snoep',  moves: ['rain', 'dive', 'throw'] },
+];
+// Tijdelijke power-ups in carrièrelevels (seconden; clock geeft extra tijd)
+const POWERUPS = {
+  star:   { icon: '⭐', name: 'Onkwetsbaar',   dur: 8,  col: '#ffd23f' },
+  magnet: { icon: '🧲', name: 'Supermagneet',  dur: 12, col: '#ff5a5a' },
+  wings:  { icon: '🪽', name: 'Vleugels',      dur: 10, col: '#9fe3ff' },
+  turbo:  { icon: '🚀', name: 'Turbo',         dur: 3,  col: '#ff9a2a' },
+  clock:  { icon: '⏰', name: '+20 seconden',  dur: 0,  col: '#7dff8a' },
+};
 function levelInfo(n) {
-  const bi = Math.min(BIOMES.length - 1, Math.floor((n - 1) / 5));
-  return { n, bi, L: 180 + n * 40, diff: clamp(0.04 + (n - 1) * 0.045, 0, 1.35) };
+  const w = Math.min(WORLDS - 1, Math.floor((n - 1) / LEVELS_PER_WORLD)), idx = (n - 1) % LEVELS_PER_WORLD;
+  const boss = idx === LEVELS_PER_WORLD - 1, p = (n - 1) / (LEVELS - 1); // p: 0 bij level 1, 1 bij het laatste
+  const L = 220 + n * 45;
+  // uitdagingen: niet in de eerste twee levels en niet bij een baas; vanaf wereld 7 soms twee tegelijk
+  const ch = [];
+  if (!boss && n > 2 && idx > 0) {
+    ch.push(CHALLENGE_ORDER[(w * 2 + idx) % CHALLENGE_ORDER.length]);
+    if (w >= 6 && idx === 3) ch.push(CHALLENGE_ORDER[(w * 2 + idx + 3) % CHALLENGE_ORDER.length]);
+  }
+  // tijdslimiet (echte seconden): ruim in het begin, krap aan het eind
+  let time = Math.round(L / (6 + 9 * p) + 15);
+  if (ch.includes('rush')) time = Math.round(time * 0.72);
+  return { n, bi: w, world: w + 1, idx, boss, L, p, ch, time, need: ch.includes('apples') ? Math.round(L / 11) : 0,
+    diff: clamp(0.1 + (n - 1) * 0.034, 0, 2) };
 }
 const upCost = (u, l) => Math.round(u.base * 1.5 * Math.pow(u.growth, l) / 5) * 5;
 // =====================================================================
@@ -224,7 +269,7 @@ function upgradePower() {
 const DIFF_START = 0.2, DIFF_MAX = 1.3, DIFF_RAMP = 3000;
 function diffAt(m) {
   const up = 0.35 * upgradePower(); // meer upgrades = lastiger
-  if (game.career) return clamp(game.career.diff + 0.08 + Math.max(0, m) / game.career.L * 0.08, 0, 1.45) + up;
+  if (game.career) return clamp(game.career.diff + 0.08 + Math.max(0, m) / game.career.L * 0.08, 0, 2.1) + up;
   return DIFF_START + (DIFF_MAX - DIFF_START) * (1 - Math.exp(-Math.max(0, m) / DIFF_RAMP)) + up;
 }
 // Eindeloos: het tempo gaat ook iets omhoog naarmate je verder komt, tot maximaal +12%% (bij 4000 m).
@@ -236,6 +281,7 @@ const BASE_SPEED = 0.65; // met GAME_SPEED 1,2: de simulatie loopt op ~0,78× ec
 function timeScale() {
   let k = BASE_SPEED * (game.mp && !game.mp.local ? 1 : DBG.speed);
   if (!game.career && !game.mp && run) { const t = clamp(run.dist / TEMPO_DIST, 0, 1); k *= 1 + TEMPO_MAX * t * t * (3 - 2 * t); }
+  if (game.career) k *= 1 + 0.28 * game.career.p; // carrière: latere levels lopen tot 28% sneller
   if (!game.mp && run && run.cine) k *= cineSlow(); // slow motion bij een nieuwe biome
   return k;
 }

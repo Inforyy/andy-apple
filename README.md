@@ -38,9 +38,19 @@ Laat los als Andy naar voren zwaait. Alleen in het water (of de lava, …) valle
 
 ## Spelmodi
 
-- 🏁 **Carrière**: 55 levels met een start en een finish, steeds langer en moeilijker. Elke 5 levels een nieuwe wereld. Tot 3 sterren per level, afhankelijk van hoeveel appels je pakt.
+- 🏁 **Carrière**: 11 werelden (één per biome) met elk 5 levels op een **wereldkaart**, zoals in *New Super Mario Bros.* Zie [Carrière](#carrière).
 - ♾️ **Eindeloos**: kom zo ver mogelijk. Het wordt geleidelijk lastiger en iets sneller (tot een plafond). Met een account kom je met je gebruikersnaam op de online ranglijst.
 - 👥 **Spelmodi**: Multiplayer (online tot 20 spelers), Duel (met z'n tweeën op één scherm), Tegen Kiwi en Achtervolging. Zie [Multiplayer](#multiplayer).
+
+## Carrière
+
+- **Wereldkaart**: elke wereld is een eiland in de stijl van zijn biome, schuin van boven gezien, met een pad van stippen (levels) en aan het eind het kasteel van de baas. Andy loopt over het pad: tik op een stip (of gebruik ◀ ▶) om erheen te lopen, en op **Spelen** (of nog eens op de stip) om het level te starten. Met ◀ Wereld ▶ spring je naar een eerdere wereld. Op een telefoon werkt alles met tikken.
+- **Filmpjes**: haal je een level, dan vult het pad zich op de kaart tot het volgende level en loopt Andy erheen. Versla je de baas, dan krijg je *Wereld voltooid!*, vaar je over zee naar het volgende eiland en verschijnt de nieuwe wereld met zijn naam.
+- **Tijdslimiet**: elk level heeft een maximale tijd (bovenin beeld, rood in de laatste 20 seconden). Tijd op = level mislukt.
+- **Steeds lastiger**: latere levels zijn langer, hebben grotere gaten, meer vijanden en lastige lianen, lopen tot 28% sneller en geven relatief minder tijd.
+- **Uitdagingen** (vanaf level 3, in wereld 7 en later soms twee tegelijk): 🍎 *Appeljacht* (pak genoeg appels vóór de finish), 💨 *Tegenwind*, 🌫️ *Mist* (je ziet maar een klein stukje), 🪵 *Rotte boel*, 🐝 *Wespennest* en ⏱️ *Tijdrit* (veel minder tijd).
+- **Baasgevechten**: het laatste level van elke wereld. De baas (van de Kokosbaron in de jungle tot de Suikerspinner in Snoepland) vliegt vóór je uit en gooit dingen naar waar je straks bent, laat een regen vallen (rode strepen waarschuwen) of duikt op je af (een rode baan waarschuwt). Je hebt 3 harten; haal de finish om hem te verslaan. Latere bazen vallen vaker en harder aan.
+- **Power-ups** zweven in de levels, in bellen: ⭐ *Onkwetsbaar* (8 s, niets kan je raken), 🧲 *Supermagneet* (12 s), 🪽 *Vleugels* (10 s: je zweeft, en van het water stuiter je terug omhoog), 🚀 *Turbo* en ⏰ *+20 seconden*.
 
 ## Het spel
 

@@ -84,7 +84,8 @@ function frame(now) {
   if (dt < 0.25) stats.dts[stats.i++ % stats.dts.length] = dt * 1000;
   if (dt > 0.1) dt = 0.1;
   Sfx.setUnder(!LOCAL.on && !!(run && run.under) && curScreen !== 'menu'); // onder water klinkt alles gedempt
-  if (LOCAL.on) localLoop(dt);
+  if (curScreen === 'career') mapFrame(dt); // de wereldkaart vervangt het spelbeeld
+  else if (LOCAL.on) localLoop(dt);
   else frameSolo(dt);
   const t1 = performance.now();
   stats.work += (t1 - t0 - stats.work) * 0.1;
@@ -128,7 +129,7 @@ window.__andyBack = () => {
 
 // Debug-/testhaak (handig voor automatische tests)
 window.__andy = { get G() { return G; }, get run() { return run; }, get game() { return game; }, get save() { return save; },
-  get vines() { return vines; }, get apples() { return apples; }, get foes() { return foes; }, get quality() { return qLevel; }, get tramps() { return tramps; }, get portalsList() { return portals; }, get spaceObjs() { return spaceObjs; }, get loot() { return loot; }, spawnJet, openCrate, get crate() { return CRATE; }, buyHeadStart, attach, release, AIR_G, MAX_FALL, DT, Sfx, Music, press, unpress, startReady,
+  get vines() { return vines; }, get apples() { return apples; }, get foes() { return foes; }, get quality() { return qLevel; }, get tramps() { return tramps; }, get portalsList() { return portals; }, get spaceObjs() { return spaceObjs; }, get loot() { return loot; }, spawnJet, openCrate, openCareer, get MAP() { return MAP; }, mapGo, mapPlay, careerFail, get crate() { return CRATE; }, buyHeadStart, attach, release, AIR_G, MAX_FALL, DT, Sfx, Music, press, unpress, startReady,
   MP, get ghostPin() { return ghostPin; }, mpStartMatch, localStart, get LOCAL() { return LOCAL; }, localPress, localUnpress, useWorld, mpHostStart, mpSelect, mpAgain, mpForfeit, openMp, mpRender, get curScreen() { return curScreen; },
   get scale() { return scale; }, get viewW() { return viewW; }, get viewH() { return viewH; }, get zoomK() { return zoomK; }, get rotPref() { return rotPref; }, get texts() { return texts; }, resize, toggleFullscreen, toggleRotate,
   get perf() { return { quality: qLevel, auto: qAuto, max: qMax, capped: perf.capped, checking: !!perf.check, steps: stats.steps, work: stats.work, tiles: tileBuilds }; }, setQuality, setQualityChoice, qualityWindow,
@@ -140,6 +141,7 @@ mpInit();
 lbInit();
 accountInit();
 uiInit();
+careerInit();
 inputInit();
 resetWorld();
 refreshMenu();

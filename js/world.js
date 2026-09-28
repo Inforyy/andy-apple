@@ -8,6 +8,7 @@
 let vines = [], apples = [], shrooms = [], foes = [], parts = [], texts = [], fishes = [], tramps = [], portals = [];
 let spaceObjs = []; // de ruimte: planetoïden (stuiteren), een ufo en satellieten
 let lootLastX = -Infinity; // x van de laatst neergezette kist (zie addLoot)
+let pups = [];      // power-ups in carrièrelevels, zie career.js
 let loot = [];      // kisten (loot-boxes) om op te pakken, zie physics.js en game.js
 let gen = { x: 0, special: 0 };
 let run = null;
@@ -35,6 +36,7 @@ const WORLD_VARS = {
   portals:     [() => portals,       v => { portals = v; },       () => []],
   spaceObjs:   [() => spaceObjs,     v => { spaceObjs = v; },     () => []],
   loot:        [() => loot,          v => { loot = v; },          () => []],
+  pups:        [() => pups,          v => { pups = v; },          () => []],
   gen:         [() => gen,           v => { gen = v; },           () => ({ x: 0, special: 0 })],
   run:         [() => run,           v => { run = v; },           () => null],
   camX:        [() => camX,          v => { camX = v; },          () => 0],
@@ -99,7 +101,7 @@ function resetRunner() {
   if (game.mp) game.mp.finishX = game.mp.len ? START_X + game.mp.len * PX_PER_M : 0;
 }
 function resetWorld() {
-  vines = []; apples = []; shrooms = []; foes = []; parts = []; texts = []; fishes = []; tramps = []; portals = []; spaceObjs = []; loot = []; lootLastX = -Infinity;
+  vines = []; apples = []; shrooms = []; foes = []; parts = []; texts = []; fishes = []; tramps = []; portals = []; spaceObjs = []; loot = []; pups = []; lootLastX = -Infinity;
   time = 0;
   const C = game.career;
   // carrière en multiplayer: vaste seed, zodat de wereld elke keer (en bij beide spelers) hetzelfde is
@@ -188,13 +190,15 @@ function addVine(x, ay, len, type, bi, force) {
 const LANES = [-1000, -540, -80];
 function genNext() {
   const m = (gen.x - START_X) / PX_PER_M;
-  const d = diffAt(m), dc = Math.min(1, d);
-  const bi = biomeIndexAt(m), F = features(bi);
+  const d = diffAt(m), dc = Math.min(1, d), dx = Math.min(1.3, d); // dx: carrière gaat verder dan 1 (zie levelInfo)
+  const bi = biomeIndexAt(m), C = game.career;
+  let F = features(bi);
+  if (C && C.ch.includes('rotten')) F = Object.assign({}, F, { rotten: F.rotten + 0.22, icy: F.icy + 0.14 }); // uitdaging: rotte boel
   // eindeloze modus: hoe sneller Andy gaat, hoe ruimer de lianen staan (anders wordt het te druk)
   const fast = !game.career && !game.mp && G ? clamp((Math.abs(G.vx) - 700) / 900, 0, 1) : 0;
   // meer upgrades = grotere gaten en vaker een ontbrekende liaan; rond een biomegrens juist even rustig (buffer)
   const up = upgradePower(), calm = inBiomeBuffer(m);
-  const x = gen.x + grand(470, 520) + d * grand(40, 140) + fast * grand(140, 260) + (calm ? 0 : up * grand(60, 170));
+  const x = gen.x + grand(470, 520) + dx * grand(40, 140) + fast * grand(140, 260) + (calm ? 0 : up * grand(60, 170));
   const vbi = biomeIndexAt((x - START_X) / PX_PER_M);
   gen.col++;
 
@@ -202,7 +206,7 @@ function genNext() {
   const tip = v => v.ay + v.pts.length * SEG_LEN * TIP_F;
   for (let li = LANES.length - 1; li >= 0; li--) {
     const lowest = li === LANES.length - 1;
-    if (!lowest && m > 12 && !calm && genRandom() < 0.08 + 0.3 * dc + 0.25 * fast + 0.22 * up) { laneTips[li] = null; continue; }
+    if (!lowest && m > 12 && !calm && genRandom() < 0.08 + 0.3 * dx + 0.25 * fast + 0.22 * up) { laneTips[li] = null; continue; }
     let ay = LANES[li] + Math.sin(gen.col * 0.55 + li * 2.1) * 70 + grand(-15, 15);
     let len = grand(470, 540);
     if (lowest) { // haalbaarheid: het uiteinde moet bereikbaar zijn vanaf de laagste liaan ervoor
@@ -267,7 +271,12 @@ function genNext() {
   // af en toe een kist (niet in multiplayer). Math.random: de kisten horen niet bij de vaste wereld van een level.
   if (!game.mp && m > 60 && !calm && Math.random() < LOOT_CHANCE) addLoot(mid + rand(-60, 60), clamp(LANES[(Math.random() * 3) | 0] + rand(260, 420), CEIL_Y + 80, HAZARD_Y - 170));
   if (calm) { gen.x = x; gen.low = low; gen.tips = laneTips; return; } // buffer rond een biomegrens: geen vijanden
-  const fk = 1 + 0.6 * d;
+  // carrière: tijdelijke power-ups (vaste plekken per level: hash, geen genRandom, zodat de wereld gelijk blijft)
+  if (C && m > 40 && x < C.finishX - 400 && hash(gen.col * 7.31 + C.n * 13.7) < (C.boss ? 0.16 : 0.1)) {
+    const types = C.boss ? ['star', 'star', 'wings', 'clock', 'magnet'] : ['star', 'magnet', 'wings', 'turbo', 'clock'];
+    pups.push({ x: mid, y: clamp(LANES[(hash(gen.col * 3.7) * 3) | 0] + 330, CEIL_Y + 100, HAZARD_Y - 180), type: types[(hash(gen.col * 1.9 + C.n) * types.length) | 0], t: 0 });
+  }
+  const fk = (1 + 0.6 * d) * (C && C.ch.includes('swarm') ? 2.5 : 1);
   const fy = y => clamp(y, CEIL_Y, HAZARD_Y - 160);
   if (genRandom() < F.wasps * fk) foes.push({ type: 'wasp', x0: mid + grand(-40, 40), y0: fy(ym), x: mid, y: ym, t: grand(0, 6), ax: grand(20, 60), ay: grand(30, 80), r: 15, bi: vbi });
   if (genRandom() < F.fire * fk) foes.push({ type: 'fire', x: (gen.x + x) / 2 + grand(-50, 50), y: HAZARD_Y + 40, vy: 0, wait: grand(0.2, 1.6), r: 16, bi: vbi });

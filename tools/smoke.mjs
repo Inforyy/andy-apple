@@ -208,6 +208,21 @@ async function main() {
   await js(`document.getElementById('btnCrBack').click()`);
 
   console.log('Carrière');
+  // wereldkaart: het eerste bezoek speelt het intro-filmpje (wereld 1, pad naar level 1)
+  await js(`(() => { const c = __andy.save.career; c.unlocked = 1; c.anim = 0; c.at = 1; __andy.openCareer(); })()`);
+  check(await until(`__andy.curScreen === 'career' && !!__andy.MAP.cine`, 1500), 'wereldkaart opent met het intro-filmpje');
+  check(await until('__andy.save.career.anim === 1 && !__andy.MAP.cine && !__andy.MAP.walk', 9000), 'pad naar level 1 gevuld, Andy staat erbij');
+  // wereld voltooid: filmpje met de overtocht naar wereld 2
+  await js(`(() => { const c = __andy.save.career; c.unlocked = 6; c.anim = 5; c.at = 5; __andy.openCareer(); })()`);
+  check(await until('__andy.save.career.anim === 6 && __andy.MAP.at === 6', 12000), 'wereld 1 voltooid: overtocht naar wereld 2');
+  await js(`document.getElementById('btnMapPlay').click()`);
+  check(await until('__andy.game.career && __andy.game.career.n === 6 && __andy.curScreen === null', 1000), 'level 2-1 start vanaf de kaart');
+  // baasgevecht met tijdslimiet en harten
+  await js('__andy.startReady(10)');
+  check(await js('!!__andy.run.boss && __andy.run.hearts === 3 && __andy.run.timeLeft > 0'), 'baasgevecht: baas, 3 harten en een tijdslimiet');
+  await swing('__andy.press()', '__andy.unpress()', 1.5);
+  await js(`__andy.careerFail('Tijd op!', 'test')`);
+  check(await until(`__andy.curScreen === 'over' && document.getElementById('overTitle').textContent === 'Tijd op!'`, 4000), 'mislukt level: eigen eindtekst');
   await js('__andy.startReady(1)');
   check(await until('__andy.game.career && __andy.game.career.n === 1', 1000), 'level 1 start');
   await swing('__andy.press()', '__andy.unpress()', 1);

@@ -17,7 +17,7 @@ GitHub Pages deploys from `main` root. Work happens on `claude/*` branches that 
 
 - **Run**: open `index.html` in a browser. It must keep working via `file://`, which is why there are no ES modules.
 - **Smoke test**: `node tools/smoke.mjs` (Node 18+, finds `chromium`/`google-chrome` itself or uses `CHROME=...`). It needs no npm packages; it drives headless Chromium over the DevTools protocol.
-  - It clicks through the menus and plays Endless (with a head-start, a trip to space, a biome transition, going underwater and opening a loot box), career levels (including the four style biomes), split-screen, Kiwi and the chase mode.
+  - It clicks through the menus and plays Endless (with a head-start, a trip to space, a biome transition, going underwater and opening a loot box), the career (world map with the unlock and world-clear cutscenes, a boss level and a failed level) and career levels (including the four style biomes), split-screen, Kiwi and the chase mode.
   - It fails on any JS exception or `console.error`.
   - `ANDY_URL=http://localhost:8000/ node tools/smoke.mjs` runs the same test against a server, as GitHub Pages would serve it.
 - **Benchmark**: `node tools/perf.mjs` (same setup as the smoke test) prints fps, p95, simulation/render time and the cost of the background buffer per quality level and biome, plus the tile-cache size after 30 s. Headless Chromium usually renders in software (SwiftShader), so compare before/after on the same machine rather than reading the absolute numbers.
@@ -35,7 +35,7 @@ GitHub Pages deploys from `main` root. Work happens on `claude/*` branches that 
 ### Script loading: classic scripts sharing one global scope
 `index.html` loads the scripts in this fixed order:
 
-`config, util, data, save, audio, view, world, physics, effects, render-bg, render-world, online, mp-online, mp-local, game, main`
+`config, util, data, save, audio, view, world, physics, effects, render-bg, render-world, online, mp-online, mp-local, career, game, main`
 
 Top-level `let`/`const`/`function` in these classic scripts share the global lexical scope. Any file can therefore read **and reassign** another file's `let` (e.g. `camX`, `G`, `vines`, `save`), which the code relies on heavily. This is why the code does not use ES modules: imported bindings are read-only, and `type="module"` doesn't work on `file://`. Consequences:
 
@@ -55,6 +55,7 @@ Top-level `let`/`const`/`function` in these classic scripts share the global lex
   - `RARITY`/`LOOT`/`rollLoot` (loot boxes and cosmetics; opening and the wardrobe live in `game.js`, drawing in `render-world.js`)
 - `online.js` holds the Supabase client (`getSb`, `sbOn`), leaderboard (`lbOn`) and accounts. `mp-online.js` uses the same client for lobbies.
 - `game.js` holds game flow, screens, the debug screen, `uiInit` (all menu buttons), input and HUD.
+- `career.js` holds the career mode: the world map (a pseudo-3D island per world drawn on `#mapCanvas`, replacing the game view while `curScreen === 'career'`; `openCareer`, `mapFrame`, the unlock/world-clear cutscenes driven by `save.career.anim`), and what runs inside a career level: time limit, challenges (`CHALLENGES` in `data.js`), power-ups (`pups`, `run.pow`) and boss fights (`run.boss`, `run.projs`). `levelInfo(n)` in `data.js` defines each level (world, boss, length, time, challenges, difficulty).
 
 ### Core ideas
 - **Fixed-step simulation with interpolated rendering.**
