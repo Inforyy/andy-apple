@@ -609,7 +609,14 @@ function updateApples(dt) {
     if (!alive) continue;
     const dx = G.x - a.x, dy = G.y - a.y, d = Math.hypot(dx, dy);
     if (d < G_R + APPLE_PICK) { collect(a); apples.splice(i, 1); continue; }
-    if (mr && d < mr) { const s = Math.min(d, (520 + (mr - d) * 6) * dt); a.x += dx / d * s; a.y += dy / d * s; if (a.vine) a.vine = null; }
+    // Magneet: een gevangen appel beweegt met Andy mee (anders haalt hij Andy op topsnelheid nooit in) en komt
+    // daarbij snel dichterbij. Eenmaal gevangen blijft hij tot een ruimer bereik vastzitten, ook als Andy er net voorbij is.
+    if (mr && (d < mr || (a.mag && d < mr * 2.5))) {
+      a.mag = true; if (a.vine) a.vine = null;
+      a.x += G.vx * dt; a.y += G.vy * dt;
+      const s = Math.min(d, (520 + (mr - Math.min(d, mr)) * 6) * dt);
+      a.x += dx / d * s; a.y += dy / d * s;
+    }
   }
 }
 function collect(a) {

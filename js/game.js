@@ -240,7 +240,6 @@ function refreshMenu() {
   const next = Math.min(save.career.unlocked, LEVELS);
   $('mmCareer').textContent = `Level ${next} · ★ ${stars} / ${LEVELS * 3}`;
   $('mmEndless').textContent = save.best ? `Record: ${save.best} m` : 'Kom zo ver mogelijk';
-  $('mmMulti').textContent = save.mpGames ? `${save.mpWins} van ${save.mpGames} gewonnen` : 'Tegen een vriend';
   setToggle('btnRotate', rotPref);
   setToggle('btnFullscreen', isFullscreen());
   $('rowFullscreen').classList.toggle('hidden', !canFullscreen || IN_APP);
@@ -319,6 +318,8 @@ function renderCareer() {
     grid.appendChild(b);
   }
 }
+// Spelmodi: Multiplayer (online), Duel (op één scherm), Tegen Kiwi (race) en Achtervolging
+function openModes() { showScreen('modes'); }
 function openCareer() { renderCareer(); showScreen('career'); }
 function openShop(from) { shopReturn = from; renderShop(); showScreen('shop'); }
 function on(id, fn) {
@@ -364,7 +365,7 @@ function renderCrate() {
   $('crWardrobe').innerHTML = `<button class="wd-tile${cur ? '' : ' sel'}" data-wid=""><svg class="ico" aria-hidden="true"><use href="#i-none"/></svg><small>Geen</small></button>` +
     cosm.filter(it => it.kind === k).map(it => owned(it.id)
       ? `<button class="wd-tile${cur === it.id ? ' sel' : ''}" data-wid="${it.id}" style="--rc:${RARITY[it.r].col}"><span>${it.icon}</span><small>${escHtml(it.name)}</small></button>`
-      : `<div class="wd-tile locked" style="--rc:${RARITY[it.r].col}" title="${RARITY[it.r].name}: nog niet gevonden"><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg><small>${RARITY[it.r].name}</small></div>`).join('');
+      : `<div class="wd-tile locked" style="--rc:${RARITY[it.r].col}" title="${RARITY[it.r].name}: nog niet gevonden"><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg><small>???</small></div>`).join('');
   for (const t of $('crTabs').children) on(t, () => { CRATE.tab = t.dataset.tab; renderCrate(); });
   for (const c of $('crWardrobe').querySelectorAll('button[data-wid]')) on(c, () => { save.cosm[k] = c.dataset.wid; persist(); renderCrate(); });
 }
@@ -373,7 +374,7 @@ function drawPreview() {
   const c = $('crPreview'), g = c.getContext('2d');
   g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height);
   const s0 = ctx, G0 = G, GC0 = GC;
-  ctx = g; g.setTransform(4.6, 0, 0, 4.6, c.width / 2, c.height * 0.56);
+  ctx = g; g.setTransform(4.1, 0, 0, 4.1, c.width / 2, c.height * 0.6);
   G = { x: 0, y: 0, state: 'stand', standT: 1 + (time % 2), angle: 0, trickRot: 0, balloonT: 0, turboT: 0, invuln: 0, vx: 0, vy: 0, trick: null };
   try { GC = myLook(); drawGorilla(); } finally { ctx = s0; G = G0; GC = GC0; }
 }
@@ -456,25 +457,23 @@ function uiInit() {
   on('btnDebugBack', () => { refreshMenu(); showScreen('settings'); });
 
   on('btnPlay', () => startReady(null));
-  on('btnMulti', openMp);
-  on('btnMpBack', toMenu);
+  on('btnMulti', openModes);
+  on('btnModesBack', toMenu);
+  // terug uit het multiplayerscherm: naar Spelmodi (toMenu sluit ook een lobby of een lokaal potje af)
+  const backToModes = () => { MP.local = false; MP.aiLvl = null; toMenu(); openModes(); };
+  on('btnMpBack', backToModes);
   on('btnMpSetup', () => showScreen('mpSetup'));
   on('btnMpSetupBack', () => { mpRender(); showScreen('mp'); });
   on('btnMpHost', () => { MP.local = false; mpLobbyHost(); });
   on('btnMpShare', mpShare);
-  on('btnMpManualHost', () => { MP.local = false; mpHost(); });
-  on('btnMpJoin', () => { MP.local = false; mpJoinStart(); });
-  on('btnMpLocal', () => { mpClose(false); MP.local = true; MP.aiLvl = null; mpMsg(''); mpRender(); });
   const AI_KEY = 'andyApples.aiLevel';
   const vsKiwi = () => { mpClose(false); MP.local = true; let l = 1; try { l = clamp(+(localStorage.getItem(AI_KEY) || 1), 0, 3); } catch (e) { /* */ } MP.aiLvl = l; mpMsg(''); };
-  on('btnMpAi', () => { vsKiwi(); if (MP.sel.mode === 'chase') MP.sel.mode = 'race'; mpRender(); });
-  on('btnMpChase', () => { vsKiwi(); MP.sel.mode = 'chase'; mpRender(); });
+  on('btnModeOnline', () => { MP.local = false; MP.aiLvl = null; openMp(); });
+  on('btnModeDuo', () => { mpClose(false); MP.local = true; MP.aiLvl = null; mpMsg(''); if (MP.sel.mode === 'chase') MP.sel.mode = 'race'; openMp(); });
+  on('btnModeKiwi', () => { vsKiwi(); MP.sel.mode = 'race'; openMp(); }); // tegen Kiwi is altijd een race
+  on('btnModeChase', () => { vsKiwi(); MP.sel.mode = 'chase'; openMp(); });
   for (const b of document.querySelectorAll('[data-ai]')) on(b, () => { MP.aiLvl = +b.dataset.ai; try { localStorage.setItem(AI_KEY, MP.aiLvl); } catch (e) { /* */ } mpRender(); });
-  on('btnMpConnect', mpConnect);
-  on('btnMpMakeAnswer', mpMakeAnswer);
-  on('btnMpCopyOffer', () => mpCopy('mpOffer'));
-  on('btnMpCopyAnswer', () => mpCopy('mpAnswer'));
-  on('btnMpCancel', () => { if (MP.local) { MP.local = false; MP.aiLvl = null; } else mpClose(MP.inRoom); mpMsg(''); mpRender(); });
+  on('btnMpCancel', () => { if (MP.local) { backToModes(); return; } mpClose(MP.inRoom); mpMsg(''); mpRender(); });
   on('mpModeRace', () => mpSelect('race'));
   on('mpModeEnd', () => mpSelect('endurance'));
   on('mpModeChase', () => mpSelect('chase'));
@@ -588,7 +587,8 @@ function inputInit() {
       if (curScreen === 'pause') resumeGame();
       else if (!curScreen) pauseGame();
       else if (curScreen === 'mpSetup') { mpRender(); showScreen('mp'); }
-      else if (curScreen === 'mp') toMenu();
+      else if (curScreen === 'mp') $('btnMpBack').click();
+      else if (curScreen === 'modes') toMenu();
       else if (curScreen === 'lb') showScreen(lbReturn);
       else if (curScreen === 'account') showScreen('menu');
       else if (curScreen === 'debug') showScreen('settings');

@@ -77,7 +77,6 @@ Top-level `let`/`const`/`function` in these classic scripts share the global lex
   - Each guest has one WebRTC link to the host, and the host relays everyone's state (`onLinkMsg`).
   - Everyone simulates their own Andy in the same seeded world; the others are drawn as extra gorillas.
   - Supabase Realtime (broadcast + presence) is used only to list lobbies and for signalling.
-  - Manual code exchange (no server) works for 2 players.
 - **Upgrades** are pure functions of level, read through `lvl(id)`, which returns 0 during multiplayer.
 - **Save system**: `localStorage['andyApples.save.v1']`.
   - Always go through `normalizeSave()` (it validates and clamps every field and migrates old saves) and `persist()` (which also marks the cloud save dirty).

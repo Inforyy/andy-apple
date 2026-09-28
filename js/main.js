@@ -107,7 +107,7 @@ window.__andyBack = () => {
 // Debug-/testhaak (handig voor automatische tests)
 window.__andy = { get G() { return G; }, get run() { return run; }, get game() { return game; }, get save() { return save; },
   get vines() { return vines; }, get apples() { return apples; }, get foes() { return foes; }, get quality() { return qLevel; }, get tramps() { return tramps; }, get portalsList() { return portals; }, get spaceObjs() { return spaceObjs; }, get loot() { return loot; }, openCrate, get crate() { return CRATE; }, buyHeadStart, attach, release, AIR_G, MAX_FALL, DT, Sfx, Music, press, unpress, startReady,
-  MP, get ghostPin() { return ghostPin; }, mpStartMatch, localStart, get LOCAL() { return LOCAL; }, localPress, localUnpress, useWorld, mpHost, mpConnect, mpMakeAnswer, mpJoinStart, mpHostStart, mpSelect, mpAgain, mpForfeit, openMp, mpRender, get curScreen() { return curScreen; },
+  MP, get ghostPin() { return ghostPin; }, mpStartMatch, localStart, get LOCAL() { return LOCAL; }, localPress, localUnpress, useWorld, mpHostStart, mpSelect, mpAgain, mpForfeit, openMp, mpRender, get curScreen() { return curScreen; },
   get scale() { return scale; }, get viewW() { return viewW; }, get viewH() { return viewH; }, get zoomK() { return zoomK; }, get rotPref() { return rotPref; }, get texts() { return texts; }, resize, toggleFullscreen, toggleRotate,
   get perf() { return { quality: qLevel, auto: qAuto, steps: stats.steps, work: stats.work, tiles: tileBuilds }; }, setQuality, setQualityChoice };
 
@@ -134,3 +134,8 @@ checkJoinLink();
 if (lbOn()) lbSubmit().catch(() => { /* offline */ });
 try { if (sbOn() && (localStorage.getItem('andyApples.auth') || /access_token|code=/.test(location.hash + location.search))) accEnsure().catch(() => { /* offline */ }); } catch (e) { /* */ }
 requestAnimationFrame(frame);
+// opstartscherm weg zodra het eerste beeld getekend is (twee rAF's: dan staat dat beeld echt op het scherm)
+requestAnimationFrame(() => requestAnimationFrame(() => {
+  const sp = $('splash'); if (!sp) return;
+  sp.classList.add('out'); setTimeout(() => sp.remove(), 450);
+}));

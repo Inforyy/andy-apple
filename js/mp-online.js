@@ -7,8 +7,7 @@
 //  Het netwerk is een ster: elke gast heeft één directe WebRTC-verbinding met de host, en de host
 //  stuurt de standen van iedereen door naar de rest. Iedereen speelt in precies dezelfde wereld
 //  (dezelfde seed), simuleert zijn eigen Andy en stuurt zijn positie; de anderen worden als extra
-//  gorilla's getekend. Supabase (optioneel) wordt alleen gebruikt om lobbies te vinden en om de
-//  verbinding op te zetten; zonder Supabase kun je nog met z'n tweeën handmatig codes uitwisselen.
+//  gorilla's getekend. Supabase wordt alleen gebruikt om lobbies te vinden en om de verbinding op te zetten.
 // =====================================================================
 const MP_NAME_KEY = 'andyApples.name';
 const MP_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
@@ -20,11 +19,11 @@ const RACE_GRACE = 20;      // race: na de eerste finish krijgen de anderen nog 
 const MP_FREE_VINES = 10;
 const randHex = n => { const b = new Uint8Array(n); try { crypto.getRandomValues(b); } catch (e) { for (let i = 0; i < n; i++) b[i] = Math.random() * 256; } return Array.from(b, x => x.toString(16).padStart(2, '0')).join(''); };
 const CLIENT_ID = randHex(8); // per tabblad: wie is wie
-const MP = { role: null, manual: false, busy: false, local: false, aiLvl: null, inRoom: false, myId: CLIENT_ID,
+const MP = { role: null, busy: false, local: false, aiLvl: null, inRoom: false, myId: CLIENT_ID,
   links: new Map(),   // host: id -> verbinding met een gast
   link: null,         // gast: verbinding met de host
   players: new Map(), // alle andere spelers in de lobby: id -> speler
-  hostName: '', hostSig: null, sig: null, lobby: null, joinId: null, joinTimer: 0, manLink: null,
+  hostName: '', hostSig: null, sig: null, lobby: null, joinId: null, joinTimer: 0,
   sel: { mode: 'race', len: 1000 }, cfg: null, match: null, sendAcc: 0, hideTimer: 0, wins: 0, games: 0 };
 let ghostPin = { v: null, k: 0, x: 0, y: 0 };
 const GC1 = GC;
@@ -54,43 +53,6 @@ function myName() {
   return n;
 }
 const escHtml = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-
-// ---- codes: sessiebeschrijving -> (gecomprimeerde) tekst om te kopiëren ----
-const b64u = bytes => { let s = ''; for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
-const unb64u = str => { const s = atob(str.replace(/-/g, '+').replace(/_/g, '/')); const b = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; };
-async function packCode(desc) {
-  // overbodige regels weg: korter = makkelijker kopiëren
-  const sdp = desc.sdp.split('\r\n').filter(l => l && !/^a=(extmap-allow-mixed|msid-semantic)/.test(l)).join('\r\n') + '\r\n';
-  const bytes = new TextEncoder().encode(JSON.stringify({ t: desc.type, s: sdp }));
-  if (typeof CompressionStream === 'function') {
-    try {
-      const buf = await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer();
-      return 'AAMP1z' + b64u(new Uint8Array(buf));
-    } catch (e) { /* dan maar ongecomprimeerd */ }
-  }
-  return 'AAMP1j' + b64u(bytes);
-}
-async function unpackCode(code) {
-  const m = /^AAMP1([zj])([A-Za-z0-9_-]+)$/.exec(String(code || '').replace(/\s+/g, ''));
-  if (!m) throw new Error('Dit is geen geldige code. Kopieer de hele code en probeer het opnieuw.');
-  let bytes;
-  try { bytes = unb64u(m[2]); } catch (e) { throw new Error('De code is beschadigd. Kopieer hem opnieuw.'); }
-  if (m[1] === 'z') {
-    if (typeof DecompressionStream !== 'function') throw new Error('Deze browser is te oud voor multiplayer. Probeer een recente Chrome, Edge, Firefox of Safari.');
-    try { bytes = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer()); }
-    catch (e) { throw new Error('De code is onvolledig. Kopieer de hele code opnieuw.'); }
-  }
-  const o = JSON.parse(new TextDecoder().decode(bytes));
-  if (!o || (o.t !== 'offer' && o.t !== 'answer') || typeof o.s !== 'string') throw new Error('Dit is geen geldige code.');
-  return { type: o.t, sdp: o.s };
-}
-function waitIce(pc) {
-  return new Promise(res => {
-    if (pc.iceGatheringState === 'complete') return res();
-    const t = setTimeout(res, 3500);
-    pc.addEventListener('icegatheringstatechange', () => { if (pc.iceGatheringState === 'complete') { clearTimeout(t); res(); } });
-  });
-}
 
 // ---- verbindingen ----
 // Een "link" is één WebRTC-verbinding: bij de host één per gast, bij een gast alleen die met de host.
@@ -152,7 +114,6 @@ function linkDown(link, reason) {
     if (MP.links.get(link.id) !== link) return;
     MP.links.delete(link.id);
     closeLink(link);
-    if (link === MP.manLink) MP.manLink = null;
     const P = MP.players.get(link.id);
     if (P) {
       P.inRoster = false;
@@ -160,7 +121,6 @@ function linkDown(link, reason) {
       if (M && !M.result && M.ids.includes(P.id)) { P.left = true; showBanner(`${P.name} is weg`, ''); mpCheck(); }
       else MP.players.delete(P.id);
     }
-    if (!MP.lobby && !MP.links.size) { mpLost(reason || 'De andere speler is weg.'); return; } // handmatig: alleen die ene gast
     rosterSend(); lobbyTrack(); mpRender();
   } else if (link === MP.link) mpLost(MP.inRoom ? 'De verbinding met de host is weg.' : reason);
 }
@@ -308,7 +268,7 @@ function lobbyRender() {
   const ul = $('mpLobbies');
   if (!ul) return;
   const empty = t => `<li class="empty">${t}</li>`;
-  if (!sbOn()) ul.innerHTML = empty('Online lobbies zijn nog niet ingesteld. Speel op dit apparaat of verbind handmatig.');
+  if (!sbOn()) ul.innerHTML = empty('Online lobbies zijn nog niet ingesteld. Speel op dit apparaat.');
   else if (LOBBY.status === 'loading' || LOBBY.status === 'off') ul.innerHTML = empty('Lobbies zoeken…');
   else if (LOBBY.status === 'err') ul.innerHTML = empty('Geen verbinding met de server. Heb je internet?');
   else if (!LOBBY.list.length) ul.innerHTML = empty('Nog geen open lobbies. Maak er zelf een!');
@@ -386,7 +346,7 @@ function sigOnMsg(m) {
     } else if (!link || !link.pc) return;
     else if (m.t === 'answer' && typeof m.sdp === 'string') link.pc.setRemoteDescription({ type: 'answer', sdp: m.sdp }).then(() => flushIce(link), () => linkDown(link, ''));
     else if (m.t === 'ice') addIce(link, m.c);
-  } else if (MP.role === 'guest' && !MP.manual) {
+  } else if (MP.role === 'guest') {
     if (MP.hostSig && m.from !== MP.hostSig) return;
     if (m.t === 'full') mpJoinFail('Deze lobby is vol.');
     else if (m.t === 'offer' && typeof m.sdp === 'string') guestOffer(m);
@@ -435,86 +395,13 @@ function mpShare() {
   else mpMsg(link, true);
 }
 
-// ---- handmatig verbinden (zonder server): twee codes uitwisselen, alleen met z'n tweeën ----
-async function mpHost() {
-  if (MP.busy) return;
-  mpClose(false);
-  MP.role = 'host'; MP.busy = true; MP.manual = true;
-  $('mpManual').open = true;
-  $('mpOffer').value = ''; $('mpAnswerIn').value = ''; $('btnMpCopyOffer').disabled = true;
-  mpMsg(''); mpRender();
-  try {
-    const link = MP.manLink = newLink('m' + randHex(4), 'Speler');
-    MP.links.set(link.id, link);
-    const pc = linkPc(link);
-    bindDc(link, pc.createDataChannel('andy', { ordered: true }));
-    await pc.setLocalDescription(await pc.createOffer());
-    await waitIce(pc);
-    if (link.pc !== pc) return;
-    $('mpOffer').value = await packCode(pc.localDescription);
-    $('btnMpCopyOffer').disabled = false;
-  } catch (e) { mpClose(false); mpMsg('Hosten mislukt: ' + e.message, false); }
-  MP.busy = false; mpRender();
-}
-async function mpConnect() {
-  const link = MP.manLink, pc = link && link.pc;
-  if (!pc || MP.role !== 'host') return;
-  try {
-    const d = await unpackCode($('mpAnswerIn').value);
-    if (d.type !== 'answer') throw new Error('Dit is een uitnodigingscode. Je hebt de ANTWOORDcode van je vriend nodig.');
-    if (pc.signalingState !== 'have-local-offer') throw new Error('Deze uitnodiging is al gebruikt. Klik op Annuleren en begin opnieuw.');
-    await pc.setRemoteDescription(d);
-    mpMsg('Verbinden…', true);
-    mpRender();
-  } catch (e) { mpMsg(e.message, false); }
-}
-function mpJoinStart() {
-  mpClose(false); MP.role = 'guest'; MP.manual = true;
-  $('mpOfferIn').value = ''; $('mpAnswer').value = '';
-  mpMsg(''); mpRender();
-  setTimeout(() => $('mpOfferIn').focus(), 50);
-}
-async function mpMakeAnswer() {
-  if (MP.busy) return;
-  let d;
-  try {
-    d = await unpackCode($('mpOfferIn').value);
-    if (d.type !== 'offer') throw new Error('Dit is een antwoordcode. Je hebt de UITNODIGINGScode van de host nodig.');
-  } catch (e) { mpMsg(e.message, false); return; }
-  mpClose(false);
-  MP.role = 'guest'; MP.busy = true; MP.manual = true; MP.hostName = 'de host';
-  $('mpAnswer').value = ''; $('btnMpCopyAnswer').disabled = true;
-  mpMsg(''); mpRender();
-  try {
-    const link = MP.link = newLink('host', 'Host');
-    const pc = linkPc(link);
-    pc.ondatachannel = e => bindDc(link, e.channel);
-    await pc.setRemoteDescription(d);
-    await pc.setLocalDescription(await pc.createAnswer());
-    await waitIce(pc);
-    if (link.pc !== pc) return;
-    $('mpAnswer').value = await packCode(pc.localDescription);
-    $('btnMpCopyAnswer').disabled = false;
-  } catch (e) { mpClose(false); MP.role = 'guest'; MP.manual = true; mpMsg('Antwoordcode maken mislukt: ' + e.message, false); }
-  MP.busy = false; mpRender();
-}
-function mpCopy(id) {
-  const ta = $(id), code = ta.value;
-  if (!code) return;
-  ta.focus(); ta.select();
-  const done = () => mpMsg('Gekopieerd! Plak de code in een bericht aan je vriend.', true);
-  if (IN_APP) { AndroidBridge.copy(code); done(); }
-  else if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, () => { try { document.execCommand('copy'); done(); } catch (e) { mpMsg('Selecteer en kopieer de code handmatig.', true); } });
-  else { try { document.execCommand('copy'); done(); } catch (e) { mpMsg('Selecteer en kopieer de code handmatig.', true); } }
-}
-
 // ---- sluiten ----
 function mpClose(sayBye) {
   if (sayBye) mpSend({ type: 'bye' });
   for (const l of MP.links.values()) closeLink(l, sayBye ? 300 : 0);
   if (MP.link) closeLink(MP.link, sayBye ? 300 : 0);
-  MP.links = new Map(); MP.link = null; MP.manLink = null; MP.players.clear();
-  MP.role = null; MP.manual = false; MP.busy = false; MP.inRoom = false; MP.myId = CLIENT_ID;
+  MP.links = new Map(); MP.link = null; MP.players.clear();
+  MP.role = null; MP.busy = false; MP.inRoom = false; MP.myId = CLIENT_ID;
   MP.lobby = null; MP.joinId = null; MP.hostSig = null; MP.hostName = ''; MP.wins = 0; MP.games = 0;
   clearTimeout(MP.joinTimer);
   sigClose();
@@ -538,50 +425,54 @@ function mpLost(reason) {
 
 // ---- lobby-scherm ----
 function mpMsg(text, ok) { const el = $('mpMsg'); el.textContent = text || ''; el.className = 'msg ' + (ok ? 'ok' : 'err'); }
+const MP_MODE_DESC = {
+  race: 'Eerst bij de finish wint. Val je, dan kom je terug, maar verlies je tijd.',
+  endurance: 'Wie het langst volhoudt, wint. Een storm jaagt je op.',
+  kiwi: 'Race naar de finish tegen Kiwi.',
+  chase: 'Kiwi zit je achterna en wordt steeds sneller. Hoe lang blijf je hem voor?',
+};
 function mpRender() {
-  const loc = !!MP.local, vsAi = loc && MP.aiLvl != null, host = MP.role === 'host', guest = MP.role === 'guest', man = MP.manual;
-  const room = loc || MP.inRoom, busy = !room && !!MP.role && !man;
-  $('mpTitle').textContent = vsAi ? 'Tegen Kiwi' : loc ? 'Op één scherm' : room ? (host ? 'Jouw lobby' : `Lobby van ${MP.hostName || 'de host'}`) : 'Multiplayer';
+  const loc = !!MP.local, vsAi = loc && MP.aiLvl != null, host = MP.role === 'host', guest = MP.role === 'guest';
+  const room = loc || MP.inRoom, busy = !room && !!MP.role;
+  const chase = vsAi && MP.sel.mode === 'chase';
+  $('mpTitle').textContent = chase ? 'Achtervolging' : vsAi ? 'Tegen Kiwi' : loc ? 'Duel' : room ? (host ? 'Jouw lobby' : `Lobby van ${MP.hostName || 'de host'}`) : 'Multiplayer';
   $('mpHome').classList.toggle('hidden', room || busy);
-  $('mpOnline').classList.toggle('hidden', man);
-  $('mpDevice').classList.toggle('hidden', man);
-  $('mpManPick').classList.toggle('hidden', !!MP.role);
-  $('mpManHost').classList.toggle('hidden', !(host && man));
-  $('mpManJoin').classList.toggle('hidden', !(guest && man));
-  $('mpAnswerStep').classList.toggle('hidden', !guest || (!MP.busy && !$('mpAnswer').value));
   $('mpBusy').classList.toggle('hidden', !busy);
   $('mpBusyTxt').textContent = guest ? (MP.link ? `Verbinden met de lobby van ${MP.hostName}…` : `Lobby van ${MP.hostName} zoeken…`) : 'Lobby openen…';
   $('mpRoom').classList.toggle('hidden', !room);
-  $('btnMpCancel').classList.toggle('hidden', !room && !MP.role);
-  $('btnMpCancel').textContent = loc ? 'Andere modus' : room ? (host ? 'Lobby sluiten' : 'Lobby verlaten') : 'Annuleren';
-  document.querySelector('.mp-top .mp-name').classList.toggle('hidden', loc && !vsAi);
+  $('btnMpCancel').classList.toggle('hidden', loc || !MP.role); // lokaal doet ← hetzelfde
+  $('btnMpCancel').textContent = room ? (host ? 'Lobby sluiten' : 'Lobby verlaten') : 'Annuleren';
+  $('mpMe').classList.toggle('hidden', loc && !vsAi);
   lobbyRender();
   if (!room) { $('btnMpStart').classList.add('hidden'); return; } // de startknop staat onderaan, buiten de lobby-kaart
-  // spelers
-  const list = loc ? (vsAi ? [{ name: myName(), col: '#e8322b', me: 1 }, { name: 'Kiwi', col: GCK.band }] : [{ name: 'Speler 1', col: '#e8322b' }, { name: 'Speler 2', col: '#2f7fe0' }])
+  // spelers (bij Duel meteen met de besturing erbij)
+  const list = loc ? (vsAi ? [{ name: myName(), col: '#e8322b', me: 1 }, { name: 'Kiwi', col: GCK.band }]
+    : [{ name: 'Speler 1', col: '#e8322b', keys: '<kbd>SPATIE</kbd> of links/boven tikken' }, { name: 'Speler 2', col: '#2f7fe0', keys: '<kbd>↑</kbd> <kbd>ENTER</kbd> of rechts/onder tikken' }])
     : [{ name: myName(), col: '#e8322b', me: 1, host }].concat([...MP.players.values()].filter(P => P.inRoster).map(P => ({ name: P.name, col: P.col, host: guest && P.host })));
-  $('mpPlayers').innerHTML = list.map(p => `<li class="${p.me ? 'me' : ''}"><i style="background:${p.col}"></i>${escHtml(p.name)}${p.me ? ' <small>(jij)</small>' : ''}${p.host ? ' <small>host</small>' : ''}</li>`).join('');
-  $('mpCountTxt').textContent = loc ? '' : `${list.length} / ${MP_MAX}`;
-  $('mpShareRow').classList.toggle('hidden', !(host && MP.lobby));
-  // modus (achtervolging bestaat alleen tegen Kiwi)
+  const enough = loc || list.length >= 2;
+  $('mpPlayers').classList.toggle('stack', loc && !vsAi);
+  $('mpPlayers').innerHTML = list.map(p => `<li class="${p.me ? 'me' : ''}"><i style="background:${p.col}"></i><b>${escHtml(p.name)}</b>${p.me && !loc ? ' <small>jij</small>' : ''}${p.host ? ' <small>host</small>' : ''}${p.keys ? `<span class="keys">${p.keys}</span>` : ''}</li>`).join('')
+    + (enough ? '' : '<li class="empty">Wachten op andere spelers…</li>');
+  $('mpCountTxt').textContent = loc ? '' : `${list.length}/${MP_MAX}`;
+  $('btnMpShare').classList.toggle('hidden', !(host && MP.lobby));
+  // modus: achtervolging alleen tegen Kiwi; tegen Kiwi verder alleen race (geen keuze), endurance alleen met twee spelers
   if (MP.sel.mode === 'chase' && !vsAi) MP.sel.mode = 'race';
-  $('mpModeChase').classList.toggle('hidden', !vsAi);
-  $('mpModeChase').classList.toggle('sel', MP.sel.mode === 'chase');
+  if (vsAi && MP.sel.mode === 'endurance') MP.sel.mode = 'race';
+  $('mpModeRow').classList.toggle('hidden', vsAi);
+  $('mpModeChase').classList.toggle('hidden', !chase);
+  $('mpModeRace').classList.toggle('hidden', vsAi);
+  $('mpModeEnd').classList.toggle('hidden', vsAi);
+  $('mpModeDesc').textContent = MP_MODE_DESC[chase ? 'chase' : vsAi ? 'kiwi' : MP.sel.mode];
   const canPick = host || loc;
   $('mpModeWho').textContent = canPick ? '' : 'de host kiest';
-  $('mpModeRace').classList.toggle('sel', MP.sel.mode === 'race');
-  $('mpModeEnd').classList.toggle('sel', MP.sel.mode === 'endurance');
-  $('mpModeRace').disabled = $('mpModeEnd').disabled = !canPick;
+  for (const b of document.querySelectorAll('#mpModeRow [data-mode]')) { b.classList.toggle('sel', b.dataset.mode === MP.sel.mode); b.disabled = !canPick; }
   $('mpLens').classList.toggle('hidden', MP.sel.mode !== 'race');
   for (const b of document.querySelectorAll('[data-len]')) { b.classList.toggle('sel', +b.dataset.len === MP.sel.len); b.disabled = !canPick; }
   $('mpAiLvls').classList.toggle('hidden', !vsAi);
   for (const b of document.querySelectorAll('[data-ai]')) b.classList.toggle('sel', +b.dataset.ai === MP.aiLvl);
-  $('mpLocalKeys').classList.toggle('hidden', !loc || vsAi);
   // start
-  const enough = loc || list.length >= 2;
   $('btnMpStart').classList.toggle('hidden', !canPick);
   $('btnMpStart').disabled = !enough;
-  $('btnMpStart').textContent = enough ? 'Start' : 'Wachten op spelers…';
   $('mpGuestWait').classList.toggle('hidden', canPick);
 }
 function openMp() {
