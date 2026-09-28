@@ -136,23 +136,33 @@ function diffAt(m) {
 const TEMPO_MAX = 0.12, TEMPO_DIST = 4000;
 // Standaardtempo van het spel (100% in het debugmenu).
 // Werkt als tijdschaal: de physics-stappen blijven gelijk, er gaan er alleen minder per seconde.
-const BASE_SPEED = 0.56; // = 80% van het vorige standaardtempo (0,7)
+const BASE_SPEED = 0.65; // met GAME_SPEED 1,2: de simulatie loopt op ~0,78× echte tijd (was 0,56: te sloom)
 function timeScale() {
   let k = BASE_SPEED * (game.mp && !game.mp.local ? 1 : DBG.speed);
   if (!game.career && !game.mp && run) { const t = clamp(run.dist / TEMPO_DIST, 0, 1); k *= 1 + TEMPO_MAX * t * t * (3 - 2 * t); }
   return k;
 }
-function paletteAt(m) {
-  const i = biomeIndexAt(m), a = BIOMES[i], b = game.career ? a : BIOMES[i + 1] || a;
-  let t = 0;
-  if (b !== a) { const zone = 90; t = clamp((m - (b.start - zone)) / zone, 0, 1); }
-  const P = { a, b, t, ai: i, bi: b === a ? i : i + 1 };
+// Paletten worden bewaard en hergebruikt (niet elk beeld opnieuw 28 kleuren mengen). Lees ze alleen, pas ze niet aan.
+const palMemo = new Map();
+function makePalette(ai, bi, t) {
+  const a = BIOMES[ai], b = BIOMES[bi], P = { a, b, t, ai, bi };
   for (const k in a.rgb) {
     P[k + 'C'] = mixC(a.rgb[k], b.rgb[k], t);
     P[k] = rgbStr(P[k + 'C']);
   }
   return P;
 }
+function paletteAt(m) {
+  const i = biomeIndexAt(m), a = BIOMES[i], b = game.career ? a : BIOMES[i + 1] || a;
+  let t = 0;
+  if (b !== a) { const zone = 90; t = Math.round(clamp((m - (b.start - zone)) / zone, 0, 1) * 256) / 256; }
+  const bi = b === a ? i : i + 1, key = (i * 16 + bi) * 1000 + t * 256;
+  let P = palMemo.get(key);
+  if (!P) { if (palMemo.size > 80) palMemo.clear(); P = makePalette(i, bi, t); palMemo.set(key, P); }
+  return P;
+}
+// het palet van precies één biome (voor de gebufferde achtergrondtegels, zie tileLayer in render-bg.js)
+const palettePure = i => { const key = -1 - i; let P = palMemo.get(key); if (!P) { P = makePalette(i, i, 0); palMemo.set(key, P); } return P; };
 function styleWeight(P, style) { return (P.a.style === style ? 1 - P.t : 0) + (P.b.style === style ? P.t : 0); }
 
 // Uiterlijk van speciale lianen

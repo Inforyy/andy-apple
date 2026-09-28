@@ -411,6 +411,7 @@ function updateGorilla(dt, holdHang, holdAir) {
     // opnieuw springen vanaf de rots (met een nieuwe druk op de knop)
     if (playing && input.down && input.presses !== G.standPress) jump();
   } else if (G.state === 'air') {
+    const sp0 = Math.hypot(G.vx, G.vy); // vaart vóór de krachten van deze stap (voor de topsnelheid hieronder)
     G.airT += dt;
     if (G.noDive && G.airT > 1.2) G.noDive = false;
     // duiken: meteen merkbaar (een duw omlaag en een zoef), en hoe langer je vasthoudt, hoe harder
@@ -437,7 +438,13 @@ function updateGorilla(dt, holdHang, holdAir) {
     if (G.vy > maxFall) G.vy += (maxFall - G.vy) * Math.min(1, dt * 6);
     G.vx -= G.vx * 0.015 * dt;
     const sp = Math.hypot(G.vx, G.vy), maxS = maxSpeed() * (G.turboT > 0 ? 1.4 : 1) * (space ? 1.3 : 1) * (1 + 0.5 * G.dive); // duiken remt je voorwaartse vaart niet af
-    if (sp > maxS) { G.vx *= maxS / sp; G.vy *= maxS / sp; }
+    // Boven de topsnelheid: een overschot dat je meekreeg (goed getimede zwaai, turbo, trampoline) ebt snel
+    // weg (~0,3 s) in plaats van er meteen af te gaan, zodat het heel even echt sneller voelt. Zwaartekracht
+    // en duiken tijdens de vlucht kunnen het plafond niet verhogen: anders blijf je bij elke val te snel.
+    if (sp > maxS) {
+      const to = Math.min(sp, maxS + Math.max(0, sp0 - maxS) * Math.exp(-3.5 * dt), maxS * 1.5);
+      G.vx *= to / sp; G.vy *= to / sp;
+    }
     const prevFeet = G.y + FEET, prevX = G.x;
     G.x += G.vx * dt; G.y += G.vy * dt;
     for (const P of portals) { // door de voorkant van een blauw portaal vliegen
@@ -469,8 +476,9 @@ function updateGorilla(dt, holdHang, holdAir) {
         Sfx.tramp(); shake(3, 0.12);
       }
     }
-    // snelheidsspoor
-    if (sp > 850 && Math.random() < 0.5) addPart({ type: 'streak', x: G.x + rand(-12, 12), y: G.y + rand(-14, 14), vx: G.vx * 0.2, vy: G.vy * 0.2, life: 0.25, max: 0.25, col: 'rgba(255,255,255,.7)', r: 2, g: 0 });
+    // snelheidsspoor: pas bij echte vaart, en dichter naarmate je harder gaat (of boven de topsnelheid schiet)
+    const fast = (sp - maxSpeed() * 0.8) / (maxSpeed() * 0.4);
+    if (fast > 0 && Math.random() < Math.min(1, 0.25 + fast)) addPart({ type: 'streak', x: G.x + rand(-12, 12), y: G.y + rand(-14, 14), vx: G.vx * 0.2, vy: G.vy * 0.2, life: 0.25, max: 0.25, col: 'rgba(255,255,255,.7)', r: 2, g: 0 });
     if (G.turboT > 0) addPart({ x: G.x - G.vx * 0.02, y: G.y - G.vy * 0.02, vx: rand(-40, 40), vy: rand(-40, 40), life: 0.35, max: 0.35, col: Math.random() < 0.5 ? '#ffd23f' : '#ff8a1a', r: rand(3, 6), g: 0 });
     if (holdAir) tryGrab();
     if (G.state === 'air') {

@@ -204,6 +204,7 @@ function refreshMenu() {
   $('btnFullscreen').textContent = isFullscreen() ? 'Volledig scherm uit' : 'Volledig scherm';
   $('btnFullscreen').classList.toggle('hidden', !canFullscreen || IN_APP);
   $('btnRotate').classList.toggle('hidden', IN_APP);
+  $('btnQuality').textContent = qAuto ? `Grafisch: automatisch (${QUALITY_NAMES[qLevel]})` : `Grafisch: ${QUALITY_NAMES[qLevel]}`;
   $('saveStats').innerHTML = statsHtml();
   setBadge($('btnShop'), affordableCount());
   $('btnLb').classList.toggle('hidden', !lbOn());
@@ -289,6 +290,7 @@ function renderDbg() {
   $('dbgZoom').value = DBG.zoom; $('dbgSpeed').value = DBG.speed;
   $('dbgZoomV').textContent = Math.round(DBG.zoom * 100) + '%';
   $('dbgSpeedV').textContent = Math.round(DBG.speed * 100) + '%';
+  $('btnDbgFps').textContent = DBG.fps ? 'FPS-meter uit' : 'FPS-meter aan';
 }
 function dbgUnlock() {
   if (checksum('andy-debug:' + $('dbgPass').value) === DBG_HASH) { DBG.open = true; dbgPersist(); $('dbgMsg').textContent = ''; renderDbg(); }
@@ -304,7 +306,9 @@ function uiInit() {
   $('dbgZoom').addEventListener('input', e => { DBG.zoom = clamp(+e.target.value || 1, 0.4, 2.5); dbgPersist(); resize(); renderDbg(); });
   $('dbgSpeed').addEventListener('input', e => { DBG.speed = clamp(+e.target.value || 1, 0.25, 2.5); dbgPersist(); renderDbg(); });
   on('btnDbgReset', () => { DBG.zoom = 1; DBG.speed = 1; dbgPersist(); resize(); renderDbg(); });
-  on('btnDbgLock', () => { DBG.open = false; DBG.zoom = 1; DBG.speed = 1; dbgPersist(); resize(); renderDbg(); });
+  on('btnDbgFps', () => { DBG.fps = !DBG.fps; dbgPersist(); renderDbg(); });
+  on('btnDbgLock', () => { DBG.open = false; DBG.zoom = 1; DBG.speed = 1; DBG.fps = false; dbgPersist(); resize(); renderDbg(); });
+  on('btnQuality', () => { cycleQuality(); refreshMenu(); });
   on('btnDebugBack', () => { refreshMenu(); showScreen('settings'); });
 
   on('btnPlay', () => startReady(null));

@@ -88,7 +88,8 @@ function localLoop(dt) {
     }
     acc += dt * ts;
     let n = 0;
-    while (acc >= STEP && n < 12) { n++; acc -= STEP; }
+    while (acc >= STEP && n < MAX_STEPS) { n++; acc -= STEP; }
+    stats.steps = n;
     if (acc > STEP) acc = 0;
     renderAlpha = acc / STEP;
     for (const i of [0, 1]) {

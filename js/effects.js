@@ -126,7 +126,9 @@ function updateLife(dt, P) {
   }
   // vlinders / libellen / vuurvliegjes in de middenlaag
   const want = st === 'jungle' || st === 'swamp' || st === 'savanne' || st === 'night' ? 5 : 0;
-  while (life.flyers.filter(f => f.kind !== 'parrot').length < want) {
+  let have = 0;
+  for (const f of life.flyers) if (f.kind !== 'parrot') have++;
+  for (; have < want; have++) {
     life.flyers.push({ kind: st === 'swamp' ? 'dragonfly' : st === 'night' ? 'glow' : 'butterfly', f: 0.5, lx: camX * 0.5 + rand(-100, viewW + 400), y: rand(200, 620), ph: rand(0, 6),
       col: ['#ff7eb6', '#ffd23f', '#7ec8ff', '#ff9a3c', '#c084fc'][(Math.random() * 5) | 0] });
   }

@@ -24,27 +24,106 @@ function crossfade(P, fn) {
   ctx.save(); ctx.globalAlpha *= P.t; fn(P.b, P.bi, P.t); ctx.restore();
 }
 
-// Langzaam bewegende achtergrondlagen worden in een buffer (op lagere resolutie) getekend
-// en pas opnieuw opgebouwd als de camera ver genoeg is verschoven: dat scheelt veel rekenwerk.
-let PAD = 0;
-let layerCaches = {};
-function cachedLayer(name, f, fy, key, draw) {
-  const M = 280, res = scale * pr * Q.bg;
-  const offX = camX * f, offY = (camY - baseTop()) * fy, W = viewW + 2 * M, H = viewH + 2 * M;
-  let L = layerCaches[name];
-  if (!L || L.W !== W || L.H !== H || L.res !== res) {
-    const c = document.createElement('canvas'); c.width = Math.ceil(W * res); c.height = Math.ceil(H * res);
-    L = layerCaches[name] = { c, g: c.getContext('2d'), W, H, res, key: null };
+// ---- Achtergrondlagen als tegels ----
+// De parallaxlagen (bergen, bosrand, bomen, reuzenstammen) veranderen niet in de tijd. Ze worden daarom in vaste
+// tegels getekend, in laagcoördinaten (los van de camera), en bewaard. Per beeld worden er hooguit een paar nieuwe
+// tegels vooruit getekend, net buiten beeld. Vroeger werd een hele laag in één keer opnieuw opgebouwd zodra de
+// camera ver genoeg was verschoven, en tijdens een biome-overgang tot 30 keer: dat gaf duidelijke haperingen.
+// Een tegel hoort bij één biome; tijdens een overgang worden de tegels van beide biomes over elkaar gevloeid.
+let PAD = 0;               // marge rond het getekende gebied (de tekenfuncties tekenen tot PAD buiten beeld)
+let layerCaches = {};      // per laag: { map: tegels, bt }  (per wereld, zie WORLD_VARS)
+const TILE = 512, TILE_M = 24;   // tegelmaat en overlap-marge in laagcoördinaten
+const TILE_BUDGET = 2;           // zoveel tegels mogen er per beeld 'vooruit' getekend worden
+let tileBudget = TILE_BUDGET, tileBuilds = 0, tileAheadBi = -1;
+const tilePool = [];
+// f/fy = parallax; top(bt) = boven deze laaghoogte is de laag leeg; empty(x0, x1) = geen inhoud in dit stuk
+const LAYERS = {
+  mtnfar:  { f: 0.05, fy: 0.04, top: bt => MTN_LAYERS[0].base - bt - 460, draw: P => drawMountainLayer(P, MTN_LAYERS[0]) },
+  mtnfar2: { f: 0.12, fy: 0.1,  top: bt => 380 - bt,                      draw: P => drawMountainLayer(P, MTN_LAYERS[1]) },
+  forest:  { f: 0.22, fy: 0.2,  top: bt => HAZARD_Y + 5 - bt - 320,       draw: P => drawForestLayer(P) },
+  trees:   { f: 0.36, fy: 0.34, top: bt => HAZARD_Y + 30 - bt - 640,      draw: P => drawMidTreeLayer(P) },
+  trunks:  { f: 0.62, fy: 0.62, top: null, empty: (x0, x1) => !trunkIn(x0, x1), draw: P => drawTrunkLayer(P) },
+};
+function takeCanvas(px) {
+  for (let i = tilePool.length - 1; i >= 0; i--) if (tilePool[i].width === px) return tilePool.splice(i, 1)[0];
+  const c = document.createElement('canvas'); c.width = c.height = px; return c;
+}
+function dropTile(T) { if (T.c && tilePool.length < 16) tilePool.push(T.c); T.c = null; }
+// Tekent één tegel door de camera tijdelijk zo te zetten dat de bestaande tekenfunctie precies dit stuk tekent
+function buildTile(T, C, L, bi, tx, ty, res) {
+  const px = Math.ceil((TILE + 2 * TILE_M) * res);
+  let c = T.c;
+  if (!c || c.width !== px) { if (c) dropTile(T); c = takeCanvas(px); }
+  const g = c.g || (c.g = c.getContext('2d'));
+  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, px, px);
+  g.setTransform(res, 0, 0, res, TILE_M * res, TILE_M * res);
+  const s = [camX, camY, viewW, viewH, ctx];
+  btOverride = C.bt; camX = tx * TILE / L.f; camY = C.bt + ty * TILE / L.fy; viewW = viewH = TILE; PAD = TILE_M; ctx = g;
+  try { L.draw(palettePure(bi)); } finally { [camX, camY, viewW, viewH, ctx] = s; PAD = 0; btOverride = null; }
+  T.c = c; T.res = res; tileBuilds++;
+}
+// must = tekenen, ook als het budget op is (er is niets anders om te laten zien)
+function getTile(C, L, bi, tx, ty, res, must) {
+  const k = `${bi}:${tx}:${ty}`;
+  let T = C.map.get(k);
+  if (T) {
+    // resolutie flink veranderd (zoom, kwaliteit): zo nodig geleidelijk opnieuw tekenen
+    if (Math.abs(T.res / res - 1) > 0.2 && tileBudget > 0) { tileBudget--; buildTile(T, C, L, bi, tx, ty, res); }
+    return T;
   }
-  if (L.key !== key || Math.abs(offX - L.offX) > M * 0.85 || Math.abs(offY - L.offY) > M * 0.85) {
-    const g = L.g;
-    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, L.c.width, L.c.height);
-    g.setTransform(res, 0, 0, res, M * res, M * res);
-    const main = ctx; ctx = g; PAD = M;
-    try { draw(); } finally { ctx = main; PAD = 0; }
-    L.key = key; L.offX = offX; L.offY = offY;
+  if (!must && tileBudget <= 0) return null;
+  tileBudget--;
+  T = { c: null, res, tx, ty };
+  buildTile(T, C, L, bi, tx, ty, res);
+  C.map.set(k, T);
+  return T;
+}
+function tileLayer(name, P) {
+  const L = LAYERS[name], bt = baseTop();
+  let C = layerCaches[name];
+  if (!C || C.bt !== bt) { if (C) for (const T of C.map.values()) dropTile(T); C = layerCaches[name] = { map: new Map(), bt }; }
+  const m = ctx.getTransform(), res = m.a;
+  const off = camX * L.f, offY = (camY - bt) * L.fy;
+  const tx0 = Math.floor(off / TILE), tx1 = Math.floor((off + viewW) / TILE);
+  const ty0 = Math.floor(offY / TILE), ty1 = Math.floor((offY + viewH) / TILE);
+  const top = L.top ? L.top(bt) : -Infinity;
+  const wb = P.a === P.b ? 0 : P.t, wa = 1 - wb, ga = ctx.globalAlpha;
+  const skip = (tx, ty) => (ty + 1) * TILE + TILE_M < top || (L.empty && L.empty(tx * TILE - TILE_M, (tx + 1) * TILE + TILE_M));
+  // tegels op hele apparaatpixels neerzetten: anders geven de randen van aangrenzende tegels dunne naden
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const blit = T => {
+    const x = T.tx * TILE - off, y = T.ty * TILE - offY;
+    const dx0 = Math.round(m.e + m.a * x), dx1 = Math.round(m.e + m.a * (x + TILE));
+    const dy0 = Math.round(m.f + m.d * y), dy1 = Math.round(m.f + m.d * (y + TILE));
+    const s = TILE_M * T.res, w = TILE * T.res;
+    ctx.drawImage(T.c, s, s, w, w, dx0, dy0, dx1 - dx0, dy1 - dy0);
+  };
+  try {
+    for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
+      if (skip(tx, ty)) continue;
+      let A = wa > 0.001 ? getTile(C, L, P.ai, tx, ty, res, wb <= 0.001) : null;
+      const B = wb > 0.001 ? getTile(C, L, P.bi, tx, ty, res, wa <= 0.001) : null;
+      if (!A && !B) A = getTile(C, L, wa >= wb ? P.ai : P.bi, tx, ty, res, true);
+      if (A && B) { ctx.globalAlpha = ga * wa; blit(A); ctx.globalAlpha = ga * wb; blit(B); ctx.globalAlpha = ga; }
+      else blit(A || B);
+    }
+  } finally { ctx.globalAlpha = ga; ctx.setTransform(m); }
+  // vooruit tekenen (net buiten beeld), ook voor de volgende biome als die eraan komt
+  if (tileBudget > 0) {
+    const bis = [];
+    if (wa > 0.001) bis.push(P.ai);
+    if (wb > 0.001) bis.push(P.bi);
+    if (tileAheadBi >= 0 && !bis.includes(tileAheadBi)) bis.push(tileAheadBi);
+    for (const bi of bis) for (let ty = ty0 - 1; ty <= ty1 + 1 && tileBudget > 0; ty++) for (let tx = tx0 - 1; tx <= tx1 + 1 && tileBudget > 0; tx++) {
+      if (!skip(tx, ty) && !C.map.has(`${bi}:${tx}:${ty}`)) getTile(C, L, bi, tx, ty, res, false);
+    }
   }
-  ctx.drawImage(L.c, -M - (offX - L.offX), -M - (offY - L.offY), W, H);
+  // tegels ver buiten beeld opruimen
+  if (C.map.size > 60) {
+    const cx = (tx0 + tx1) / 2, cy = (ty0 + ty1) / 2;
+    const all = [...C.map].sort((p, q) => (Math.abs(q[1].tx - cx) + Math.abs(q[1].ty - cy)) - (Math.abs(p[1].tx - cx) + Math.abs(p[1].ty - cy)));
+    for (let i = 0; i < all.length - 40; i++) { dropTile(all[i][1]); C.map.delete(all[i][0]); }
+  }
 }
 const paletteKey = P => `${P.ai}-${P.bi}-${Math.round(P.t * 30)}`;
 
@@ -232,12 +311,15 @@ function drawSky(P) {
   const nightW = styleWeight(P, 'night'), iceW = styleWeight(P, 'ice'), volcW = styleWeight(P, 'volcano');
   // sterren
   if (nightW > 0) {
+    const ga = ctx.globalAlpha; // één kleur + globalAlpha: geen nieuwe kleurstring per ster per beeld
+    ctx.fillStyle = '#ffffff';
     for (let i = 0; i < 140; i++) {
       const x = ((hash(i * 1.37) * viewW * 1.6 - camX * 0.02) % (viewW + 20) + viewW + 20) % (viewW + 20);
       const y = hash(i * 2.71) * viewH * 0.75, s = hash(i * 5.1) < 0.1 ? 2.4 : 1.4;
-      ctx.fillStyle = `rgba(255,255,255,${nightW * (0.3 + 0.7 * Math.abs(Math.sin(time * 1.3 + i)))})`;
+      ctx.globalAlpha = ga * nightW * (0.3 + 0.7 * Math.abs(Math.sin(time * 1.3 + i)));
       ctx.fillRect(x, y, s, s);
     }
+    ctx.globalAlpha = ga;
     for (const s of life.shoot) {
       const k = s.t / 0.8, x = s.x - k * 260, y = s.y + k * 110;
       const gr = ctx.createLinearGradient(x, y, x + 80, y - 34);
@@ -248,9 +330,12 @@ function drawSky(P) {
   // noorderlicht boven de ijsbergen
   if (iceW > 0) {
     for (let k = 0; k < 3; k++) {
-      const gr = ctx.createLinearGradient(0, 40 + k * 30, 0, 200 + k * 30);
-      gr.addColorStop(0, `rgba(120,255,200,0)`); gr.addColorStop(0.5, `rgba(120,255,200,${0.16 * iceW})`); gr.addColorStop(1, 'rgba(120,200,255,0)');
-      ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(0, 220);
+      ctx.fillStyle = cachedGrad(`aurora${k}:${Math.round(iceW * 20)}`, () => {
+        const gr = ctx.createLinearGradient(0, 40 + k * 30, 0, 200 + k * 30);
+        gr.addColorStop(0, `rgba(120,255,200,0)`); gr.addColorStop(0.5, `rgba(120,255,200,${0.16 * iceW})`); gr.addColorStop(1, 'rgba(120,200,255,0)');
+        return gr;
+      });
+      ctx.beginPath(); ctx.moveTo(0, 220);
       for (let x = 0; x <= viewW + 20; x += 20) ctx.lineTo(x, 70 + k * 35 + Math.sin(x * 0.006 + time * 0.3 + k * 2) * 30 + Math.sin(x * 0.017 - time * 0.5) * 10);
       ctx.lineTo(viewW + 20, 240 + k * 30); ctx.lineTo(0, 240 + k * 30); ctx.fill();
     }
@@ -307,7 +392,7 @@ const MTN_LAYERS = [
 ];
 function drawMountains(P) {
   for (const L of MTN_LAYERS) {
-    cachedLayer('mtn' + L.key, L.f, L.fy, paletteKey(P), () => drawMountainLayer(P, L));
+    tileLayer('mtn' + L.key, P);
     if (L.key === 'far' && styleWeight(P, 'volcano') > 0) drawVolcanoSmoke(P, L);
   }
 }
@@ -315,9 +400,10 @@ function drawMountainLayer(P, L) {
   const hazeTop = P.skyBotC, col = P[L.key + 'C'];
   crossfade(P, (B) => {
     const p = MTN[B.style], base = layerY(L.base, L.fy), off = camX * L.f, amp = p.amp * L.ampK;
+    // punten op een vast raster in de wereld, zodat aangrenzende tegels precies op elkaar aansluiten
     const pts = [];
-    for (let sx = -20 - PAD; sx <= viewW + 40 + PAD; sx += 12) pts.push([sx, base - mtnH((sx + off) / (L.ampK * 0.9 + 0.1), p, L.seed) * L.ampK]);
-    const path = () => { ctx.beginPath(); ctx.moveTo(-20 - PAD, viewH + 10 + PAD); for (const [x, y] of pts) ctx.lineTo(x, y); ctx.lineTo(viewW + 40 + PAD, viewH + 10 + PAD); ctx.closePath(); };
+    for (let k = Math.floor((off - 100 - PAD) / 12); k * 12 - off <= viewW + 40 + PAD; k++) { const sx = k * 12 - off; pts.push([sx, base - mtnH((sx + off) / (L.ampK * 0.9 + 0.1), p, L.seed) * L.ampK]); }
+    const path = () => { ctx.beginPath(); ctx.moveTo(pts[0][0], viewH + 10 + PAD); for (const [x, y] of pts) ctx.lineTo(x, y); ctx.lineTo(pts[pts.length - 1][0], viewH + 10 + PAD); ctx.closePath(); };
     const gr = ctx.createLinearGradient(0, base - amp, 0, base + 40);
     gr.addColorStop(0, rgbStr(mixC(col, hazeTop, L.haze))); gr.addColorStop(1, rgbStr(mixC(col, hazeTop, L.haze + 0.4)));
     ctx.fillStyle = gr; path(); ctx.fill();
@@ -329,7 +415,7 @@ function drawMountainLayer(P, L) {
         ctx.beginPath(); ctx.moveTo(pts[i][0], pts[i][1]); ctx.lineTo(pts[i][0] + 70, base + 20); ctx.lineTo(pts[i][0] + 18, base + 20); ctx.fill();
       }
     }
-    if (p.snow) { ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.fillRect(-20 - PAD, -PAD, viewW + 60 + 2 * PAD, base - amp * p.snow * L.ampK - (1 - L.ampK) * 40 + PAD); }
+    if (p.snow) { ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.fillRect(pts[0][0], -PAD, viewW + 200 + 2 * PAD, base - amp * p.snow * L.ampK - (1 - L.ampK) * 40 + PAD); }
     ctx.restore();
     if (B.style === 'night') { ctx.strokeStyle = 'rgba(200,210,255,.3)'; ctx.lineWidth = 1.5; ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke(); }
     // vulkanen met gloeiende krater
@@ -390,7 +476,7 @@ function drawFlocks(P) {
   }
 }
 function drawForestLine(P) {
-  cachedLayer('forest', 0.22, 0.2, paletteKey(P), () => drawForestLayer(P));
+  tileLayer('forest', P);
   const w = styleWeight(P, 'savanne');
   if (w > 0) { // giraffen die rustig over de savanne wandelen
     const off = camX * 0.22, base = layerY(HAZARD_Y + 5, 0.2), col = rgbStr(mixC(mixC(P.midC, P.skyBotC, 0.5), [0, 0, 0], 0.12));
@@ -408,7 +494,7 @@ function drawForestLayer(P) {
   const col = mixC(P.midC, P.skyBotC, 0.5), colL = mixC(col, P.skyBotC, 0.25), colD = mixC(col, [0, 0, 0], 0.12);
   crossfade(P, (B, bi, w) => {
     const st = B.style;
-    ctx.fillStyle = rgbStr(col); ctx.fillRect(-10 - PAD, base - 40, viewW + 20 + 2 * PAD, viewH + PAD);
+    ctx.fillStyle = rgbStr(col); ctx.fillRect(-10 - PAD, base - 40, viewW + 20 + 2 * PAD, viewH + 2 * PAD + Math.max(0, 40 - base));
     const sp = st === 'savanne' ? 120 : 30;
     for (let i = Math.floor((off - 100 - PAD) / sp); i <= Math.floor((off + viewW + 100 + PAD) / sp); i++) {
       const x = i * sp + hash(i * 1.9) * sp * 0.8 - off, h = hash(i * 3.7), top = base - 50 - noise1(i * 0.15) * 70 - h * 40;
@@ -441,7 +527,7 @@ function drawGiraffe(x, y, col, ph) {
 }
 function drawMidTrees(P) {
   if (layerY(HAZARD_Y + 30, 0.34) - 560 > viewH) return;
-  cachedLayer('trees', 0.36, 0.34, paletteKey(P), () => drawMidTreeLayer(P));
+  tileLayer('trees', P);
 }
 function drawMidTreeLayer(P) {
   const f = 0.36, fy = 0.34, sp = 175, off = camX * f;
@@ -457,7 +543,7 @@ function drawMidTreeLayer(P) {
   // nevel over de middenlaag, zodat hij op de achtergrond blijft
   const fog = ctx.createLinearGradient(0, base - 450, 0, base);
   fog.addColorStop(0, rgbStr(P.skyBotC, 0.12)); fog.addColorStop(1, rgbStr(P.skyBotC, 0.45));
-  ctx.fillStyle = fog; ctx.fillRect(-PAD, base - 450, viewW + 2 * PAD, viewH + PAD + 450);
+  ctx.fillStyle = fog; ctx.fillRect(-PAD, base - 450, viewW + 2 * PAD, viewH + 2 * PAD + 450 + Math.max(0, -base));
 }
 function drawFlyers() {
   if (Q.lite) return;
@@ -476,8 +562,8 @@ function drawFlyers() {
       ctx.fillStyle = '#2fa6a0'; ctx.fillRect(-2, -1, 14, 2); circ(0, 0, 2.5);
     } else if (f.kind === 'glow') {
       const a = 0.4 + 0.6 * Math.abs(Math.sin(f.ph * 2));
-      const gr = ctx.createRadialGradient(0, 0, 0, 0, 0, 12); gr.addColorStop(0, `rgba(170,255,200,${a})`); gr.addColorStop(1, 'rgba(170,255,200,0)');
-      ctx.fillStyle = gr; circ(0, 0, 12);
+      ctx.globalAlpha = Math.min(1, a / 0.75); // de gloeisprite is in het midden 75% dekkend
+      ctx.drawImage(glowSprite('170,255,200').c, -12, -12, 24, 24);
     } else { // papegaai
       const w = Math.sin(f.ph * 10) * 8;
       ctx.fillStyle = f.col; ell(0, 0, 11, 5);
@@ -497,15 +583,27 @@ const TRUNK = {
   volcano: { bark: '#1e1412', moss: null },
   night:   { bark: '#1b1f3a', moss: '#1e4a42' },
 };
-function drawGiantTrunks(P) {
-  const f = 0.62, fy = 0.62, sp = 880, off = camX * f, yOff = (camY - baseTop()) * fy;
+const TRUNK_SP = 880;
+// staat er een reuzenstam (met zijtakken) in dit stuk van de laag? (laagcoördinaten)
+function trunkIn(x0, x1) {
+  for (let i = Math.floor((x0 - 700) / TRUNK_SP); i <= Math.floor((x1 + 300) / TRUNK_SP); i++) {
+    if (hash(i * 4.1) < 0.2) continue;
+    const w = 60 + hash(i * 5.7) * 45, x = i * TRUNK_SP + hash(i * 2.3) * 400;
+    if (x + w * 1.3 + 180 >= x0 && x - w * 1.3 - 180 <= x1) return true;
+  }
+  return false;
+}
+function drawGiantTrunks(P) { tileLayer('trunks', P); }
+function drawTrunkLayer(P) {
+  const f = 0.62, fy = 0.62, sp = TRUNK_SP, off = camX * f, yOff = (camY - baseTop()) * fy;
+  const y0 = -10 - PAD, y1 = viewH + 10 + PAD;
   crossfade(P, (B) => {
     const T = TRUNK[B.style], bark = mixC(hexToRgb(T.bark), P.skyBotC, 0.28), barkD = mixC(bark, [0, 0, 0], 0.35), barkL = mixC(bark, [255, 255, 255], 0.12);
     const leafC = mixC(hexToRgb(B.c.canopy), P.skyBotC, 0.3), leafL = mixC(hexToRgb(B.c.canopy2), P.skyBotC, 0.3);
-    for (let i = Math.floor((off - 300) / sp); i <= Math.floor((off + viewW + 300) / sp); i++) {
+    for (let i = Math.floor((off - 700 - PAD) / sp); i <= Math.floor((off + viewW + 300 + PAD) / sp); i++) {
       if (hash(i * 4.1) < 0.2) continue;
       const w = 60 + hash(i * 5.7) * 45, x = i * sp + hash(i * 2.3) * 400 - off;
-      if (x + w < -60 || x - w > viewW + 60) continue;
+      if (x + w * 1.3 + 180 < -PAD || x - w * 1.3 - 180 > viewW + PAD) continue; // zijtakken en wortels steken ver uit
       const wq = Math.round(w / 5) * 5;
       ctx.save(); ctx.translate(x, 0);
       ctx.fillStyle = cachedGrad(`trunk${B.style}${paletteKey(P)}${wq}`, () => {
@@ -513,20 +611,21 @@ function drawGiantTrunks(P) {
         gr.addColorStop(0, rgbStr(barkD)); gr.addColorStop(0.35, rgbStr(bark)); gr.addColorStop(0.7, rgbStr(barkL)); gr.addColorStop(1, rgbStr(barkD));
         return gr;
       });
-      ctx.fillRect(-wq / 2, -10, wq, viewH + 20); ctx.restore();
+      ctx.fillRect(-wq / 2, y0, wq, y1 - y0); ctx.restore();
       // wortels onderaan
       const gy = layerY(HAZARD_Y + 10, fy);
-      if (gy < viewH + 40) { ctx.fillStyle = rgbStr(barkD); ctx.beginPath(); ctx.moveTo(x - w / 2, gy - 80); ctx.quadraticCurveTo(x - w / 2 - 10, gy - 10, x - w * 1.3, gy + 10); ctx.lineTo(x + w * 1.3, gy + 10); ctx.quadraticCurveTo(x + w / 2 + 10, gy - 10, x + w / 2, gy - 80); ctx.fill(); }
-      // schorsstructuur
+      if (gy < viewH + 40 + PAD) { ctx.fillStyle = rgbStr(barkD); ctx.beginPath(); ctx.moveTo(x - w / 2, gy - 80); ctx.quadraticCurveTo(x - w / 2 - 10, gy - 10, x - w * 1.3, gy + 10); ctx.lineTo(x + w * 1.3, gy + 10); ctx.quadraticCurveTo(x + w / 2 + 10, gy - 10, x + w / 2, gy - 80); ctx.fill(); }
+      // schorsstructuur (punten op een vast raster in de wereld, zodat tegels naadloos aansluiten)
       ctx.strokeStyle = rgbStr(barkD, 0.6); ctx.lineWidth = 2;
+      const g0 = Math.floor((yOff + y0) / 24) * 24 - yOff;
       for (let k = 0; k < 5; k++) {
         const bx = x - w / 2 + (k + 0.5) * w / 5;
         ctx.beginPath();
-        for (let y = -10; y <= viewH + 10; y += 24) { const xx = bx + Math.sin((y + yOff) * 0.03 + k * 1.7 + i) * 3; y === -10 ? ctx.moveTo(xx, y) : ctx.lineTo(xx, y); }
+        for (let y = g0; y <= y1 + 24; y += 24) { const xx = bx + Math.sin((y + yOff) * 0.03 + k * 1.7 + i) * 3; y === g0 ? ctx.moveTo(xx, y) : ctx.lineTo(xx, y); }
         ctx.stroke();
       }
       // mos / sneeuw, zijtakken met blad en een gewikkelde liaan
-      const cell = 150, c0 = Math.floor((yOff - 20) / cell), c1 = Math.floor((yOff + viewH + 20) / cell);
+      const cell = 150, c0 = Math.floor((yOff + y0 - 100) / cell), c1 = Math.floor((yOff + y1 + 30) / cell);
       for (let c = c0; c <= c1; c++) {
         const y = c * cell - yOff, hh = hash(i * 13.1 + c * 7.7);
         if (T.moss && hh < 0.45) { ctx.fillStyle = rgbStr(mixC(hexToRgb(T.moss), P.skyBotC, 0.3), 0.8); ell(x + (hh < 0.22 ? -1 : 1) * w * 0.32, y + 40, w * 0.22, 16); }
@@ -540,7 +639,8 @@ function drawGiantTrunks(P) {
       }
       ctx.strokeStyle = rgbStr(mixC(hexToRgb(B.c.vine), P.skyBotC, 0.35)); ctx.lineWidth = 5;
       ctx.beginPath();
-      for (let y = -10; y <= viewH + 10; y += 10) { const xx = x + Math.sin((y + yOff) * 0.012 + i) * w * 0.52; y === -10 ? ctx.moveTo(xx, y) : ctx.lineTo(xx, y); }
+      const v0 = Math.floor((yOff + y0) / 10) * 10 - yOff;
+      for (let y = v0; y <= y1 + 10; y += 10) { const xx = x + Math.sin((y + yOff) * 0.012 + i) * w * 0.52; y === v0 ? ctx.moveTo(xx, y) : ctx.lineTo(xx, y); }
       ctx.stroke();
     }
   });

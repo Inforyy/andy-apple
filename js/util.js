@@ -17,5 +17,16 @@ function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = 
 function hexToRgb(h) { h = h.replace('#', ''); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; }
 function rgbStr(c, a) { return a === undefined ? `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})` : `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`; }
 function mixC(a, b, t) { return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)]; }
-function shade(hex, f) { const c = hexToRgb(hex); return rgbStr(c.map(v => f < 0 ? v * (1 + f) : v + (255 - v) * f)); }
+// shade wordt tijdens het tekenen vaak met dezelfde kleuren aangeroepen: onthouden scheelt parsen en afval
+const shadeMemo = new Map();
+function shade(hex, f) {
+  const k = hex + f;
+  let s = shadeMemo.get(k);
+  if (s === undefined) {
+    s = rgbStr(hexToRgb(hex).map(v => f < 0 ? v * (1 + f) : v + (255 - v) * f));
+    if (shadeMemo.size > 500) shadeMemo.clear();
+    shadeMemo.set(k, s);
+  }
+  return s;
+}
 const $ = id => document.getElementById(id);

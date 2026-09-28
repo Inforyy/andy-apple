@@ -114,8 +114,8 @@ function drawShrooms() {
     ctx.fillStyle = '#f3e6cc'; ctx.fillRect(-11, -56, 22, 70);
     ctx.fillStyle = '#d8c7a4'; ctx.fillRect(-11, -56, 6, 70);
     ctx.fillStyle = shade(col, -0.3); ctx.beginPath(); ctx.ellipse(0, -52, 52, 30, 0, Math.PI, 0); ctx.fill();
-    const cg = ctx.createRadialGradient(-14, -76, 4, 0, -56, 52); cg.addColorStop(0, shade(col, 0.35)); cg.addColorStop(1, col);
-    ctx.fillStyle = cg; ctx.beginPath(); ctx.ellipse(0, -56, 50, 28, 0, Math.PI, 0); ctx.fill();
+    ctx.fillStyle = cachedGrad('shroom' + col, () => { const cg = ctx.createRadialGradient(-14, -76, 4, 0, -56, 52); cg.addColorStop(0, shade(col, 0.35)); cg.addColorStop(1, col); return cg; });
+    ctx.beginPath(); ctx.ellipse(0, -56, 50, 28, 0, Math.PI, 0); ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,.88)'; circ(-24, -66, 6); circ(4, -76, 7); circ(26, -64, 5); circ(-6, -60, 4);
     ctx.restore();
   }
@@ -150,11 +150,13 @@ function drawTramps() {
 const spaceWeight = () => clamp((-(camY + viewH / 2) - 1900) / 1300, 0, 1);
 function drawSpace(w) {
   ctx.fillStyle = `rgba(3,4,18,${w})`; ctx.fillRect(0, 0, viewW, viewH);
+  ctx.fillStyle = '#ffffff';
   for (let i = 0; i < 160; i++) {
     const x = hash(i * 3.17) * viewW, y = ((hash(i * 7.3) * viewH * 1.5 - camY * 0.05) % viewH + viewH) % viewH;
-    ctx.fillStyle = `rgba(255,255,255,${w * (0.3 + 0.7 * Math.abs(Math.sin(time * 1.1 + i)))})`;
+    ctx.globalAlpha = w * (0.3 + 0.7 * Math.abs(Math.sin(time * 1.1 + i)));
     ctx.fillRect(x, y, hash(i) < 0.12 ? 2.4 : 1.3, hash(i) < 0.12 ? 2.4 : 1.3);
   }
+  ctx.globalAlpha = 1;
   ctx.save(); ctx.globalAlpha = w;
   const px = viewW * 0.22, py = viewH * 0.3;
   ctx.strokeStyle = 'rgba(230,200,150,.55)'; ctx.lineWidth = 6; ctx.beginPath(); ctx.ellipse(px, py, 120, 26, -0.3, Math.PI * 0.95, Math.PI * 2.05); ctx.stroke();
@@ -212,9 +214,9 @@ function drawVine(v) {
       ctx.fillStyle = v.leaf; ctx.beginPath(); ctx.moveTo(q.x - 3, q.y); ctx.lineTo(q.x + 3, q.y); ctx.lineTo(q.x, q.y + 10); ctx.closePath(); ctx.fill();
     } else {
       const lx = q.x + Math.cos(ang) * 7, ly = q.y + Math.sin(ang) * 7;
-      ctx.fillStyle = shade(v.leaf, -0.25); ell(lx + 0.8, ly + 0.8, 7.5, 3.4, ang);
+      ctx.fillStyle = v.leafD || (v.leafD = shade(v.leaf, -0.25)); ell(lx + 0.8, ly + 0.8, 7.5, 3.4, ang);
       ctx.fillStyle = v.leaf; ell(lx, ly, 7.5, 3.4, ang);
-      ctx.strokeStyle = shade(v.leaf, -0.3); ctx.lineWidth = 0.8; line(lx - Math.cos(ang) * 6, ly - Math.sin(ang) * 6, lx + Math.cos(ang) * 6, ly + Math.sin(ang) * 6);
+      ctx.strokeStyle = v.leafDD || (v.leafDD = shade(v.leaf, -0.3)); ctx.lineWidth = 0.8; line(lx - Math.cos(ang) * 6, ly - Math.sin(ang) * 6, lx + Math.cos(ang) * 6, ly + Math.sin(ang) * 6);
     }
   }
   if (v.type === 'rotten') { ctx.fillStyle = '#4a321a'; for (let i = 3; i < n; i += 4) circ(p[i].x + shakeX, p[i].y, 2.5); }
@@ -321,14 +323,18 @@ function drawFire(f) {
     }
     return;
   }
-  const dir = f.vy < 0 ? 1 : -1;
+  const dir = f.vy < 0 ? 1 : -1, c2a = blue ? 'rgba(79,184,255,0.35)' : 'rgba(255,138,26,0.35)';
   for (let i = 4; i >= 1; i--) {
-    ctx.fillStyle = i > 2 ? rgbStr(hexToRgb(c2), 0.35) : c2;
+    ctx.fillStyle = i > 2 ? c2a : c2;
     circ(f.x + Math.sin(time * 20 + i) * 2, f.y + dir * i * 8, f.r * (1 - i * 0.16));
   }
-  const g = ctx.createRadialGradient(f.x, f.y, 2, f.x, f.y, f.r * 1.6);
-  g.addColorStop(0, c1); g.addColorStop(0.5, c2); g.addColorStop(1, c3);
-  ctx.fillStyle = g; circ(f.x, f.y, f.r * 1.6);
+  ctx.save(); ctx.translate(f.x, f.y);
+  ctx.fillStyle = cachedGrad(`fire${blue ? 'b' : 'r'}${f.r}`, () => {
+    const g = ctx.createRadialGradient(0, 0, 2, 0, 0, f.r * 1.6);
+    g.addColorStop(0, c1); g.addColorStop(0.5, c2); g.addColorStop(1, c3);
+    return g;
+  });
+  circ(0, 0, f.r * 1.6); ctx.restore();
 }
 function drawBird(f) {
   const style = BIOMES[f.bi].style;
@@ -628,26 +634,30 @@ function drawTexts() {
   ctx.globalAlpha = 1;
 }
 function drawAmbient(P) {
-  const type = P.t < 0.5 ? P.a.particle : P.b.particle;
+  const type = P.t < 0.5 ? P.a.particle : P.b.particle, ga = ctx.globalAlpha;
+  // wisselende doorzichtigheid via globalAlpha: geen nieuwe kleurstring per deeltje per beeld
   for (let i = 0; i < Q.amb; i++) {
     const p = amb[i];
     switch (type) {
       case 'leaf': ctx.fillStyle = p.s > 1.2 ? 'rgba(120,190,70,.85)' : 'rgba(90,170,70,.8)'; ell(p.x, p.y, 5 * p.s, 2.4 * p.s, time * 2 + p.ph); break;
       case 'firefly': {
         const a = 0.4 + 0.6 * Math.abs(Math.sin(time * 2 + p.ph));
-        ctx.fillStyle = `rgba(230,255,120,${a * 0.25})`; circ(p.x, p.y, 7 * p.s);
-        ctx.fillStyle = `rgba(250,255,170,${a})`; circ(p.x, p.y, 2 * p.s); break;
+        ctx.globalAlpha = ga * a * 0.25; ctx.fillStyle = 'rgb(230,255,120)'; circ(p.x, p.y, 7 * p.s);
+        ctx.globalAlpha = ga * a; ctx.fillStyle = 'rgb(250,255,170)'; circ(p.x, p.y, 2 * p.s); break;
       }
       case 'dust': ctx.fillStyle = 'rgba(255,230,180,.45)'; circ(p.x, p.y, 1.8 * p.s); break;
       case 'snow': ctx.fillStyle = 'rgba(255,255,255,.9)'; circ(p.x, p.y, 2.4 * p.s); break;
-      case 'ember': ctx.fillStyle = `rgba(255,${120 + (p.s * 80 | 0)},40,${0.5 + 0.5 * Math.sin(time * 5 + p.ph)})`; circ(p.x, p.y, 1.8 * p.s); break;
+      case 'ember':
+        ctx.globalAlpha = ga * (0.5 + 0.5 * Math.sin(time * 5 + p.ph));
+        ctx.fillStyle = p.ember || (p.ember = `rgb(255,${120 + (p.s * 80 | 0)},40)`); circ(p.x, p.y, 1.8 * p.s); break;
       case 'star': {
         const a = 0.3 + 0.7 * Math.abs(Math.sin(time * 1.7 + p.ph));
-        ctx.fillStyle = `rgba(170,210,255,${a * 0.2})`; circ(p.x, p.y, 6 * p.s);
-        ctx.fillStyle = `rgba(210,235,255,${a})`; circ(p.x, p.y, 1.6 * p.s); break;
+        ctx.globalAlpha = ga * a * 0.2; ctx.fillStyle = 'rgb(170,210,255)'; circ(p.x, p.y, 6 * p.s);
+        ctx.globalAlpha = ga * a; ctx.fillStyle = 'rgb(210,235,255)'; circ(p.x, p.y, 1.6 * p.s); break;
       }
     }
   }
+  ctx.globalAlpha = ga;
 }
 function drawFlash() {
   if (flashT > 0) { ctx.fillStyle = `rgba(255,255,255,${flashT})`; ctx.fillRect(0, 0, viewW, viewH); }
@@ -700,8 +710,11 @@ function render() {
   try { renderScene(); } finally { interpEnd(); }
 }
 function renderScene() {
-  const P = paletteAt((camX + viewW * 0.5 - START_X) / PX_PER_M);
+  const mid = (camX + viewW * 0.5 - START_X) / PX_PER_M, P = paletteAt(mid);
   const S = scale * pr;
+  // achtergrondtegels: per beeld maar een paar nieuwe; komt de volgende biome eraan, dan die alvast vooruit tekenen
+  tileBudget = TILE_BUDGET;
+  tileAheadBi = P.b !== P.a && P.t === 0 && mid > P.b.start - 240 ? P.bi : -1;
   const clip = LOCAL.on;
   if (clip) { mainCtx.save(); mainCtx.setTransform(1, 0, 0, 1, 0, 0); mainCtx.beginPath(); mainCtx.rect(VOX, VOY, RW, RH); mainCtx.clip(); }
   // 1) verre achtergrond in een aparte buffer op lage resolutie (mag toch wat vaag zijn);
@@ -719,6 +732,7 @@ function renderScene() {
       drawFlocks(P);
       drawForestLine(P);
       drawMidTrees(P);
+      drawLightRays(P); // in de achtergrondbuffer: een beeldvullend 'lighter'-vlak op volle resolutie is duur (vooral in Firefox)
       const sw = spaceWeight();
       if (sw > 0) drawSpace(sw);
     });
@@ -732,7 +746,7 @@ function renderScene() {
   const spW = spaceWeight();
   if (spW < 1) {
     ctx.globalAlpha = 1 - spW;
-    withBaseView(() => { drawFlyers(); drawGiantTrunks(P); drawLightRays(P); });
+    withBaseView(() => { drawFlyers(); drawGiantTrunks(P); });
     ctx.globalAlpha = 1;
   }
   // 3) de speelwereld
