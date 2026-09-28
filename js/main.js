@@ -103,7 +103,6 @@ window.__andyBack = () => {
   window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }));
   return true;
 };
-window.__andySaved = ok => saveMsg(ok ? 'Save-bestand opgeslagen.' : 'Opslaan geannuleerd.', ok);
 
 // Debug-/testhaak (handig voor automatische tests)
 window.__andy = { get G() { return G; }, get run() { return run; }, get game() { return game; }, get save() { return save; },

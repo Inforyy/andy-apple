@@ -7,6 +7,7 @@
 // =====================================================================
 let vines = [], apples = [], shrooms = [], foes = [], parts = [], texts = [], fishes = [], tramps = [], portals = [];
 let spaceObjs = []; // de ruimte: planetoïden (stuiteren), een ufo en satellieten
+let lootLastX = -Infinity; // x van de laatst neergezette kist (zie addLoot)
 let loot = [];      // kisten (loot-boxes) om op te pakken, zie physics.js en game.js
 let gen = { x: 0, special: 0 };
 let run = null;
@@ -78,8 +79,27 @@ function makeVine(x, ay, len, type, bi) {
     flower: genRandom() < 0.45 ? flowers[(genRandom() * flowers.length) | 0] : null };
 }
 
+// Andy en de run opnieuw laten beginnen, op de startrots. Los van resetWorld, zodat startReady de wereld
+// achter het hoofdmenu kan houden (anders verspringt alles bij de start).
+function resetRunner() {
+  const C = game.career;
+  const sx = 250, sy = ROCK.top - FEET;
+  G = { x: sx, y: sy, px: sx, py: sy, vx: 0, vy: 0, im: 0.012,
+    state: 'stand', vine: null, k: 0, slideTo: 0, slideT: 0, th: 0, om: 0, R: 100, R0: 100, vr: 0, slack: false, hx: 0, hy: 0,
+    trick: null, trickT: 0, trickRot: 0, chain: 0, standT: 0, hangT: 0, iceT: 0, angle: 0, diveT: 0, dive: 0, noDive: false,
+    lastVine: null, releaseT: 0, invuln: 0, balloonT: 0, turboT: 0, deadT: 0, spin: 0, splashed: false, diving: false,
+    airT: 0, airX: 0, standPress: -1, helmets: lvl('helmet'), balloons: lvl('balloon'), rocketEnd: 0,
+    parrot: lvl('parrot') ? { x: sx - 40, y: sy - 60, cd: 1, target: null, t: 0 } : null };
+  // biomeN: volgnummer van het biome-stuk (zie biomeSeg); cine: de filmische overgang naar een nieuwe biome;
+  // under: onder water (zie physics.js); loot: opgepakte kisten
+  run = { picked: 0, earned: 0, stolen: 0, golden: 0, dist: 0, biome: 0, biomeN: 0, reason: '', lastWoo: 0,
+    combo: 0, lastPick: -9, firstJump: true, nextMile: 100, tricks: 0, space: false, spaceVisits: 0, appleTotal: 0,
+    cine: null, under: null, loot: 0 };
+  if (C) { run.biome = C.bi; C.finishX = START_X + C.L * PX_PER_M; }
+  if (game.mp) game.mp.finishX = game.mp.len ? START_X + game.mp.len * PX_PER_M : 0;
+}
 function resetWorld() {
-  vines = []; apples = []; shrooms = []; foes = []; parts = []; texts = []; fishes = []; tramps = []; portals = []; spaceObjs = []; loot = [];
+  vines = []; apples = []; shrooms = []; foes = []; parts = []; texts = []; fishes = []; tramps = []; portals = []; spaceObjs = []; loot = []; lootLastX = -Infinity;
   time = 0;
   const C = game.career;
   // carrière en multiplayer: vaste seed, zodat de wereld elke keer (en bij beide spelers) hetzelfde is
@@ -88,21 +108,8 @@ function resetWorld() {
   // Andy staat op de startrots; de eerste liaan hangt binnen springbereik
   const v0 = makeVine(FIRST_VINE.x, FIRST_VINE.ay, FIRST_VINE.len, 'normal', 0);
   vines.push(v0);
-  const sx = 250, sy = ROCK.top - FEET;
-  G = { x: sx, y: sy, px: sx, py: sy, vx: 0, vy: 0, im: 0.012,
-    state: 'stand', vine: null, k: 0, slideTo: 0, slideT: 0, th: 0, om: 0, R: 100, R0: 100, vr: 0, slack: false, hx: 0, hy: 0,
-    trick: null, trickT: 0, trickRot: 0, chain: 0, standT: 0, hangT: 0, iceT: 0, angle: 0, diveT: 0, dive: 0, noDive: false,
-    lastVine: null, releaseT: 0, invuln: 0, balloonT: 0, turboT: 0, deadT: 0, spin: 0, splashed: false, diving: false,
-    airT: 0, airX: 0, standPress: -1, helmets: lvl('helmet'), balloons: lvl('balloon'), rocketEnd: 0,
-    parrot: lvl('parrot') ? { x: sx - 40, y: sy - 60, cd: 1, target: null, t: 0 } : null };
   gen = { x: FIRST_VINE.x, lastPortal: -1e9, lastPath: 0, special: 0, col: 0, low: FIRST_VINE.ay + FIRST_VINE.len, tips: [null, null, FIRST_VINE.ay + FIRST_VINE.len * TIP_F] };
-  // biomeN: volgnummer van het biome-stuk (zie biomeSeg); cine: de filmische overgang naar een nieuwe biome;
-  // under: onder water (zie physics.js); loot: opgepakte kisten
-  run = { picked: 0, earned: 0, stolen: 0, golden: 0, dist: 0, biome: 0, biomeN: 0, reason: '', lastWoo: 0,
-    combo: 0, lastPick: -9, firstJump: true, nextMile: 100, tricks: 0, space: false, spaceVisits: 0, appleTotal: 0,
-    cine: null, under: null, loot: 0 };
-  if (C) { run.biome = C.bi; C.finishX = START_X + C.L * PX_PER_M; }
-  if (game.mp) game.mp.finishX = game.mp.len ? START_X + game.mp.len * PX_PER_M : 0;
+  resetRunner();
   zoomK = 0; applyZoom(); // elke run begint volledig ingezoomd
   camX = Math.max(-100, G.x - viewW * 0.32); camY = baseTop(); lastCamX = camX;
   genUntil(camX + viewW + 900);
@@ -249,15 +256,16 @@ function genNext() {
   if (m > 20 && genRandom() < 0.16 * (1 - 0.6 * dc) * (1 + 0.4 * lvl('shroom'))) shrooms.push({ x: (gen.x + x) / 2 + grand(-40, 40), w: 180, bi: vbi, sq: 0 });
   if (game.career && gen.x > game.career.finishX) { gen.x = x; gen.low = low; gen.tips = laneTips; return; } // voorbij de finish: alleen lianen
   // appels langs de banen: een boog van de ene liaan naar de volgende in dezelfde baan
+  // liever duidelijke groepjes met af en toe een leeg stuk dan overal een paar losse appels
   const lanes = [0, 1, 2].filter(li => laneTips[li] != null && gen.tips[li] != null);
-  for (let g = genRandom() < 0.5 ? 2 : 1; g > 0 && lanes.length; g--) {
+  for (let g = genRandom() < 0.3 ? 0 : genRandom() < 0.2 ? 2 : 1; g > 0 && lanes.length; g--) {
     const li = lanes.splice((genRandom() * lanes.length) | 0, 1)[0];
     placeApples(x0, Math.max(x0 + 120, x1), d, gen.tips[li] - 40, laneTips[li] - 40);
   }
 
   const mid = (x0 + x1) / 2, ym = LANES[(genRandom() * 3) | 0] + grand(250, 420);
   // af en toe een kist (niet in multiplayer). Math.random: de kisten horen niet bij de vaste wereld van een level.
-  if (!game.mp && m > 60 && !calm && Math.random() < LOOT_CHANCE) loot.push({ x: mid + rand(-60, 60), y: clamp(LANES[(Math.random() * 3) | 0] + rand(260, 420), CEIL_Y + 80, HAZARD_Y - 170), t: rand(0, 6) });
+  if (!game.mp && m > 60 && !calm && Math.random() < LOOT_CHANCE) addLoot(mid + rand(-60, 60), clamp(LANES[(Math.random() * 3) | 0] + rand(260, 420), CEIL_Y + 80, HAZARD_Y - 170));
   if (calm) { gen.x = x; gen.low = low; gen.tips = laneTips; return; } // buffer rond een biomegrens: geen vijanden
   const fk = 1 + 0.6 * d;
   const fy = y => clamp(y, CEIL_Y, HAZARD_Y - 160);
@@ -265,6 +273,12 @@ function genNext() {
   if (genRandom() < F.fire * fk) foes.push({ type: 'fire', x: (gen.x + x) / 2 + grand(-50, 50), y: HAZARD_Y + 40, vy: 0, wait: grand(0.2, 1.6), r: 16, bi: vbi });
   if (genRandom() < F.birds * fk) { const y = fy(grand(CEIL_Y, HAZARD_Y - 200)); foes.push({ type: 'bird', x: x + grand(300, 700), y0: y, y, t: grand(0, 3), vx: -grand(170, 260), r: 16, bi: vbi, active: false }); }
   gen.x = x; gen.low = low; gen.tips = laneTips;
+}
+// een kist neerzetten, maar nooit vlak na de vorige (ook niet als die al gepakt is)
+function addLoot(x, y) {
+  if (Math.abs(x - lootLastX) < LOOT_GAP) return false;
+  lootLastX = x; loot.push({ x, y, t: rand(0, 6) });
+  return true;
 }
 // telt de appels vóór de finish, voor de sterren in de carrière
 function countApple(a) { if (game.career && run && a.x < game.career.finishX) run.appleTotal += a.gold ? 5 : 1; }
@@ -274,17 +288,24 @@ function placeApples(x0, x1, d, y0, y1) {
     const a = { x, y: clamp(y, CEIL_Y - 120, HAZARD_Y - 90), gold: genRandom() < gc, t: genRandom() * 6 };
     apples.push(a); countApple(a);
   };
-  const r = genRandom();
-  if (r < 0.6) {
-    // boog tussen twee lianen
-    const n = Math.max(3, Math.round(grand(4, 7) - d * 1.5)), h = grand(60, 200), dy = grand(-40, 80);
-    for (let i = 0; i < n; i++) { const t = (i + 1) / (n + 1); add(lerp(x0, x1, t), lerp(y0, y1, t) + dy - Math.sin(Math.PI * t) * h); }
-  } else if (r < 0.85) {
-    const n = Math.max(2, Math.round(grand(3, 5) - d)), y = (y0 + y1) / 2 + grand(-120, 120);
-    for (let i = 0; i < n; i++) add(lerp(x0 + 30, x1 - 30, i / (n - 1)), y);
-  } else if (r < 0.95) {
-    // diagonale rij
-    const n = 4, up = genRandom() < 0.5 ? -1 : 1;
-    for (let i = 0; i < n; i++) add(lerp(x0 + 20, x1 - 20, i / (n - 1)), (y0 + y1) / 2 + up * (i - 1.5) * 45);
+  const r = genRandom(), SP = 46; // SP: afstand tussen appels in een groepje
+  if (r < 0.5) {
+    // boog: een dicht spoor van appels in het midden van de sprong
+    const w = Math.min(x1 - x0, 520), n = clamp(Math.round(w / SP) - Math.round(d * 2), 5, 10), h = grand(80, 200), dy = grand(-40, 80);
+    const cx = (x0 + x1) / 2, sx = cx - (n - 1) * SP / 2;
+    for (let i = 0; i < n; i++) { const x = sx + i * SP, t = clamp((x - x0) / (x1 - x0), 0, 1); add(x, lerp(y0, y1, t) + dy - Math.sin(Math.PI * t) * h); }
+  } else if (r < 0.72) {
+    // tros: een compact bosje (7 in een zeshoek, of 5 in een plusje)
+    const cx = (x0 + x1) / 2 + grand(-60, 60), cy = (y0 + y1) / 2 - grand(60, 180), big = genRandom() < 0.6 - d * 0.3;
+    add(cx, cy);
+    for (let k = 0; k < (big ? 6 : 4); k++) { const a = k * Math.PI * 2 / (big ? 6 : 4) + (big ? 0 : Math.PI / 4); add(cx + Math.cos(a) * 36, cy + Math.sin(a) * 36); }
+  } else if (r < 0.9) {
+    // rechte rij, of licht schuin
+    const n = clamp(Math.round(grand(5, 8) - d * 2), 4, 8), cx = (x0 + x1) / 2, y = (y0 + y1) / 2 - grand(0, 140), slope = genRandom() < 0.5 ? 0 : grand(-0.5, 0.5);
+    for (let i = 0; i < n; i++) { const o = (i - (n - 1) / 2) * SP; add(cx + o, y + o * slope); }
+  } else {
+    // ring om doorheen te zwaaien
+    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2 - grand(80, 180);
+    for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4; add(cx + Math.cos(a) * 62, cy + Math.sin(a) * 62); }
   }
 }

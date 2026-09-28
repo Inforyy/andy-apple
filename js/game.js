@@ -73,13 +73,17 @@ function toMenu() {
 }
 // level = null: eindeloze modus; anders een carrière-level
 function startReady(level) {
+  // Eindeloos vanuit het hoofdmenu: achter het menu staat al een verse Eindeloos-wereld. Die houden we
+  // (alleen Andy en de run beginnen opnieuw), anders verspringt alles bij de start naar een andere wereld.
+  const keepWorld = typeof level !== 'number' && game.mode === 'menu' && !game.career && !game.mp && !LOCAL.on
+    && genRandom === Math.random && G && G.state === 'stand';
   game.paused = false; Music.duck();
   game.career = typeof level === 'number' ? levelInfo(level) : null;
   if (mpActive()) mpClose(true);
   lobbyUnwatch();
   localExit(); MP.local = false;
   mpLeaveMatch();
-  resetWorld();
+  if (keepWorld) resetRunner(); else resetWorld();
   game.mode = 'ready';
   input.down = false;
   showScreen(null);
@@ -226,12 +230,6 @@ function setBadge(btn, n) {
   if (n > 0) { if (!b) { b = document.createElement('span'); b.className = 'badge'; btn.appendChild(b); } b.textContent = n; }
   else if (b) b.remove();
 }
-function statsHtml() {
-  const b = BIOMES[save.maxBiome];
-  return `<div class="stat">🍎 ${save.apples}</div><div class="stat">Record ${save.best} m</div>` +
-    `<div class="stat">${save.totalApples} geplukt</div><div class="stat">${b.name}</div>` +
-    `<div class="stat">${save.runs} runs</div>` + (save.mpGames ? `<div class="stat">${save.mpWins} / ${save.mpGames} gewonnen</div>` : '');
-}
 function refreshMenu() {
   const PL = playerLevel(save.xp);
   $('mmApples').textContent = save.apples;
@@ -248,7 +246,6 @@ function refreshMenu() {
   $('rowFullscreen').classList.toggle('hidden', !canFullscreen || IN_APP);
   $('rowRotate').classList.toggle('hidden', IN_APP);
   renderQuality();
-  $('saveStats').innerHTML = statsHtml();
   setBadge($('btnShop'), affordableCount());
   setBadge($('btnCrates'), save.boxes);
   $('btnLb').classList.toggle('hidden', !lbOn());
@@ -324,13 +321,6 @@ function renderCareer() {
 }
 function openCareer() { renderCareer(); showScreen('career'); }
 function openShop(from) { shopReturn = from; renderShop(); showScreen('shop'); }
-function saveMsg(text, ok) { const m = $('saveMsg'); m.textContent = text; m.className = 'msg ' + (ok ? 'ok' : 'err'); }
-function afterImport() {
-  refreshMenu();
-  renderShop();
-  saveMsg('Save geïmporteerd.', true);
-  Sfx.buy();
-}
 function on(id, fn) {
   (typeof id === 'string' ? $(id) : id).addEventListener('click', e => { Sfx.init(); e.currentTarget.blur(); fn(e); });
 }
@@ -339,7 +329,7 @@ function on(id, fn) {
 // =====================================================================
 //  Kisten: na een run openen (zoals in Counter-Strike) en de garderobe
 // =====================================================================
-const CRATE = { spinning: false, ret: 'menu', raf: 0 };
+const CRATE = { spinning: false, ret: 'menu', raf: 0, tab: 'color' };
 // opgepakte kisten van deze run in de save zetten
 function bankLoot() { const n = run.loot | 0; run.loot = 0; if (n) save.boxes += n; return n; }
 function lootLine(id, n) {
@@ -349,32 +339,41 @@ function lootLine(id, n) {
 }
 function openCrate(from) {
   CRATE.ret = from || 'menu';
-  $('crOdds').textContent = 'Kansen: ' + Object.values(RARITY).map(r => { const tot = Object.values(RARITY).reduce((a, x) => a + x.w, 0); return `${r.name} ${fmtNum(r.w / tot * 100)}%`; }).join(' · ');
+  const tot = Object.values(RARITY).reduce((a, x) => a + x.w, 0);
+  $('crOdds').innerHTML = Object.values(RARITY).map(r => `<span><i style="background:${r.col}"></i>${r.name} <b>${fmtNum(r.w / tot * 100)}%</b></span>`).join('');
   if (!CRATE.spinning) $('crStrip').innerHTML = Array.from({ length: 9 }, () => crateCard(rollLoot())).join('');
   renderCrate();
   showScreen('crate');
   previewLoop();
 }
 const crateCard = (it, win) => `<div class="cr-card${win ? ' win' : ''}" style="--rc:${RARITY[it.r].col}"><span>${it.icon}</span><small>${escHtml(it.name)}</small></div>`;
+const WD_TABS = [['color', 'Vacht'], ['hat', 'Hoed'], ['suit', 'Kostuum']];
 function renderCrate() {
   $('crBoxes').textContent = save.boxes;
   const b = $('btnCrOpen');
   b.disabled = CRATE.spinning || save.boxes < 1;
-  b.textContent = CRATE.spinning ? 'Draaien…' : save.boxes ? `Open een kist (${save.boxes})` : 'Geen kisten: pak ze op tijdens het spelen';
-  const rows = [['color', 'Vachtkleur'], ['hat', 'Hoed'], ['suit', 'Kostuum']];
-  $('crWardrobe').innerHTML = '<h3>Garderobe</h3>' + rows.map(([k, label]) => {
-    const own = save.cosm.own.map(id => LOOT_BY_ID[id]).filter(it => it.kind === k);
-    const chip = (id, txt, col) => `<button class="wd-chip${save.cosm[k] === id ? ' sel' : ''}" data-wk="${k}" data-wid="${id}"${col ? ` style="--rc:${col}"` : ''}>${txt}</button>`;
-    return `<div class="wd-row"><b>${label}</b><div class="wd-chips">${chip('', 'Geen')}${own.map(it => chip(it.id, `${it.icon} ${escHtml(it.name)}`, RARITY[it.r].col)).join('')}${own.length ? '' : '<small>nog niets</small>'}</div></div>`;
+  b.textContent = CRATE.spinning ? 'Draaien…' : save.boxes ? `Open een kist (${save.boxes})` : 'Geen kisten';
+  // garderobe: per soort alle items, wat je nog niet hebt staat er op slot bij
+  const owned = id => save.cosm.own.includes(id), cosm = LOOT.filter(it => WD_TABS.some(([k]) => k === it.kind));
+  $('crCount').textContent = `${cosm.filter(it => owned(it.id)).length}/${cosm.length} verzameld`;
+  $('crTabs').innerHTML = WD_TABS.map(([k, label]) => {
+    const all = cosm.filter(it => it.kind === k);
+    return `<button class="wd-tab${CRATE.tab === k ? ' sel' : ''}" role="tab" data-tab="${k}">${label} <small>${all.filter(it => owned(it.id)).length}/${all.length}</small></button>`;
   }).join('');
-  for (const c of $('crWardrobe').querySelectorAll('[data-wk]')) on(c, () => { save.cosm[c.dataset.wk] = c.dataset.wid; persist(); renderCrate(); });
+  const k = CRATE.tab, cur = save.cosm[k] || '';
+  $('crWardrobe').innerHTML = `<button class="wd-tile${cur ? '' : ' sel'}" data-wid=""><svg class="ico" aria-hidden="true"><use href="#i-none"/></svg><small>Geen</small></button>` +
+    cosm.filter(it => it.kind === k).map(it => owned(it.id)
+      ? `<button class="wd-tile${cur === it.id ? ' sel' : ''}" data-wid="${it.id}" style="--rc:${RARITY[it.r].col}"><span>${it.icon}</span><small>${escHtml(it.name)}</small></button>`
+      : `<div class="wd-tile locked" style="--rc:${RARITY[it.r].col}" title="${RARITY[it.r].name}: nog niet gevonden"><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg><small>${RARITY[it.r].name}</small></div>`).join('');
+  for (const t of $('crTabs').children) on(t, () => { CRATE.tab = t.dataset.tab; renderCrate(); });
+  for (const c of $('crWardrobe').querySelectorAll('button[data-wid]')) on(c, () => { save.cosm[k] = c.dataset.wid; persist(); renderCrate(); });
 }
 // voorbeeld van Andy met je uiterlijk (tekent met de gewone drawGorilla op een eigen canvasje)
 function drawPreview() {
   const c = $('crPreview'), g = c.getContext('2d');
   g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height);
   const s0 = ctx, G0 = G, GC0 = GC;
-  ctx = g; g.setTransform(2.3, 0, 0, 2.3, c.width / 2, c.height * 0.56);
+  ctx = g; g.setTransform(4.6, 0, 0, 4.6, c.width / 2, c.height * 0.56);
   G = { x: 0, y: 0, state: 'stand', standT: 1 + (time % 2), angle: 0, trickRot: 0, balloonT: 0, turboT: 0, invuln: 0, vx: 0, vy: 0, trick: null };
   try { GC = myLook(); drawGorilla(); } finally { ctx = s0; G = G0; GC = GC0; }
 }
@@ -389,7 +388,8 @@ function grantLoot(it) {
   if (it.kind === 'xp') { const before = playerLevel(save.xp).L; save.xp += it.n; const after = playerLevel(save.xp).L; return `+${it.n} XP` + (after > before ? ` · Level ${after}!` : ''); }
   if (save.cosm.own.includes(it.id)) { const n = DUPE_APPLES[it.r] || 30; save.apples += n; return `Had je al: +${n} 🍎`; }
   save.cosm.own.push(it.id);
-  return 'Nieuw! Trek het aan in de garderobe hieronder.';
+  CRATE.tab = it.kind;
+  return 'Nieuw! Kies het in de garderobe.';
 }
 function spinCrate() {
   if (CRATE.spinning || save.boxes < 1) return;
@@ -502,8 +502,6 @@ function uiInit() {
   on('btnDoneCrates', () => openCrate('done'));
   on('btnCrBack', () => { refreshMenu(); showScreen(CRATE.ret); });
   on('btnCrOpen', spinCrate);
-  on('btnSaves', () => { $('saveMsg').textContent = ''; refreshMenu(); showScreen('saves'); });
-  on('btnHelp', () => showScreen('help'));
   on('btnSettings', () => openSettings('menu'));
   on('btnPauseSettings', () => openSettings('pause'));
   on('btnSettingsBack', () => showScreen(settingsReturn));
@@ -511,14 +509,12 @@ function uiInit() {
   on('btnRotate', () => { toggleRotate().then(refreshMenu); refreshMenu(); });
   document.addEventListener('fullscreenchange', refreshMenu);
   document.addEventListener('webkitfullscreenchange', refreshMenu);
-  on('btnHelpBack', () => showScreen('menu'));
   const toggleSound = () => { save.sound = !save.sound; persist(); refreshMenu(); };
   const toggleMusic = () => { save.music = !save.music; persist(); refreshMenu(); if (save.music) Music.start(); else Music.stop(); };
   on('btnSound', toggleSound);
   on('btnMusic', toggleMusic);
   on('btnShopBack', () => { if (shopReturn === 'done') $('dnBank').textContent = save.apples; if (shopReturn === 'over') setBadge($('btnOverShop'), affordableCount()); refreshMenu(); showScreen(shopReturn); });
   on('btnShopPlay', () => (shopReturn === 'done' || shopReturn === 'over') ? retry() : startReady(null));
-  on('btnSavesBack', () => showScreen('menu'));
   on('btnRetry', retry);
   on('btnOverShop', () => openShop('over'));
   on('btnOverMenu', toMenu);
@@ -527,56 +523,6 @@ function uiInit() {
   $('btnPause').addEventListener('click', e => { e.currentTarget.blur(); pauseGame(); });
   $('btnPause').addEventListener('pointerdown', e => e.stopPropagation());
   $('hsBtns').addEventListener('click', e => { const b = e.target.closest('[data-hs]'); if (b) { Sfx.init(); b.blur(); buyHeadStart(+b.dataset.hs); } });
-
-  on('btnExport', () => {
-    const fname = `andy-apples-save-${new Date().toISOString().slice(0, 10)}.json`;
-    if (IN_APP) { AndroidBridge.saveFile(fname, JSON.stringify(makeExport(), null, 2)); saveMsg('Kies waar je het save-bestand wilt bewaren…', true); return; }
-    try {
-      const blob = new Blob([JSON.stringify(makeExport(), null, 2)], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = fname;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-      saveMsg('Save-bestand gedownload.', true);
-    } catch (e) { saveMsg('Exporteren mislukt: ' + e.message, false); }
-  });
-  on('btnImport', () => $('fileImport').click());
-  $('fileImport').addEventListener('change', e => {
-    const file = e.target.files && e.target.files[0];
-    e.target.value = '';
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try { if (importObject(parseSaveText(reader.result))) afterImport(); else saveMsg('Importeren geannuleerd.', false); }
-      catch (err) { saveMsg('Kon dit bestand niet lezen: ' + err.message, false); }
-    };
-    reader.onerror = () => saveMsg('Kon het bestand niet openen.', false);
-    reader.readAsText(file);
-  });
-  on('btnCopyCode', () => {
-    const code = 'AA1:' + toB64(JSON.stringify(makeExport()));
-    const ta = $('saveCode');
-    ta.value = code; ta.focus(); ta.select();
-    const done = () => saveMsg('Code gekopieerd.', true);
-    if (IN_APP) { AndroidBridge.copy(code); done(); }
-    else if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, () => { document.execCommand('copy'); done(); });
-    else { try { document.execCommand('copy'); done(); } catch (e) { saveMsg('Selecteer en kopieer de code handmatig.', true); } }
-  });
-  on('btnLoadCode', () => {
-    try { if (importObject(parseSaveText($('saveCode').value))) afterImport(); else saveMsg('Importeren geannuleerd.', false); }
-    catch (err) { saveMsg('Ongeldige code: ' + err.message, false); }
-  });
-  on('btnReset', () => {
-    if (!confirm('Weet je zeker dat je ALLE voortgang wilt wissen? Dit kan niet ongedaan worden gemaakt.')) return;
-    if (!confirm('Echt zeker? Exporteer eventueel eerst een back-up.')) return;
-    save = normalizeSave(null);
-    persist();
-    refreshMenu();
-    saveMsg('Voortgang gewist.', true);
-  });
-
-  $('helpBiomes').innerHTML = BIOMES.map(b => `<div><b>${b.name}</b> <small>${b.start} m</small><br><small>${b.tip}</small></div>`).join('');
 
   // Save wordt in een ander tabblad aangepast
   window.addEventListener('storage', e => { if (e.key === SAVE_KEY) { save = loadSave(); refreshMenu(); if (curScreen === 'shop') renderShop(); } });
@@ -648,7 +594,7 @@ function inputInit() {
       else if (curScreen === 'debug') showScreen('settings');
       else if (curScreen === 'crate') { if (!CRATE.spinning) $('btnCrBack').click(); }
       else if (curScreen === 'settings') showScreen(settingsReturn);
-      else if (curScreen === 'shop' || curScreen === 'saves' || curScreen === 'help' || curScreen === 'career') {
+      else if (curScreen === 'shop' || curScreen === 'career') {
         if (curScreen === 'shop') $('btnShopBack').click(); else showScreen('menu');
       }
     } else if (e.code === 'Enter' && (curScreen === 'menu' || curScreen === 'over')) {

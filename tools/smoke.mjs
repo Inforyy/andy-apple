@@ -80,7 +80,7 @@ async function main() {
   check(await js('__andy.curScreen') === 'menu', 'hoofdmenu staat open');
 
   console.log('Menu\'s');
-  for (const [open, back, screen] of [['btnShop', 'btnShopBack', 'shop'], ['btnSaves', 'btnSavesBack', 'saves'], ['btnHelp', 'btnHelpBack', 'help'],
+  for (const [open, back, screen] of [['btnShop', 'btnShopBack', 'shop'],
     ['btnSettings', 'btnSettingsBack', 'settings'], ['btnCareer', 'btnCareerBack', 'career'], ['btnMulti', 'btnMpBack', 'mp']]) {
     await js(`document.getElementById('${open}').click()`); await sleep(150);
     check(await js('__andy.curScreen') === screen, `${open} opent '${screen}'`);

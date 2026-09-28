@@ -3,10 +3,9 @@
 // Voortgang in localStorage, export/import en save-codes.
 
 // =====================================================================
-//  Opslag (localStorage + export/import)
+//  Opslag (localStorage; online via een account, zie online.js)
 // =====================================================================
 const SAVE_KEY = 'andyApples.save.v1';
-const GAME_ID = 'Andy Apples';
 function defaultSave() {
   return { version:3, apples:0, xp:0, upgrades:{}, best:0, totalApples:0, totalDistance:0, runs:0, maxBiome:0, sound:true, music:true, lbBest:0, mpGames:0, mpWins:0, chaseBest:0, boxes:0, cosm:{ own:[], color:'', hat:'', suit:'' }, career:{ unlocked:1, stars:Array.from({ length: LEVELS }, () => 0) } };
 }
@@ -60,37 +59,4 @@ function checksum(str) { // FNV-1a
   let h = 0x811c9dc5;
   for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
   return h.toString(16).padStart(8, '0');
-}
-function makeExport() {
-  const data = JSON.parse(JSON.stringify(save));
-  return { game:GAME_ID, format:1, exported:new Date().toISOString(), data, check:checksum(JSON.stringify(data)) };
-}
-const toB64 = s => btoa(unescape(encodeURIComponent(s)));
-const fromB64 = s => decodeURIComponent(escape(atob(s.replace(/\s+/g, ''))));
-function parseSaveText(text) {
-  text = String(text || '').trim();
-  if (!text) throw new Error('Er is niets om te laden.');
-  try {
-    if (text[0] === '{') return JSON.parse(text);
-    if (text.startsWith('AA1:')) text = text.slice(4);
-    return JSON.parse(fromB64(text));
-  } catch (e) { throw new Error('dit is geen geldige Andy Apples save.'); }
-}
-function importObject(obj) {
-  if (!obj || typeof obj !== 'object') throw new Error('Onbekend bestandsformaat.');
-  let data = obj;
-  if ('game' in obj) {
-    if (obj.game !== GAME_ID || !obj.data) throw new Error('Dit is geen Andy Apples save.');
-    data = obj.data;
-    if (obj.check && obj.check !== checksum(JSON.stringify(data))) {
-      if (!confirm('Deze save lijkt handmatig aangepast te zijn. Toch importeren?')) return false;
-    }
-  } else if (!('apples' in obj) && !('bananas' in obj) && !('upgrades' in obj)) {
-    throw new Error('Dit is geen Andy Apples save.');
-  }
-  const incoming = normalizeSave(data);
-  if (!confirm(`Save importeren?\n\nNieuw: 🍎 ${incoming.apples} · record ${incoming.best} m\nHuidig: 🍎 ${save.apples} · record ${save.best} m\n\nJe huidige voortgang wordt overschreven.`)) return false;
-  save = incoming;
-  persist();
-  return true;
 }

@@ -53,7 +53,7 @@ Top-level `let`/`const`/`function` in these classic scripts share the global lex
   - `diffAt` (difficulty, which also rises with `upgradePower`), `timeScale` (tempo, including the biome-transition slow motion) and `paletteAt`
   - `RARITY`/`LOOT`/`rollLoot` (loot boxes and cosmetics; opening and the wardrobe live in `game.js`, drawing in `render-world.js`)
 - `online.js` holds the Supabase client (`getSb`, `sbOn`), leaderboard (`lbOn`) and accounts. `mp-online.js` uses the same client for lobbies.
-- `game.js` holds game flow, screens, the debug screen, `uiInit` (all menu buttons, save export/import), input and HUD.
+- `game.js` holds game flow, screens, the debug screen, `uiInit` (all menu buttons), input and HUD.
 
 ### Core ideas
 - **Fixed-step simulation with interpolated rendering.**
@@ -81,10 +81,10 @@ Top-level `let`/`const`/`function` in these classic scripts share the global lex
 - **Upgrades** are pure functions of level, read through `lvl(id)`, which returns 0 during multiplayer.
 - **Save system**: `localStorage['andyApples.save.v1']`.
   - Always go through `normalizeSave()` (it validates and clamps every field and migrates old saves) and `persist()` (which also marks the cloud save dirty).
-  - A new save field needs `defaultSave()` + `normalizeSave()`. Exports carry a checksum.
+  - A new save field needs `defaultSave()` + `normalizeSave()`. There is no export/import UI: saving is silent (browser), and online saving requires an account.
 - **Supabase is optional**. When it isn't configured, the Account and Leaderboard buttons are hidden. `sbOn()`/`lbOn()` guard all online code. The required SQL (tables `saves`, `scores`, RPC `submit_score`) is in `README.md`; keep it in sync with the client's queries.
 - **Adaptive quality**: `adaptQuality()` steps `qLevel` (0–4) up and down and remembers it. Heavy visuals should respect `Q`/`qLevel`.
-- **Android bridge**: `IN_APP` (the user agent contains `AndyApplesApp` and `window.AndroidBridge` exists) routes copy and save-file to the bridge. `window.__andyBack` and `window.__andySaved` are called from `MainActivity.java`; keep them intact.
+- **Android bridge**: `IN_APP` (the user agent contains `AndyApplesApp` and `window.AndroidBridge` exists) routes copying to the bridge. `window.__andyBack` is called from `MainActivity.java`; keep it intact.
 - **Test hook**: `window.__andy` (in `main.js`) exposes state and functions for the smoke test and console debugging. Extend it when a test needs more.
 
 ## Docs
