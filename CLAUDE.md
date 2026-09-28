@@ -20,7 +20,7 @@ GitHub Pages deploys from `main` root. Work happens on `claude/*` branches that 
 
 - **Run**: open `index.html` in a browser. It must keep working via `file://`, which is why there are no ES modules.
 - **Smoke test**: `node tools/smoke.mjs` (Node 18+, finds `chromium`/`google-chrome` itself or uses `CHROME=...`). It needs no npm packages; it drives headless Chromium over the DevTools protocol.
-  - It clicks through the menus and plays Endless (with a head-start, a trip to space, a biome transition, going underwater and opening a loot box), the career (world map with the unlock and world-clear cutscenes, the loading screen, save migration, upgrade scaling, a boss level and a failed level) and career levels (including the four style biomes), split-screen, Kiwi and the chase mode.
+  - It clicks through the menus and plays Endless (with a head-start, a trip to space, the Matrix secret, the automatic giant-vine biome transition, going underwater and opening a loot box), the career (world map with the unlock and world-clear cutscenes, the loading screen, save migration, upgrade scaling, a boss level and a failed level) and career levels (including the four style biomes), split-screen, Kiwi and the chase mode.
   - It fails on any JS exception or `console.error`.
   - `ANDY_URL=http://localhost:8000/ node tools/smoke.mjs` runs the same test against a server, as GitHub Pages would serve it.
 - **Benchmark**: `node tools/perf.mjs` (same setup as the smoke test) prints fps, p95, simulation/render time and the cost of the background buffer per quality level and biome, plus the tile-cache size after 30 s. Headless Chromium usually renders in software (SwiftShader), so compare before/after on the same machine rather than reading the absolute numbers.
@@ -54,8 +54,9 @@ Top-level `let`/`const`/`function` in these classic scripts share the global lex
   - constants, `BIOMES` (start distance, palette, bonus) and `features(biomeIndex)` (per-biome odds)
   - upgrade formulas and `UPGRADES`, XP/`LEVELS`/`levelInfo`, `VINE_LOOK`, `AI_LV`
   - `biomeSeg` (which biome segment is at a distance; after the last biome the biomes repeat in `CYCLE_ORDER`), `inBiomeBuffer`, `upgradePower`
+  - adding a biome: besides the `BIOMES` entry, extend the per-biome arrays (`features`, the `key`/`minor` line, `BOSSES`, `CYCLE_ORDER`) and give a new `style` its entries in `render-bg.js` (`MTN`, `TRUNK`, the bark map, `treeSprite`, the forest layer), a biome jingle in `audio.js` and map decoration in `worldmap.js`
   - `diffAt` (difficulty, which also rises with `upgradePower`), `timeScale` (tempo, including the biome-transition slow motion) and `paletteAt`
-  - `RARITY`/`LOOT`/`rollLoot` (loot boxes and cosmetics; opening and the wardrobe live in `game.js`, drawing in `render-world.js`)
+  - `RARITY`/`LOOT`/`rollLoot` (loot boxes and cosmetics of the kinds in `COSM_KINDS`: fur colour, hat, suit and trail; opening, buying (`CRATE_PRICE`) and the wardrobe live in `game.js`, drawing in `render-world.js`, the 3D versions in `model3d.js`, trails in `cosmTrail` in `physics.js`)
 - `online.js` holds the Supabase client (`getSb`, `sbOn`), leaderboard (`lbOn`) and accounts. `mp-online.js` uses the same client for lobbies.
 - `game.js` holds game flow, screens, the debug screen, `uiInit` (all menu buttons), input and HUD.
 - `career.js` holds what runs inside a career level: time limit, challenges (`CHALLENGES` in `data.js`), power-ups (`pups`, `run.pow`) and boss fights (`run.boss`, `run.projs`).
@@ -64,6 +65,9 @@ Top-level `let`/`const`/`function` in these classic scripts share the global lex
   - Buildings and hats are triangle meshes (spheres, cylinders, cones, boxes), flat-shaded, with an inverted-hull ink outline (`r3Tris`/`drawTris`, same-colour batches).
   - `drawAndy3D` draws Andy from `myLook()` as smooth, gradient-shaded ellipsoids and capsules with ink outlines, posed and animated from a `pose` object.
   - Every model is one entry in `R3.list`, sorted on its foot point by `r3Flush`, so models never cut through each other. Map buildings are built in `worldmap.js`.
+- **Upgrades are bought in steps**: `save.upgrades[id]` holds the number of steps bought (`upSteps`); each level has `u.tiers` steps (1 for `whole` counters like balloons and helmets), so `u.steps = u.max * u.tiers`. `lvl(id)` returns the effective (fractional) level, 0 in multiplayer and scaled by `CAREER_UP` in the career. Old saves without `upt` are converted in `normalizeSave`.
+- **Biome transition** (Endless, `physics.js`): around every biome boundary `gapBoundary` (in `world.js`) keeps normal vines away and puts apples along the swing arc; `drawBiomeCliffs` draws the cliff and giant vine. `checkTrans` makes Andy grab it automatically (`G.auto`, driven by `autoSwing` in real seconds, `TRANS`), and releases him with extra speed.
+- **Secret**: releasing hard backwards from the very first vine (`v.first`, `MATRIX_VX`) and flying into the wall behind the start rock opens the Matrix scene (`run.matrix`, `drawMatrix`): the world freezes, Kiwi talks in speech bubbles (`MATRIX_LINES`), then Andy is back on the rock.
 - `levelInfo(n)` in `data.js` defines each level: world, tower/boss, length, time, challenges and difficulty. It also scales with `upgradePower()`, so the career gets harder with more upgrades.
 - Old saves with 5 levels per world are remapped by `migrateCareer` in `save.js` (`save.career.lpw`).
 

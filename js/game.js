@@ -99,6 +99,30 @@ function startReady(level) {
   else if (save.runs < 3) showBanner('Jungle', 'Houd ingedrukt om te springen');
 }
 function retry() { startReady(game.career ? game.career.n : null); }
+// Eindeloos vanuit het hoofdmenu: eerst een korte start-animatie. De knoppen vliegen weg, de camera zoomt in op
+// Andy, die op zijn borst trommelt en brult, en de titel knalt in beeld; daarna begint de run.
+const INTRO = { on: false, t: 0, dur: 0.95 };
+function playEndless() {
+  if (INTRO.on || curScreen !== 'menu') { if (!INTRO.on) startReady(null); return; }
+  INTRO.on = true; INTRO.t = 0;
+  $('menu').classList.add('leaving');
+  Sfx.init(); Sfx.whoosh(0.5, 300, 1800, 0.12); Sfx.tarzan();
+  let last = performance.now();
+  const tick = now => {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    INTRO.t += dt;
+    const k = clamp(INTRO.t / INTRO.dur, 0, 1);
+    introZoom = 1 + 0.4 * k * k * (3 - 2 * k);
+    if (k < 1) { requestAnimationFrame(tick); return; }
+    INTRO.on = false;
+    $('menu').classList.remove('leaving');
+    startReady(null);
+    // en weer rustig terug naar de normale zoom
+    const back = now2 => { introZoom += (1 - introZoom) * 0.12; if (Math.abs(introZoom - 1) > 0.002) requestAnimationFrame(back); else introZoom = 1; };
+    requestAnimationFrame(back);
+  };
+  requestAnimationFrame(tick);
+}
 function begin() {
   game.mode = 'playing';
   renderHeadStart();
@@ -502,7 +526,7 @@ function uiInit() {
   sel.addEventListener('change', playSfx);
   $('btnDbgSfx').addEventListener('click', e => { e.currentTarget.blur(); playSfx(); });
 
-  on('btnPlay', () => startReady(null));
+  on('btnPlay', playEndless);
   on('btnMulti', openModes);
   on('btnModesBack', toMenu);
   // terug uit het multiplayerscherm: naar Gamemodes (toMenu sluit ook een lobby of een lokaal potje af)

@@ -141,6 +141,7 @@ function attach(v, k) {
   const p = v.pts, n = p.length;
   if (G.trick) { G.trick = null; G.trickRot = 0; } // truc onderbroken
   G.state = 'hang'; G.vine = v; G.k = k; G.hangT = 0; G.iceT = 0; G.diveT = 0; G.dive = 0; G.noDive = false; G.chain = 0; G.swSide = 0;
+  G.sq = 0.24; // even uitrekken bij het grijpen (zie de rek-en-krimpveer in updateGorilla)
   // Nooit helemaal bovenin: Andy glijdt een stukje omlaag (anders is al zijn vaart weg)
   G.slideTo = Math.max(k, Math.max(6, Math.round(n * 0.45))); G.slideT = 0;
   if (v.type === 'icy') G.slideTo = Math.max(G.slideTo, Math.round(n * 0.6));
@@ -236,6 +237,7 @@ function release(voluntary = true) {
   }
   G.vx = vx; G.vy = vy;
   G.lastVine = v; G.releaseT = 0.3; G.vine = null; G.state = 'air'; G.airT = 0; G.airX = G.x; G.slack = false;
+  G.sq = 0.2; // wegschieten: even uitgerekt
   if (playing && voluntary && v.balloon && v.balloon.path) checkSpaceLaunch(v);
   if (playing) {
     Sfx.release(Math.hypot(vx, vy));
@@ -461,6 +463,8 @@ function updateGorilla(dt, holdHang, holdAir) {
   G.turboT = Math.max(0, G.turboT - dt);
   G.releaseT -= dt;
   const playing = game.mode === 'playing';
+  // rek-en-krimpveer: bij grijpen, loslaten, landen en stuiteren rekt Andy even uit of krimpt hij in, en veert terug
+  G.sqv = (G.sqv || 0) + (-(G.sq || 0) * 520 - G.sqv * 14) * dt; G.sq = (G.sq || 0) + G.sqv * dt;
   if (!G.auto) checkTrans(); // biomegrens: vanzelf de reuzenliaan grijpen
   if (G.matrixShot) checkMatrix();
   if (save.cosm.trail && playing && !aiWorld() && (G.state === 'air' || G.state === 'hang')) cosmTrail();
@@ -562,7 +566,7 @@ function updateGorilla(dt, holdHang, holdAir) {
     // de startrots is massief: erop landen of ertegen botsen
     if (G.x > ROCK.x0 - 10 && G.x - G_R * 0.6 < ROCK.x1) {
       if (G.vy > 0 && prevFeet <= ROCK.top + 4 && G.y + FEET >= ROCK.top) {
-        G.y = ROCK.top - FEET; G.state = 'stand'; G.vx = 0; G.vy = 0; G.standPress = input.presses;
+        G.y = ROCK.top - FEET; G.state = 'stand'; G.vx = 0; G.vy = 0; G.standPress = input.presses; G.sq = -0.3; // neerploffen
         addPart({ type: 'ring', x: G.x, y: ROCK.top, vx: 0, vy: 0, life: 0.35, max: 0.35, col: 'rgba(255,255,255,.7)', r: 8, grow: 30, g: 0, flat: true });
       } else if (G.y + FEET > ROCK.top + 6) { G.x = ROCK.x1 + G_R * 0.6; G.vx = Math.abs(G.vx) * 0.3; }
     }
@@ -577,7 +581,7 @@ function updateGorilla(dt, holdHang, holdAir) {
       if (time > (t.cd || 0) && dx * dx + dy * dy < 1) {
         t.cd = time + 0.4;
         if (G.y > ty - FEET) G.y = Math.min(G.y, ty + 10);
-        G.vy = -Math.max(1350, Math.abs(G.vy) * 1.1) * (1 + 0.05 * lvl('shroom')); G.vx = Math.max(Math.abs(G.vx), 560); t.sq = 1;
+        G.vy = -Math.max(1350, Math.abs(G.vy) * 1.1) * (1 + 0.05 * lvl('shroom')); G.vx = Math.max(Math.abs(G.vx), 560); t.sq = 1; G.sq = -0.3;
         G.airT = 0.35; G.airX = G.x; G.noDive = false;
         floatText(t.x, ty - 40, 'Boing!', '#ffffff', 24);
         starBurst(t.x, ty, 10, '#7fd3ff');
@@ -593,7 +597,7 @@ function updateGorilla(dt, holdHang, holdAir) {
       for (const s of shrooms) {
         if (G.vy > 0 && Math.abs(G.x - s.x) < s.w / 2 + 14 && prevFeet <= SHROOM_TOP + 10 && G.y + FEET >= SHROOM_TOP) {
           const sl = lvl('shroom');
-          G.y = SHROOM_TOP - FEET; G.vy = -rand(1250, 1350) * (1 + 0.07 * sl); G.vx = Math.max(G.vx, 380 + 70 * sl); s.sq = 1;
+          G.y = SHROOM_TOP - FEET; G.vy = -rand(1250, 1350) * (1 + 0.07 * sl); G.vx = Math.max(G.vx, 380 + 70 * sl); s.sq = 1; G.sq = -0.3;
           floatText(s.x, SHROOM_TOP - 40, 'Boing!', '#ffffff', 24);
           starBurst(s.x, SHROOM_TOP, 10, BIOMES[s.bi].shroom);
           Sfx.boing(); shake(3, 0.15);
@@ -765,7 +769,8 @@ function updateTrick(dt, holdAir) {
       floatText(G.x, G.y - 60, `${G.chain > 1 ? G.chain + '× ' : ''}${G.trick.name} +${bonus}🍎`, '#ffe46b', 22 + Math.min(8, G.chain * 2));
       starBurst(G.x, G.y, 10 + G.chain * 3, '#ffe46b');
       Sfx.trick(G.chain);
-      G.trick = null; G.trickRot = 0; G.trickCool = 0.12;
+      G.trick = null; G.trickRot = 0; G.trickCool = 0.12; G.sq = 0.25; // en weer uitstrekken
+      addPart({ type: 'ring', x: G.x, y: G.y, vx: 0, vy: 0, life: 0.35, max: 0.35, col: 'rgba(255,228,107,.85)', r: 18, grow: 60, g: 0 });
     }
     return;
   }
@@ -773,7 +778,7 @@ function updateTrick(dt, holdAir) {
   const needT = G.chain ? 0 : 0.5;
   if (G.airT > needT && G.trickCool <= 0 && !holdAir && G.dive < 0.1 && !G.noDive && Math.hypot(G.vx, G.vy) > 300) {
     // is er genoeg tijd voordat Andy een liaan raakt? (grof: niet te dicht boven de bodem)
-    if (G.y < HAZARD_Y - 220) { G.trick = TRICKS[(Math.random() * TRICKS.length) | 0]; G.trickT = 0; }
+    if (G.y < HAZARD_Y - 220) { G.trick = TRICKS[(Math.random() * TRICKS.length) | 0]; G.trickT = 0; G.sq = -0.22; } // eerst even inveren
   }
 }
 // ---- Nieuwe biome: over de klif aan een reuzenliaan ----
@@ -886,7 +891,7 @@ function enterUnder() {
   run.underVisits = U.visits;
   G.state = 'swim'; G.vy = clamp(G.vy, 200, 500); G.vx = Math.max(200, Math.min(G.vx, 700));
   G.trick = null; G.trickRot = 0; G.dive = 0; G.diveT = 0; G.diving = false; G.airT = 0;
-  genUnder(U, G.x + 2400);
+  genUnder(U, G.x + 3600);
   splash(G.x, 30); Sfx.splash(G.x); Sfx.underIn(); shake(5, 0.3);
   showBanner('Tweede kans! 🫧', `Zoek binnen ${UNDER_TIME} s een luchtgat. Pas op voor kwallen, kogelvissen en de stroming!`);
 }
@@ -920,7 +925,7 @@ function updateSwim(dt, hold) {
   const U = run.under, realDt = dt / (GAME_SPEED * BASE_SPEED); // de lucht telt in (ongeveer) echte seconden
   if (!U) { G.state = 'air'; return; }
   if (game.mode === 'playing') U.t -= realDt;
-  genUnder(U, G.x + 2400);
+  genUnder(U, G.x + 3600);
   // zwemmen: ingedrukt = een slag omhoog en vooruit; los = je zakt langzaam
   G.vy += (hold ? -1400 : 300) * dt;
   G.vx += ((hold ? 540 : 320) - G.vx) * Math.min(1, dt * 1.6);

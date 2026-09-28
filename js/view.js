@@ -149,8 +149,9 @@ function updateZoom(dt) {
   zoomK += (target - zoomK) * Math.min(1, dt * 0.7);
   applyZoom();
 }
+let introZoom = 1; // even inzoomen op Andy bij de start van Eindeloos (zie playEndless in game.js)
 function applyZoom() {
-  scale = baseScale / (1 + zoomK * ZOOM_OUT);
+  scale = baseScale / (1 + zoomK * ZOOM_OUT) * introZoom;
   const vw = LOCAL.vw || cssW, vh = LOCAL.vh || cssH;
   viewW = vw / scale; viewH = vh / scale;
 }

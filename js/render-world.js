@@ -585,11 +585,37 @@ function drawCape(len, spread) {
 const ANTICS = ['wave', 'dance', 'salto', 'juggle'], ANTIC_EVERY = 14, ANTIC_DUR = 2.6, ANTIC_FIRST = 4;
 function menuAntic() {
   if (game.mode !== 'menu' || !G || G.state !== 'stand') return null;
+  if (INTRO.on) return { kind: 'intro', u: INTRO.t, p: INTRO.t / INTRO.dur }; // start van Eindeloos: trommelen en brullen
   const t = G.standT - ANTIC_FIRST;
   if (t < 0) return null;
   const u = t % ANTIC_EVERY;
   if (u > ANTIC_DUR) return null;
   return { kind: ANTICS[Math.floor(t / ANTIC_EVERY) % ANTICS.length], u, p: u / ANTIC_DUR };
+}
+// effecten achter Andy tijdens een truc (in de gedraaide ruimte van Andy, vóór zijn eigen draaiing)
+function drawTrickFx(tr, tk) {
+  const a = Math.min(1, Math.sin(tk * Math.PI) * 1.6), R = 36 * G_DRAW;
+  ctx.save();
+  if (tr.id === 'salto' || tr.id === 'back') { // een zwiepende boog achter de draaiing aan
+    const rot = G.angle + (G.trickRot || 0), dir = Math.sign(tr.rot);
+    ctx.lineCap = 'round';
+    for (let k = 0; k < 3; k++) {
+      ctx.strokeStyle = `rgba(255,${240 - k * 30},${160 - k * 40},${(0.8 - k * 0.2) * a})`; ctx.lineWidth = (11 - k * 3) * G_DRAW / 1.4;
+      ctx.beginPath(); ctx.arc(0, 0, R + k * 6, rot - Math.PI / 2 - dir * (0.2 + k * 0.5), rot - Math.PI / 2 - dir * (1.4 + k * 0.5), dir > 0); ctx.stroke();
+    }
+  } else if (tr.id === 'screw') { // spiraalstrepen om hem heen
+    ctx.strokeStyle = `rgba(200,240,255,${0.85 * a})`; ctx.lineWidth = 4;
+    for (let k = 0; k < 4; k++) { const y = -30 + k * 18, ph = tk * 20 + k; ctx.beginPath(); ctx.ellipse(0, y, R * 0.9, 6, 0, ph, ph + 2.2); ctx.stroke(); }
+  } else if (tr.id === 'star') { // een gloeiende ster erachter
+    ctx.globalAlpha = 0.75 * a; ctx.fillStyle = '#ffe46b'; starPath(ctx, 0, -4, R * 1.6 * (0.6 + a * 0.5), tk * 3); ctx.fill();
+    ctx.globalAlpha = 0.5 * a; ctx.fillStyle = '#fff'; starPath(ctx, 0, -4, R * 0.9 * (0.6 + a * 0.5), tk * 3); ctx.fill();
+    ctx.globalAlpha = 0.9 * a; ctx.fillStyle = '#fff'; for (let k = 0; k < 5; k++) { const an2 = tk * 6 + k * 1.257; circ(Math.cos(an2) * R * 1.2, -4 + Math.sin(an2) * R * 1.2, 2.5); }
+  } else if (tr.id === 'super') { // snelheidslijnen achter hem
+    const d = Math.hypot(G.vx, G.vy) || 1, ux = -G.vx / d, uy = -G.vy / d;
+    ctx.strokeStyle = `rgba(255,255,255,${0.85 * a})`; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    for (let k = -2; k <= 2; k++) { const ox = -uy * k * 13, oy = ux * k * 13, L = 80 + (k % 2 ? 30 : 70); line(ox + ux * 34, oy + uy * 34, ox + ux * (34 + L), oy + uy * (34 + L)); }
+  }
+  ctx.restore();
 }
 function drawGorilla() {
   if (G.state === 'dead' && G.y > HAZARD_Y + 60 && !(run && run.under)) return; // onder water blijf je zichtbaar
@@ -613,12 +639,17 @@ function drawGorilla() {
   const tr = G.trick, tk = tr ? Math.min(1, G.trickT / tr.dur) : 0;
   const an = menuAntic();
   if (an && an.kind === 'dance') { const b = Math.sin(an.u * 9); ctx.translate(b * 4, -Math.abs(Math.cos(an.u * 9)) * 4); ctx.rotate(b * 0.14); }
+  if (an && an.kind === 'intro') { const b = Math.min(1, an.p * 3); ctx.translate(0, -Math.abs(Math.sin(an.u * 18)) * 3 * b); ctx.scale(1 + 0.06 * b, 1 + 0.06 * b); }
   if (an && an.kind === 'salto') { // een sprongetje met een achterwaartse salto, en weer netjes op de rots
     const e = clamp((an.p - 0.15) / 0.7, 0, 1), s = e * e * (3 - 2 * e);
     ctx.translate(0, -Math.sin(e * Math.PI) * 55); ctx.rotate(-s * Math.PI * 2);
   }
+  if (tr) drawTrickFx(tr, tk);
   ctx.rotate(G.angle + (G.trickRot || 0));
   ctx.scale(G_DRAW, G_DRAW);
+  const sq = clamp(G.sq || 0, -0.4, 0.4); // rek en krimp (vanuit de voeten)
+  if (sq) { ctx.translate(0, 24); ctx.scale(1 - sq * 0.55, 1 + sq); ctx.translate(0, -24); }
+  if (G.state === 'stand' && !an) { const br = Math.sin(G.standT * 2.4) * 0.02; ctx.translate(0, 24); ctx.scale(1 - br * 0.5, 1 + br); ctx.translate(0, -24); } // ademen
   if (tr && tr.id === 'screw') ctx.scale(Math.cos(tk * Math.PI * 4) || 0.05, 1);
   if (G.invuln > 0 && ((time * 16) | 0) % 2) ctx.globalAlpha = 0.5;
 
@@ -627,8 +658,11 @@ function drawGorilla() {
   const sw = Math.sin(time * 10);
   if (G.state === 'hang' || G.auto) { // G.auto: aan de reuzenliaan bij een biomegrens (zie autoSwing)
     const d = G.auto ? 38 : Math.min(Math.hypot(G.hx - G.x, G.hy - G.y) / G_DRAW, 42); // nooit een uitgerekte arm tekenen
-    h1 = [-3, -d]; h2 = [3, -d + 3];
-    f1 = [-7 + sw * 2, 26]; f2 = [8 - sw * 2, 25]; mouth = G.auto || Math.abs(G.om * G.R) > 700 ? 'open' : 'smile';
+    // de benen slingeren achter de zwaai aan en trekken in op het hoogste punt
+    const om = G.auto ? 0.6 : clamp((G.om || 0) * 0.4, -1, 1), tuck = 1 - Math.min(1, Math.abs(om) * 1.4);
+    h1 = [-3, -d]; h2 = [3, -d + 3 + Math.abs(om) * 2];
+    f1 = [-7 - om * 10 + sw * 1.5, 26 - tuck * 7 - Math.abs(om) * 2]; f2 = [8 - om * 10 - sw * 1.5, 25 - tuck * 5 - Math.abs(om) * 2];
+    mouth = G.auto || Math.abs(G.om * G.R) > 700 ? 'open' : tuck > 0.6 ? 'grin' : 'smile';
   } else if (G.state === 'stand') {
     const beat = (G.standT % 3.5) > 2.8; // af en toe op de borst trommelen
     if (beat) { const b = Math.sin(G.standT * 30); h1 = [-5, -3 + b * 3]; h2 = [5, -3 - b * 3]; mouth = 'open'; }
@@ -639,6 +673,7 @@ function drawGorilla() {
       if (an.kind === 'wave') { h1 = [-15, 12]; h2 = [21 + w * 5, -27 + Math.abs(w) * 2]; mouth = 'grin'; }
       else if (an.kind === 'dance') { h1 = [-18, -18 + b * 9]; h2 = [18, -18 - b * 9]; f1 = [-9, 26 - Math.max(0, b) * 5]; f2 = [9, 26 - Math.max(0, -b) * 5]; mouth = 'grin'; }
       else if (an.kind === 'salto') { h1 = [-9, 4]; h2 = [9, 4]; f1 = [-6, 20]; f2 = [6, 20]; mouth = 'open'; if (an.p < 0.15 || an.p > 0.85) { h1 = [-20, -20]; h2 = [20, -20]; f1 = [-9, 26]; f2 = [9, 26]; mouth = 'grin'; } }
+      else if (an.kind === 'intro') { const b = Math.sin(an.u * 30); if (an.p < 0.6) { h1 = [-5, -3 + b * 4]; h2 = [5, -3 - b * 4]; } else { h1 = [-22, -30]; h2 = [22, -30]; } mouth = 'open'; }
       else if (an.kind === 'juggle') { const j = Math.sin(an.u * 12); h1 = [-11, -4 + j * 5]; h2 = [11, -4 - j * 5]; mouth = 'grin'; }
     }
   } else if (G.state === 'rocket') { h1 = [14, 6]; h2 = [20, 8]; mouth = 'open'; }
@@ -648,10 +683,16 @@ function drawGorilla() {
   else if (tr) { h1 = [-9, 4]; h2 = [9, 4]; f1 = [-6, 18]; f2 = [6, 18]; mouth = 'grin'; } // ingedoken voor een salto
   else if (G.diving) { h1 = [-10, 20]; h2 = [-2, 22]; f1 = [-5, 27]; f2 = [5, 27]; mouth = 'o'; }
   else if (G.state === 'swim') { const s = Math.sin(time * 7); h1 = [-8 + s * 14, -20 - s * 6]; h2 = [8 - s * 14, -18 + s * 6]; f1 = [-8 - s * 5, 26]; f2 = [8 + s * 5, 26]; mouth = 'o'; } // zwemslag
-  else { h1 = [-22, -22 + sw * 4]; h2 = [22, -24 - sw * 4]; f1 = [-10, 24]; f2 = [10, 24]; mouth = G.vy < -200 ? 'open' : 'smile'; }
+  else { // in de lucht: omhoog = armen hoog en benen ingetrokken; omlaag = armen wijd en benen die trappelen
+    const up = clamp(-G.vy / 800, -1, 1), a = (up + 1) / 2, fl = Math.sin(time * 14);
+    h1 = [-24 + a * 8, -12 - a * 16 + fl * (1 - a) * 6]; h2 = [24 - a * 8, -14 - a * 16 - fl * (1 - a) * 6];
+    f1 = [-10 + fl * (1 - a) * 3, 25 - a * 6]; f2 = [10 - fl * (1 - a) * 3, 24 - a * 6];
+    mouth = G.vy < -300 ? 'open' : G.vy > 700 ? 'o' : Math.hypot(G.vx, G.vy) > 1300 ? 'grin' : 'smile';
+  }
 
-  // cape (wingsuit)
+  // cape (wingsuit, en altijd tijdens de Superaap)
   const wing = lvl('wingsuit');
+  if (tr && tr.id === 'super' && !wing) drawCape(32, 10);
   if (wing) drawCape(G.state === 'air' && G.vy > 0 && !G.diving ? 30 + wing * 5 : 24, G.state === 'air' && !G.diving ? 9 + wing : 7);
   // bandana-slierten
   const vw = Math.sin(time * 16) * 3, tl = 12 + Math.min(10, Math.hypot(G.vx, G.vy) / 150);
@@ -705,6 +746,11 @@ function drawGorilla() {
     for (const ex of [-4.2, 4.2]) { line(ex - 2, -19, ex + 2, -15); line(ex + 2, -19, ex - 2, -15); }
   } else {
     ctx.fillStyle = GC.ink; ell(-4.2, -17, 3.6, 4); ell(4.2, -17, 3.6, 4);
+  }
+  if (G.state !== 'dead' && ((time + (G.x || 0) * 0.001) % 3.6) < 0.12) { // knipperen: even de ogen dicht
+    ctx.fillStyle = GC.skin; ell(-4.2, -17, 2.9, 3.3); ell(4.2, -17, 2.9, 3.3);
+    ctx.strokeStyle = GC.ink; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.arc(-4.2, -18, 2.6, 0.3, Math.PI - 0.3); ctx.moveTo(6.8, -17.3); ctx.arc(4.2, -18, 2.6, 0.3, Math.PI - 0.3); ctx.stroke();
+  } else if (G.state !== 'dead') {
     ctx.fillStyle = '#ffffff'; ell(-4.2, -17, 2.9, 3.3); ell(4.2, -17, 2.9, 3.3);
     ctx.fillStyle = '#3a2416'; circ(-4.2 + look, -16.6 + lookY, 2); circ(4.2 + look, -16.6 + lookY, 2);
     ctx.fillStyle = '#000'; circ(-4.2 + look, -16.6 + lookY, 1.1); circ(4.2 + look, -16.6 + lookY, 1.1);

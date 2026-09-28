@@ -205,6 +205,17 @@ h2{font-size:32px;font-weight:900;color:#c2410c;margin-bottom:4px}
 .ring b{width:34px;height:34px;border-radius:50%;background:#2a1f3d;display:grid;place-items:center;font-size:17px}
 .lvl-txt{display:flex;flex-direction:column;line-height:1.1}
 .lvl-txt b{font-size:16px}.lvl-txt small{font-size:12px;font-weight:700;opacity:.85}
+/* start-animatie van Eindeloos: alles vliegt weg, de titel knalt in beeld */
+.mm-intro{display:none}
+#menu.leaving .mm-intro{display:block;position:absolute;left:50%;top:26%;transform:translate(-50%,-50%);font-size:clamp(42px,9vw,96px);font-weight:900;color:#fff;letter-spacing:2px;
+  text-shadow:0 6px 0 #1d6b2e,0 10px 24px rgba(0,0,0,.5);animation:introPop .95s cubic-bezier(.2,1.4,.4,1) both;pointer-events:none;z-index:5;white-space:nowrap}
+@keyframes introPop{0%{transform:translate(-50%,-50%) scale(.2) rotate(-8deg);opacity:0}35%{transform:translate(-50%,-50%) scale(1.12) rotate(2deg);opacity:1}75%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-80%) scale(1.3);opacity:0}}
+#menu.leaving{background:transparent;transition:background .5s}
+#menu.leaving .mode{transform:translateX(130%) rotate(4deg);opacity:0;transition:transform .5s cubic-bezier(.6,-.3,.8,.5),opacity .5s}
+#menu.leaving .mode:nth-child(2){transition-delay:.06s}#menu.leaving .mode:nth-child(3){transition-delay:.12s}#menu.leaving .mode:nth-child(4){transition-delay:.18s}
+#menu.leaving .mm-top{transform:translateY(-140%);opacity:0;transition:transform .45s ease-in,opacity .45s}
+#menu.leaving .mm-bar{transform:translateY(160%);opacity:0;transition:transform .45s ease-in,opacity .45s}
+#menu.leaving *{pointer-events:none}
 .mm-modes{grid-area:modes;display:flex;flex-direction:column;justify-content:center;gap:16px}
 .mode{font:inherit;display:flex;align-items:center;gap:14px;width:100%;border:none;border-radius:24px;padding:18px 20px;cursor:pointer;
   color:#fff;text-align:left;box-shadow:0 7px 0 rgba(0,0,0,.28),0 16px 30px rgba(0,0,0,.25);transition:transform .12s,box-shadow .12s;
