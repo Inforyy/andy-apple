@@ -26,7 +26,7 @@ function findChrome() {
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const profile = mkdtempSync(join(tmpdir(), 'andy-smoke-'));
-const chrome = spawn(findChrome(), ['--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run',
+const chrome = spawn(findChrome(), ['--headless=new', '--mute-audio', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run',
   '--no-default-browser-check', '--autoplay-policy=no-user-gesture-required', '--window-size=1280,720',
   // als root (bijv. in een container) start Chromium alleen zonder sandbox
   ...(process.getuid && process.getuid() === 0 ? ['--no-sandbox'] : []), 'about:blank'], { stdio: 'ignore' });

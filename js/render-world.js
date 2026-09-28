@@ -578,6 +578,17 @@ function drawCape(len, spread) {
   ctx.strokeStyle = GC.gold; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(ex * 0.96 - nx * 0.9 + wv, ey * 0.96 - ny * 0.9 + wv); ctx.lineTo(ex * 0.96 + nx * 0.9 - wv, ey * 0.96 + ny * 0.9 - wv); ctx.stroke();
   ctx.fillStyle = GC.capeD; ctx.beginPath(); ctx.moveTo(-4, -6); ctx.lineTo(ex * 0.7, ey * 0.7); ctx.lineTo(4, -6); ctx.fill();
 }
+// Hoofdmenu: af en toe doet Andy een kunstje op de rots (de eerste na ~4 s, daarna om de 14 s steeds een ander).
+// Geeft { kind, u (seconden bezig), p (0..1) } of null.
+const ANTICS = ['wave', 'dance', 'salto', 'juggle'], ANTIC_EVERY = 14, ANTIC_DUR = 2.6, ANTIC_FIRST = 4;
+function menuAntic() {
+  if (game.mode !== 'menu' || !G || G.state !== 'stand') return null;
+  const t = G.standT - ANTIC_FIRST;
+  if (t < 0) return null;
+  const u = t % ANTIC_EVERY;
+  if (u > ANTIC_DUR) return null;
+  return { kind: ANTICS[Math.floor(t / ANTIC_EVERY) % ANTICS.length], u, p: u / ANTIC_DUR };
+}
 function drawGorilla() {
   if (G.state === 'dead' && G.y > HAZARD_Y + 60 && !(run && run.under)) return; // onder water blijf je zichtbaar
   ctx.save(); ctx.translate(G.x, G.y);
@@ -598,6 +609,12 @@ function drawGorilla() {
     ctx.fillStyle = Math.random() < 0.5 ? '#ffb020' : '#fff3a0'; ell(-42, 26, 12 + Math.random() * 8, 6);
   }
   const tr = G.trick, tk = tr ? Math.min(1, G.trickT / tr.dur) : 0;
+  const an = menuAntic();
+  if (an && an.kind === 'dance') { const b = Math.sin(an.u * 9); ctx.translate(b * 4, -Math.abs(Math.cos(an.u * 9)) * 4); ctx.rotate(b * 0.14); }
+  if (an && an.kind === 'salto') { // een sprongetje met een achterwaartse salto, en weer netjes op de rots
+    const e = clamp((an.p - 0.15) / 0.7, 0, 1), s = e * e * (3 - 2 * e);
+    ctx.translate(0, -Math.sin(e * Math.PI) * 55); ctx.rotate(-s * Math.PI * 2);
+  }
   ctx.rotate(G.angle + (G.trickRot || 0));
   ctx.scale(G_DRAW, G_DRAW);
   if (tr && tr.id === 'screw') ctx.scale(Math.cos(tk * Math.PI * 4) || 0.05, 1);
@@ -615,6 +632,13 @@ function drawGorilla() {
     if (beat) { const b = Math.sin(G.standT * 30); h1 = [-5, -3 + b * 3]; h2 = [5, -3 - b * 3]; mouth = 'open'; }
     else { h1 = [-15, 12 + Math.sin(G.standT * 2) * 1]; h2 = [15, 12 - Math.sin(G.standT * 2) * 1]; }
     f1 = [-9, 26]; f2 = [9, 26];
+    if (an) {
+      const w = Math.sin(an.u * 14), b = Math.sin(an.u * 9);
+      if (an.kind === 'wave') { h1 = [-15, 12]; h2 = [21 + w * 5, -27 + Math.abs(w) * 2]; mouth = 'grin'; }
+      else if (an.kind === 'dance') { h1 = [-18, -18 + b * 9]; h2 = [18, -18 - b * 9]; f1 = [-9, 26 - Math.max(0, b) * 5]; f2 = [9, 26 - Math.max(0, -b) * 5]; mouth = 'grin'; }
+      else if (an.kind === 'salto') { h1 = [-9, 4]; h2 = [9, 4]; f1 = [-6, 20]; f2 = [6, 20]; mouth = 'open'; if (an.p < 0.15 || an.p > 0.85) { h1 = [-20, -20]; h2 = [20, -20]; f1 = [-9, 26]; f2 = [9, 26]; mouth = 'grin'; } }
+      else if (an.kind === 'juggle') { const j = Math.sin(an.u * 12); h1 = [-11, -4 + j * 5]; h2 = [11, -4 - j * 5]; mouth = 'grin'; }
+    }
   } else if (G.state === 'rocket') { h1 = [14, 6]; h2 = [20, 8]; mouth = 'open'; }
   else if (G.state === 'dead') { const w = Math.sin(time * 20) * 6; h1 = [-24, -12 + w]; h2 = [24, -12 - w]; mouth = 'o'; }
   else if (tr && tr.id === 'star') { const e = Math.sin(tk * Math.PI); h1 = [-12 - 16 * e, -10 - 14 * e]; h2 = [12 + 16 * e, -10 - 14 * e]; f1 = [-8 - 10 * e, 25]; f2 = [8 + 10 * e, 25]; mouth = 'grin'; }
@@ -707,6 +731,13 @@ function drawGorilla() {
   }
   if (GC.appleSuit) drawAppleSuitTop();
   if (GC.hat) drawHat(GC.hat);
+  if (an && an.kind === 'juggle') { // drie appels in een boogje boven de handen
+    for (let i = 0; i < 3; i++) {
+      const ph = an.u * 5 + i * Math.PI * 2 / 3, x = Math.cos(ph) * 12, y = -40 - Math.abs(Math.sin(ph)) * 22;
+      ctx.fillStyle = GC.ink; circ(x, y, 5.2); ctx.fillStyle = '#e8322b'; circ(x, y, 4.2);
+      ctx.fillStyle = 'rgba(255,255,255,.6)'; circ(x - 1.5, y - 1.5, 1.2); ctx.fillStyle = '#4caf50'; ell(x + 1.5, y - 4.5, 2, 1, -0.5);
+    }
+  }
   ctx.restore();
 }
 function drawParrot() {

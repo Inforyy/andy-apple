@@ -77,12 +77,25 @@ function getTile(C, L, bi, tx, ty, res, must) {
   }
   if (!must && tileBudget <= 0) return null;
   tileBudget--;
-  T = { c: null, res, tx, ty };
+  T = { c: null, res, tx, ty, bi };
   buildTile(T, C, L, bi, tx, ty, res);
   C.map.set(k, T);
   return T;
 }
-function tileLayer(name, P) {
+// Is de achtergrond nu één biome (geen overgang)? Alleen dan dekken de lagen elkaar volledig af (zie bgCover)
+const bgSolid = P => P.a === P.b || P.t <= 0.001 || P.t >= 0.999;
+// Tot welke beeldhoogte (in de basisweergave) is een laag zichtbaar? Daaronder ligt een ondoorzichtig vlak van een
+// laag die er later overheen komt: de berglagen vullen alles onder hun basislijn (bergtoppen liggen altijd daarboven,
+// mtnH >= 0), het bos alles onder zijn bosrand. Tijdens een biome-overgang zijn die vlakken half doorzichtig: dan niets.
+function bgCover(P, name) {
+  if (!bgSolid(P) || ctx.globalAlpha < 0.999) return Infinity;
+  const forest = layerY(HAZARD_Y + 5, 0.2) - 40;
+  if (name === 'mtnfar2') return forest;
+  const far2 = Math.min(forest, layerY(MTN_LAYERS[1].base, MTN_LAYERS[1].fy));
+  if (name === 'mtnfar') return far2;
+  return Math.min(far2, layerY(MTN_LAYERS[0].base, MTN_LAYERS[0].fy)); // de lucht
+}
+function tileLayer(name, P, cover = Infinity) {
   const L = LAYERS[name], bt = baseTop();
   let C = layerCaches[name];
   if (!C || C.bt !== bt) { if (C) for (const T of C.map.values()) dropTile(T); C = layerCaches[name] = { map: new Map(), bt }; }
@@ -94,37 +107,58 @@ function tileLayer(name, P) {
   const wb = P.a === P.b ? 0 : P.t, wa = 1 - wb, ga = ctx.globalAlpha;
   const skip = (tx, ty) => (ty + 1) * TH + TILE_M < top ||
     (L.empty && L.empty(tx * TW - TILE_M, (tx + 1) * TW + TILE_M, ty * TH - TILE_M, (ty + 1) * TH + TILE_M, bt));
+  // Alleen het deel tussen de bovenkant van de inhoud (top) en de afdekking (cover) kopiëren: de rest is doorzichtig
+  // of wordt toch overgetekend, en kopiëren kost per pixel (2 px marge tegen afrondingsnaden).
+  const cy0 = top > -Infinity ? Math.floor(m.f + m.d * (top - offY)) - 2 : -Infinity;
+  const cy1 = cover < Infinity ? Math.ceil(m.f + m.d * cover) + 2 : Infinity;
+  const rowY = ty => [Math.round(m.f + m.d * (ty * TH - offY)), Math.round(m.f + m.d * ((ty + 1) * TH - offY))];
   // tegels op hele apparaatpixels neerzetten: anders geven de randen van aangrenzende tegels dunne naden
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   const blit = T => {
-    const x = T.tx * TW - off, y = T.ty * TH - offY;
+    const x = T.tx * TW - off;
     const dx0 = Math.round(m.e + m.a * x), dx1 = Math.round(m.e + m.a * (x + TW));
-    const dy0 = Math.round(m.f + m.d * y), dy1 = Math.round(m.f + m.d * (y + TH));
-    const s = TILE_M * T.res;
-    ctx.drawImage(T.c, s, s, TW * T.res, TH * T.res, dx0, dy0, dx1 - dx0, dy1 - dy0);
+    const [dy0, dy1] = rowY(T.ty), y0 = Math.max(dy0, cy0), y1 = Math.min(dy1, cy1);
+    if (y1 <= y0) return;
+    const s = TILE_M * T.res, k = TH * T.res / (dy1 - dy0);
+    ctx.drawImage(T.c, s, s + (y0 - dy0) * k, TW * T.res, (y1 - y0) * k, dx0, y0, dx1 - dx0, y1 - y0);
   };
   try {
-    for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
-      if (skip(tx, ty)) continue;
-      let A = wa > 0.001 ? getTile(C, L, P.ai, tx, ty, res, wb <= 0.001) : null;
-      const B = wb > 0.001 ? getTile(C, L, P.bi, tx, ty, res, wa <= 0.001) : null;
-      if (!A && !B) A = getTile(C, L, wa >= wb ? P.ai : P.bi, tx, ty, res, true);
-      if (A && B) { ctx.globalAlpha = ga * wa; blit(A); ctx.globalAlpha = ga * wb; blit(B); ctx.globalAlpha = ga; }
-      else blit(A || B);
+    for (let ty = ty0; ty <= ty1; ty++) {
+      const [ry0, ry1] = rowY(ty);
+      if (Math.min(ry1, cy1) <= Math.max(ry0, cy0)) continue; // hele rij afgedekt: ook niet tekenen
+      for (let tx = tx0; tx <= tx1; tx++) {
+        if (skip(tx, ty)) continue;
+        let A = wa > 0.001 ? getTile(C, L, P.ai, tx, ty, res, wb <= 0.001) : null;
+        const B = wb > 0.001 ? getTile(C, L, P.bi, tx, ty, res, wa <= 0.001) : null;
+        if (!A && !B) A = getTile(C, L, wa >= wb ? P.ai : P.bi, tx, ty, res, true);
+        if (A && B) { ctx.globalAlpha = ga * wa; blit(A); ctx.globalAlpha = ga * wb; blit(B); ctx.globalAlpha = ga; }
+        else blit(A || B);
+      }
     }
   } finally { ctx.globalAlpha = ga; ctx.setTransform(m); }
-  // vooruit tekenen (net buiten beeld), ook voor de volgende biome als die eraan komt
+  // vooruit tekenen (net buiten beeld), ook voor de volgende biome als die eraan komt;
+  // niet voor rijen die ruim (meer dan een rij) onder de afdekking liggen
   if (tileBudget > 0) {
     const bis = [];
     if (wa > 0.001) bis.push(P.ai);
     if (wb > 0.001) bis.push(P.bi);
     if (tileAheadBi >= 0 && !bis.includes(tileAheadBi)) bis.push(tileAheadBi);
     const R = L.ring;
-    for (const bi of bis) for (let ty = ty0 - R; ty <= ty1 + R && tileBudget > 0; ty++) for (let tx = tx0 - R; tx <= tx1 + R && tileBudget > 0; tx++) {
-      if (!skip(tx, ty) && !C.map.has(`${bi}:${tx}:${ty}`)) getTile(C, L, bi, tx, ty, res, false);
+    for (const bi of bis) for (let ty = ty0 - R; ty <= ty1 + R && tileBudget > 0; ty++) {
+      const [ry0, ry1] = rowY(ty);
+      if (ry0 > cy1 + (ry1 - ry0)) continue;
+      for (let tx = tx0 - R; tx <= tx1 + R && tileBudget > 0; tx++) {
+        if (!skip(tx, ty) && !C.map.has(`${bi}:${tx}:${ty}`)) getTile(C, L, bi, tx, ty, res, false);
+      }
     }
   }
-  // tegels ver buiten beeld opruimen
+  // Tegels die niet meer nodig zijn meteen opruimen (ze kosten veel geheugen, vooral op telefoons):
+  // van een biome die niet meer in beeld is of eraan komt, en ver achter de camera (die gaat vrijwel alleen vooruit)
+  for (const [k, T] of C.map) {
+    if ((T.bi === P.ai || T.bi === P.bi || T.bi === tileAheadBi) && T.tx >= tx0 - L.ring - 1) continue;
+    dropTile(T); C.map.delete(k);
+  }
+  // tegels ver buiten beeld opruimen (bijv. hoog in de lucht of diep onder water)
   if (C.map.size > L.keep * 1.5) {
     const cx = (tx0 + tx1) / 2, cy = (ty0 + ty1) / 2;
     const all = [...C.map].sort((p, q) => (Math.abs(q[1].tx - cx) + Math.abs(q[1].ty - cy)) - (Math.abs(p[1].tx - cx) + Math.abs(p[1].ty - cy)));
@@ -376,7 +410,7 @@ function drawSky(P) {
     g.addColorStop(0, P.skyTop); g.addColorStop(0.55, P.skyMid); g.addColorStop(1, P.skyBot);
     return g;
   });
-  ctx.fillRect(0, 0, viewW, viewH);
+  ctx.fillRect(0, 0, viewW, Math.min(viewH, bgCover(P, 'sky') + 2)); // daaronder liggen de bergen
   const nightW = styleWeight(P, 'night'), iceW = styleWeight(P, 'ice'), volcW = styleWeight(P, 'volcano');
   // sterren
   if (nightW > 0) {
@@ -481,7 +515,7 @@ const MTN_LAYERS = [
 ];
 function drawMountains(P) {
   for (const L of MTN_LAYERS) {
-    tileLayer('mtn' + L.key, P);
+    tileLayer('mtn' + L.key, P, bgCover(P, 'mtn' + L.key));
     if (L.key === 'far' && styleWeight(P, 'volcano') > 0) drawVolcanoSmoke(P, L);
   }
 }
