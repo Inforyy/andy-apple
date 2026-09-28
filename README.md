@@ -41,7 +41,7 @@ Laat los als Andy naar voren zwaait. Alleen in het water (of de lava, …) valle
 ## Gamemodes
 
 - 🏁 **Carrière**: 15 werelden (één per biome) met elk 8 levels op een **3D-wereldkaart**, zoals in *New Super Mario Bros.* Zie [Carrière](#carrière).
-- ♾️ **Eindeloos**: kom zo ver mogelijk. Na een korte start-animatie (de knoppen vliegen weg, Andy trommelt en brult) begint de run. Het wordt geleidelijk lastiger en iets sneller (tot een plafond). Met een account kom je met je gebruikersnaam op de online ranglijst.
+- ♾️ **Eindeloos**: kom zo ver mogelijk. Na een korte, rustige start-animatie (de knoppen schuiven weg en Andy trommelt op zijn borst, zonder zoom) begint de run. Het wordt geleidelijk lastiger en iets sneller (tot een plafond). Met een account kom je met je gebruikersnaam op de online ranglijst.
 - 👥 **Gamemodes**: Multiplayer (online tot 20 spelers), Duel (met z'n tweeën op één scherm), Tegen Kiwi en Achtervolging. Zie [Multiplayer](#multiplayer).
 
 ## Carrière
@@ -54,7 +54,7 @@ Laat los als Andy naar voren zwaait. Alleen in het water (of de lava, …) valle
 - **Upgrades tellen maar voor een deel**: in de carrière zijn je upgrades veel zwakker (ongeveer een derde van hun kracht), zodat een volledig ge-upgradede Andy niet door de levels heen walst. De levels schalen daar een beetje op mee: iets grotere gaten, iets minder tijd, snellere bazen en met bijna alles gekocht maar 2 harten tegen de baas. Op de kaart zie je hoe zwaar een level is (●●●○○).
 - **Toren** (level 4 van elke wereld): extra zwaar en altijd twee uitdagingen tegelijk.
 - **Uitdagingen** (vanaf level 3; in torens, latere werelden en met veel upgrades vaak twee tegelijk): 🍎 *Appeljacht* (pak genoeg appels vóór de finish), 💨 *Tegenwind*, 🌫️ *Mist* (je ziet maar een klein stukje), 🪵 *Rotte boel*, 🐝 *Wespennest* en ⏱️ *Tijdrit* (veel minder tijd).
-- **Baasgevechten**: het laatste level van elke wereld. De baas (van de Kokosbaron in de jungle tot de Glitchbaas in Neonstad) vliegt vóór je uit en gooit dingen naar waar je straks bent, laat een regen vallen (rode strepen waarschuwen) of duikt op je af (een rode baan waarschuwt). Je hebt 3 harten; haal de finish om hem te verslaan. Latere bazen vallen vaker en harder aan.
+- **Baasgevechten**: het laatste level van elke wereld, en echt lastig. De baas (van de Kokosbaron in de jungle tot de Glitchbaas in Neonstad) volgt je, afwisselend vóór en achter je. Hij gooit dingen naar waar je straks bent, laat een regen vallen (rode strepen waarschuwen), duikt op je af (een rode baan waarschuwt), richt een rode laser en schiet je dan **van je liaan af**, schiet de liaan waar je aan hangt (of naartoe vliegt) kapot (een rood vizier waarschuwt) en jaagt je vanaf wereld 3 een tijdje achterna. Elke treffer kost een hart en slaat je van je liaan. Halverwege het level wordt hij **woedend** en valt hij veel vaker aan. Je hebt 3 harten; haal de finish om hem te verslaan.
 - **Power-ups** zweven in de levels, in bellen: ⭐ *Onkwetsbaar* (8 s, niets kan je raken), 🧲 *Supermagneet* (12 s), 🪽 *Vleugels* (10 s: je zweeft, en van het water stuiter je terug omhoog), 🚀 *Turbo*, ⏳ *Slowmotion* (7 s: alles, ook de klok, gaat half zo snel) en ⏰ *+20 seconden*.
 
 ## Het spel
@@ -66,25 +66,25 @@ Hoe verder je komt, hoe meer gaten tussen de lianen, hoe meer vijanden en hoe mi
 | | Wereld | Vanaf | Wat is er anders | Appelbonus |
 | --- | --- | --- | --- | --- |
 | 1 | 🌿 Jungle | 0 m | het begin | — |
-| 2 | 🐸 Moeras | 600 m | wespen, rotte lianen | +0,5 |
-| 3 | 🦒 Savanne | 1450 m | meer rotte en elastieken lianen | +1 |
-| 4 | ❄️ IJsbergen | 2450 m | gladde ijslianen, eksters | +1,5 |
-| 5 | 🌋 Vulkaan | 3700 m | vuurballen uit de lava | +2 |
-| 6 | 🌙 Sterrennacht | 5200 m | alles door elkaar | +3 |
-| 7 | 🌀 Portaalwoud | 6600 m | portalen: blauw in, oranje uit, met al je vaart | +4 |
-| 8 | 🟩 Kubuswoud | 8000 m | alles van blokjes, zoals *Minecraft* | +5 |
-| 9 | 🖍️ Tekenland | 9400 m | alles getekend, zoals in *Paint* | +6 |
-| 10 | 🧊 3D-wereld | 10800 m | low-poly bergen, neonraster, retrozon | +7 |
-| 11 | 🍭 Snoepland | 12300 m | lollybomen, zuurstoklianen, een chocoladerivier | +8 |
-| 12 | 🏜️ Woestijn | 13800 m | cactussen, piramides, drijfzand, gieren | +9 |
-| 13 | 🍄 Paddenstoelenbos | 15300 m | reuzenpaddenstoelen, heel veel stuiterzwammen, gloeiende sporen | +10 |
-| 14 | ☁️ Wolkenrijk | 16800 m | wolkenbomen, gouden lianen, onweer onder je | +11 |
-| 15 | 🌃 Neonstad | 18300 m | neonpalmen, een skyline, gloeiende lianen en een neonzee | +12 |
+| 2 | 🐸 Moeras | 600 m | wespen, rotte lianen | +0,25 |
+| 3 | 🦒 Savanne | 1450 m | meer rotte en elastieken lianen | +0,5 |
+| 4 | ❄️ IJsbergen | 2450 m | gladde ijslianen, eksters | +0,75 |
+| 5 | 🌋 Vulkaan | 3700 m | vuurballen uit de lava | +1 |
+| 6 | 🌙 Sterrennacht | 5200 m | alles door elkaar | +1,5 |
+| 7 | 🌀 Portaalwoud | 6600 m | portalen: blauw in, oranje uit, met al je vaart | +2 |
+| 8 | 🟩 Kubuswoud | 8000 m | alles van blokjes, zoals *Minecraft* | +2,5 |
+| 9 | 🖍️ Tekenland | 9400 m | alles getekend, zoals in *Paint* | +3 |
+| 10 | 🧊 3D-wereld | 10800 m | low-poly bergen, neonraster, retrozon | +3,5 |
+| 11 | 🍭 Snoepland | 12300 m | lollybomen, zuurstoklianen, een chocoladerivier | +4 |
+| 12 | 🏜️ Woestijn | 13800 m | cactussen, piramides, drijfzand, gieren | +4,5 |
+| 13 | 🍄 Paddenstoelenbos | 15300 m | reuzenpaddenstoelen, heel veel stuiterzwammen, gloeiende sporen | +5 |
+| 14 | ☁️ Wolkenrijk | 16800 m | wolkenbomen, gouden lianen, onweer onder je | +5,5 |
+| 15 | 🌃 Neonstad | 18300 m | neonpalmen, een skyline, gloeiende lianen en een neonzee | +6 |
 
 De appelbonus komt bovenop de upgrade Appeloogst.
 
-- **Na Neonstad** komen de werelden steeds terug, elk 1400 m lang, in een vaste, door elkaar gehusselde volgorde (je blijft dus nooit in dezelfde wereld). Appels tellen daar minstens +12.
-- **Een nieuwe wereld**: op elke grens staat een klif met een naambord, en erboven hangt aan een reuzentak een enorme liaan. Andy grijpt die vanzelf, zwaait over de klif (met appels langs de boog) en wordt aan de andere kant met extra vaart de nieuwe wereld in geslingerd. Je hoeft niets te doen, en het duurt nog geen 3 seconden, met filmbalken, een titelkaart en een eigen geluid per wereld. Rond de grens is een korte, rustige buffer: geen vijanden en geen lastige lianen.
+- **Na Neonstad** komen de werelden steeds terug, elk 1400 m lang, in een vaste, door elkaar gehusselde volgorde (je blijft dus nooit in dezelfde wereld). Appels tellen daar minstens +6.
+- **Een nieuwe wereld**: op elke grens houdt de wereld op. Het water stort over een klif een diepe, donkere afgrond in waar geen achtergrond en geen grond meer is, en aan de overkant begint de nieuwe wereld met een klif en een naambord. Boven de afgrond hangen aan een reuzentak drie enorme lianen. Andy grijpt ze vanzelf één voor één, springt van de ene naar de andere (met appels langs de bogen) en wordt na de laatste met extra vaart de nieuwe wereld in geslingerd. Je hoeft niets te doen; het duurt zo'n 5 seconden, met filmbalken, een titelkaart en een eigen geluid per wereld. Rond de grens is een rustige buffer: geen vijanden en geen lastige lianen.
 
 ### Lianen en extra's
 
@@ -112,7 +112,7 @@ De appelbonus komt bovenop de upgrade Appeloogst.
 
 ### Upgrades en levels
 
-Met appels koop je 15 permanente upgrades. Met XP (vooral voor afstand) stijg je in level en ontgrendel je er meer. Elk niveau van een upgrade is opgedeeld in **3 kleinere stapjes** (behalve de tellers Reddingsballon en Helm): een stapje kost ongeveer wat vroeger een heel niveau kostte, dus alles maximaal duurt veel langer zonder dat een aankoop duurder wordt. Oude voortgang wordt omgerekend. De **Appelmagneet** is afgezwakt: hij trekt appels in de buurt aan, maar is geen stofzuiger meer.
+Met appels koop je 15 permanente upgrades. Ze zijn flink duurder dan vroeger (appels leveren in latere werelden meer op), en elk volgend niveau helpt iets minder dan het vorige: helemaal maximaal werkt een upgrade als ruim 4 van de 5 niveaus. Met XP (vooral voor afstand) stijg je in level en ontgrendel je er meer. Elk niveau van een upgrade is opgedeeld in **3 kleinere stapjes** (behalve de tellers Reddingsballon en Helm): een stapje kost ongeveer wat vroeger een heel niveau kostte, dus alles maximaal duurt veel langer zonder dat een aankoop duurder wordt. Oude voortgang wordt omgerekend. De **Appelmagneet** is afgezwakt: hij trekt appels in de buurt aan, maar is geen stofzuiger meer.
 
 | Direct te koop | Ontgrendel je later |
 | --- | --- |
@@ -132,6 +132,7 @@ In multiplayer staan upgrades uit, en appels en XP tellen niet mee voor je save.
 **Spelmodi**
 - **Race**: wie het eerst bij de finish is (500, 1000 of 2000 m), wint. Val je, dan kom je terug op een liaan en verlies je tijd.
 - **Endurance** (Multiplayer en Duel): wie het langst volhoudt, wint. Een storm jaagt je op.
+- **Battle royale** (online): een kleine arena waar je niet kunt wegvluchten. Iedereen begint op een eigen liaan met een appelkatapult. Pak fruitwapens uit de zwevende bellen (🍌 bananenblaster, 🥥 kokoskanon met hagel, 🍍 ananasbazooka die ontploft, 🍇 druivensniper, ❤️ extra leven), **richt met de muis en klik om te schieten**; grijpen doe je met `Spatie` of de rechtermuisknop (op een telefoon: links op het scherm = grijpen, rechts tikken = schieten op die plek). Zwaaien kan hier alle kanten op, ook naar achteren. Een zware treffer schiet je van je liaan; val je in het water of is je leven op, dan ben je af. Na 40 seconden drukt een storm de arena van beide kanten kleiner. Wie als laatste overblijft, wint; in de uitslag staat ook hoeveel spelers je eruit schoot.
 - **Achtervolging** (tegen Kiwi): Kiwi start 3 tellen na jou en wordt steeds sneller. Hoe lang hou je het vol? Je record wordt bewaard.
 
 Online gebruikt het spel Supabase alleen om lobbies te vinden en de verbinding op te zetten. Daarna praten de spelers direct met de host (WebRTC). Bij 20 spelers heeft de host een goede verbinding nodig.
@@ -176,7 +177,7 @@ Er is geen build-stap en geen npm. `index.html` bevat de schermen, `css/style.cs
 | `view.js`, `world.js`, `physics.js`, `effects.js` | beeld, zoom en kwaliteit; wereldgenerator; lianen en zwaaien; deeltjes |
 | `render-bg.js`, `render-world.js` | achtergrond en speelwereld tekenen |
 | `model3d.js` | kleine 3D-tekenaar (driehoeken op een 2D-canvas) en Andy als 3D-model |
-| `online.js`, `mp-online.js`, `mp-local.js` | Supabase (ranglijst, accounts), online lobbies, één scherm en Kiwi |
+| `online.js`, `mp-online.js`, `mp-local.js`, `mp-br.js` | Supabase (ranglijst, accounts), online lobbies, één scherm en Kiwi, battle royale |
 | `career.js`, `worldmap.js` | carrière: tijd, uitdagingen, power-ups en bazen in een level; de 3D-wereldkaart, filmpjes en het laadscherm |
 | `game.js`, `main.js` | spelverloop, menu's, invoer en HUD; hoofdlus en opstarten |
 

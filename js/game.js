@@ -598,6 +598,7 @@ function uiInit() {
   on('btnMpCancel', () => { if (MP.local) { backToModes(); return; } mpClose(MP.inRoom); mpMsg(''); mpRender(); });
   on('mpModeRace', () => mpSelect('race'));
   on('mpModeEnd', () => mpSelect('endurance'));
+  on('mpModeBr', () => mpSelect('br'));
   on('mpModeChase', () => mpSelect('chase'));
   for (const b of document.querySelectorAll('[data-len]')) on(b, () => mpSelect(null, +b.dataset.len));
   on('btnMpStart', () => MP.local ? localStart(MP.sel, MP.aiLvl) : mpHostStart(MP.sel));
@@ -691,6 +692,7 @@ function inputInit() {
     e.preventDefault();
     if (curScreen) return;
     try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* negeren */ }
+    if (brOn() && game.mp.br) { brPointerDown(e); return; } // battle royale: richten en schieten
     if (LOCAL.on) { // op één scherm: elke speler tikt op zijn eigen helft
       const p = localSide(...toGame(e.clientX, e.clientY));
       localPointers.set(e.pointerId, p);
@@ -701,6 +703,7 @@ function inputInit() {
     press();
   });
   const pointerEnd = e => {
+    if (brPointerUp(e)) return;
     if (localPointers.has(e.pointerId)) {
       const p = localPointers.get(e.pointerId);
       localPointers.delete(e.pointerId);
@@ -710,6 +713,7 @@ function inputInit() {
     pointers.delete(e.pointerId); if (pointers.size === 0) unpress();
   };
   window.addEventListener('pointerup', pointerEnd);
+  window.addEventListener('pointermove', e => { if (brOn()) brPointerMove(e); });
   window.addEventListener('pointercancel', pointerEnd);
   canvas.addEventListener('contextmenu', e => e.preventDefault());
   window.addEventListener('keydown', e => {
@@ -779,7 +783,7 @@ function updateHud() {
   if (M) {
     setText('hudDist', M.mode === 'race' ? `${Math.min(M.len, Math.floor(run.dist))} / ${M.len} m` : Math.floor(run.dist) + ' m');
     setText('hudApples', '🍎 ' + Math.max(0, Math.floor(run.earned + 1e-6)));
-    setText('hudValue', M.mode === 'race' ? 'Race' : 'Endurance'); $('hudValue').style.display = '';
+    setText('hudValue', MP_MODE_NAME[M.mode] || 'Endurance'); $('hudValue').style.display = '';
     setText('hudItems', ''); $('hudItems').style.display = 'none';
     setText('hint', game.mode === 'mpcount' ? 'Houd bij GO! ingedrukt om meteen te springen' : game.mode === 'playing' && G.state === 'stand' ? 'Druk om te springen!' : game.holdLock && G.state === 'hang' ? 'Druk opnieuw en laat los om verder te gaan' : '');
     $('hint').classList.toggle('pulse', game.mode === 'mpcount');

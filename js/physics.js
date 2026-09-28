@@ -28,7 +28,7 @@ function simVine(v, dt) {
     a.px = a.x; a.py = a.y;
   }
   // de scheefhang-kracht werkt niet op de liaan waar Andy aan hangt: die zou zijn zwaai afremmen
-  const wind = (Math.sin(time * 0.7 + v.phase) * 0.6 + Math.sin(time * 1.9 + v.phase * 2) * 0.4) * 60 + (hang ? 0 : v.jet ? JET_DRAG : VINE_TILT); // achter een straaljager wappert de liaan ver naar achteren
+  const wind = (Math.sin(time * 0.7 + v.phase) * 0.6 + Math.sin(time * 1.9 + v.phase * 2) * 0.4) * 60 + (hang ? 0 : v.jet ? JET_DRAG : brOn() ? 0 : VINE_TILT); // battle royale: lianen hangen recht (vrije richting) // achter een straaljager wappert de liaan ver naar achteren
   const damp = hang ? 0.9995 : 0.996;
   for (let i = 0; i < n; i++) {
     const q = p[i]; if (q.im === 0) continue;
@@ -106,9 +106,10 @@ function swingStep(v, dt) {
   if (v.jet) { alpha += (JET_DRAG * 0.8 / G.R) * Math.cos(G.th); G.om *= Math.pow(0.45, dt); } // fartwind: aan een straaljager hang je naar achteren
   if (game.mode !== 'dying') { // "pompen": Andy zwaait zelf mee
     const vt = G.om * G.R, c = Math.cos(G.th);
+    if (brOn() && game.mp.br && c > 0.25 && Math.abs(vt) <= 15) alpha += Math.sign(Math.cos(game.mp.br.aim) || 1) * pumpA(0) / G.R; // battle royale: vanuit stilstand zwaai je naar waar je richt
     if (c > 0.25 && Math.abs(vt) > 15 && Math.abs(vt) < swingCap()) {
       const s = Math.sign(G.om), fwd = s * c > 0;
-      alpha += s * pumpA(lvl('swing')) * (fwd ? 1 : 0.55) / G.R;
+      alpha += s * pumpA(lvl('swing')) * (fwd || brOn() ? 1 : 0.55) / G.R; // battle royale: naar achter zwaaien even sterk
     }
   }
   G.om = (G.om + alpha * dt) * 0.99998;
@@ -154,6 +155,7 @@ function attach(v, k) {
   const vt = (G.vx - (v.balloon ? v.balloon.vx : 0)) * c - G.vy * sn;
   let dir = Math.abs(c) > 0.2 ? Math.sign(c) : -Math.sign(sn) || 1;
   if (G.vx < -250 && Math.sign(vt) === -dir) dir = -dir;
+  if (brOn() && Math.abs(vt) > 60) dir = Math.sign(vt); // battle royale: je zwaait gewoon door in de richting waarin je ging
   // een overschot boven de topsnelheid (zie de air-state) gaat niet mee de zwaai in: anders stapelt het zich
   // bij elke liaan op (loslaten vermenigvuldigt de vaart), en wordt het spel steeds sneller
   G.om = dir * Math.max(Math.min(speed, G.maxS || maxSpeed()), 480) / G.R;
@@ -204,7 +206,7 @@ function release(voluntary = true) {
     G.matrixShot = true; Sfx.release(sp0); Sfx.whoa();
     return;
   }
-  if (sp0 > 70) {
+  if (sp0 > 70 && !brOn()) { // (battle royale: vrije richting, geen bijsturen)
     if (G.vx < 0) G.vx *= 0.4; // vol achteruit: fors afgezwakt
     const sp1 = Math.hypot(G.vx, G.vy);
     const vert = sp1 > 1 ? Math.abs(G.vy) / sp1 : 0; // 0 = helemaal horizontaal, 1 = kaarsrecht op/neer
@@ -216,6 +218,7 @@ function release(voluntary = true) {
   }
   let vx = G.vx * m, vy = G.vy * m;
   if (vx > 0) vx += 60 + 20 * lvl('launch');
+  else if (brOn()) vx -= 60;
   vy -= 50;
   const playing = game.mode === 'playing';
   if (playing && voluntary && v.type === 'turbo') {
@@ -564,7 +567,7 @@ function updateGorilla(dt, holdHang, holdAir) {
     if (float && G.y > SPACE_Y - 250) G.vy -= Math.min(900, (G.y - (SPACE_Y - 250)) * 1.6) * dt + G.vy * Math.min(1, dt * 1.2) * (G.vy > 0 ? 1 : 0);
     // ook zonder wingsuit-upgrade drijft Andy een klein beetje naar voren: zo kom je nooit hulpeloos
     // recht naar beneden vast te zitten tussen twee lianen in
-    G.vx += 55 * dt;
+    if (!brOn()) G.vx += 55 * dt;
     // wingsuit: een deel van de valsnelheid wordt voorwaartse vaart
     if (wing && falling && G.vx > 0) { const dv = Math.min(G.vy, 700) * 0.32 * wing * dt; G.vy -= dv; G.vx += dv * 0.85; }
     const maxFall = MAX_FALL * glide * (1 + 1.1 * G.dive);

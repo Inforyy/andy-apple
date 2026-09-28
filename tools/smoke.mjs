@@ -211,10 +211,10 @@ async function main() {
   await js('__andy.startReady(null)'); await sleep(100);
   await js('__andy.press()');
   await until(`__andy.G.state === 'hang'`, 3000);
-  await js(`(() => { const G = __andy.G; __andy.release(); __andy.unpress(); G.state = 'air'; G.x = START_X + BIOMES[2].start * PX_PER_M - 400; G.y = -100; G.vx = 900; G.vy = -500; })()`);
+  await js(`(() => { const G = __andy.G; __andy.release(); __andy.unpress(); G.state = 'air'; G.x = START_X + BIOMES[2].start * PX_PER_M - TRANS.span - 400; G.y = -100; G.vx = 900; G.vy = -500; })()`);
   check(await until('!!__andy.G.auto', 1000), 'biomegrens: Andy grijpt vanzelf de reuzenliaan');
-  check(await until('!!__andy.run.cine && __andy.run.biome === 2', 3000), 'over de klif: filmische overgang naar de Savanne');
-  check(await until('!__andy.G.auto && __andy.G.state === "air" && __andy.G.vx > 1200', 3000), 'losgelaten met extra vaart, binnen 3 seconden');
+  check(await until('!!__andy.run.cine && __andy.run.biome === 2', 6000), 'over de afgrond: filmische overgang naar de Savanne');
+  check(await until('!__andy.G.auto && __andy.G.state === "air" && __andy.G.vx > 1200', 8000), 'over drie reuzenlianen en losgelaten met extra vaart');
   check(await js('biomeSeg(CYCLE_START + 100).i !== biomeSeg(CYCLE_START + CYCLE_LEN + 100).i && biomeSeg(CYCLE_START + 100).i < BIOMES.length'), 'na de laatste biome komen de biomes terug');
   await js('__andy.press()');
   await js(`(() => { const G = __andy.G; G.state = 'air'; G.x = START_X + 1500 * PX_PER_M; G.y = HAZARD_Y + 20; G.vy = 300; enterUnder(); loot.push({ x: G.x + 4, y: G.y, t: 0 }); })()`);

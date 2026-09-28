@@ -123,7 +123,7 @@ function resetWorld() {
 // =====================================================================
 //  Wereldgenerator
 // =====================================================================
-function genUntil(xMax) { while (gen.x < xMax) genNext(); }
+function genUntil(xMax) { if (brOn()) xMax = Math.min(xMax, BR_X1); while (gen.x < xMax) genNext(); } // battle royale: alleen de kleine arena
 // Past de lengte van een liaan aan zodat hij (ook uitgerekt) niet in de bodem hangt
 function fitVine(ay, len, stretch) {
   const maxLen = (HAZARD_Y - VINE_CLEAR - ay) / stretch;
