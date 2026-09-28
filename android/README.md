@@ -26,4 +26,4 @@ keytool -genkeypair -keystore andy.p12 -storetype PKCS12 -alias andy -keyalg RSA
 python3 build_apk.py --tools tools --keystore andy.p12 --storepass JOUW_WACHTWOORD --version 1.1 --code 2
 ```
 
-Het script compileert `src/.../MainActivity.java`, schrijft de Android-manifest en resourcetabel zelf, pakt `../index.html` in als asset en ondertekent de APK. Een update installeert alleen over de oude versie heen als hij met **dezelfde sleutel** is ondertekend en een hogere `--code` heeft.
+Het script compileert `src/.../MainActivity.java`, schrijft de Android-manifest en resourcetabel zelf, pakt het spel (`../index.html`, `../css/` en `../js/`) in als assets en ondertekent de APK. Een update installeert alleen over de oude versie heen als hij met **dezelfde sleutel** is ondertekend en een hogere `--code` heeft.

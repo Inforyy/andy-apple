@@ -4,7 +4,23 @@ Een 2D-slingerspel in puur HTML. Andy de gorilla zwaait door de jungle aan liane
 
 ## Spelen
 
-Open `index.html` in een browser. Er is geen installatie, server of internetverbinding nodig: alles (graphics, geluid en physics) zit in dit ene bestand. Alleen voor multiplayer heb je een netwerkverbinding nodig.
+Open `index.html` in een browser. Er is geen installatie, server of internetverbinding nodig: alle graphics, geluid en physics worden in code gemaakt, zonder plaatjes of geluidsbestanden. Houd `index.html` wel bij de mappen `css/` en `js/`. Alleen voor multiplayer heb je een netwerkverbinding nodig.
+
+## Code
+
+Geen build-stap of npm: `index.html` bevat de schermen, `css/style.css` de opmaak, en de code staat in gewone scripts in `js/`:
+
+| Bestand | Wat |
+| --- | --- |
+| `config.js` | Supabase-instellingen (zie *Supabase instellen*) |
+| `data.js` | biomes, upgrades, levels, Kiwi-niveaus, moeilijkheid en tempo: **hier begin je bij uitbreiden of balanceren** |
+| `util.js`, `save.js`, `audio.js` | hulpjes, opslag, geluid en muziek |
+| `view.js`, `world.js`, `physics.js`, `effects.js` | beeld/zoom, wereldgenerator, lianen en zwaaien, deeltjes |
+| `render-bg.js`, `render-world.js` | achtergrond en speelwereld tekenen |
+| `online.js`, `mp-online.js`, `mp-local.js` | Supabase (ranglijst, accounts), online lobbies, split-screen en Kiwi |
+| `game.js`, `main.js` | spelverloop, menu's, invoer, HUD; hoofdlus en opstarten |
+
+Snelle test na een wijziging (Node 18+ en Chrome/Chromium): `node tools/smoke.mjs`.
 
 ## Android-app
 
@@ -86,7 +102,7 @@ Accounts, online lobbies en de ranglijst gebruiken één gratis [Supabase](https
 3. **Lobbies** hebben geen tabel nodig: ze gebruiken Realtime (broadcast en presence), dat standaard aan staat. Staat bij **Realtime → Settings** "Allow public access" uit (alleen private channels), zet dat dan aan.
 4. **Inloggen met e-mail** staat standaard aan (**Authentication → Sign In / Providers → Email**). Standaard moeten nieuwe spelers hun e-mailadres bevestigen via een link; zet onder **Authentication → URL Configuration** de **Site URL** op het adres van je spel (bijv. `https://stoin3.github.io/andy-apple/`). Wil je geen bevestigingsmail, zet dan **Confirm email** uit. Let op: de ingebouwde mailserver van Supabase verstuurt maar een paar mails per uur; voor meer spelers stel je onder **Authentication → Emails → SMTP Settings** een eigen mailprovider in.
 5. Kopieer bij **Project Settings → API Keys** de **Project URL** en de **publishable key** (`sb_publishable_…`, in oudere projecten de **anon public** key). Deze key mag openbaar in een website staan; gebruik **nooit** de `service_role`/secret key.
-6. Vul ze in bovenaan het `<script>` in `index.html`:
+6. Vul ze in in `js/config.js`:
 
    ```js
    const CONFIG = {
@@ -150,7 +166,7 @@ Accounts, online lobbies en de ranglijst gebruiken één gratis [Supabase](https
   - 🌿 **Liaankenner**: rotte lianen houden langer, ijs is minder glad en er zijn meer turbolianen.
   - 🍄 **Stuiterzwam**: meer paddenstoelen die je verder lanceren.
 - **Volledig scherm en draaiknop**: in **Instellingen** staan twee losse knoppen: **Volledig scherm** en **Liggend spelen**. Met de draaiknop speel je op een staande telefoon toch liggend (breder zicht) — waar het kan wordt de oriëntatie van het scherm echt vastgezet (via volledig scherm, meestal op Android); lukt dat niet, dan draait het spel het beeld zelf een kwartslag, zodat je de telefoon gewoon kantelt. Met **Staand spelen** zet je het terug. Beide keuzes staan los van elkaar en worden onthouden.
-- **Debug-instellingen**: **Instellingen → Debug**, met wachtwoord `jungle-debug`: zoomniveau en spelsnelheid. Een ander wachtwoord? Reken de nieuwe waarde voor `DBG_HASH` in `index.html` uit met:
+- **Debug-instellingen**: **Instellingen → Debug**, met wachtwoord `jungle-debug`: zoomniveau en spelsnelheid. Een ander wachtwoord? Reken de nieuwe waarde voor `DBG_HASH` in `js/view.js` uit met:
   ```sh
   node -e "let h=0x811c9dc5;for(const c of 'andy-debug:'+process.argv[1]){h^=c.charCodeAt(0);h=Math.imul(h,0x01000193)>>>0}console.log(h.toString(16).padStart(8,'0'))" NIEUW_WACHTWOORD
   ```

@@ -7,7 +7,7 @@ Een APK is een zip met daarin:
   resources.arsc       (resourcetabel, alleen voor het icoon) -> hier zelf geschreven
   classes.dex          (de Java-code van MainActivity)
   res/.../icon.png     (het app-icoon)
-  assets/index.html    (het spel zelf)
+  assets/...           (het spel zelf: index.html, css/ en js/)
 en wordt daarna ondertekend (APK-handtekening v2) met apksig. Werkt vanaf Android 7.0.
 
 Benodigd (alles van Maven Central, zie README in deze map):
@@ -186,6 +186,21 @@ def write_aligned_zip(path, entries):
             z.writestr(zi, data)
 
 
+GAME_DIRS = ('css', 'js')   # mappen naast index.html die bij het spel horen
+
+
+def game_assets():
+    """(naam in de APK, bytes) voor index.html en alles in GAME_DIRS, in vaste volgorde."""
+    out = [('assets/index.html', open(os.path.join(ROOT, 'index.html'), 'rb').read())]
+    for d in GAME_DIRS:
+        for base, dirs, files in sorted(os.walk(os.path.join(ROOT, d))):
+            dirs.sort()
+            for f in sorted(files):
+                path = os.path.join(base, f)
+                out.append(('assets/' + os.path.relpath(path, ROOT).replace(os.sep, '/'), open(path, 'rb').read()))
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--tools', required=True)
@@ -214,8 +229,7 @@ def main():
             ('classes.dex', open(dex, 'rb').read(), False),
             ('resources.arsc', arsc(icon_path), True),
             (icon_path, open(os.path.join(HERE, 'icon.png'), 'rb').read(), True),
-            ('assets/index.html', open(os.path.join(ROOT, 'index.html'), 'rb').read(), False),
-        ])
+        ] + [(name, data, False) for name, data in game_assets()])
         # 3) ondertekenen (v2) met apksig
         signer_dir = os.path.join(work, 'signer')
         os.makedirs(signer_dir)
