@@ -11,6 +11,7 @@ Andy Apples: a 2D vine-swinging browser game. UI text, code comments and READMEs
 - `js/*.js`: the game, as plain classic scripts (see below)
 - `android/`: wraps the same files in a WebView APK
 - `og-andy.jpg`: the 1200×630 link-preview image (Discord and other sites) referenced by the `og:`/`twitter:` meta tags in `index.html`. Those tags use absolute URLs on `https://stijnbarendse.nl/appel/`; update them if the game moves. It is not packed into the APK.
+- `uitnodiging.html` + `og-uitnodiging.jpg`: the page that multiplayer invite links point to (`mpInviteLink` in `mp-online.js`: `…/uitnodiging.html#join=lobby-id`). Link previews never see the `#…` part, so a separate page is the only way to give invites their own title and image; it immediately redirects to `./#join=…`, where `checkJoinLink` in `main.js` picks it up. Neither file is packed into the APK.
 
 GitHub Pages deploys from `main` root. Work happens on `claude/*` branches that are merged into `main` via PRs.
 

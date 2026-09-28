@@ -380,9 +380,11 @@ async function mpLobbyJoin(id, name) {
   MP.joinTimer = setTimeout(() => { if (MP.joinId === id && !MP.inRoom && !MP.link) mpJoinFail('Deze lobby is niet meer beschikbaar.'); }, 8000);
 }
 function mpJoinFail(msg) { mpClose(false); mpMsg(msg, false); mpRender(); }
+// via uitnodiging.html: die pagina heeft een eigen link-preview ("Je bent uitgenodigd!") en stuurt meteen door naar het spel
 function mpInviteLink() {
   const base = CONFIG.siteUrl || (/^https?:$/.test(location.protocol) ? location.origin + location.pathname : '');
-  return base && MP.lobby ? `${base}#join=${MP.lobby.id}` : '';
+  const dir = base.replace(/index\.html$/, '').replace(/\/?$/, '/');
+  return base && MP.lobby ? `${dir}uitnodiging.html#join=${MP.lobby.id}` : '';
 }
 function mpShare() {
   const link = mpInviteLink();
