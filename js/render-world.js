@@ -213,10 +213,10 @@ function drawVine(v) {
     if (v.type === 'icy') {
       ctx.fillStyle = v.leaf; ctx.beginPath(); ctx.moveTo(q.x - 3, q.y); ctx.lineTo(q.x + 3, q.y); ctx.lineTo(q.x, q.y + 10); ctx.closePath(); ctx.fill();
     } else {
-      const lx = q.x + Math.cos(ang) * 7, ly = q.y + Math.sin(ang) * 7;
-      ctx.fillStyle = v.leafD || (v.leafD = shade(v.leaf, -0.25)); ell(lx + 0.8, ly + 0.8, 7.5, 3.4, ang);
+      const lx = q.x + Math.cos(ang) * 7, ly = q.y + Math.sin(ang) * 7, detail = qLevel >= 2; // lage standen: zonder schaduw en nerf
+      if (detail) { ctx.fillStyle = v.leafD || (v.leafD = shade(v.leaf, -0.25)); ell(lx + 0.8, ly + 0.8, 7.5, 3.4, ang); }
       ctx.fillStyle = v.leaf; ell(lx, ly, 7.5, 3.4, ang);
-      ctx.strokeStyle = v.leafDD || (v.leafDD = shade(v.leaf, -0.3)); ctx.lineWidth = 0.8; line(lx - Math.cos(ang) * 6, ly - Math.sin(ang) * 6, lx + Math.cos(ang) * 6, ly + Math.sin(ang) * 6);
+      if (detail) { ctx.strokeStyle = v.leafDD || (v.leafDD = shade(v.leaf, -0.3)); ctx.lineWidth = 0.8; line(lx - Math.cos(ang) * 6, ly - Math.sin(ang) * 6, lx + Math.cos(ang) * 6, ly + Math.sin(ang) * 6); }
     }
   }
   if (v.type === 'rotten') { ctx.fillStyle = '#4a321a'; for (let i = 3; i < n; i += 4) circ(p[i].x + shakeX, p[i].y, 2.5); }

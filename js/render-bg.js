@@ -36,29 +36,33 @@ const TILE = 512, TILE_M = 24;   // tegelmaat en overlap-marge in laagcoördinat
 const TILE_BUDGET = 2;           // zoveel tegels mogen er per beeld 'vooruit' getekend worden
 let tileBudget = TILE_BUDGET, tileBuilds = 0, tileAheadBi = -1;
 const tilePool = [];
-// f/fy = parallax; top(bt) = boven deze laaghoogte is de laag leeg; empty(x0, x1) = geen inhoud in dit stuk
+// f/fy = parallax; tw/th = tegelmaat (standaard TILE); top(bt) = boven deze laaghoogte is de laag leeg;
+// empty(x0, x1, y0, y1, bt) = geen inhoud in dit stuk; ring = zoveel tegels rond het beeld vooruit tekenen; keep = zoveel tegels bewaren
+// De reuzenstammen zijn smal en hebben smalle tegels: brede, grotendeels doorzichtige tegels kopiëren elk beeld
+// veel lege pixels, en dat is juist op telefoons duur.
 const LAYERS = {
   mtnfar:  { f: 0.05, fy: 0.04, top: bt => MTN_LAYERS[0].base - bt - 460, draw: P => drawMountainLayer(P, MTN_LAYERS[0]) },
   mtnfar2: { f: 0.12, fy: 0.1,  top: bt => 380 - bt,                      draw: P => drawMountainLayer(P, MTN_LAYERS[1]) },
   forest:  { f: 0.22, fy: 0.2,  top: bt => HAZARD_Y + 5 - bt - 320,       draw: P => drawForestLayer(P) },
   trees:   { f: 0.36, fy: 0.34, top: bt => HAZARD_Y + 30 - bt - 640,      draw: P => drawMidTreeLayer(P) },
-  trunks:  { f: 0.62, fy: 0.62, top: null, empty: (x0, x1) => !trunkIn(x0, x1), draw: P => drawTrunkLayer(P) },
+  trunks:  { f: 0.62, fy: 0.62, tw: 128, th: 256, ring: 2, keep: 120, top: null, empty: (x0, x1, y0, y1, bt) => !trunkIn(x0, x1, y0, y1, bt), draw: P => drawTrunkLayer(P) },
 };
-function takeCanvas(px) {
-  for (let i = tilePool.length - 1; i >= 0; i--) if (tilePool[i].width === px) return tilePool.splice(i, 1)[0];
-  const c = document.createElement('canvas'); c.width = c.height = px; return c;
+for (const k in LAYERS) { const L = LAYERS[k]; L.tw = L.tw || TILE; L.th = L.th || TILE; L.ring = L.ring || 1; L.keep = L.keep || 40; }
+function takeCanvas(w, h) {
+  for (let i = tilePool.length - 1; i >= 0; i--) if (tilePool[i].width === w && tilePool[i].height === h) return tilePool.splice(i, 1)[0];
+  const c = document.createElement('canvas'); c.width = w; c.height = h; return c;
 }
-function dropTile(T) { if (T.c && tilePool.length < 16) tilePool.push(T.c); T.c = null; }
+function dropTile(T) { if (T.c && tilePool.length < 24) tilePool.push(T.c); T.c = null; }
 // Tekent één tegel door de camera tijdelijk zo te zetten dat de bestaande tekenfunctie precies dit stuk tekent
 function buildTile(T, C, L, bi, tx, ty, res) {
-  const px = Math.ceil((TILE + 2 * TILE_M) * res);
+  const pw = Math.ceil((L.tw + 2 * TILE_M) * res), ph = Math.ceil((L.th + 2 * TILE_M) * res);
   let c = T.c;
-  if (!c || c.width !== px) { if (c) dropTile(T); c = takeCanvas(px); }
+  if (!c || c.width !== pw || c.height !== ph) { if (c) dropTile(T); c = takeCanvas(pw, ph); }
   const g = c.g || (c.g = c.getContext('2d'));
-  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, px, px);
+  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, pw, ph);
   g.setTransform(res, 0, 0, res, TILE_M * res, TILE_M * res);
   const s = [camX, camY, viewW, viewH, ctx];
-  btOverride = C.bt; camX = tx * TILE / L.f; camY = C.bt + ty * TILE / L.fy; viewW = viewH = TILE; PAD = TILE_M; ctx = g;
+  btOverride = C.bt; camX = tx * L.tw / L.f; camY = C.bt + ty * L.th / L.fy; viewW = L.tw; viewH = L.th; PAD = TILE_M; ctx = g;
   try { L.draw(palettePure(bi)); } finally { [camX, camY, viewW, viewH, ctx] = s; PAD = 0; btOverride = null; }
   T.c = c; T.res = res; tileBuilds++;
 }
@@ -83,20 +87,21 @@ function tileLayer(name, P) {
   let C = layerCaches[name];
   if (!C || C.bt !== bt) { if (C) for (const T of C.map.values()) dropTile(T); C = layerCaches[name] = { map: new Map(), bt }; }
   const m = ctx.getTransform(), res = m.a;
-  const off = camX * L.f, offY = (camY - bt) * L.fy;
-  const tx0 = Math.floor(off / TILE), tx1 = Math.floor((off + viewW) / TILE);
-  const ty0 = Math.floor(offY / TILE), ty1 = Math.floor((offY + viewH) / TILE);
+  const TW = L.tw, TH = L.th, off = camX * L.f, offY = (camY - bt) * L.fy;
+  const tx0 = Math.floor(off / TW), tx1 = Math.floor((off + viewW) / TW);
+  const ty0 = Math.floor(offY / TH), ty1 = Math.floor((offY + viewH) / TH);
   const top = L.top ? L.top(bt) : -Infinity;
   const wb = P.a === P.b ? 0 : P.t, wa = 1 - wb, ga = ctx.globalAlpha;
-  const skip = (tx, ty) => (ty + 1) * TILE + TILE_M < top || (L.empty && L.empty(tx * TILE - TILE_M, (tx + 1) * TILE + TILE_M));
+  const skip = (tx, ty) => (ty + 1) * TH + TILE_M < top ||
+    (L.empty && L.empty(tx * TW - TILE_M, (tx + 1) * TW + TILE_M, ty * TH - TILE_M, (ty + 1) * TH + TILE_M, bt));
   // tegels op hele apparaatpixels neerzetten: anders geven de randen van aangrenzende tegels dunne naden
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   const blit = T => {
-    const x = T.tx * TILE - off, y = T.ty * TILE - offY;
-    const dx0 = Math.round(m.e + m.a * x), dx1 = Math.round(m.e + m.a * (x + TILE));
-    const dy0 = Math.round(m.f + m.d * y), dy1 = Math.round(m.f + m.d * (y + TILE));
-    const s = TILE_M * T.res, w = TILE * T.res;
-    ctx.drawImage(T.c, s, s, w, w, dx0, dy0, dx1 - dx0, dy1 - dy0);
+    const x = T.tx * TW - off, y = T.ty * TH - offY;
+    const dx0 = Math.round(m.e + m.a * x), dx1 = Math.round(m.e + m.a * (x + TW));
+    const dy0 = Math.round(m.f + m.d * y), dy1 = Math.round(m.f + m.d * (y + TH));
+    const s = TILE_M * T.res;
+    ctx.drawImage(T.c, s, s, TW * T.res, TH * T.res, dx0, dy0, dx1 - dx0, dy1 - dy0);
   };
   try {
     for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
@@ -114,15 +119,16 @@ function tileLayer(name, P) {
     if (wa > 0.001) bis.push(P.ai);
     if (wb > 0.001) bis.push(P.bi);
     if (tileAheadBi >= 0 && !bis.includes(tileAheadBi)) bis.push(tileAheadBi);
-    for (const bi of bis) for (let ty = ty0 - 1; ty <= ty1 + 1 && tileBudget > 0; ty++) for (let tx = tx0 - 1; tx <= tx1 + 1 && tileBudget > 0; tx++) {
+    const R = L.ring;
+    for (const bi of bis) for (let ty = ty0 - R; ty <= ty1 + R && tileBudget > 0; ty++) for (let tx = tx0 - R; tx <= tx1 + R && tileBudget > 0; tx++) {
       if (!skip(tx, ty) && !C.map.has(`${bi}:${tx}:${ty}`)) getTile(C, L, bi, tx, ty, res, false);
     }
   }
   // tegels ver buiten beeld opruimen
-  if (C.map.size > 60) {
+  if (C.map.size > L.keep * 1.5) {
     const cx = (tx0 + tx1) / 2, cy = (ty0 + ty1) / 2;
     const all = [...C.map].sort((p, q) => (Math.abs(q[1].tx - cx) + Math.abs(q[1].ty - cy)) - (Math.abs(p[1].tx - cx) + Math.abs(p[1].ty - cy)));
-    for (let i = 0; i < all.length - 40; i++) { dropTile(all[i][1]); C.map.delete(all[i][0]); }
+    for (let i = 0; i < all.length - L.keep; i++) { dropTile(all[i][1]); C.map.delete(all[i][0]); }
   }
 }
 const paletteKey = P => `${P.ai}-${P.bi}-${Math.round(P.t * 30)}`;
@@ -584,12 +590,24 @@ const TRUNK = {
   night:   { bark: '#1b1f3a', moss: '#1e4a42' },
 };
 const TRUNK_SP = 880;
-// staat er een reuzenstam (met zijtakken) in dit stuk van de laag? (laagcoördinaten)
-function trunkIn(x0, x1) {
+// Tekent drawTrunkLayer iets in dit stuk van de laag (laagcoördinaten)? Volgt precies de vormen daar:
+// stam en gewikkelde liaan over de volle hoogte, wortels bij het water, en hier en daar een zijtak met blad.
+function trunkIn(x0, x1, y0, y1, bt) {
+  const gy = HAZARD_Y + 10 - bt, cell = 150;
   for (let i = Math.floor((x0 - 700) / TRUNK_SP); i <= Math.floor((x1 + 300) / TRUNK_SP); i++) {
     if (hash(i * 4.1) < 0.2) continue;
     const w = 60 + hash(i * 5.7) * 45, x = i * TRUNK_SP + hash(i * 2.3) * 400;
-    if (x + w * 1.3 + 180 >= x0 && x - w * 1.3 - 180 <= x1) return true;
+    if (x + w * 1.3 + 180 < x0 || x - w * 1.3 - 180 > x1) continue;
+    const hw = w * 0.55 + 4;
+    if (x + hw >= x0 && x - hw <= x1) return true; // stam, schors, mos en liaan
+    if (y1 >= gy - 82 && y0 <= gy + 12 && x + w * 1.3 + 2 >= x0 && x - w * 1.3 - 2 <= x1) return true; // wortels
+    for (let c = Math.floor((y0 - 80) / cell); c <= Math.floor((y1 + 20) / cell); c++) { // zijtakken
+      const hh = hash(i * 13.1 + c * 7.7);
+      if (hh <= 0.8) continue;
+      const sd = hh > 0.9 ? 1 : -1, bx = x + sd * w / 2, by = c * cell + 60;
+      const ax0 = Math.min(bx - sd * 6, bx + sd * 146), ax1 = Math.max(bx - sd * 6, bx + sd * 146);
+      if (by + 16 >= y0 && by - 78 <= y1 && ax1 >= x0 && ax0 <= x1) return true;
+    }
   }
   return false;
 }
