@@ -57,50 +57,124 @@ function givePow(type, x, y) {
   if (type === 'slow') { Sfx.whoosh(0.9, 1400, 180, 0.12); flashT = 0.2; }
   if (type === 'turbo') { G.turboT = P.dur; if (G.state === 'air') { G.vx = Math.max(G.vx, 1300) + 500; G.vy = Math.min(G.vy, -200); } Sfx.turbo(); }
 }
-// geraakt door de baas of een projectiel
-function careerHurt() {
+// geraakt door de baas of een projectiel. knock: de klap slaat Andy van zijn liaan af (bazen doen dat altijd)
+function careerHurt(knock = true, fx = 0) {
   if (powOn('star') || G.invuln > 0 || G.state === 'dead') return;
   run.hearts--; G.invuln = 1.6;
   shake(8, 0.35); flashT = 0.25; Sfx.crack(); Sfx.whoa();
   floatText(G.x, G.y - 60, run.hearts > 0 ? `💔 nog ${run.hearts}` : '💔', '#ff8080', 26);
+  if (knock && G.state === 'hang') { release(false); G.vx = G.vx * 0.3 + fx; G.vy = Math.min(G.vy, 0) - 380; floatText(G.x, G.y - 95, 'Eraf geschoten!', '#ffb0b0', 22); }
+  else if (knock && G.state === 'air') { G.vx = G.vx * 0.5 + fx; G.vy = Math.min(G.vy, 0) - 220; }
   if (run.hearts <= 0) careerFail('Verslagen!', `${run.boss ? run.boss.name : 'De baas'} was te sterk.`);
 }
-// ---- De baas: vliegt boven en vóór Andy en valt aan; jij moet alleen de finish halen ----
+// ---- De baas: volgt Andy (soms vóór, soms achter hem) en valt aan; jij moet alleen de finish halen ----
+// Aanvallen: throw (gooit naar waar Andy straks is), rain (regen van boven), dive (scheert over een hoogte),
+// en bij elke baas: snipe (richt een laser en schiet je van je liaan), cut (schiet de liaan kapot waar je aan hangt
+// of waar je naartoe vliegt) en vanaf wereld 3 chase (jaagt je een tijdje achterna). Halverwege wordt hij woedend.
+function bossMoves(B, w) {
+  const extra = ['snipe', 'cut'].concat(w >= 2 ? ['chase'] : []), out = [];
+  for (let i = 0; i < Math.max(B.moves.length, extra.length); i++) { if (B.moves[i]) out.push(B.moves[i]); if (extra[i]) out.push(extra[i]); }
+  return out;
+}
+// een liaan kapot schieten (ook als Andy er niet aan hangt)
+function cutVine(v) {
+  if (!v || !v.anchored) return;
+  if (v === G.vine && G.state === 'hang') { snapVine(v); return; }
+  v.anchored = false; v.pts[0].im = 1;
+  const q = v.pts[1];
+  for (let i = 0; i < 12; i++) addPart({ type: 'leaf', x: q.x, y: q.y, vx: rand(-200, 200), vy: rand(-250, 50), life: rand(0.6, 1), max: 1, col: i % 2 ? '#4f8f2a' : '#9a7a4a', r: rand(3, 5), rot: rand(0, 6), vr: rand(-10, 10) });
+  Sfx.crack();
+}
+// de liaan die de baas kapot wil schieten: die van Andy, of anders die waar hij het dichtst bij komt
+function cutTarget() {
+  if (G.state === 'hang' && G.vine && G.vine.anchored) return G.vine;
+  let best = null, bd = 1e9;
+  const px = G.x + Math.max(0, G.vx) * 0.45, py = G.y + G.vy * 0.3;
+  for (const v of vines) {
+    if (!v.anchored || v.jet || v.balloon || v.x < G.x + 60 || v.x > G.x + 900) continue;
+    const q = v.pts[v.pts.length - 1], d = Math.hypot(q.x - px, q.y - py);
+    if (d < bd) { bd = d; best = v; }
+  }
+  return best;
+}
 function updateBoss(dt) {
   const B = run.boss, C = game.career, w = C.bi;
   B.t += dt; B.hit = Math.max(0, B.hit - dt);
   if (B.dead) { B.y += 500 * dt; B.x += 200 * dt; return; }
+  if (!B.all) { B.all = bossMoves(B, w); B.side = 1; B.sideT = 4; }
+  // halverwege het level: woedend (sneller, vaker en harder)
+  if (!B.rage && G.x > START_X + (C.finishX - START_X) * 0.5) { B.rage = true; showBanner(`${B.name} is woedend!`, 'Hij valt nu veel vaker aan'); shake(6, 0.5); Sfx.whoa(); }
   if (B.dive) { // duikaanval: eerst een waarschuwing, dan scheert hij van rechts naar links over die hoogte
     const D = B.dive;
     if (D.warn > 0) { D.warn -= dt; B.x += (camX + viewW + 160 - B.x) * Math.min(1, dt * 5); B.y += (D.y - B.y) * Math.min(1, dt * 4); }
     else {
       B.x += D.vx * dt; B.y += (D.y - B.y) * Math.min(1, dt * 6);
-      if (Math.hypot(G.x - B.x, G.y - B.y) < 62) careerHurt();
+      if (Math.hypot(G.x - B.x, G.y - B.y) < 62) careerHurt(true, -250);
       if (B.x < camX - 250) { B.dive = null; B.x = camX - 250; }
     }
     return;
   }
-  // zweven: een eind vóór Andy, boven in beeld
-  const tx = G.x + 480 + Math.sin(B.t * 0.8) * 90, ty = camY + viewH * 0.2 + Math.sin(B.t * 1.7) * 45;
-  B.x += (tx - B.x) * Math.min(1, dt * 2.2); B.y += (ty - B.y) * Math.min(1, dt * 2.2);
+  if (B.chase) { // achtervolging: eerst krijsen en rood worden, dan gaat hij recht op Andy af (en houdt hij zijn tempo bij)
+    const H = B.chase;
+    H.t -= dt;
+    if (H.wind > 0) { H.wind -= dt; B.x += (G.x + 380 * B.side - B.x) * Math.min(1, dt * 3); B.y += (G.y - 200 - B.y) * Math.min(1, dt * 3); }
+    else {
+      const dx = G.x - B.x, dy = G.y - B.y, d = Math.hypot(dx, dy) || 1, sp = H.sp;
+      B.x += (G.vx + dx / d * sp) * dt; B.y += (G.vy * 0.8 + dy / d * sp) * dt;
+      if (Math.random() < 0.5) addPart({ x: B.x + rand(-30, 30), y: B.y + rand(-30, 30), vx: 0, vy: 0, life: 0.35, max: 0.35, col: 'rgba(255,60,40,.7)', r: rand(4, 8), g: 0 });
+      if (d < 64) { careerHurt(true, Math.sign(dx) * 400); H.t = 0; }
+    }
+    if (H.t <= 0) { B.chase = null; B.cd = 1; }
+    return;
+  }
+  // zweven: hij volgt Andy, afwisselend vóór en achter hem, op zijn hoogte (maar altijd in beeld)
+  if ((B.sideT -= dt) <= 0) { B.side = B.side > 0 ? -1 : 1; B.sideT = B.side > 0 ? rand(4, 6) : rand(2.5, 4); }
+  const tx = clamp(G.x + (B.side > 0 ? 460 : -340) + Math.sin(B.t * 0.8) * 70, camX + 90, camX + viewW - 90);
+  const ty = clamp(G.y - 230 + Math.sin(B.t * 1.7) * 45, camY + 70, camY + viewH * 0.7);
+  const fk = Math.min(1, dt * (B.aim ? 1.2 : 2.6));
+  B.x += (tx - B.x) * fk; B.y += (ty - B.y) * fk;
+  if (B.aim) { // richten met een laser; daarna een snel schot recht op Andy af
+    const A = B.aim;
+    A.t -= dt; A.lx = G.x + G.vx * 0.12; A.ly = G.y + G.vy * 0.12;
+    if (A.t <= 0) {
+      B.aim = null;
+      const n = w >= 6 ? 3 : w >= 3 ? 2 : 1, sp = 1500 + w * 45, ang = Math.atan2(A.ly - B.y, A.lx - B.x);
+      for (let i = 0; i < n; i++) { const a = ang + (i - (n - 1) / 2) * 0.13; run.projs.push({ x: B.x, y: B.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, g: 0, r: 13, kind: B.proj, t: 0, delay: i * 0.05, shot: true }); }
+      Sfx.whoosh(0.2, 2400, 700, 0.1); shake(3, 0.15);
+    }
+    return;
+  }
   if (G.x > C.finishX - 200) return; // vlak voor de finish geeft hij het op
   B.cd -= dt;
   if (B.cd > 0 || G.state === 'dead') return;
-  B.cd = Math.max(0.7, (2.7 - w * 0.17) * (1 - 0.3 * C.up)) * rand(0.8, 1.2); // sterkere Andy = snellere baas
-  const mv = B.moves[B.move++ % B.moves.length];
+  B.cd = Math.max(0.5, (2.2 - w * 0.12) * (1 - 0.3 * C.up)) * rand(0.8, 1.2) * (B.rage ? 0.62 : 1); // sterkere Andy = snellere baas
+  let mv = B.all[B.move++ % B.all.length];
+  if (G.state === 'hang' && Math.random() < 0.35) mv = Math.random() < 0.5 ? 'snipe' : 'cut'; // hangt hij stil? schiet hem eraf!
   if (mv === 'throw') { // gooit naar waar Andy straks is
-    const n = 1 + Math.floor(w / 4);
+    const n = 1 + Math.floor(w / 3) + (B.rage ? 1 : 0);
     for (let i = 0; i < n; i++) {
-      const T = 1.05 + i * 0.18, tx2 = G.x + G.vx * T * 0.9 + rand(-60, 60), ty2 = G.y + G.vy * T * 0.4, g = 900;
+      const T = 0.9 + i * 0.16, tx2 = G.x + G.vx * T * 0.9 + rand(-60, 60), ty2 = G.y + G.vy * T * 0.4, g = 900;
       run.projs.push({ x: B.x, y: B.y + 20, vx: (tx2 - B.x) / T, vy: (ty2 - B.y) / T - 0.5 * g * T, g, r: 15, kind: B.proj, t: 0, delay: i * 0.12 });
     }
     Sfx.whoosh(0.3, 600, 1800, 0.08);
   } else if (mv === 'rain') { // laat van boven een regen vallen vóór Andy (met waarschuwingen)
-    const n = 3 + Math.floor(w / 3);
-    for (let i = 0; i < n; i++) run.projs.push({ x: G.x + 150 + i * 150 + Math.max(0, G.vx) * 0.55, y: camY - 60, vx: 0, vy: 120, g: 700, r: 15, kind: B.proj, t: 0, delay: 0.7 + i * 0.08, warn: true });
+    const n = 4 + Math.floor(w / 2) + (B.rage ? 2 : 0);
+    for (let i = 0; i < n; i++) run.projs.push({ x: G.x + 60 + i * 130 + Math.max(0, G.vx) * 0.55, y: camY - 60, vx: 0, vy: 160, g: 800, r: 15, kind: B.proj, t: 0, delay: 0.6 + i * 0.07, warn: true });
     Sfx.whoosh(0.5, 2000, 500, 0.08);
+  } else if (mv === 'snipe') {
+    B.aim = { t: Math.max(0.5, 0.95 - w * 0.03) * (B.rage ? 0.8 : 1), lx: G.x, ly: G.y };
+    Sfx.tick(2400, 0.08);
+  } else if (mv === 'cut') { // een projectiel dat op een liaan af gaat en hem doorknipt
+    const v = cutTarget();
+    if (!v) { B.cd = 0.2; return; }
+    const q = v.pts[Math.min(3, v.pts.length - 1)];
+    run.projs.push({ x: B.x, y: B.y, vx: 0, vy: 0, g: 0, r: 12, kind: B.proj, t: 0, delay: 0.55, cut: v, cx: q.x, cy: q.y, mark: true });
+    Sfx.whoosh(0.4, 900, 2600, 0.08);
+  } else if (mv === 'chase') {
+    B.chase = { t: 1.8 + w * 0.06 + (B.rage ? 0.6 : 0), wind: 0.6, sp: 300 + w * 22 };
+    Sfx.whoa(); shake(4, 0.3);
   } else { // dive
-    B.dive = { warn: Math.max(0.55, 1.1 - w * 0.05), y: clamp(G.y + G.vy * 0.3, camY + 60, HAZARD_Y - 80), vx: -(1500 + w * 90) };
+    B.dive = { warn: Math.max(0.5, 1.0 - w * 0.05), y: clamp(G.y + G.vy * 0.3, camY + 60, HAZARD_Y - 80), vx: -(1600 + w * 100) };
     Sfx.whoa();
   }
 }
@@ -108,10 +182,16 @@ function updateProjs(dt) {
   const P = run.projs;
   for (let i = P.length - 1; i >= 0; i--) {
     const p = P[i];
-    if (p.delay > 0) { p.delay -= dt; continue; }
+    if (p.delay > 0) { p.delay -= dt; if (p.cut) { p.x = run.boss ? run.boss.x : p.x; p.y = run.boss ? run.boss.y : p.y; } continue; }
+    if (p.cut) { // naar het ophangpunt van de liaan (dat beweegt mee), en daar knippen
+      const q = p.cut.pts[Math.min(3, p.cut.pts.length - 1)], dx = q.x - p.x, dy = q.y - p.y, d = Math.hypot(dx, dy);
+      p.cx = q.x; p.cy = q.y;
+      if (d < 26 || !p.cut.anchored) { if (p.cut.anchored) { cutVine(p.cut); burst(q.x, q.y, 12, projCol(p.kind), 260, 4); } P.splice(i, 1); continue; }
+      p.vx = dx / d * 1700; p.vy = dy / d * 1700;
+    }
     p.t += dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt;
-    if (p.y > HAZARD_Y + 60 || p.x < camX - 400 || p.t > 6) { P.splice(i, 1); continue; }
-    if ((G.state === 'hang' || G.state === 'air' || G.state === 'swim') && Math.hypot(G.x - p.x, G.y - p.y) < p.r + G_R * 0.8) { P.splice(i, 1); burst(p.x, p.y, 10, projCol(p.kind), 200, 4); careerHurt(); }
+    if (p.y > HAZARD_Y + 60 || p.x < camX - 600 || p.x > camX + viewW + 900 || p.t > 6) { P.splice(i, 1); continue; }
+    if ((G.state === 'hang' || G.state === 'air' || G.state === 'swim') && Math.hypot(G.x - p.x, G.y - p.y) < p.r + G_R * 0.8) { P.splice(i, 1); burst(p.x, p.y, 10, projCol(p.kind), 200, 4); careerHurt(true, Math.sign(p.vx) * 300); }
   }
 }
 // finish gehaald in een baaslevel
@@ -156,6 +236,22 @@ function drawCareerWorld() {
   }
   const B = run.boss;
   if (!B) return;
+  // doelwit van een knip-schot: een knipperend vizier op de liaan
+  for (const p of run.projs) if (p.mark) {
+    const a = 0.55 + 0.4 * Math.sin(time * 22);
+    ctx.strokeStyle = `rgba(255,50,50,${a})`; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(p.cx, p.cy, 22, 0, Math.PI * 2); ctx.stroke();
+    line(p.cx - 32, p.cy, p.cx + 32, p.cy); line(p.cx, p.cy - 32, p.cx, p.cy + 32);
+  }
+  // richtlaser (snipe): wordt dikker en feller vlak voor het schot
+  if (B.aim) {
+    const k = clamp(1 - B.aim.t / 0.9, 0, 1);
+    ctx.strokeStyle = `rgba(255,30,30,${0.35 + 0.55 * k})`; ctx.lineWidth = 2 + 4 * k; ctx.setLineDash([18, 10]);
+    line(B.x, B.y, B.aim.lx, B.aim.ly); ctx.setLineDash([]);
+    ctx.strokeStyle = `rgba(255,30,30,${0.6 + 0.4 * k})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(B.aim.lx, B.aim.ly, 30 - 12 * k, 0, Math.PI * 2); ctx.stroke();
+  }
+  // woedend of op jacht: een rode gloed om de baas
+  if (B.rage || B.chase) { ctx.fillStyle = `rgba(255,40,20,${B.chase ? 0.35 + 0.2 * Math.sin(time * 25) : 0.18})`; circ(B.x, B.y, 82 + Math.sin(time * 9) * 6); }
   // waarschuwing voor een duikaanval: een rode baan over die hoogte
   if (B.dive && B.dive.warn > 0) {
     const a = 0.25 + 0.2 * Math.sin(time * 18);
@@ -168,7 +264,7 @@ function drawBoss(B) {
   if (B.x < camX - 200 || B.x > camX + viewW + 260) return;
   const flap = Math.sin(B.t * 12) * 0.5, col = B.col, dk = shade(col, -0.35), lt = shade(col, 0.35);
   ctx.save(); ctx.translate(B.x, B.y); if (B.dead) ctx.rotate(B.t * 4);
-  ctx.scale(-1, 1); // hij kijkt naar Andy (naar links)
+  if (G.x < B.x) ctx.scale(-1, 1); // hij kijkt naar Andy
   ctx.fillStyle = dk; // vleugels
   for (const sd of [-1, 1]) { ctx.save(); ctx.scale(1, 1); ctx.beginPath(); ctx.moveTo(-10, -10); ctx.quadraticCurveTo(-40, -70 - flap * 40 * sd, -95, -40 - flap * 30); ctx.quadraticCurveTo(-60, -10, -10, 5); ctx.fill(); ctx.restore(); ctx.scale(-1, 1); }
   ctx.fillStyle = '#140f18'; ell(0, 0, 58, 50);

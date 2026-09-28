@@ -587,7 +587,7 @@ function mapRenderUi() {
   $('mapLevel').textContent = levelLabel(I);
   $('carStars').textContent = st.reduce((a, b) => a + b, 0) + ' / ' + LEVELS * 3;
   const lines = [];
-  if (I.boss) lines.push(`👑 <b>Baasgevecht: ${BOSSES[w].name}</b> · ontwijk zijn aanvallen (${I.up > 0.66 ? 2 : 3} ❤️) en haal de finish`);
+  if (I.boss) lines.push(`👑 <b>Baasgevecht: ${BOSSES[w].name}</b> · hij volgt je en schiet je van je liaan (${I.up > 0.66 ? 2 : 3} ❤️); haal de finish`);
   if (I.tower) lines.push('🏰 <b>Toren</b> · extra zwaar, met twee uitdagingen');
   for (const c of I.ch) lines.push(`${CHALLENGES[c].icon} <b>${CHALLENGES[c].name}</b> · ${CHALLENGES[c].info(I.need)}`);
   if (!lines.length) lines.push('Haal de finish op tijd');
