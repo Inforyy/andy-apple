@@ -418,6 +418,13 @@ function drawBranch(v) {
 }
 function drawApple(a) {
   const bob = a.vine || a.loose ? 0 : Math.sin(a.t * 3) * 3;
+  if (a.pearl) { // parel onder water
+    const y = a.y + bob;
+    ctx.fillStyle = a.gold ? '#ffe08a' : '#f4eefa'; circ(a.x, y, 9);
+    ctx.fillStyle = a.gold ? '#c9971a' : '#c9b6dc'; circ(a.x + 2, y + 2, 5);
+    ctx.fillStyle = '#ffffff'; circ(a.x - 3, y - 3, 3);
+    return;
+  }
   const x = a.x, y = a.y + bob, s = appleSprite(a.gold);
   if (a.gold && !Q.lite) ctx.drawImage(glowSprite('255,230,120').c, x - 28, y - 28, 56, 56);
   const sc = 0.62 * (1 + Math.sin(a.t * 4) * 0.04);
@@ -449,6 +456,7 @@ function drawFoes() {
     if (f.x < camX - 60 || f.x > camX + viewW + 60) continue;
     if (f.type === 'wasp') drawWasp(f);
     else if (f.type === 'fire') drawFire(f);
+    else if (f.type === 'jelly') drawJelly(f);
     else drawBird(f);
   }
 }
@@ -557,7 +565,7 @@ function drawCape(len, spread) {
   ctx.fillStyle = GC.capeD; ctx.beginPath(); ctx.moveTo(-4, -6); ctx.lineTo(ex * 0.7, ey * 0.7); ctx.lineTo(4, -6); ctx.fill();
 }
 function drawGorilla() {
-  if (G.state === 'dead' && G.y > HAZARD_Y + 60) return;
+  if (G.state === 'dead' && G.y > HAZARD_Y + 60 && !(run && run.under)) return; // onder water blijf je zichtbaar
   ctx.save(); ctx.translate(G.x, G.y);
   // zachte gloed zodat Andy goed opvalt tegen de achtergrond
   ctx.globalAlpha = G.turboT > 0 ? 0.7 : 0.35;
@@ -599,6 +607,7 @@ function drawGorilla() {
   else if (tr && tr.id === 'super') { h1 = [-3, -36]; h2 = [3, -36]; f1 = [-4, 27]; f2 = [4, 27]; mouth = 'grin'; }
   else if (tr) { h1 = [-9, 4]; h2 = [9, 4]; f1 = [-6, 18]; f2 = [6, 18]; mouth = 'grin'; } // ingedoken voor een salto
   else if (G.diving) { h1 = [-10, 20]; h2 = [-2, 22]; f1 = [-5, 27]; f2 = [5, 27]; mouth = 'o'; }
+  else if (G.state === 'swim') { const s = Math.sin(time * 7); h1 = [-8 + s * 14, -20 - s * 6]; h2 = [8 - s * 14, -18 + s * 6]; f1 = [-8 - s * 5, 26]; f2 = [8 + s * 5, 26]; mouth = 'o'; } // zwemslag
   else { h1 = [-22, -22 + sw * 4]; h2 = [22, -24 - sw * 4]; f1 = [-10, 24]; f2 = [10, 24]; mouth = G.vy < -200 ? 'open' : 'smile'; }
 
   // cape (wingsuit)
@@ -623,6 +632,11 @@ function drawGorilla() {
   ctx.fillStyle = GC.skinD; ell(-4.6, 0, 5.8, 4.8, -0.2); ell(4.6, 0, 5.8, 4.8, 0.2);
   ctx.fillStyle = GC.skin; ell(-4.8, -0.6, 4.8, 3.8, -0.2); ell(4.8, -0.6, 4.8, 3.8, 0.2);
   ctx.fillStyle = GC.skinD; ell(0, 9, 6, 5.5); ctx.fillStyle = GC.skin; ell(0, 8.4, 5, 4.4);
+  if (GC.appleSuit) { // appelkostuum: een grote, glanzende appel als lijf
+    ctx.fillStyle = GC.ink; ell(0, 3, 20, 18);
+    ctx.fillStyle = cachedGrad('applesuit', () => { const g = ctx.createRadialGradient(-6, -4, 2, 0, 3, 20); g.addColorStop(0, '#ff8a7a'); g.addColorStop(0.5, '#e8322b'); g.addColorStop(1, '#9e1b16'); return g; });
+    ell(0, 3, 18.5, 16.5);
+  }
   ctx.strokeStyle = GC.furL; ctx.lineWidth = 1.3; ctx.lineCap = 'round'; // vachtplukjes op de schouders
   line(-14, -6, -17, -9); line(-12, -8, -14, -12); line(14, -6, 17, -9); line(12, -8, 14, -12);
   // hoofd met kuif en oren (eerst de contour, dan de vulling)
@@ -677,6 +691,8 @@ function drawGorilla() {
     ctx.fillStyle = GC.ink; circ(0, -29.6, 3.3); ctx.fillStyle = '#e8322b'; circ(-0.9, -29.4, 2); circ(0.9, -29.4, 2);
     ctx.fillStyle = '#4caf50'; ell(1.6, -32, 1.6, 0.8, -0.5);
   }
+  if (GC.appleSuit) drawAppleSuitTop();
+  if (GC.hat) drawHat(GC.hat);
   ctx.restore();
 }
 function drawParrot() {
@@ -855,6 +871,232 @@ function drawFlash() {
 }
 
 
+// =====================================================================
+//  Biome-overgang, onder water, kisten en het uiterlijk van Andy
+// =====================================================================
+// Een poort op elke biomegrens (Eindeloos): twee pilaren, een glinsterend gordijn en een bord met de naam
+function drawBiomeGates() {
+  if (game.career) return;
+  const m0 = (camX - 300 - START_X) / PX_PER_M, m1 = (camX + viewW + 300 - START_X) / PX_PER_M;
+  const S = biomeSeg(m0), bounds = [];
+  if (S.start > 0) bounds.push(S.start);
+  for (let b = S.nextStart, k = 0; b <= m1 && k < 3; k++) { bounds.push(b); b = biomeSeg(b + 0.01).nextStart; }
+  for (const b of bounds) {
+    const x = START_X + b * PX_PER_M;
+    if (x < camX - 300 || x > camX + viewW + 300) continue;
+    const B = BIOMES[biomeSeg(b + 0.01).i], y0 = Math.max(camY - 60, CEIL_Y - 1200), y1 = HAZARD_Y + 20;
+    // gordijn van licht in de kleuren van de nieuwe biome
+    ctx.fillStyle = cachedGrad('gate' + B.name, () => { const g = ctx.createLinearGradient(-70, 0, 70, 0); g.addColorStop(0, rgbStr(B.rgb.skyTop, 0)); g.addColorStop(0.5, rgbStr(B.rgb.sun, 0.22)); g.addColorStop(1, rgbStr(B.rgb.skyTop, 0)); return g; });
+    ctx.save(); ctx.translate(x, 0); ctx.fillRect(-70, y0, 140, y1 - y0); ctx.restore();
+    ctx.fillStyle = rgbStr(B.rgb.sun, 0.55);
+    for (let k = 0; k < 8; k++) { const yy = y1 - ((time * 90 + k * 130) % (y1 - y0)); circ(x + Math.sin(time * 2 + k) * 40, yy, 2.5); }
+    for (const sd of [-1, 1]) { // pilaren
+      const px = x + sd * 78;
+      ctx.fillStyle = '#5b5560'; ctx.fillRect(px - 14, y0, 28, y1 - y0);
+      ctx.fillStyle = '#7d7684'; ctx.fillRect(px - 14, y0, 9, y1 - y0);
+      ctx.fillStyle = B.c.vine; for (let yy = Math.floor(y0 / 90) * 90; yy < y1; yy += 90) { ctx.fillRect(px - 14, yy, 28, 6); }
+    }
+    // bord met de naam, altijd in beeld zolang de poort er is
+    const by = clamp(camY + viewH * 0.18, y0 + 60, y1 - 120);
+    ctx.font = '900 26px Trebuchet MS, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const txt = `${B.icon} ${B.name.toUpperCase()}`, w = ctx.measureText(txt).width + 40;
+    ctx.fillStyle = 'rgba(20,14,30,.85)'; ctx.fillRect(x - w / 2, by - 24, w, 48);
+    ctx.fillStyle = B.c.sun; ctx.fillRect(x - w / 2, by + 20, w, 4);
+    ctx.fillStyle = '#ffffff'; ctx.fillText(txt, x, by + 1);
+  }
+}
+// Filmische titelkaart bij een nieuwe biome (in beeldcoördinaten)
+function drawCinematic() {
+  const C = run && run.cine;
+  if (!C) return;
+  const t = C.t, B = BIOMES[C.bi], u = 1 / scale, W = viewW, H = viewH;
+  const ease = e => { e = clamp(e, 0, 1); return 1 - Math.pow(1 - e, 3); };
+  if (t < 1) { // kleurgolf vanuit het midden
+    ctx.fillStyle = rgbStr(B.rgb.sun, 0.35 * (1 - t));
+    circ(W / 2, H / 2, ease(t) * Math.hypot(W, H) * 0.6);
+  }
+  const bars = t < 0.35 ? ease(t / 0.35) : t > CINE_DUR - 0.5 ? ease((CINE_DUR - t) / 0.5) : 1, bh = H * 0.12 * bars;
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, bh); ctx.fillRect(0, H - bh, W, bh);
+  const a = t < 0.3 ? 0 : t < 0.7 ? (t - 0.3) / 0.4 : t > CINE_DUR - 0.6 ? (CINE_DUR - t) / 0.6 : 1;
+  if (a <= 0) return;
+  const slide = (1 - ease((t - 0.3) / 0.6)) * W * 0.3;
+  ctx.globalAlpha = clamp(a, 0, 1); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+  const ls = 'letterSpacing' in ctx;
+  if (ls) ctx.letterSpacing = `${6 * u}px`;
+  ctx.font = `900 ${17 * u}px Trebuchet MS, sans-serif`; ctx.fillStyle = B.c.sun;
+  ctx.fillText(C.lap ? 'TERUG IN' : 'NIEUWE BIOME', W / 2 - slide * 0.5, H * 0.35);
+  const fs = Math.min(86, cssW * 0.085);
+  ctx.font = `900 ${fs * u}px Trebuchet MS, sans-serif`;
+  const title = `${B.icon} ${B.name.toUpperCase()}`;
+  ctx.lineWidth = 10 * u; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.strokeText(title, W / 2 + slide, H * 0.44);
+  ctx.fillStyle = '#ffffff'; ctx.fillText(title, W / 2 + slide, H * 0.44);
+  if (ls) ctx.letterSpacing = '0px';
+  const lw = W * 0.42 * ease((t - 0.55) / 0.5);
+  ctx.fillStyle = B.c.sun; ctx.fillRect(W / 2 - lw / 2, H * 0.44 + fs * u * 0.62, lw, 5 * u);
+  ctx.font = `800 ${22 * u}px Trebuchet MS, sans-serif`; ctx.lineWidth = 5 * u;
+  ctx.strokeText(C.sub, W / 2 - slide * 0.3, H * 0.44 + fs * u * 1.05); ctx.fillText(C.sub, W / 2 - slide * 0.3, H * 0.44 + fs * u * 1.05);
+  if (bh > 20 * u) { ctx.font = `700 ${16 * u}px Trebuchet MS, sans-serif`; ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fillText(B.tip, W / 2, H - bh / 2); }
+  ctx.globalAlpha = 1;
+}
+// De onderwaterwereld (in wereldcoördinaten, vóór de rest van de speelwereld getekend)
+function drawUnderwater(P) {
+  const U = run.under, x0 = camX - 40, x1 = camX + viewW + 40, top = HAZARD_Y - 6;
+  if (camY + viewH < top) return;
+  const bot = Math.max(camY + viewH + 40, UNDER_FLOOR + 300);
+  ctx.fillStyle = cachedGrad('deep' + paletteKey(P), () => {
+    const g = ctx.createLinearGradient(0, HAZARD_Y, 0, UNDER_FLOOR);
+    g.addColorStop(0, P.hazTop); g.addColorStop(0.25, rgbStr(mixC(P.hazTopC, P.hazBotC, 0.7))); g.addColorStop(1, rgbStr(mixC(P.hazBotC, [0, 5, 20], 0.6)));
+    return g;
+  });
+  ctx.fillRect(x0, top, x1 - x0, bot - top);
+  // lichtbundels van boven
+  ctx.fillStyle = 'rgba(255,255,255,.05)';
+  for (let i = Math.floor(x0 / 260) - 1; i < x1 / 260 + 1; i++) {
+    const x = i * 260 + Math.sin(time * 0.3 + i) * 40;
+    ctx.beginPath(); ctx.moveTo(x, HAZARD_Y); ctx.lineTo(x + 70, HAZARD_Y); ctx.lineTo(x - 90, UNDER_FLOOR); ctx.lineTo(x - 200, UNDER_FLOOR); ctx.fill();
+  }
+  const nearExit = x => U.exits.some(e => Math.abs(e - x) < 110);
+  // de stroming vlak onder het oppervlak (hier kom je niet door, behalve bij een luchtgat)
+  ctx.fillStyle = 'rgba(0,10,40,.28)'; ctx.fillRect(x0, HAZARD_Y, x1 - x0, UNDER_TOP - HAZARD_Y + 10);
+  ctx.strokeStyle = 'rgba(200,230,255,.35)'; ctx.lineWidth = 2;
+  for (let i = Math.floor(x0 / 90); i < x1 / 90; i++) {
+    const x = i * 90 + ((time * 50) % 90);
+    if (nearExit(x)) continue;
+    const y = HAZARD_Y + 18; ctx.beginPath(); ctx.moveTo(x - 7, y); ctx.lineTo(x, y + 7); ctx.lineTo(x + 7, y); ctx.stroke();
+  }
+  // luchtgaten: bellenzuilen
+  for (const e of U.exits) {
+    if (e < x0 - 100 || e > x1 + 100) continue;
+    ctx.fillStyle = cachedGrad('exitcol', () => { const g = ctx.createLinearGradient(-70, 0, 70, 0); g.addColorStop(0, 'rgba(180,240,255,0)'); g.addColorStop(0.5, 'rgba(180,240,255,.35)'); g.addColorStop(1, 'rgba(180,240,255,0)'); return g; });
+    ctx.save(); ctx.translate(e, 0); ctx.fillRect(-70, HAZARD_Y - 30, 140, UNDER_FLOOR - HAZARD_Y + 30); ctx.restore();
+    ctx.strokeStyle = 'rgba(235,250,255,.85)'; ctx.lineWidth = 1.6;
+    for (let k = 0; k < 16; k++) { const y = UNDER_FLOOR - ((time * 180 + k * 67) % (UNDER_FLOOR - HAZARD_Y)); ctx.beginPath(); ctx.arc(e + Math.sin(time * 3 + k) * 22, y, 3 + (k % 4), 0, Math.PI * 2); ctx.stroke(); }
+    ctx.font = '900 24px Trebuchet MS, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.strokeText('⬆ LUCHT', e, UNDER_TOP + 70 + Math.sin(time * 4) * 5);
+    ctx.fillStyle = '#e6fbff'; ctx.fillText('⬆ LUCHT', e, UNDER_TOP + 70 + Math.sin(time * 4) * 5);
+  }
+  // rotswanden
+  for (const w of U.walls) {
+    if (w.x < x0 - 80 || w.x > x1 + 80) continue;
+    const y0 = Math.max(w.y0, HAZARD_Y), y1 = Math.min(w.y1, UNDER_FLOOR + 40), rx = w.w / 2;
+    ctx.fillStyle = '#34414f'; ctx.beginPath(); ctx.moveTo(w.x - rx, y1); ctx.lineTo(w.x - rx * 0.8, y0 + 10); ctx.quadraticCurveTo(w.x, y0 - 12, w.x + rx * 0.85, y0 + 8); ctx.lineTo(w.x + rx, y1); ctx.fill();
+    ctx.fillStyle = '#4a5a6b'; ctx.fillRect(w.x - rx * 0.7, y0 + 10, rx * 0.4, y1 - y0 - 10);
+    ctx.fillStyle = '#3f8f5a'; for (let k = 0; k < 4; k++) ell(w.x + (hash(w.x + k) - 0.5) * w.w, y0 + 20 + hash(w.x * 2 + k) * (y1 - y0 - 40), 8, 5);
+  }
+  // bodem met zand, zeewier en koraal
+  ctx.fillStyle = '#b89d62'; ctx.beginPath(); ctx.moveTo(x0, bot);
+  for (let x = Math.floor(x0 / 30) * 30; x <= x1 + 30; x += 30) ctx.lineTo(x, UNDER_FLOOR - 12 - noise1(x * 0.01) * 26);
+  ctx.lineTo(x1 + 30, bot); ctx.fill();
+  ctx.lineCap = 'round';
+  for (let i = Math.floor(x0 / 70); i < x1 / 70; i++) {
+    const h = hash(i * 3.3), x = i * 70 + h * 40, base = UNDER_FLOOR - 16;
+    if (h < 0.55) { // zeewier
+      ctx.strokeStyle = h < 0.25 ? '#2f8a4a' : '#4aa35a'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(x, base);
+      const L = 90 + h * 200; for (let k = 1; k <= 6; k++) ctx.lineTo(x + Math.sin(time * 1.4 + i + k * 0.8) * 10 * k / 6, base - L * k / 6); ctx.stroke();
+    } else if (h < 0.7) { ctx.fillStyle = h < 0.62 ? '#ff7a9a' : '#ffb05a'; circ(x, base - 10, 12); circ(x - 10, base - 4, 8); circ(x + 11, base - 6, 9); }
+  }
+  // het oppervlak van onderen
+  ctx.strokeStyle = 'rgba(220,245,255,.7)'; ctx.lineWidth = 3; ctx.beginPath();
+  for (let x = Math.floor(x0 / 14) * 14; x <= x1 + 14; x += 14) { const y = waveY(x); x === Math.floor(x0 / 14) * 14 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+  ctx.stroke();
+}
+// Luchtmeter onder water (in beeldcoördinaten)
+function drawUnderHud() {
+  const U = run && run.under;
+  if (!U) return;
+  const u = 1 / scale, W = viewW, H = viewH, k = clamp(U.t / UNDER_TIME, 0, 1);
+  if (U.t < 8) { // het wordt benauwd: een rode rand
+    const a = (1 - U.t / 8) * (0.5 + 0.3 * Math.sin(time * 10));
+    ctx.strokeStyle = `rgba(200,20,40,${clamp(a, 0, 0.8)})`; ctx.lineWidth = 40 * u; ctx.strokeRect(0, 0, W, H);
+  }
+  const bw = 300 * u, bh = 22 * u, x = W / 2 - bw / 2, y = 74 * u;
+  ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(x - 4 * u, y - 4 * u, bw + 8 * u, bh + 8 * u);
+  ctx.fillStyle = k > 0.5 ? '#6fd3ff' : k > 0.25 ? '#ffd23f' : '#ff4f5a'; ctx.fillRect(x, y, bw * k, bh);
+  ctx.font = `900 ${17 * u}px Trebuchet MS, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#ffffff'; ctx.fillText(`🫧 Lucht: ${Math.max(0, Math.ceil(U.t))} s`, W / 2, y + bh / 2 + 1 * u);
+  const next = U.exits.find(e => e > G.x - 90);
+  if (next !== undefined && !U.drowned) {
+    ctx.font = `800 ${15 * u}px Trebuchet MS, sans-serif`; ctx.lineWidth = 4 * u; ctx.strokeStyle = 'rgba(0,0,0,.5)';
+    const txt = Math.abs(next - G.x) < 90 ? '⬆ Zwem omhoog!' : `Luchtgat over ${Math.round((next - G.x) / PX_PER_M)} m ➜`;
+    ctx.strokeText(txt, W / 2, y + bh + 20 * u); ctx.fillText(txt, W / 2, y + bh + 20 * u);
+  }
+}
+// Kisten om op te pakken
+function drawLoot() {
+  for (const L of loot) {
+    if (L.x < camX - 60 || L.x > camX + viewW + 60 || L.y < camY - 60 || L.y > camY + viewH + 60) continue;
+    const y = L.y + Math.sin(L.t * 2.5) * 6;
+    if (!Q.lite) { ctx.globalAlpha = 0.6 + 0.2 * Math.sin(L.t * 4); ctx.drawImage(glowSprite('255,210,90').c, L.x - 45, y - 45, 90, 90); ctx.globalAlpha = 1; }
+    ctx.save(); ctx.translate(L.x, y); ctx.rotate(Math.sin(L.t * 1.7) * 0.08);
+    ctx.fillStyle = '#3a220f'; ctx.fillRect(-19, -9, 38, 24);
+    ctx.fillStyle = '#8a5a2e'; ctx.fillRect(-17, -7, 34, 20);
+    ctx.fillStyle = '#3a220f'; ctx.beginPath(); ctx.moveTo(-19, -8); ctx.quadraticCurveTo(0, -26, 19, -8); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#a0703c'; ctx.beginPath(); ctx.moveTo(-17, -8); ctx.quadraticCurveTo(0, -23, 17, -8); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#f5c518'; ctx.fillRect(-19, -10, 38, 3.5); ctx.fillRect(-12, -18, 3.5, 33); ctx.fillRect(8.5, -18, 3.5, 33);
+    ctx.fillStyle = '#ffe680'; ctx.fillRect(-4, -4, 8, 9); ctx.fillStyle = '#3a220f'; ctx.fillRect(-1, -1, 2, 4);
+    ctx.restore();
+    if (Math.sin(L.t * 3) > 0.7) { ctx.fillStyle = '#fff'; starPath(ctx, L.x + 16, y - 20, 5, L.t); ctx.fill(); }
+  }
+}
+function drawJelly(f) {
+  const p = 1 + Math.sin(f.t * 3) * 0.08;
+  ctx.save(); ctx.translate(f.x, f.y);
+  ctx.strokeStyle = `hsla(${f.hue},80%,80%,.6)`; ctx.lineWidth = 2;
+  for (let k = -2; k <= 2; k++) { ctx.beginPath(); ctx.moveTo(k * 6, 4); for (let j = 1; j <= 4; j++) ctx.lineTo(k * 6 + Math.sin(f.t * 4 + j + k) * 4, 4 + j * 9); ctx.stroke(); }
+  ctx.fillStyle = `hsla(${f.hue},80%,70%,.75)`; ctx.beginPath(); ctx.ellipse(0, 0, 20 * p, 16 / p, 0, Math.PI, 0); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.45)'; ell(-6, -8, 5, 3);
+  if (f.fleeT !== undefined) { const s = appleSprite(false); ctx.drawImage(s.c, -7, 6, 14, 16); }
+  ctx.restore();
+}
+// ---- Uiterlijk van Andy (uit kisten, zie game.js) ----
+const APPLE_SUIT = { fur: '#e8322b', furD: '#a8141c', furL: '#ff8a7a', band: '#4caf50', bandD: '#2e7d32', appleSuit: true };
+let lookKey = '', lookPal = null;
+// het palet voor jouw eigen gorilla, met je gekozen vachtkleur, hoed en kostuum
+function myLook() {
+  const c = save.cosm, col = LOOT_BY_ID[c.color];
+  if (!c.color && !c.hat && !c.suit) return GC;
+  if (col && col.rainbow && !c.suit) { // regenboog: de kleur loopt rond
+    const h = (time * 60) % 360;
+    return Object.assign({}, GC, { fur: `hsl(${h},70%,48%)`, furD: `hsl(${h},70%,32%)`, furL: `hsl(${(h + 30) % 360},80%,68%)`, hat: c.hat });
+  }
+  const key = c.color + '|' + c.hat + '|' + c.suit;
+  if (key !== lookKey || !lookPal) {
+    lookKey = key;
+    const base = c.suit === 'suit_kiwi' ? GCK : c.suit === 'suit_apple' ? Object.assign({}, GC, APPLE_SUIT) : col ? Object.assign({}, GC, { fur: col.fur, furD: col.furD, furL: col.furL }) : GC;
+    lookPal = Object.assign({}, base, { hat: c.suit === 'suit_apple' ? '' : c.hat });
+  }
+  return lookPal;
+}
+function drawHat(id) {
+  ctx.lineWidth = 1.6; ctx.strokeStyle = GC.ink; ctx.lineJoin = 'round';
+  const shape = (col, fn) => { ctx.fillStyle = col; ctx.beginPath(); fn(); ctx.closePath(); ctx.fill(); ctx.stroke(); };
+  if (id === 'hat_cap') {
+    shape('#2f7fe0', () => { ctx.arc(0, -25, 12.5, Math.PI, 0); });
+    shape('#1d5bb0', () => { ctx.ellipse(10, -25, 11, 3, 0, 0, Math.PI * 2); });
+    ctx.fillStyle = '#fff'; circ(0, -37, 2);
+  } else if (id === 'hat_cowboy') {
+    shape('#8b5a2b', () => { ctx.ellipse(0, -27, 23, 5, 0, 0, Math.PI * 2); });
+    shape('#a0703c', () => { ctx.moveTo(-11, -27); ctx.lineTo(-9, -42); ctx.quadraticCurveTo(0, -38, 9, -42); ctx.lineTo(11, -27); });
+    ctx.fillStyle = '#4a2e16'; ctx.fillRect(-10.5, -31, 21, 3.5);
+  } else if (id === 'hat_pirate') {
+    shape('#1d1d24', () => { ctx.moveTo(-21, -25); ctx.quadraticCurveTo(-10, -46, 0, -40); ctx.quadraticCurveTo(10, -46, 21, -25); ctx.quadraticCurveTo(0, -31, -21, -25); });
+    ctx.fillStyle = '#fff'; circ(0, -33, 3.2); ctx.fillStyle = '#1d1d24'; circ(-1.2, -33.5, 0.9); circ(1.2, -33.5, 0.9);
+    ctx.strokeStyle = '#f5c518'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-19, -26); ctx.quadraticCurveTo(0, -32, 19, -26); ctx.stroke();
+  } else if (id === 'hat_crown') {
+    shape('#f5c518', () => { ctx.moveTo(-12, -25); ctx.lineTo(-13, -38); ctx.lineTo(-6, -31); ctx.lineTo(0, -41); ctx.lineTo(6, -31); ctx.lineTo(13, -38); ctx.lineTo(12, -25); });
+    ctx.fillStyle = '#e8322b'; circ(0, -29, 2.2); ctx.fillStyle = '#2f7fe0'; circ(-7, -28.5, 1.8); circ(7, -28.5, 1.8);
+  } else if (id === 'hat_wizard') {
+    shape('#5b2fa8', () => { ctx.moveTo(-13, -27); ctx.quadraticCurveTo(-2, -45, 6, -60); ctx.quadraticCurveTo(4, -42, 13, -27); });
+    shape('#5b2fa8', () => { ctx.ellipse(0, -27, 18, 4.5, 0, 0, Math.PI * 2); });
+    ctx.fillStyle = '#ffd23f'; starPath(ctx, -2, -38, 3.5, 0.3); ctx.fill(); starPath(ctx, 4, -48, 2.5, 0); ctx.fill();
+  }
+}
+function drawAppleSuitTop() { // steeltje en blaadje op het hoofd, glans op de "appel"
+  ctx.strokeStyle = '#5a3a1a'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(0, -30); ctx.quadraticCurveTo(1, -37, 4, -41); ctx.stroke();
+  ctx.fillStyle = '#4caf50'; ctx.strokeStyle = GC.ink; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.ellipse(11, -39, 8, 3.8, -0.4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.45)'; ell(-8, -23, 2.5, 4.5, -0.5); ell(-9, 2, 3, 6, -0.3);
+}
+
 // ---- Vloeiend beeld: interpolatie tussen de laatste twee physics-stappen ----
 // De physics loopt op vaste stappen van 1/120 s. Op schermen die niet precies 60/120 Hz verversen
 // (75, 90, 144 Hz, of bij wisselende framerates) valt er soms een stap meer of minder in een beeld;
@@ -905,7 +1147,9 @@ function renderScene() {
   const S = scale * pr;
   // achtergrondtegels: per beeld maar een paar nieuwe; komt de volgende biome eraan, dan die alvast vooruit tekenen
   tileBudget = TILE_BUDGET;
-  tileAheadBi = P.b !== P.a && P.t === 0 && mid > P.b.start - 240 ? P.bi : -1;
+  const SG = biomeSeg(mid);
+  tileAheadBi = SG.next !== SG.i && P.t === 0 && mid > SG.nextStart - 240 ? SG.next : -1;
+  const under = !!(run && run.under);
   const clip = LOCAL.on;
   if (clip) { mainCtx.save(); mainCtx.setTransform(1, 0, 0, 1, 0, 0); mainCtx.beginPath(); mainCtx.rect(VOX, VOY, RW, RH); mainCtx.clip(); }
   // 1) verre achtergrond in een aparte buffer op lage resolutie (mag toch wat vaag zijn);
@@ -943,9 +1187,11 @@ function renderScene() {
   // 3) de speelwereld
   const sx = shakeT > 0 ? (Math.random() - 0.5) * shakeAmp * 2 : 0, sy = shakeT > 0 ? (Math.random() - 0.5) * shakeAmp * 2 : 0;
   ctx.setTransform(S, 0, 0, S, -(camX + sx) * S + VOX, -(camY + sy) * S + VOY);
+  if (under) drawUnderwater(P);
   drawRock();
   drawSkyBirds();
   drawMarkers();
+  drawBiomeGates();
   drawFinish();
   drawShrooms();
   drawTramps();
@@ -956,19 +1202,22 @@ function renderScene() {
   for (const v of vines) if (v.x > camX - 80 && v.x < camX + viewW + 80 && v.ay > camY - 220 && v.ay < camY + viewH + 60) drawBranch(v);
   drawPortals(true);
   for (const a of apples) if (a.x > camX - 30 && a.x < camX + viewW + 30 && a.y > camY - 30 && a.y < camY + viewH + 30) drawApple(a);
+  if (loot.length) drawLoot();
   drawFoes();
   drawFish();
   if (game.mp) drawGhost();
   if (G) { drawOwnGorilla(); drawParrot(); }
   drawParts();
   if (game.mp) drawStorm();
-  drawHazard(P);
+  if (!under) drawHazard(P); // onder water tekent drawUnderwater het water (anders zou het over Andy heen vallen)
   drawTexts();
   ctx.setTransform(S0, 0, 0, S0, VOX, VOY);
-  withBaseView(() => { drawForeground(P); if (spW < 0.6) drawAmbient(P); });
+  if (!under) withBaseView(() => { drawForeground(P); if (spW < 0.6) drawAmbient(P); });
   ctx.setTransform(S, 0, 0, S, VOX, VOY);
   drawWarnings();
   if (game.mp) drawMpOverlay();
   drawFlash();
+  drawCinematic();
+  drawUnderHud();
   if (clip) { if (game.mp) drawLocalHud(); mainCtx.restore(); }
 }

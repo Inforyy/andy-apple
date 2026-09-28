@@ -7,6 +7,7 @@
 // =====================================================================
 let vines = [], apples = [], shrooms = [], foes = [], parts = [], texts = [], fishes = [], tramps = [], portals = [];
 let spaceObjs = []; // de ruimte: planetoïden (stuiteren), een ufo en satellieten
+let loot = [];      // kisten (loot-boxes) om op te pakken, zie physics.js en game.js
 let gen = { x: 0, special: 0 };
 let run = null;
 let camX = 0, camY = 0, lastCamX = 0, shakeT = 0, shakeAmp = 0, flashT = 0;
@@ -32,6 +33,7 @@ const WORLD_VARS = {
   tramps:      [() => tramps,        v => { tramps = v; },        () => []],
   portals:     [() => portals,       v => { portals = v; },       () => []],
   spaceObjs:   [() => spaceObjs,     v => { spaceObjs = v; },     () => []],
+  loot:        [() => loot,          v => { loot = v; },          () => []],
   gen:         [() => gen,           v => { gen = v; },           () => ({ x: 0, special: 0 })],
   run:         [() => run,           v => { run = v; },           () => null],
   camX:        [() => camX,          v => { camX = v; },          () => 0],
@@ -77,7 +79,7 @@ function makeVine(x, ay, len, type, bi) {
 }
 
 function resetWorld() {
-  vines = []; apples = []; shrooms = []; foes = []; parts = []; texts = []; fishes = []; tramps = []; portals = []; spaceObjs = [];
+  vines = []; apples = []; shrooms = []; foes = []; parts = []; texts = []; fishes = []; tramps = []; portals = []; spaceObjs = []; loot = [];
   time = 0;
   const C = game.career;
   // carrière en multiplayer: vaste seed, zodat de wereld elke keer (en bij beide spelers) hetzelfde is
@@ -94,8 +96,11 @@ function resetWorld() {
     airT: 0, airX: 0, standPress: -1, helmets: lvl('helmet'), balloons: lvl('balloon'), rocketEnd: 0,
     parrot: lvl('parrot') ? { x: sx - 40, y: sy - 60, cd: 1, target: null, t: 0 } : null };
   gen = { x: FIRST_VINE.x, lastPortal: -1e9, lastPath: 0, special: 0, col: 0, low: FIRST_VINE.ay + FIRST_VINE.len, tips: [null, null, FIRST_VINE.ay + FIRST_VINE.len * TIP_F] };
-  run = { picked: 0, earned: 0, stolen: 0, golden: 0, dist: 0, biome: 0, reason: '', lastWoo: 0,
-    combo: 0, lastPick: -9, firstJump: true, nextMile: 100, tricks: 0, space: false, spaceVisits: 0, appleTotal: 0 };
+  // biomeN: volgnummer van het biome-stuk (zie biomeSeg); cine: de filmische overgang naar een nieuwe biome;
+  // under: onder water (zie physics.js); loot: opgepakte kisten
+  run = { picked: 0, earned: 0, stolen: 0, golden: 0, dist: 0, biome: 0, biomeN: 0, reason: '', lastWoo: 0,
+    combo: 0, lastPick: -9, firstJump: true, nextMile: 100, tricks: 0, space: false, spaceVisits: 0, appleTotal: 0,
+    cine: null, under: null, loot: 0 };
   if (C) { run.biome = C.bi; C.finishX = START_X + C.L * PX_PER_M; }
   if (game.mp) game.mp.finishX = game.mp.len ? START_X + game.mp.len * PX_PER_M : 0;
   zoomK = 0; applyZoom(); // elke run begint volledig ingezoomd
@@ -180,7 +185,9 @@ function genNext() {
   const bi = biomeIndexAt(m), F = features(bi);
   // eindeloze modus: hoe sneller Andy gaat, hoe ruimer de lianen staan (anders wordt het te druk)
   const fast = !game.career && !game.mp && G ? clamp((Math.abs(G.vx) - 700) / 900, 0, 1) : 0;
-  const x = gen.x + grand(470, 520) + d * grand(40, 140) + fast * grand(140, 260);
+  // meer upgrades = grotere gaten en vaker een ontbrekende liaan; rond een biomegrens juist even rustig (buffer)
+  const up = upgradePower(), calm = inBiomeBuffer(m);
+  const x = gen.x + grand(470, 520) + d * grand(40, 140) + fast * grand(140, 260) + (calm ? 0 : up * grand(60, 170));
   const vbi = biomeIndexAt((x - START_X) / PX_PER_M);
   gen.col++;
 
@@ -188,14 +195,14 @@ function genNext() {
   const tip = v => v.ay + v.pts.length * SEG_LEN * TIP_F;
   for (let li = LANES.length - 1; li >= 0; li--) {
     const lowest = li === LANES.length - 1;
-    if (!lowest && m > 12 && genRandom() < 0.08 + 0.3 * dc + 0.25 * fast) { laneTips[li] = null; continue; }
+    if (!lowest && m > 12 && !calm && genRandom() < 0.08 + 0.3 * dc + 0.25 * fast + 0.22 * up) { laneTips[li] = null; continue; }
     let ay = LANES[li] + Math.sin(gen.col * 0.55 + li * 2.1) * 70 + grand(-15, 15);
     let len = grand(470, 540);
     if (lowest) { // haalbaarheid: het uiteinde moet bereikbaar zijn vanaf de laagste liaan ervoor
       const minTip = gen.low - 170;
       if (ay + len * TIP_F < minTip) ay = minTip - len * TIP_F;
     }
-    const type = m < 8 ? 'normal' : pickType(F, d);
+    const type = m < 8 || calm ? 'normal' : pickType(F, d);
     const v = addVine(x + grand(-12, 12), clamp(ay, CEIL_Y, ANCHOR_LOW), len, type, vbi, lowest);
     laneTips[li] = v ? tip(v) : null;
     if (v) col.push(v);
@@ -249,6 +256,9 @@ function genNext() {
   }
 
   const mid = (x0 + x1) / 2, ym = LANES[(genRandom() * 3) | 0] + grand(250, 420);
+  // af en toe een kist (niet in multiplayer). Math.random: de kisten horen niet bij de vaste wereld van een level.
+  if (!game.mp && m > 60 && !calm && Math.random() < LOOT_CHANCE) loot.push({ x: mid + rand(-60, 60), y: clamp(LANES[(Math.random() * 3) | 0] + rand(260, 420), CEIL_Y + 80, HAZARD_Y - 170), t: rand(0, 6) });
+  if (calm) { gen.x = x; gen.low = low; gen.tips = laneTips; return; } // buffer rond een biomegrens: geen vijanden
   const fk = 1 + 0.6 * d;
   const fy = y => clamp(y, CEIL_Y, HAZARD_Y - 160);
   if (genRandom() < F.wasps * fk) foes.push({ type: 'wasp', x0: mid + grand(-40, 40), y0: fy(ym), x: mid, y: ym, t: grand(0, 6), ax: grand(20, 60), ay: grand(30, 80), r: 15, bi: vbi });

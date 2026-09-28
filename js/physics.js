@@ -294,7 +294,8 @@ function hitHazard() {
     splash(G.x, 14);
     floatText(G.x, G.y - 70, 'Gered! 🎈', '#ffffff', 24);
     Sfx.balloon();
-  } else die();
+  } else if (canGoUnder()) enterUnder();
+  else die();
 }
 // Vijanden kunnen Andy NOOIT laten vallen of doodgaan: ze stelen alleen appels.
 function hitFoe(f) {
@@ -335,7 +336,7 @@ function die() {
     G.state = 'dead'; G.deadT = 0; splash(G.x, 20); return;
   }
   if (G.state === 'hang') { freeHand(G.vine, G.k); G.vine = null; }
-  G.state = 'dead'; game.mode = 'dying'; run.reason = 'fall'; G.deadT = 0;
+  G.state = 'dead'; game.mode = 'dying'; run.reason = run.reason || 'fall'; // 'drown' blijft staan G.deadT = 0;
   G.vx *= 0.25; G.vy = Math.min(G.vy, 200);
   G.splashed = true; splash(G.x, 30); Sfx.splash(); shake(7, 0.35);
 }
@@ -360,6 +361,7 @@ function step(dt) {
   }
 
   updateGorilla(dt, holdHang, holdAir);
+  updateLoot(dt);
   updateParrot(dt);
   updateFoes(dt);
   updateApples(dt);
@@ -519,6 +521,8 @@ function updateGorilla(dt, holdHang, holdAir) {
       G.state = 'air'; G.vx = 800; G.vy = -300; G.invuln = 0.8; G.airT = 0; G.airX = G.x;
       burst(G.x - 30, G.y + 20, 16, '#bbbbbb', 250, 5);
     }
+  } else if (G.state === 'swim') {
+    updateSwim(dt, playing && input.down);
   } else if (G.state === 'dead') {
     G.deadT += dt;
     G.vy += AIR_G * dt;
@@ -543,21 +547,13 @@ function updateGorilla(dt, holdHang, holdAir) {
         floatText(G.x + 200, G.y - 110, 'Appelregen! 🌧️', '#bfe6ff', 24);
       }
     }
-    const bi = biomeIndexAt(run.dist);
-    if (bi > run.biome && !game.career) {
-      run.biome = bi; Music.biome = bi;
-      const b = BIOMES[bi];
-      showBanner(b.name, `Elke appel ×${fmtNum(applesPerPick(bi))}`);
-      floatText(G.x, G.y - 70, '🍎 Appels meer waard!', '#ffe46b', 24);
-      confetti(G.x + 200, G.y - 200, 90);
-      flashT = 0.35;
-      if (!aiWorld()) Sfx.biome(bi);
-    }
+    const S = biomeSeg(run.dist);
+    if (S.n > run.biomeN && !game.career) enterBiome(S);
   }
 }
 
 function updateFoes(dt) {
-  const alive = G.state === 'hang' || G.state === 'air';
+  const alive = G.state === 'hang' || G.state === 'air' || G.state === 'swim';
   for (let i = foes.length - 1; i >= 0; i--) {
     const f = foes[i];
     if (f.x < camX - 400 || (f.fleeT !== undefined && f.fleeT > 2.5)) { foes.splice(i, 1); continue; }
@@ -576,6 +572,8 @@ function updateFoes(dt) {
         if (f.y > HAZARD_Y + 40 && f.vy > 0) { f.wait = rand(0.7, 1.7); f.done = false; }
         if (Math.random() < 0.5) addPart({ x: f.x + rand(-6, 6), y: f.y + rand(-6, 6), vx: rand(-30, 30), vy: -f.vy * 0.1, life: 0.35, max: 0.35, col: f.bi >= 5 ? '#7fd0ff' : '#ffb020', r: rand(2, 5), g: 0 });
       }
+    } else if (f.type === 'jelly') { // kwal onder water: deint op en neer
+      f.t += dt; f.y = f.y0 + Math.sin(f.t * 1.3) * 40; f.x = f.x0 + Math.sin(f.t * 0.6) * 25;
     } else if (f.type === 'bird') {
       f.t += dt;
       if (!f.active && f.x < camX + viewW + 450) f.active = true;
@@ -595,7 +593,7 @@ function updateFoes(dt) {
 
 function updateApples(dt) {
   const mr = magnetR(lvl('magnet'));
-  const alive = game.mode === 'playing' && (G.state === 'hang' || G.state === 'air' || G.state === 'rocket');
+  const alive = game.mode === 'playing' && (G.state === 'hang' || G.state === 'air' || G.state === 'rocket' || G.state === 'swim');
   for (let i = apples.length - 1; i >= 0; i--) {
     const a = apples[i];
     a.t += dt;
@@ -623,7 +621,8 @@ function collect(a) {
     const n = a.gold ? 5 : 1;
     run.picked += n;
     if (a.gold) run.golden++;
-    val = n * applesPerPick(biomeIndexAt((a.x - START_X) / PX_PER_M));
+    const m = (a.x - START_X) / PX_PER_M;
+    val = n * applesPerPick(biomeIndexAt(m), m);
   }
   run.earned += val;
   starBurst(a.x, a.y, a.gold ? 12 : 6, a.gold ? '#ffd23f' : '#ff6b5b');
@@ -673,6 +672,122 @@ function updateTrick(dt, holdAir) {
     if (G.y < HAZARD_Y - 220) { G.trick = TRICKS[(Math.random() * TRICKS.length) | 0]; G.trickT = 0; }
   }
 }
+// ---- Nieuwe biome: een korte, filmische overgang ----
+// Slow motion, filmbalken, een grote titelkaart en een lichtflits in de kleuren van de nieuwe biome (zie drawCinematic).
+// De wereld rond de grens is een rustige buffer zonder vijanden (zie inBiomeBuffer). Online zonder slow motion:
+// daar moeten alle spelers even snel blijven.
+const CINE_DUR = 3.4;
+function enterBiome(S) {
+  run.biomeN = S.n; run.biome = S.i; Music.biome = S.i;
+  const b = BIOMES[S.i], mult = `Elke appel ×${fmtNum(applesPerPick(S.i, run.dist))}`;
+  if (game.mp) { showBanner(b.name, mult); flashT = 0.35; confetti(G.x + 200, G.y - 200, 60); if (!aiWorld()) Sfx.biome(S.i); return; }
+  run.cine = { t: 0, bi: S.i, sub: mult, lap: S.n >= BIOMES.length };
+  confetti(G.x + 150, G.y - 220, 120); confetti(G.x + 450, G.y - 260, 80);
+  starBurst(G.x, G.y, 30, b.c.sun);
+  flashT = 0.5; shake(6, 0.5);
+  Sfx.biome(S.i);
+}
+// tempo tijdens de overgang: even bijna stilstand, daarna rustig weer op snelheid (in echte seconden, zie frameSolo)
+function cineSlow() {
+  const C = run && run.cine;
+  if (!C || game.mp) return 1;
+  const t = C.t;
+  return t < 0.25 ? 1 - t / 0.25 * 0.7 : t < 1.5 ? 0.3 : t < 2.4 ? 0.3 + (t - 1.5) / 0.9 * 0.7 : 1;
+}
+
+// ---- Kisten (loot-boxes): oppakken tijdens het spelen, openen na afloop (zie game.js) ----
+function updateLoot(dt) {
+  if (!loot.length) return;
+  const alive = game.mode === 'playing' && (G.state === 'hang' || G.state === 'air' || G.state === 'rocket' || G.state === 'swim');
+  for (let i = loot.length - 1; i >= 0; i--) {
+    const L = loot[i];
+    L.t += dt;
+    if (L.x < camX - 400) { loot.splice(i, 1); continue; }
+    if (alive && Math.hypot(G.x - L.x, G.y - L.y) < G_R + 30) {
+      loot.splice(i, 1);
+      run.loot++;
+      floatText(L.x, L.y - 30, '📦 Kist!', '#ffd76b', 26);
+      starBurst(L.x, L.y, 18, '#ffd76b');
+      addPart({ type: 'ring', x: L.x, y: L.y, vx: 0, vy: 0, life: 0.4, max: 0.4, col: 'rgba(255,215,107,.9)', r: 10, grow: 50, g: 0 });
+      Sfx.lootPick();
+    }
+  }
+}
+
+// ---- Onder water ----
+// Val je in het water (niet in lava, niet online), dan is er UNDER_CHANCE kans dat Andy niet verdrinkt maar ondergaat:
+// een onderwaterwereld met rotswanden, kwallen en parels. Een sterke stroming houdt je onder water, behalve bij een
+// luchtgat (een bellenzuil). Haal je er binnen UNDER_TIME seconden geen, dan verdrinkt Andy.
+const UNDER_CHANCE = 0.2, UNDER_TIME = 30, UNDER_FLOOR = HAZARD_Y + 1000, UNDER_TOP = HAZARD_Y + 45;
+function canGoUnder() {
+  return !game.mp && game.mode === 'playing' && !run.under && BIOMES[biomeIndexAt(run.dist)].style !== 'volcano' && Math.random() < UNDER_CHANCE;
+}
+function enterUnder() {
+  if (G.state === 'hang') { freeHand(G.vine, G.k); G.vine = null; }
+  const U = run.under = { t: UNDER_TIME, x0: G.x, exits: [], walls: [], genX: G.x + 500, nextExit: G.x + 2100, beep: 99, visits: (run.underVisits || 0) + 1 };
+  run.underVisits = U.visits;
+  G.state = 'swim'; G.vy = clamp(G.vy, 200, 500); G.vx = Math.max(200, Math.min(G.vx, 700));
+  G.trick = null; G.trickRot = 0; G.dive = 0; G.diveT = 0; G.diving = false; G.airT = 0;
+  genUnder(U, G.x + 2400);
+  splash(G.x, 30); Sfx.splash(); Sfx.underIn(); shake(5, 0.3);
+  showBanner('Onder water! 🫧', `Zoek binnen ${UNDER_TIME} s een luchtgat (bellenzuil) om boven te komen`);
+}
+// stukje onderwaterwereld erbij (Math.random: dit is alleen voor jou, geen gedeelde wereld)
+function genUnder(U, xMax) {
+  while (U.genX < xMax) {
+    const x = U.genX;
+    if (x >= U.nextExit) { U.exits.push(x + 100); U.nextExit = x + rand(1700, 2300); U.genX += 420; continue; }
+    // rotswand: van de bodem omhoog of van boven omlaag, met altijd een doorgang
+    if (Math.random() < 0.8) {
+      const fromTop = Math.random() < 0.45, gap = rand(300, 420);
+      U.walls.push(fromTop ? { x, w: rand(60, 110), y0: UNDER_TOP - 60, y1: UNDER_FLOOR - gap - rand(0, 250) } : { x, w: rand(60, 110), y0: UNDER_TOP + gap + rand(0, 250), y1: UNDER_FLOOR + 40 });
+    }
+    for (let k = 0; k < 3; k++) apples.push({ x: x + rand(80, 460), y: rand(UNDER_TOP + 90, UNDER_FLOOR - 90), gold: Math.random() < 0.35, pearl: true, t: Math.random() * 6 });
+    if (Math.random() < 0.55) { const y = rand(UNDER_TOP + 150, UNDER_FLOOR - 150), jx = x + rand(200, 380); foes.push({ type: 'jelly', x0: jx, y0: y, x: jx, y, t: rand(0, 6), r: 20, bi: 0, hue: rand(260, 340) }); }
+    if (!game.mp && Math.random() < 0.08) loot.push({ x: x + rand(150, 400), y: rand(UNDER_TOP + 150, UNDER_FLOOR - 120), t: 0 });
+    U.genX += rand(480, 600);
+  }
+}
+function updateSwim(dt, hold) {
+  const U = run.under, realDt = dt / (GAME_SPEED * BASE_SPEED); // de lucht telt in (ongeveer) echte seconden
+  if (!U) { G.state = 'air'; return; }
+  if (game.mode === 'playing') U.t -= realDt;
+  genUnder(U, G.x + 2400);
+  // zwemmen: ingedrukt = een slag omhoog en vooruit; los = je zakt langzaam
+  G.vy += (hold ? -1400 : 300) * dt;
+  G.vx += ((hold ? 600 : 360) - G.vx) * Math.min(1, dt * 1.6);
+  G.vy *= Math.pow(0.3, dt); G.vy = clamp(G.vy, -560, 460);
+  const px = G.x;
+  G.x += G.vx * dt; G.y += G.vy * dt;
+  for (const w of U.walls) {
+    if (Math.abs(G.x - w.x) < w.w / 2 + G_R * 0.8 && G.y > w.y0 - G_R * 0.7 && G.y < w.y1 + G_R * 0.7) {
+      G.x = px <= w.x ? w.x - w.w / 2 - G_R * 0.8 : w.x + w.w / 2 + G_R * 0.8; G.vx = -60;
+    }
+  }
+  const ex = U.exits.find(e => Math.abs(G.x - e) < 90);
+  if (ex !== undefined && G.y < UNDER_TOP + 220 && game.mode === 'playing') { leaveUnder(ex); return; }
+  if (ex !== undefined) G.vy -= 700 * dt; // de bellenzuil tilt je op
+  if (G.y < UNDER_TOP) { G.y = UNDER_TOP; G.vy = Math.max(G.vy, 90); } // de stroming duwt je terug
+  if (G.y > UNDER_FLOOR - 40) { G.y = UNDER_FLOOR - 40; G.vy = -Math.abs(G.vy) * 0.4; }
+  G.angle += (clamp(G.vy * 0.0012, -0.6, 0.6) + 0.25 - G.angle) * Math.min(1, dt * 6);
+  if (Math.random() < 0.08) addPart({ x: G.x + 12, y: G.y - 18, vx: rand(-20, 20), vy: -rand(60, 120), life: 1.2, max: 1.2, col: 'rgba(210,240,255,.7)', r: rand(2, 4), g: -40 });
+  if (game.mode !== 'playing') return;
+  const left = Math.ceil(U.t);
+  if (U.t < 6 && left !== U.beep) { U.beep = left; Sfx.airBeep(left); }
+  if (U.t <= 0) { run.reason = 'drown'; U.drowned = true; floatText(G.x, G.y - 60, 'Blub… blub…', '#d8f3ff', 26); die(); }
+}
+function leaveUnder(ex) {
+  const U = run.under;
+  run.under = null;
+  G.state = 'air'; G.x = ex; G.y = HAZARD_Y - 30; G.vy = -1500; G.vx = Math.max(G.vx, 650);
+  G.airT = 0; G.airX = G.x; G.noDive = true; G.invuln = 1; G.angle = 0;
+  camY = Math.min(camY, baseTop()); // de camera springt mee terug naar boven
+  splash(G.x, 26); Sfx.underOut();
+  reward(G.x, G.y - 70, `Boven water! (${Math.max(0, Math.ceil(U.t))} s over)`, 10 + Math.ceil(Math.max(0, U.t)), '#bfefff');
+  for (let i = foes.length - 1; i >= 0; i--) if (foes[i].type === 'jelly') foes.splice(i, 1);
+  for (let i = apples.length - 1; i >= 0; i--) if (apples[i].pearl) apples.splice(i, 1);
+}
+
 // ---- Ruimte ----
 // Een ballonpad (SPACE_PATH gouden ballonnen op volgorde) lanceert Andy de ruimte in. Daar is bijna geen zwaartekracht,
 // hangen sterrenlianen aan zwevende planetoïden, kun je van losse planetoïden stuiteren en vliegt er een ufo rond.

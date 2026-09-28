@@ -97,7 +97,8 @@ const parrotCd   = l => 2.4 - 0.45 * l;
 const comboWin   = l => 0.8 + 0.3 * l;
 // Hoeveel appels één geplukte appel oplevert. De biomebonus telt op bij de Appeloogst-upgrade
 // (niet vermenigvuldigen), zodat late biomes lonend zijn zonder dat upgrades uit balans raken.
-const applesPerPick = bi => appleVal(lvl('value')) + BIOMES[bi].bonus;
+// In de herhaalde biomes na de laatste (zie biomeSeg) tellen appels altijd minstens zoveel als in de laatste biome.
+const applesPerPick = (bi, m) => appleVal(lvl('value')) + Math.max(BIOMES[bi].bonus, !game.career && m >= CYCLE_START ? BIOMES[BIOMES.length - 1].bonus : 0);
 const fmtNum = n => (Math.round(n * 10) / 10).toString().replace('.', ',');
 
 const UPGRADES = [
@@ -128,6 +129,50 @@ function levelInfo(n) {
   return { n, bi, L: 180 + n * 40, diff: clamp(0.04 + (n - 1) * 0.045, 0, 1.35) };
 }
 const upCost = (u, l) => Math.round(u.base * 1.5 * Math.pow(u.growth, l) / 5) * 5;
+// =====================================================================
+//  Kisten (loot-boxes) en uiterlijk van Andy
+// =====================================================================
+// Kans per kolom lianen dat er een kist hangt (Eindeloos en carrière, niet in multiplayer)
+const LOOT_CHANCE = 0.045;
+// Zeldzaamheid: kleur, naam en gewicht (kans) bij het openen van een kist
+const RARITY = {
+  common:    { name: 'Gewoon',       col: '#9aa4b1', w: 55 },
+  uncommon:  { name: 'Ongewoon',     col: '#4caf50', w: 26 },
+  rare:      { name: 'Zeldzaam',     col: '#2f7fe0', w: 12.5 },
+  epic:      { name: 'Episch',       col: '#a24de0', w: 5 },
+  legendary: { name: 'Legendarisch', col: '#f5b301', w: 1.5 },
+};
+// Wat je uit een kist kunt halen. kind: apples/xp (meteen), color (vachtkleur), hat (hoed), suit (heel kostuum).
+// Heb je een uiterlijk al, dan krijg je in plaats daarvan dupe appels.
+const LOOT = [
+  { id: 'apples30',  r: 'common', kind: 'apples', n: 30,  name: '30 appels',  icon: '🍎' },
+  { id: 'apples75',  r: 'common', kind: 'apples', n: 75,  name: '75 appels',  icon: '🍎' },
+  { id: 'xp100',     r: 'common', kind: 'xp',     n: 100, name: '100 XP',     icon: '⭐' },
+  { id: 'xp250',     r: 'common', kind: 'xp',     n: 250, name: '250 XP',     icon: '⭐' },
+  { id: 'fur_brown', r: 'uncommon', kind: 'color', name: 'Bruine vacht', icon: '🟤', fur: '#6b4a2e', furD: '#46301c', furL: '#9a7350' },
+  { id: 'fur_grey',  r: 'uncommon', kind: 'color', name: 'Zilverrug',    icon: '⚪', fur: '#6e6e78', furD: '#48484f', furL: '#a6a6b2' },
+  { id: 'hat_cap',   r: 'uncommon', kind: 'hat',   name: 'Petje',        icon: '🧢' },
+  { id: 'suit_kiwi', r: 'uncommon', kind: 'suit',  name: 'Kiwikostuum',  icon: '🥝' },
+  { id: 'fur_blue',  r: 'rare', kind: 'color', name: 'Blauwe vacht', icon: '🔵', fur: '#2f5fb8', furD: '#1b3c7a', furL: '#6a95ea' },
+  { id: 'fur_pink',  r: 'rare', kind: 'color', name: 'Roze vacht',   icon: '🩷', fur: '#c9508c', furD: '#8e2f5f', furL: '#f08cbf' },
+  { id: 'hat_cowboy',r: 'rare', kind: 'hat',   name: 'Cowboyhoed',   icon: '🤠' },
+  { id: 'hat_pirate',r: 'rare', kind: 'hat',   name: 'Piratenhoed',  icon: '🏴‍☠️' },
+  { id: 'fur_gold',  r: 'epic', kind: 'color', name: 'Gouden vacht',  icon: '🟡', fur: '#c9971a', furD: '#8a6510', furL: '#ffe066' },
+  { id: 'hat_crown', r: 'epic', kind: 'hat',   name: 'Kroon',         icon: '👑' },
+  { id: 'hat_wizard',r: 'epic', kind: 'hat',   name: 'Tovenaarshoed', icon: '🧙' },
+  { id: 'suit_apple',r: 'legendary', kind: 'suit',  name: 'Appelkostuum',   icon: '🍎' },
+  { id: 'fur_rainbow',r:'legendary', kind: 'color', name: 'Regenboogvacht', icon: '🌈', rainbow: true },
+];
+const LOOT_BY_ID = Object.fromEntries(LOOT.map(l => [l.id, l]));
+const DUPE_APPLES = { uncommon: 40, rare: 90, epic: 180, legendary: 400 };
+// kiest een willekeurige buit: eerst de zeldzaamheid (op gewicht), dan een item daarbinnen
+function rollLoot(rnd = Math.random) {
+  let r = rnd() * Object.values(RARITY).reduce((a, x) => a + x.w, 0), rar = 'common';
+  for (const k in RARITY) { if (r < RARITY[k].w) { rar = k; break; } r -= RARITY[k].w; }
+  const pool = LOOT.filter(l => l.r === rar);
+  return pool[(rnd() * pool.length) | 0];
+}
+
 // Head-start: aan het begin van een run (Eindeloos) koop je voor appels een vlucht vooruit
 const HEADSTARTS = [{ m: 250, cost: 60 }, { m: 500, cost: 150 }, { m: 1000, cost: 400 }, { m: 2000, cost: 1000 }];
 
@@ -135,14 +180,45 @@ const HEADSTARTS = [{ m: 250, cost: 60 }, { m: 500, cost: 150 }, { m: 1000, cost
 //  Moeilijkheid, tempo en kleurpalet per afstand
 // =====================================================================
 
-function biomeIndexAt(m) { if (game.career) return game.career.bi; let i = 0; for (let j = 0; j < BIOMES.length; j++) if (m >= BIOMES[j].start) i = j; return i; }
+// De wereld is een rij biome-stukken. Na de laatste biome (Snoepland) komen de biomes steeds opnieuw terug,
+// elk CYCLE_LEN meter lang, in een vaste, door elkaar gehusselde volgorde: zo blijf je nooit in dezelfde biome.
+const CYCLE_START = 11000, CYCLE_LEN = 1100, CYCLE_ORDER = [3, 8, 5, 10, 1, 7, 4, 9, 2, 6];
+// het biome-stuk op afstand m: { i: biome, start, n: volgnummer (hoeveelste stuk), next: volgende biome, nextStart }
+function biomeSeg(m) {
+  if (game.career) { const i = game.career.bi; return { i, start: -1e9, n: 0, next: i, nextStart: 1e12 }; }
+  if (m >= CYCLE_START) {
+    const k = Math.floor((m - CYCLE_START) / CYCLE_LEN), start = CYCLE_START + k * CYCLE_LEN;
+    return { i: CYCLE_ORDER[k % CYCLE_ORDER.length], start, n: BIOMES.length + k, next: CYCLE_ORDER[(k + 1) % CYCLE_ORDER.length], nextStart: start + CYCLE_LEN };
+  }
+  let i = 0;
+  for (let j = 0; j < BIOMES.length; j++) if (m >= BIOMES[j].start) i = j;
+  const last = i === BIOMES.length - 1;
+  return { i, start: BIOMES[i].start, n: i, next: last ? CYCLE_ORDER[0] : i + 1, nextStart: last ? CYCLE_START : BIOMES[i + 1].start };
+}
+function biomeIndexAt(m) { return biomeSeg(m).i; }
+// Een korte, rustige 'buffer' rond elke biomegrens: geen vijanden of lastige lianen, alle drie banen aanwezig,
+// zodat je de overgang (met slow motion en titelkaart, zie physics.js) op je gemak kunt beleven.
+const BUFFER_BEFORE = 35, BUFFER_AFTER = 45;
+function inBiomeBuffer(m) {
+  if (game.career || game.mp) return false;
+  const s = biomeSeg(m);
+  return (s.start > 0 && m - s.start < BUFFER_AFTER) || s.nextStart - m < BUFFER_BEFORE;
+}
+// Hoe sterk Andy is door zijn upgrades (0 = niets gekocht, 1 = alles maximaal). Hoe sterker, hoe lastiger de wereld:
+// grotere gaten, vaker ontbrekende lianen en meer vijanden. In multiplayer staan upgrades uit (lvl = 0), dus dan 0.
+function upgradePower() {
+  let have = 0, max = 0;
+  for (const u of UPGRADES) { have += lvl(u.id); max += u.max; }
+  return max ? have / max : 0;
+}
 // Eindeloos (en multiplayer): de moeilijkheid loopt geleidelijk op en vlakt af naar een plafond,
 // zodat het spel altijd te doen blijft (meer gaten, grotere afstanden, meer vijanden, minder appels).
 // DIFF_START: ook aan het begin is het al iets lastiger dan de allereerste versie.
 const DIFF_START = 0.2, DIFF_MAX = 1.3, DIFF_RAMP = 3000;
 function diffAt(m) {
-  if (game.career) return clamp(game.career.diff + 0.08 + Math.max(0, m) / game.career.L * 0.08, 0, 1.45);
-  return DIFF_START + (DIFF_MAX - DIFF_START) * (1 - Math.exp(-Math.max(0, m) / DIFF_RAMP));
+  const up = 0.35 * upgradePower(); // meer upgrades = lastiger
+  if (game.career) return clamp(game.career.diff + 0.08 + Math.max(0, m) / game.career.L * 0.08, 0, 1.45) + up;
+  return DIFF_START + (DIFF_MAX - DIFF_START) * (1 - Math.exp(-Math.max(0, m) / DIFF_RAMP)) + up;
 }
 // Eindeloos: het tempo gaat ook iets omhoog naarmate je verder komt, tot maximaal +12%% (bij 4000 m).
 // Debug-snelheid telt overal mee, behalve online (dan moeten beide spelers gelijk zijn).
@@ -153,12 +229,13 @@ const BASE_SPEED = 0.65; // met GAME_SPEED 1,2: de simulatie loopt op ~0,78× ec
 function timeScale() {
   let k = BASE_SPEED * (game.mp && !game.mp.local ? 1 : DBG.speed);
   if (!game.career && !game.mp && run) { const t = clamp(run.dist / TEMPO_DIST, 0, 1); k *= 1 + TEMPO_MAX * t * t * (3 - 2 * t); }
+  if (!game.mp && run && run.cine) k *= cineSlow(); // slow motion bij een nieuwe biome
   return k;
 }
 // Paletten worden bewaard en hergebruikt (niet elk beeld opnieuw 28 kleuren mengen). Lees ze alleen, pas ze niet aan.
 const palMemo = new Map();
 function makePalette(ai, bi, t) {
-  const a = BIOMES[ai], b = BIOMES[bi], P = { a, b, t, ai, bi };
+  const a = BIOMES[ai], b = BIOMES[bi], P = { a, b, t, ai, bi }; // let op: bij ai === bi zijn a en b hetzelfde object
   for (const k in a.rgb) {
     P[k + 'C'] = mixC(a.rgb[k], b.rgb[k], t);
     P[k] = rgbStr(P[k + 'C']);
@@ -166,10 +243,10 @@ function makePalette(ai, bi, t) {
   return P;
 }
 function paletteAt(m) {
-  const i = biomeIndexAt(m), a = BIOMES[i], b = game.career ? a : BIOMES[i + 1] || a;
+  const S = biomeSeg(m), i = S.i, bi = S.next;
   let t = 0;
-  if (b !== a) { const zone = 90; t = Math.round(clamp((m - (b.start - zone)) / zone, 0, 1) * 256) / 256; }
-  const bi = b === a ? i : i + 1, key = (i * 16 + bi) * 1000 + t * 256;
+  if (bi !== i) { const zone = 90; t = Math.round(clamp((m - (S.nextStart - zone)) / zone, 0, 1) * 256) / 256; }
+  const key = (i * 16 + bi) * 1000 + t * 256;
   let P = palMemo.get(key);
   if (!P) { if (palMemo.size > 80) palMemo.clear(); P = makePalette(i, bi, t); palMemo.set(key, P); }
   return P;

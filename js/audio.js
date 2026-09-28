@@ -145,6 +145,20 @@ const Sfx = {
     g.gain.linearRampToValueAtTime(v, t + d * att); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
     src.connect(bp).connect(g).connect(ac.destination); src.start(t, Math.random() * 0.5); src.stop(t + d + 0.05);
   },
+  // kist opgepakt: een glinsterend loopje
+  lootPick() { [0, 4, 7, 12, 16].forEach((s, i) => this.tone(700 * Math.pow(2, s / 12), 0.12, 'triangle', 0.08, 0, i * 0.045)); this.noise(0.2, 0.04, 7000, 0.05); },
+  // onder water: een diepe plons met bubbels; boven komen: een opstijgende zoef
+  underIn() { this.whoosh(0.9, 1200, 160, 0.2, 0, 0.8, 0.1); this.tone(140, 0.8, 'sine', 0.12, 50); for (let i = 0; i < 6; i++) this.tone(500 + Math.random() * 700, 0.07, 'sine', 0.05, 900 + Math.random() * 900, 0.2 + i * 0.09); },
+  underOut() { this.whoosh(0.7, 300, 3000, 0.2, 0, 0.9, 0.5); [0, 4, 7, 12].forEach((s, i) => this.tone(520 * Math.pow(2, s / 12), 0.14, 'triangle', 0.08, 0, 0.2 + i * 0.06)); },
+  airBeep(n) { this.tone(n <= 2 ? 1320 : 990, 0.09, 'square', 0.06); if (n <= 2) this.tone(1320, 0.09, 'square', 0.05, 0, 0.14); },
+  // kist openen: tik per voorbijschietende kaart, en een onthulling per zeldzaamheid
+  crateTick() { this.tone(1800, 0.03, 'square', 0.03); this.noise(0.02, 0.03, 6000); },
+  crateReveal(r) {
+    const n = { common: 2, uncommon: 3, rare: 4, epic: 5, legendary: 7 }[r] || 2;
+    for (let i = 0; i < n; i++) this.tone(523 * Math.pow(2, [0, 4, 7, 12, 16, 19, 24][i] / 12), 0.2, 'triangle', 0.1, 0, i * 0.07);
+    if (r === 'epic' || r === 'legendary') { this.whoosh(1.2, 300, 5000, 0.12, 0, 1, 0.6); this.tone(130, 1.2, 'sawtooth', 0.04, 0, 0.1); }
+    if (r === 'legendary') [0, 4, 7, 12].forEach((s, i) => this.tone(1046 * Math.pow(2, s / 12), 0.6, 'sine', 0.06, 0, 0.6 + i * 0.12));
+  },
   // Zwaaigeluid: een luchtige zoef als Andy door het laagste punt van zijn zwaai gaat; harder en hoger bij meer vaart
   swing(speed, fwd) {
     const k = clamp((speed - 350) / 1100, 0, 1);

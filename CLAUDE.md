@@ -17,12 +17,12 @@ GitHub Pages deploys from `main` root. Work happens on `claude/*` branches that 
 
 - **Run**: open `index.html` in a browser. It must keep working via `file://`, which is why there are no ES modules.
 - **Smoke test**: `node tools/smoke.mjs` (Node 18+, finds `chromium`/`google-chrome` itself or uses `CHROME=...`). It needs no npm packages; it drives headless Chromium over the DevTools protocol.
-  - It clicks through the menus and plays Endless (with a head-start and a trip to space), career levels (including the four style biomes), split-screen, Kiwi and the chase mode.
+  - It clicks through the menus and plays Endless (with a head-start, a trip to space, a biome transition, going underwater and opening a loot box), career levels (including the four style biomes), split-screen, Kiwi and the chase mode.
   - It fails on any JS exception or `console.error`.
   - `ANDY_URL=http://localhost:8000/ node tools/smoke.mjs` runs the same test against a server, as GitHub Pages would serve it.
 - **Build the APK** (in `android/`; needs Python 3, JDK 17+ and three Maven jars in `tools/`, see `android/README.md`):
   ```sh
-  python3 build_apk.py --tools tools --keystore andy.p12 --storepass PASS --version 1.1 --code 2
+  python3 build_apk.py --tools tools --keystore andy.p12 --storepass PASS --version 1.3 --code 4
   ```
   - It packs `index.html`, `css/` and `js/` (`GAME_DIRS`) as assets. **If you add a new top-level folder the game needs, add it to `GAME_DIRS`.**
   - The committed `android/AndyApples.apk` goes stale whenever the game changes.
@@ -49,7 +49,9 @@ Top-level `let`/`const`/`function` in these classic scripts share the global lex
 - `data.js` is the place for content and balance:
   - constants, `BIOMES` (start distance, palette, bonus) and `features(biomeIndex)` (per-biome odds)
   - upgrade formulas and `UPGRADES`, XP/`LEVELS`/`levelInfo`, `VINE_LOOK`, `AI_LV`
-  - `diffAt` (difficulty), `timeScale` (tempo) and `paletteAt`
+  - `biomeSeg` (which biome segment is at a distance; after the last biome the biomes repeat in `CYCLE_ORDER`), `inBiomeBuffer`, `upgradePower`
+  - `diffAt` (difficulty, which also rises with `upgradePower`), `timeScale` (tempo, including the biome-transition slow motion) and `paletteAt`
+  - `RARITY`/`LOOT`/`rollLoot` (loot boxes and cosmetics; opening and the wardrobe live in `game.js`, drawing in `render-world.js`)
 - `online.js` holds the Supabase client (`getSb`, `sbOn`), leaderboard (`lbOn`) and accounts. `mp-online.js` uses the same client for lobbies.
 - `game.js` holds game flow, screens, the debug screen, `uiInit` (all menu buttons, save export/import), input and HUD.
 

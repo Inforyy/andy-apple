@@ -8,7 +8,7 @@
 const SAVE_KEY = 'andyApples.save.v1';
 const GAME_ID = 'Andy Apples';
 function defaultSave() {
-  return { version:3, apples:0, xp:0, upgrades:{}, best:0, totalApples:0, totalDistance:0, runs:0, maxBiome:0, sound:true, music:true, lbBest:0, mpGames:0, mpWins:0, chaseBest:0, career:{ unlocked:1, stars:Array.from({ length: LEVELS }, () => 0) } };
+  return { version:3, apples:0, xp:0, upgrades:{}, best:0, totalApples:0, totalDistance:0, runs:0, maxBiome:0, sound:true, music:true, lbBest:0, mpGames:0, mpWins:0, chaseBest:0, boxes:0, cosm:{ own:[], color:'', hat:'', suit:'' }, career:{ unlocked:1, stars:Array.from({ length: LEVELS }, () => 0) } };
 }
 function normalizeSave(o) {
   const s = defaultSave();
@@ -29,6 +29,11 @@ function normalizeSave(o) {
   s.mpGames = num(o.mpGames);
   s.mpWins = Math.min(num(o.mpWins), s.mpGames);
   s.chaseBest = Math.min(num(o.chaseBest), 36e6); // langste achtervolging (ms)
+  // kisten en uiterlijk: alleen bestaande items, en alleen aantrekken wat je hebt
+  s.boxes = Math.min(num(o.boxes), 9999);
+  const cm = (o.cosm && typeof o.cosm === 'object') ? o.cosm : {};
+  s.cosm.own = [...new Set(Array.isArray(cm.own) ? cm.own.filter(id => LOOT_BY_ID[id] && ['color', 'hat', 'suit'].includes(LOOT_BY_ID[id].kind)) : [])];
+  for (const k of ['color', 'hat', 'suit']) s.cosm[k] = s.cosm.own.includes(cm[k]) && LOOT_BY_ID[cm[k]].kind === k ? cm[k] : '';
   const c = (o.career && typeof o.career === 'object') ? o.career : {};
   s.career.unlocked = clamp(num(c.unlocked) || 1, 1, LEVELS);
   s.career.stars = Array.from({ length: LEVELS }, (_, i) => clamp(num(Array.isArray(c.stars) ? c.stars[i] : 0), 0, 3));
