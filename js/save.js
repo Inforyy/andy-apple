@@ -7,7 +7,7 @@
 // =====================================================================
 const SAVE_KEY = 'andyApples.save.v1';
 function defaultSave() {
-  return { version:3, apples:0, xp:0, upgrades:{}, best:0, totalApples:0, totalDistance:0, runs:0, maxBiome:0, sound:true, music:true, sfxVol:0.8, musicVol:0.8, lbBest:0, mpGames:0, mpWins:0, chaseBest:0, boxes:0, cosm:{ own:[], color:'', hat:'', suit:'' }, career:{ unlocked:1, stars:Array.from({ length: LEVELS }, () => 0) } };
+  return { version:3, apples:0, xp:0, upgrades:{}, best:0, totalApples:0, totalDistance:0, runs:0, maxBiome:0, sound:true, music:true, sfxVol:0.8, musicVol:0.8, lbBest:0, mpGames:0, mpWins:0, chaseBest:0, boxes:0, cosm:{ own:[], color:'', hat:'', suit:'' }, career:{ unlocked:1, anim:0, at:1, stars:Array.from({ length: LEVELS }, () => 0) } };
 }
 function normalizeSave(o) {
   const s = defaultSave();
@@ -40,6 +40,9 @@ function normalizeSave(o) {
   const c = (o.career && typeof o.career === 'object') ? o.career : {};
   s.career.unlocked = clamp(num(c.unlocked) || 1, 1, LEVELS);
   s.career.stars = Array.from({ length: LEVELS }, (_, i) => clamp(num(Array.isArray(c.stars) ? c.stars[i] : 0), 0, 3));
+  // anim: tot welk level het vrijspeel-filmpje op de kaart al is getoond (oude saves: alles al gezien); at: waar Andy staat
+  s.career.anim = 'anim' in c ? clamp(num(c.anim), 0, s.career.unlocked) : (o.career ? s.career.unlocked : 0);
+  s.career.at = clamp(num(c.at) || s.career.unlocked, 1, s.career.unlocked);
   const up = (o.upgrades && typeof o.upgrades === 'object') ? o.upgrades : {};
   for (const u of UPGRADES) s.upgrades[u.id] = clamp(num(up[u.id]), 0, u.max);
   return s;

@@ -1258,6 +1258,7 @@ function renderScene() {
   drawPortals(true);
   for (const a of apples) if (a.x > camX - 50 && a.x < camX + viewW + 50 && a.y > camY - 50 && a.y < camY + viewH + 50) drawApple(a);
   if (loot.length) drawLoot();
+  if (game.career) drawCareerWorld();
   drawFoes();
   drawFish();
   if (game.mp) drawGhost();
@@ -1273,6 +1274,7 @@ function renderScene() {
   if (game.mp) drawMpOverlay();
   drawFlash();
   drawCinematic();
+  if (game.career) drawCareerHud();
   drawUnderHud();
   if (clip) { if (game.mp) drawLocalHud(); mainCtx.restore(); }
 }

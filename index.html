@@ -396,12 +396,19 @@
   </div>
 </div>
 
-<!-- Carrière -->
-<div id="career" class="screen">
-  <div class="panel wide">
-    <div class="p-head"><button class="ic-btn" id="btnCareerBack" aria-label="Terug" title="Terug"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg></button><h2>Carrière</h2><div class="bank">★ <span id="carStars">0</span></div></div>
-    <p class="sub">★ finish · ★★ 35% van de appels · ★★★ 65%</p>
-    <div id="levelGrid" class="lvgrid"></div>
+<!-- Carrière: de wereldkaart (zie career.js) -->
+<div id="career" class="screen map-screen">
+  <canvas id="mapCanvas"></canvas>
+  <div class="map-top">
+    <button class="ic-btn" id="btnCareerBack" aria-label="Terug" title="Terug"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg></button>
+    <div class="map-plate"><small id="mapWorld">Jungle</small><b id="mapLevel">Wereld 1-1</b></div>
+    <div class="map-wsel"><button class="map-wbtn" id="btnMapPrevW" aria-label="Vorige wereld">◀</button><span>Wereld</span><button class="map-wbtn" id="btnMapNextW" aria-label="Volgende wereld">▶</button></div>
+    <div class="bank">★ <span id="carStars">0</span></div>
+  </div>
+  <div class="map-bottom">
+    <button class="map-arrow" id="btnMapPrev" aria-label="Vorig level">◀</button>
+    <div class="map-card"><div id="mapInfo"></div><button class="btn big green" id="btnMapPlay"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>Spelen</button></div>
+    <button class="map-arrow" id="btnMapNext" aria-label="Volgend level">▶</button>
   </div>
 </div>
 
@@ -426,7 +433,7 @@
         <button class="btn" id="btnDoneCrates">Kisten</button>
         <button class="btn" id="btnDoneLevels">Levels</button>
       </div>
-      <button class="btn big green" id="btnNextLevel"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>Volgend level</button>
+      <button class="btn big green" id="btnNextLevel"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>Verder</button>
     </div>
   </div>
 </div>
@@ -470,6 +477,7 @@
 <script src="js/online.js"></script>
 <script src="js/mp-online.js"></script>
 <script src="js/mp-local.js"></script>
+<script src="js/career.js"></script>
 <script src="js/game.js"></script>
 <script src="js/main.js"></script>
 </body>

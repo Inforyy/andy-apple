@@ -88,7 +88,12 @@ function startReady(level) {
   input.down = false;
   showScreen(null);
   const C = game.career;
-  if (C) showBanner(`Level ${C.n}`, `${BIOMES[C.bi].name} · ${C.L} m`);
+  if (C) {
+    careerRunInit();
+    const ch = C.ch.map(c => `${CHALLENGES[c].icon} ${CHALLENGES[c].name}`).join(' · ');
+    if (C.boss) showBanner(`👑 ${BOSSES[C.bi].name}`, `Baasgevecht! Ontwijk de aanvallen · ⏱ ${C.time} s`);
+    else showBanner(`Wereld ${C.world}-${C.idx + 1}`, `${ch || BIOMES[C.bi].name} · ${C.L} m · ⏱ ${C.time} s`);
+  }
   else if (save.runs < 3) showBanner('Jungle', 'Houd ingedrukt om te springen');
 }
 function retry() { startReady(game.career ? game.career.n : null); }
@@ -114,6 +119,8 @@ function xpHtml(res) {
 }
 function levelComplete() {
   const C = game.career;
+  if (C.need && run.picked < C.need) { careerFail('Te weinig appels!', `Je had ${run.picked} van de ${C.need} appels.`); return; }
+  if (run.boss) bossDefeated();
   game.mode = 'done';
   const fromApples = Math.max(0, Math.floor(run.earned + 1e-6));
   const ratio = run.appleTotal ? run.picked / run.appleTotal : 1;
@@ -137,7 +144,7 @@ function levelComplete() {
   $('dnBank').textContent = save.apples;
   $('dnXp').innerHTML = xpHtml(xp);
   lootLine('dnLoot', boxes);
-  $('btnNextLevel').style.display = C.n < LEVELS ? '' : 'none';
+  $('btnNextLevel').style.display = '';
   setTimeout(() => { if (game.mode === 'done') { showScreen('done'); $('hint').textContent = ''; } }, 900);
 }
 function gameOver(quit) {
@@ -177,7 +184,7 @@ function gameOver(quit) {
   $('ovDistLabel').textContent = game.career ? `Afstand (finish ${game.career.L} m)` : 'Afstand';
 
   const hz = BIOMES[biomeIndexAt(run.dist)].hazardName;
-  const [title, reason] = quit ? ['Run gestopt', 'Je appels zijn bewaard.'] : run.reason === 'drown' ? ['Verdronken!', 'Andy kwam niet op tijd boven water.'] : ['Plons!', `Andy viel in ${hz}.`];
+  const [title, reason] = quit ? ['Run gestopt', 'Je appels zijn bewaard.'] : run.fail ? [run.fail.title, run.fail.reason] : run.reason === 'drown' ? ['Verdronken!', 'Andy kwam niet op tijd boven water.'] : ['Plons!', `Andy viel in ${hz}.`];
   $('overTitle').textContent = title;
   $('overReason').textContent = reason;
   $('ovDist').textContent = dist + ' m';
@@ -238,8 +245,8 @@ function refreshMenu() {
   $('mmXp').textContent = `${PL.into} / ${PL.need} XP`;
   $('mmRing').style.setProperty('--p', Math.round(PL.into / PL.need * 100));
   const stars = save.career.stars.reduce((a, b) => a + b, 0);
-  const next = Math.min(save.career.unlocked, LEVELS);
-  $('mmCareer').textContent = `Level ${next} · ★ ${stars} / ${LEVELS * 3}`;
+  const next = levelInfo(Math.min(save.career.unlocked, LEVELS));
+  $('mmCareer').textContent = `Wereld ${next.world}-${next.idx + 1} · ★ ${stars} / ${LEVELS * 3}`;
   $('mmEndless').textContent = save.best ? `Record: ${save.best} m` : 'Kom zo ver mogelijk';
   setToggle('btnRotate', rotPref);
   setToggle('btnFullscreen', isFullscreen());
@@ -309,23 +316,8 @@ function buy(u) {
   refreshMenu();
   if (game.mode === 'over') setBadge($('btnOverShop'), affordableCount());
 }
-function renderCareer() {
-  const st = save.career.stars;
-  $('carStars').textContent = st.reduce((a, b) => a + b, 0) + ' / ' + LEVELS * 3;
-  const grid = $('levelGrid'); grid.innerHTML = '';
-  for (let n = 1; n <= LEVELS; n++) {
-    const I = levelInfo(n), open = n <= save.career.unlocked, b = document.createElement('button');
-    b.className = 'lv' + (open ? '' : ' locked');
-    b.style.background = open ? `linear-gradient(${BIOMES[I.bi].c.skyTop}, ${BIOMES[I.bi].c.mid})` : '';
-    b.innerHTML = open ? `<b>${n}</b><span>${[0, 1, 2].map(i => i < st[n - 1] ? '★' : '☆').join('')}</span>` : `<b>🔒</b><small>${n}</small>`;
-    b.disabled = !open;
-    b.addEventListener('click', () => { Sfx.init(); startReady(n); });
-    grid.appendChild(b);
-  }
-}
 // Spelmodi: Multiplayer (online), Duel (op één scherm), Tegen Kiwi (race) en Achtervolging
 function openModes() { showScreen('modes'); }
-function openCareer() { renderCareer(); showScreen('career'); }
 function openShop(from) { shopReturn = from; renderShop(); showScreen('shop'); }
 function on(id, fn) {
   // elke knop tikt zacht (terugknoppen iets lager); na fn, zodat 'geluid aan' zelf ook tikt
@@ -526,12 +518,12 @@ function uiInit() {
   });
   on('btnCareer', openCareer);
   on('btnCareerBack', toMenu);
-  on('btnNextLevel', () => startReady(game.career.n + 1));
+  on('btnNextLevel', openCareer); // verder op de kaart (daar speelt het filmpje van het volgende level)
   on('btnDoneRetry', retry);
   on('btnDoneMenu', toMenu);
-  on('btnDoneLevels', () => { toMenu(); openCareer(); });
+  on('btnDoneLevels', openCareer);
   on('btnDoneShop', () => openShop('done'));
-  on('btnOverLevels', () => { toMenu(); openCareer(); });
+  on('btnOverLevels', openCareer);
   on('btnShop', () => openShop('menu'));
   on('btnCrates', () => openCrate('menu'));
   on('btnOverCrates', () => openCrate('over'));
@@ -611,6 +603,7 @@ function inputInit() {
   window.addEventListener('keydown', e => {
     const typing = e.target && (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT');
     if (typing) return;
+    if (curScreen === 'career' && mapKey(e.code)) { e.preventDefault(); return; } // de wereldkaart
     if (LOCAL.on && !curScreen) {
       const p = localKey(e.code);
       if (p >= 0) { e.preventDefault(); if (!e.repeat) localPress(p); return; }
@@ -621,7 +614,7 @@ function inputInit() {
       Sfx.init();
       if (curScreen === 'menu' || curScreen === 'settings') { if (e.code === 'Space' && curScreen === 'menu') startReady(null); return; }
       if (curScreen === 'over') { if (e.code === 'Space') retry(); return; }
-      if (curScreen === 'done') { if (e.code === 'Space') { if (game.career.n < LEVELS) startReady(game.career.n + 1); else retry(); } return; }
+      if (curScreen === 'done') { if (e.code === 'Space') openCareer(); return; }
       if (curScreen === 'pause') { if (e.code === 'Space') resumeGame(); return; }
       if (curScreen === 'mpRes') { if (e.code === 'Space') mpAgain(); return; }
       if (!curScreen) press();
@@ -637,7 +630,7 @@ function inputInit() {
       else if (curScreen === 'crate') { if (!CRATE.spinning) $('btnCrBack').click(); }
       else if (curScreen === 'settings') showScreen(settingsReturn);
       else if (curScreen === 'shop' || curScreen === 'career') {
-        if (curScreen === 'shop') $('btnShopBack').click(); else showScreen('menu');
+        if (curScreen === 'shop') $('btnShopBack').click(); else $('btnCareerBack').click();
       }
     } else if (e.code === 'Enter' && (curScreen === 'menu' || curScreen === 'over')) {
       e.preventDefault(); Sfx.init(); curScreen === 'over' ? retry() : startReady(null);
@@ -682,7 +675,7 @@ function updateHud() {
   }
   setText('hudDist', game.career ? `${Math.min(game.career.L, Math.floor(run.dist))} / ${game.career.L} m` : Math.floor(run.dist) + ' m');
   setText('hudApples', '🍎 ' + Math.max(0, Math.floor(run.earned + 1e-6)));
-  setText('hudValue', game.career ? `Level ${game.career.n}` : '');
+  setText('hudValue', game.career ? (game.career.boss ? `👑 ${game.career.world}-${game.career.idx + 1}` : `${game.career.world}-${game.career.idx + 1}`) : '');
   $('hudValue').style.display = game.career ? '' : 'none';
   let items = '';
   if (G.helmets > 0) items += '⛑️×' + G.helmets + ' ';
