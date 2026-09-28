@@ -34,7 +34,8 @@ function freshWorld(i, cfg, seed) {
 }
 function localStart(cfg, aiLvl) {
   const ai = aiLvl != null && aiLvl >= 0 ? { lvl: clamp(aiLvl | 0, 0, AI_LV.length - 1) } : null;
-  const mode = cfg.mode === 'endurance' ? 'endurance' : cfg.mode === 'chase' && ai ? 'chase' : 'race';
+  // tegen Kiwi: race of achtervolging (endurance alleen met twee spelers)
+  const mode = cfg.mode === 'endurance' && !ai ? 'endurance' : cfg.mode === 'chase' && ai ? 'chase' : 'race';
   if (LOCAL.on && !!LOCAL.ai !== !!ai) LOCAL.score = [0, 0];
   LOCAL.ai = ai;
   LOCAL.cfg = { mode, len: [500, 1000, 2000].includes(cfg.len) ? cfg.len : 1000 };

@@ -81,11 +81,24 @@ async function main() {
 
   console.log('Menu\'s');
   for (const [open, back, screen] of [['btnShop', 'btnShopBack', 'shop'],
-    ['btnSettings', 'btnSettingsBack', 'settings'], ['btnCareer', 'btnCareerBack', 'career'], ['btnMulti', 'btnMpBack', 'mp']]) {
+    ['btnSettings', 'btnSettingsBack', 'settings'], ['btnCareer', 'btnCareerBack', 'career'], ['btnMulti', 'btnModesBack', 'modes']]) {
     await js(`document.getElementById('${open}').click()`); await sleep(150);
     check(await js('__andy.curScreen') === screen, `${open} opent '${screen}'`);
     await js(`document.getElementById('${back}').click()`); await sleep(100);
   }
+  // Spelmodi: elk blok opent de juiste kamer, terug gaat naar Spelmodi en daarna naar het menu
+  for (const [btn, title, modes] of [['btnModeOnline', 'Multiplayer', null], ['btnModeDuo', 'Duel', 'mpModeRace,mpModeEnd'],
+    ['btnModeKiwi', 'Tegen Kiwi', ''], ['btnModeChase', 'Achtervolging', 'mpModeChase']]) {
+    await js(`document.getElementById('btnMulti').click(); document.getElementById('${btn}').click()`); await sleep(200);
+    const got = await js(`[__andy.curScreen, document.getElementById('mpTitle').textContent,
+      ['mpModeRace', 'mpModeEnd', 'mpModeChase'].filter(id => !document.getElementById(id).classList.contains('hidden')).join(',')].join('|')`);
+    const [scr, t, shown] = got.split('|');
+    check(scr === 'mp' && t === title && (modes === null || shown === modes), `${btn}: '${title}'${modes === null ? '' : ` met modi [${modes}]`}`);
+    await js(`document.getElementById('btnMpBack').click()`); await sleep(150);
+    check(await js('__andy.curScreen') === 'modes', `${btn}: terug naar Spelmodi`);
+    await js(`document.getElementById('btnModesBack').click()`); await sleep(100);
+  }
+  check(await js('__andy.curScreen') === 'menu', 'Spelmodi: terug naar het menu');
   await js(`document.getElementById('btnSettings').click(); document.getElementById('btnDebug').click()`); await sleep(100);
   check(await js('__andy.curScreen') === 'debug', 'debugscherm opent');
   await js(`document.getElementById('btnDebugBack').click(); document.getElementById('btnSettingsBack').click()`);
