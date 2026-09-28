@@ -27,7 +27,9 @@ function findChrome() {
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const profile = mkdtempSync(join(tmpdir(), 'andy-smoke-'));
 const chrome = spawn(findChrome(), ['--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run',
-  '--no-default-browser-check', '--autoplay-policy=no-user-gesture-required', '--window-size=1280,720', 'about:blank'], { stdio: 'ignore' });
+  '--no-default-browser-check', '--autoplay-policy=no-user-gesture-required', '--window-size=1280,720',
+  // als root (bijv. in een container) start Chromium alleen zonder sandbox
+  ...(process.getuid && process.getuid() === 0 ? ['--no-sandbox'] : []), 'about:blank'], { stdio: 'ignore' });
 
 const errors = [];
 let ws, msgId = 0;
@@ -63,7 +65,9 @@ async function main() {
     if (m.id && pending.has(m.id)) { const p = pending.get(m.id); pending.delete(m.id); m.error ? p.rej(new Error(m.error.message)) : p.res(m.result); return; }
     if (m.method === 'Runtime.exceptionThrown') errors.push(m.params.exceptionDetails.exception?.description || m.params.exceptionDetails.text);
     if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error') errors.push('console.error: ' + m.params.args.map(a => a.value ?? a.description).join(' '));
-    if (m.method === 'Log.entryAdded' && m.params.entry.level === 'error' && !/favicon/.test(m.params.entry.url || '')) errors.push(`${m.params.entry.text} ${m.params.entry.url || ''}`);
+    // netwerkfouten van externe bronnen (Supabase, CDN) hangen af van de omgeving (offline, proxy): die tellen niet
+    if (m.method === 'Log.entryAdded' && m.params.entry.level === 'error' && !/favicon/.test(m.params.entry.url || '') &&
+      !(/net::ERR_/.test(m.params.entry.text) && /^https?:/.test(m.params.entry.url || ''))) errors.push(`${m.params.entry.text} ${m.params.entry.url || ''}`);
   };
   await send('Runtime.enable');
   await send('Log.enable');
@@ -113,10 +117,27 @@ async function main() {
   await js(`document.getElementById('btnOverMenu').click()`); await sleep(150);
   check(await js('__andy.curScreen') === 'menu', 'terug naar het menu');
 
+  console.log('Head-start');
+  await js('__andy.save.apples = 100; __andy.startReady(null)'); await sleep(300);
+  check(await js(`!document.getElementById('headStart').classList.contains('hidden')`), 'head-start-knoppen staan klaar');
+  await js(`document.querySelector('[data-hs="0"]').click()`); await sleep(1500);
+  check(await js('__andy.G.state === "rocket" && __andy.save.apples === 40'), 'head-start gekocht: Andy vliegt');
+  console.log('Ruimte');
+  await js(`(() => { const G = __andy.G; G.state = 'air'; G.vine = null; G.y = -3300; G.vy = -1250; G.vx = 700; __andy.run.launchT = 6; })()`); await sleep(1000);
+  check(await js('__andy.run.space && __andy.vines.some(v => v.space) && __andy.spaceObjs.length > 0'), 'in de ruimte: sterrenlianen en planetoïden');
+  await swing('__andy.press()', '__andy.unpress()', 2);
+  await js(`window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }))`); await sleep(150);
+  await js(`document.getElementById('btnQuit').click()`); await sleep(300);
+
   console.log('Carrière');
   await js('__andy.startReady(1)'); await sleep(300);
   check(await js('__andy.game.career && __andy.game.career.n === 1'), 'level 1 start');
   await swing('__andy.press()', '__andy.unpress()', 2);
+  for (const n of [36, 41, 46, 51]) { // de stijl-biomes (blokjes, Paint, 3D, snoep)
+    await js(`__andy.startReady(${n})`); await sleep(200);
+    await swing('__andy.press()', '__andy.unpress()', 1);
+    check(await js(`__andy.game.career.n === ${n}`), `level ${n} (${await js(`BIOMES[__andy.game.career.bi].name`)}) tekent zonder fouten`);
+  }
 
   console.log('Op één scherm');
   await js(`__andy.localStart({ mode: 'race', len: 500 }, null)`); await sleep(4200); // aftellen
@@ -128,6 +149,11 @@ async function main() {
   await js(`__andy.localStart({ mode: 'endurance' }, 3)`); await sleep(4200);
   await swing('__andy.localPress(0)', '__andy.localUnpress(0)', 5);
   check(await js('!!__andy.LOCAL.ai && __andy.LOCAL.worlds[1].G.x > 700'), `Kiwi komt vooruit (x = ${Math.round(await js('__andy.LOCAL.worlds[1].G ? __andy.LOCAL.worlds[1].G.x : 0'))})`);
+  console.log('Achtervolging');
+  await js(`__andy.localStart({ mode: 'chase' }, 3)`); await sleep(4200);
+  check(await js(`__andy.LOCAL.cfg.mode === 'chase'`), 'achtervolging start');
+  await sleep(12000); // Kiwi (Expert) haalt een stilstaande Andy in
+  check(await js(`__andy.LOCAL.result === 1`), 'Kiwi pakt je');
   await js(`document.getElementById('btnMpLeave').click()`); await sleep(200);
   await js('__andy.startReady(null)'); await sleep(200);
   check(await js('!__andy.LOCAL.on'), 'terug naar één speler');

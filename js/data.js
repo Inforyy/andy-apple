@@ -54,21 +54,32 @@ const BIOMES = [
     c:{ skyTop:'#050822', skyMid:'#171a4a', skyBot:'#3b2c70', sun:'#f4f1d8', far:'#1c2152', far2:'#141a40', mid:'#101842', canopy:'#12302e', canopy2:'#1e4a42', hazTop:'#4046b8', hazBot:'#0c1036', vine:'#3c8a6a', leaf:'#5ac08a' } },
   { name:'Portaalwoud', bonus:4, icon:'🌀', start:5200, tip:'Vlieg door een blauw portaal: je komt met al je vaart uit het oranje!', style:'jungle', particle:'firefly', hazardName:'de energiestroom', shroom:'#ff8a1a',
     c:{ skyTop:'#161a45', skyMid:'#3b3b8f', skyBot:'#8fcfe0', sun:'#e6fbff', far:'#4a57a3', far2:'#384385', mid:'#26306c', canopy:'#26586a', canopy2:'#3a9a98', hazTop:'#63e2ff', hazBot:'#1c2a78', vine:'#3f8f86', leaf:'#7fe0c8' } },
+  // Vier stijl-biomes: alles wordt anders getekend (blokjes, Paint, 3D, snoep), zie de stijlen in render-bg.js/render-world.js
+  { name:'Kubuswoud', bonus:5, icon:'🟩', start:6300, tip:'Alles is van blokjes, net als in Minecraft!', style:'blocky', particle:'pixel', hazardName:'het blokwater', shroom:'#c0392b',
+    c:{ skyTop:'#6f9ff7', skyMid:'#8fb6fa', skyBot:'#c3d8fb', sun:'#fffbe0', far:'#7e9a6a', far2:'#5f8a4a', mid:'#3f7a2a', canopy:'#3a7d24', canopy2:'#5aa532', hazTop:'#3f76e4', hazBot:'#1d3f9a', vine:'#4a8a2a', leaf:'#60b538' } },
+  { name:'Tekenland', bonus:6, icon:'🖍️', start:7400, tip:'Alles is getekend in Paint. Pas op voor de verfpot!', style:'paint', particle:'paint', hazardName:'de verfpot', shroom:'#ed1c24',
+    c:{ skyTop:'#99d9ea', skyMid:'#a8def0', skyBot:'#d4f1f9', sun:'#fff200', far:'#b5e61d', far2:'#22b14c', mid:'#22b14c', canopy:'#22b14c', canopy2:'#b5e61d', hazTop:'#00a2e8', hazBot:'#3f48cc', vine:'#22b14c', leaf:'#b5e61d' } },
+  { name:'3D-wereld', bonus:7, icon:'🧊', start:8500, tip:'Welkom in de derde dimensie!', style:'poly3d', particle:'cube', hazardName:'de rasterzee', shroom:'#ff3d7f',
+    c:{ skyTop:'#1a1f5c', skyMid:'#5a4fcf', skyBot:'#ff9ecf', sun:'#ffe066', far:'#6a4bc7', far2:'#4a3aa0', mid:'#2e2a6e', canopy:'#3fd0c9', canopy2:'#7af0e0', hazTop:'#ff4fb4', hazBot:'#20124d', vine:'#3fc9b8', leaf:'#8ff5e5' } },
+  { name:'Snoepland', bonus:8, icon:'🍭', start:9700, tip:'Zoete lianen en een rivier van chocola!', style:'candy', particle:'sprinkle', hazardName:'de chocoladerivier', shroom:'#ff5fa2',
+    c:{ skyTop:'#ffb3d9', skyMid:'#ffd1e8', skyBot:'#fff0f7', sun:'#fff6b0', far:'#f7a8cf', far2:'#e58bbd', mid:'#c76a9f', canopy:'#ff7eb9', canopy2:'#ffc2e0', hazTop:'#8a4b2a', hazBot:'#4a2412', vine:'#e84a8a', leaf:'#7fdc9a' } },
 ];
+// Muziek per biome: toonsoort (halve tonen) en of hij in mineur klinkt (ook voor het riedeltje bij een nieuwe biome)
+BIOMES.forEach((b, i) => { b.key = [0, -3, 2, 5, -2, -5, 3, -1, 4, 1, 6][i]; b.minor = [4, 5, 6, 9].includes(i); });
 for (const b of BIOMES) { b.rgb = {}; for (const k in b.c) b.rgb[k] = hexToRgb(b.c[k]); }
 
 // Kansen per kolom lianen: vijanden en speciale lianen, per biome
 function features(bi) {
   return {
-    wasps:   [0, .30, .14, .10, .10, .16, .10][bi],
-    fire:    [0, 0, 0, 0, .45, .20, 0][bi],
-    birds:   [0, 0, 0, .22, .06, .20, .10][bi],
-    rotten:  [0, .12, .28, .06, .20, .16, .10][bi],
-    icy:     [0, 0, .05, .40, 0, .16, .06][bi],
-    turbo:   [.08, .07, .07, .07, .10, .08, .08][bi],
-    elastic: [.05, .06, .10, .05, .06, .08, .07][bi],
-    fruit:   [.08, .07, .06, .06, .05, .06, .06][bi],
-    portals: [0, 0, 0, 0, 0, 0, .45][bi],
+    wasps:   [0, .30, .14, .10, .10, .16, .10, .12, .12, .14, .12][bi],
+    fire:    [0, 0, 0, 0, .45, .20, 0, 0, 0, .15, 0][bi],
+    birds:   [0, 0, 0, .22, .06, .20, .10, .15, .18, .20, .15][bi],
+    rotten:  [0, .12, .28, .06, .20, .16, .10, .12, .12, .14, .12][bi],
+    icy:     [0, 0, .05, .40, 0, .16, .06, .06, .06, .10, .06][bi],
+    turbo:   [.08, .07, .07, .07, .10, .08, .08, .08, .08, .09, .10][bi],
+    elastic: [.05, .06, .10, .05, .06, .08, .07, .07, .08, .08, .12][bi],
+    fruit:   [.08, .07, .06, .06, .05, .06, .06, .06, .07, .06, .10][bi],
+    portals: [0, 0, 0, 0, 0, 0, .45, 0, 0, .2, 0][bi],
   };
 }
 
@@ -111,12 +122,14 @@ const xpNeed = L => Math.round(260 * Math.pow(L, 1.6)); // XP nodig om van level
 function playerLevel(xp) { let L = 1; while (xp >= xpNeed(L)) { xp -= xpNeed(L); L++; } return { L, into: xp, need: xpNeed(L) }; }
 const unlocked = u => !u.unlock || playerLevel(save.xp).L >= u.unlock;
 // ---- Carrière: levels met een start en een finish; hoe hoger, hoe moeilijker ----
-const LEVELS = 35;
+const LEVELS = 55; // 5 per biome
 function levelInfo(n) {
   const bi = Math.min(BIOMES.length - 1, Math.floor((n - 1) / 5));
   return { n, bi, L: 180 + n * 40, diff: clamp(0.04 + (n - 1) * 0.045, 0, 1.35) };
 }
 const upCost = (u, l) => Math.round(u.base * 1.5 * Math.pow(u.growth, l) / 5) * 5;
+// Head-start: aan het begin van een run (Eindeloos) koop je voor appels een vlucht vooruit
+const HEADSTARTS = [{ m: 250, cost: 60 }, { m: 500, cost: 150 }, { m: 1000, cost: 400 }, { m: 2000, cost: 1000 }];
 
 // =====================================================================
 //  Moeilijkheid, tempo en kleurpalet per afstand
@@ -172,6 +185,7 @@ const VINE_LOOK = {
   turbo:   { col: '#f2b705', leaf: '#ffe680' },
   elastic: { col: '#e0559f', leaf: '#ff9ed2' },
   balloon: { col: '#b98d55', leaf: '#e8d3a8' },
+  space:   { col: '#9d7bff', leaf: '#e2d6ff' }, // sterrenlianen in de ruimte
 };
 
 // Kiwi (AI-tegenstander): niveaus, zie mp-local.js

@@ -17,7 +17,7 @@ GitHub Pages deploys from `main` root. Work happens on `claude/*` branches that 
 
 - **Run**: open `index.html` in a browser. It must keep working via `file://`, which is why there are no ES modules.
 - **Smoke test**: `node tools/smoke.mjs` (Node 18+, finds `chromium`/`google-chrome` itself or uses `CHROME=...`). It needs no npm packages; it drives headless Chromium over the DevTools protocol.
-  - It clicks through the menus and plays Endless, career level 1, split-screen and Kiwi.
+  - It clicks through the menus and plays Endless (with a head-start and a trip to space), career levels (including the four style biomes), split-screen, Kiwi and the chase mode.
   - It fails on any JS exception or `console.error`.
   - `ANDY_URL=http://localhost:8000/ node tools/smoke.mjs` runs the same test against a server, as GitHub Pages would serve it.
 - **Build the APK** (in `android/`; needs Python 3, JDK 17+ and three Maven jars in `tools/`, see `android/README.md`):

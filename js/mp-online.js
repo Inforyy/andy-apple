@@ -14,6 +14,10 @@ const MP_NAME_KEY = 'andyApples.name';
 const MP_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
 const MP_MAX = 20;          // maximaal aantal spelers in een lobby (host meegeteld)
 const RACE_GRACE = 20;      // race: na de eerste finish krijgen de anderen nog zoveel seconden (bij 3+ spelers)
+// De eerste lianen zijn niet gekoppeld: aan het begin hangt iedereen aan dezelfde lianen, en als die bij jou naar de hand
+// van een ander worden getrokken, grijp je mis en val je meteen. Pas vanaf liaan nummer MP_FREE_VINES buigt een liaan mee.
+// (Ruimtelianen hebben een negatief id en worden dus ook nooit gekoppeld.)
+const MP_FREE_VINES = 10;
 const randHex = n => { const b = new Uint8Array(n); try { crypto.getRandomValues(b); } catch (e) { for (let i = 0; i < n; i++) b[i] = Math.random() * 256; } return Array.from(b, x => x.toString(16).padStart(2, '0')).join(''); };
 const CLIENT_ID = randHex(8); // per tabblad: wie is wie
 const MP = { role: null, manual: false, busy: false, local: false, aiLvl: null, inRoom: false, myId: CLIENT_ID,
@@ -545,7 +549,10 @@ function mpRender() {
   $('mpPlayers').innerHTML = list.map(p => `<li class="${p.me ? 'me' : ''}"><i style="background:${p.col}"></i>${escHtml(p.name)}${p.me ? ' <small>(jij)</small>' : ''}${p.host ? ' <small>host</small>' : ''}</li>`).join('');
   $('mpCountTxt').textContent = loc ? '' : `${list.length} / ${MP_MAX}`;
   $('mpShareRow').classList.toggle('hidden', !(host && MP.lobby));
-  // modus
+  // modus (achtervolging bestaat alleen tegen Kiwi)
+  if (MP.sel.mode === 'chase' && !vsAi) MP.sel.mode = 'race';
+  $('mpModeChase').classList.toggle('hidden', !vsAi);
+  $('mpModeChase').classList.toggle('sel', MP.sel.mode === 'chase');
   const canPick = host || loc;
   $('mpModeWho').textContent = canPick ? '' : 'de host kiest';
   $('mpModeRace').classList.toggle('sel', MP.sel.mode === 'race');
@@ -582,6 +589,7 @@ function mpSelect(mode, len) {
 }
 function mpHostStart(cfg) {
   if (MP.role !== 'host' || !openLinks().length) return;
+  if (cfg.mode === 'chase') cfg = { mode: 'race', len: cfg.len }; // achtervolging is alleen tegen Kiwi
   const ids = [MP.myId].concat(openLinks().map(l => l.id).filter(id => MP.players.has(id)));
   const c = { type: 'start', mode: cfg.mode, len: cfg.len, seed: 1 + ((Math.random() * 2147483000) | 0), ids };
   mpSend(c);
@@ -638,7 +646,7 @@ function mpFinished() {
 }
 function mpDied() {
   const M = game.mp;
-  if (M.mode === 'race') {
+  if (M.mode === 'race' || M.mode === 'chase') {
     M.falls++;
     floatText(G.x, G.y - 70, 'Plons! Even terug…', '#ffffff', 24);
     return;
@@ -766,7 +774,7 @@ function mpStep(dt) {
   const M = game.mp;
   if (game.mode !== 'playing') return;
   M.t += dt;
-  if (M.mode === 'race') {
+  if (M.mode === 'race' || M.mode === 'chase') {
     if (G.state === 'dead' && G.deadT > 1.2 && !M.myEv) mpRespawn();
   } else {
     // de storm komt na een paar tellen op gang en gaat steeds sneller; hij blijft nooit te ver achter
@@ -851,7 +859,7 @@ function mpGhost(P, dt, M) {
   // hangt hij aan een liaan? dan buigt die liaan bij jou ook mee (één tegelijk)
   if (!ghostPin.v && g.state === 'hang' && s.vid >= 0) {
     const v = vines.find(w => w.id === s.vid);
-    if (v && v !== G.vine && v.anchored && s.k < v.pts.length) {
+    if (v && v.id >= MP_FREE_VINES && v !== G.vine && v.anchored && s.k < v.pts.length) {
       const an = v.pts[0], reach = s.k * SEG_LEN * (v.type === 'elastic' ? ELASTIC_STRETCH : 1) + 60;
       if (Math.hypot(g.hx - an.x, g.hy - an.y) < reach) { ghostPin.v = v; ghostPin.k = s.k; ghostPin.x = g.hx; ghostPin.y = g.hy; }
     }
@@ -958,12 +966,14 @@ function drawMpOverlay() {
     const txt = `${o.name} ${dm > 0 ? '+' : ''}${dm} m`, tx = x - dir * 14;
     ctx.strokeText(txt, tx, y - 28); ctx.fillText(txt, tx, y - 28);
   }
-  if (M.mode === 'endurance' && G.state !== 'dead' && game.mode === 'playing') {
-    const gap = G.x - M.stormX;
+  const chaseGap = M.chase === false && LOCAL.ai ? G.x - LOCAL.worlds[1].G.x : Infinity; // achtervolging: hoe dicht zit Kiwi achter je?
+  if ((M.mode === 'endurance' || chaseGap < 900) && G.state !== 'dead' && game.mode === 'playing') {
+    const gap = M.mode === 'endurance' ? G.x - M.stormX : chaseGap;
     if (gap < 900) {
       const a = (1 - gap / 900) * (0.55 + 0.45 * Math.sin(time * 10));
       const gr = cachedGrad('stormwarn' + Math.round(viewH), () => { const q = ctx.createLinearGradient(0, 0, 140, 0); q.addColorStop(0, 'rgba(150,60,255,.75)'); q.addColorStop(1, 'rgba(150,60,255,0)'); return q; });
-      ctx.globalAlpha = clamp(a, 0, 1); ctx.fillStyle = gr; ctx.fillRect(0, 0, 140, viewH); ctx.globalAlpha = 1;
+      if (M.mode === 'chase') ctx.filter = 'hue-rotate(80deg)'; // oranjerood: Kiwi komt eraan
+      ctx.globalAlpha = clamp(a, 0, 1); ctx.fillStyle = gr; ctx.fillRect(0, 0, 140, viewH); ctx.globalAlpha = 1; ctx.filter = 'none';
     }
   }
 }

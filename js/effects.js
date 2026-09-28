@@ -67,7 +67,7 @@ function updateEffects(dt) {
 function updateCamera(dt) {
   // bij hoge snelheid kijkt de camera verder vooruit
   const tx = Math.max(-100, G.x - viewW * (G.state === 'rocket' ? 0.25 : 0.33 - clamp(G.vx / 1800, 0, 1) * 0.1));
-  camX += (tx - camX) * Math.min(1, dt * 4.5);
+  camX += (tx - camX) * Math.min(1, dt * (G.state === 'rocket' ? 14 : 4.5)); // een (snelle) head-start-vlucht strak volgen
   // verticaal meebewegen (de wereld is veel hoger dan het scherm), maar nooit onder de bodem kijken
   const bt = baseTop();
   const ty = Math.min(bt, G.y - viewH * 0.5 + clamp(G.vy * 0.15, -110, 190));
@@ -92,6 +92,10 @@ function updateAmbient(dt, type, camDX, camDY) {
       case 'snow': vy = 40 + p.s * 45; vx = Math.sin(time * 0.8 + p.ph) * 25; break;
       case 'ember': vy = -(30 + p.s * 50); vx = Math.sin(time * 1.1 + p.ph) * 18; break;
       case 'star': vx = Math.sin(time * 0.4 + p.ph) * 8; vy = Math.cos(time * 0.5 + p.ph) * 8; break;
+      case 'pixel': vy = 35 + p.s * 30; break;
+      case 'paint': vx = Math.sin(time * 0.5 + p.ph) * 14; vy = 10 + Math.cos(time * 0.6 + p.ph) * 10; break;
+      case 'cube': vy = -(14 + p.s * 18); vx = Math.sin(time * 0.6 + p.ph) * 10; break;
+      case 'sprinkle': vy = 45 + p.s * 35; vx = Math.sin(time * 1.1 + p.ph) * 20; break;
     }
     p.x += vx * dt - camDX * (0.6 + p.s * 0.3);
     p.y += vy * dt - camDY * (0.6 + p.s * 0.3);

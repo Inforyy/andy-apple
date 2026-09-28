@@ -75,6 +75,8 @@ async function lbRank() {
 async function lbShow() {
   const list = $('lbList'), me = myName();
   $('lbSub').textContent = save.lbBest ? `Eindeloos · jouw record: ${save.lbBest} m` : 'Eindeloos · verste afstand';
+  // runs met een aangepaste debug-snelheid tellen niet mee: zeg dat erbij als je 'echte' record daardoor lager is
+  if (save.best > save.lbBest) $('lbSub').textContent += ` (${save.best} m telt niet mee: gespeeld met een aangepaste debug-snelheid)`;
   $('lbMsg').textContent = '';
   if (!lbOn()) { list.innerHTML = '<li class="empty">De ranglijst is nog niet ingesteld.</li>'; return; }
   if (!list.children.length || list.querySelector('.empty')) list.innerHTML = '<li class="empty">Laden…</li>';
