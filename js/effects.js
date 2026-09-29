@@ -67,12 +67,13 @@ function updateEffects(dt) {
 function updateCamera(dt) {
   // bij hoge snelheid kijkt de camera verder vooruit; vlieg je achteruit, dan schuift hij mee zodat je ziet waar je heen gaat
   const look = 0.33 - clamp(G.vx / 1800, 0, 1) * 0.1 + (G.state === 'air' ? clamp(-G.vx / 700, 0, 1) * 0.2 : 0);
-  const tx = Math.max(-100, G.x - viewW * (G.state === 'rocket' ? 0.25 : look));
+  const tx = towerOn() ? G.x - viewW * 0.5 : Math.max(-100, G.x - viewW * (G.state === 'rocket' ? 0.25 : look)); // toren: Andy in het midden, vóór de toren
   camX += (tx - camX) * Math.min(1, dt * (G.state === 'rocket' ? 14 : 4.5)); // een (snelle) head-start-vlucht strak volgen
   // verticaal meebewegen (de wereld is veel hoger dan het scherm), maar nooit onder de bodem kijken
   // onder water mag de camera wel onder de waterlijn (daar speel je dan)
   const bt = run && run.under ? Infinity : baseTop();
   let ty = Math.min(bt, G.y - viewH * 0.5 + clamp(G.vy * 0.15, -110, 190));
+  if (towerOn()) ty = Math.min(bt, G.y - viewH * 0.58);
   if (G.auto) ty = HAZARD_Y + 170 - viewH; // boven zee tussen twee eilanden: de zee onderaan in beeld
   camY += (ty - camY) * Math.min(1, dt * 4.5);
   if (G.state !== 'dead') camY = clamp(camY, G.y - viewH + 120, G.y - 100);

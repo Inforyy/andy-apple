@@ -241,6 +241,7 @@ function drawBalloon(v) {
   }
 }
 function drawVine(v) {
+  if (v.chain) { drawChain(v); return; }
   const p = v.pts, n = p.length;
   let shakeX = 0;
   if (v.type === 'rotten' && G.vine === v && G.hangT > v.snapAt - 0.45) shakeX = Math.sin(time * 60) * 1.5;
@@ -400,6 +401,7 @@ function drawSpaceObjs() {
 function drawBranch(v) {
   if (v.jet) { drawJet(v); return; }
   if (v.balloon) { drawBalloon(v); return; }
+  if (v.chain) { drawChainAnchor(v); return; }
   if (v.space) { drawAsteroid(v.pts[0].x, v.pts[0].y - v.space.r * 0.55, v.space.r, v.space.ph + time * 0.15, v.space.col); return; }
   const style = BIOMES[v.bi].style, c = BIOMES[v.bi].c;
   if (style === 'blocky' || style === 'paint' || style === 'poly3d' || style === 'candy') { drawStyledBranch(v, style, c); return; }
@@ -646,7 +648,7 @@ function drawGorilla() {
   }
   if (tr) drawTrickFx(tr, tk);
   ctx.rotate(G.angle + (G.trickRot || 0));
-  ctx.scale(G_DRAW, G_DRAW);
+  ctx.scale(G_DRAW * modSize(), G_DRAW * modSize()); // modifier: reuzen- of mini-Andy
   const sq = clamp(G.sq || 0, -0.4, 0.4); // rek en krimp (vanuit de voeten)
   if (sq) { ctx.translate(0, 24); ctx.scale(1 - sq * 0.55, 1 + sq); ctx.translate(0, -24); }
   if (G.state === 'stand' && !an) { const br = Math.sin(G.standT * 2.4) * 0.02; ctx.translate(0, 24); ctx.scale(1 - br * 0.5, 1 + br); ctx.translate(0, -24); } // ademen
@@ -1507,6 +1509,9 @@ function renderScene() {
   // 1) verre achtergrond in een aparte buffer op lage resolutie (mag toch wat vaag zijn);
   //    op de lage kwaliteitsniveaus wordt die maar om het andere beeld ververst
   const S0 = baseScale * pr; // vaste basiszoom voor de achtergrond
+  const tower = towerOn(), castle = castleOn() && !!(run && run.castle);
+  if (tower) { ctx.setTransform(S, 0, 0, S, VOX, VOY); drawTowerBg(P); } // de toren: een eigen 3D-achtergrond (levels.js)
+  else {
   if (++bgFrame % Q.bgEvery === 0 || bgStale || clip) {
     bgStale = false;
     ctx = bgCtx;
@@ -1528,10 +1533,12 @@ function renderScene() {
   ctx.setTransform(1, 0, 0, 1, VOX, VOY);
   ctx.imageSmoothingEnabled = true;
   ctx.drawImage(bgCanvas, 0, 0, RW, RH);
+  }
   // 2) nabije achtergrond op volle resolutie
   ctx.setTransform(S0, 0, 0, S0, VOX, VOY);
   const spW = spaceWeight();
-  if (spW < 1) {
+  if (castle) withBaseView(() => drawCastleWall(P)); // het kasteel: een muur met ramen voor de biome
+  else if (spW < 1 && !tower) {
     ctx.globalAlpha = 1 - spW;
     withBaseView(() => { drawFlyers(); drawGiantTrunks(P); });
     ctx.globalAlpha = 1;
@@ -1540,10 +1547,11 @@ function renderScene() {
   const sx = shakeT > 0 ? (Math.random() - 0.5) * shakeAmp * 2 : 0, sy = shakeT > 0 ? (Math.random() - 0.5) * shakeAmp * 2 : 0;
   ctx.setTransform(S, 0, 0, S, -(camX + sx) * S + VOX, -(camY + sy) * S + VOY);
   if (under) drawUnderwater(P);
-  drawRock();
+  if (!tower) drawRock();
   drawSkyBirds();
   drawMarkers();
   drawBiomeCliffs();
+  if (tower) drawTowerRings();
   drawFinish();
   drawShrooms();
   drawTramps();
@@ -1562,10 +1570,10 @@ function renderScene() {
   if (G) { drawOwnGorilla(); drawParrot(); }
   drawParts();
   if (game.mp) drawStorm();
-  if (!under) { const c = clipVoid(); drawHazard(P); if (c) ctx.restore(); } // onder water tekent drawUnderwater het water (anders zou het over Andy heen vallen); in een afgrond is geen water
+  if (!under && !tower) { const c = clipVoid(); drawHazard(castle ? palettePure(4) : P); if (c) ctx.restore(); } // het kasteel staat boven lava // onder water tekent drawUnderwater het water (anders zou het over Andy heen vallen); in een afgrond is geen water
   drawTexts();
   ctx.setTransform(S0, 0, 0, S0, VOX, VOY);
-  if (!under) { const c = clipVoid(); withBaseView(() => { drawForeground(P); if (spW < 0.6) drawAmbient(P); }); if (c) ctx.restore(); }
+  if (!under) { const c = clipVoid(); withBaseView(() => { if (!tower && !castle) drawForeground(P); if (spW < 0.6) drawAmbient(P); }); if (c) ctx.restore(); }
   ctx.setTransform(S, 0, 0, S, VOX, VOY);
   drawWarnings();
   if (game.mp) drawMpOverlay();

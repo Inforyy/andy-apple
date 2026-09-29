@@ -75,7 +75,7 @@ function makeVine(x, ay, len, type, bi) {
   const flowers = ['#ff7eb6', '#7ec8ff', '#ffd23f', '#ffffff'];
   return { id: vineSeq++, x, ay, pts, type, bi, col: look.col, dark: shade(look.col, -0.38), light: shade(look.col, 0.3), leaf: look.leaf,
     phase: genRandom() * 6.28, anchored: true, snapAt: type === 'rotten' ? grand(0.8, 1.2) * (1 + 0.4 * lvl('vinewise')) : 0,
-    rest: restSeg(x, ay, n * SEG_LEN, type),
+    rest: restSeg(x, ay, n * SEG_LEN, type), chain: castleOn(), // in het kasteel: kettingen
     // tak waaraan de liaan hangt
     bl: grand(30, 46), tilt: grand(-0.12, 0.12),
     flower: genRandom() < 0.45 ? flowers[(genRandom() * flowers.length) | 0] : null };
@@ -97,7 +97,7 @@ function resetRunner() {
   run = { picked: 0, earned: 0, stolen: 0, golden: 0, dist: 0, biome: 0, biomeN: 0, reason: '', lastWoo: 0,
     combo: 0, lastPick: -9, firstJump: true, nextMile: 100, tricks: 0, space: false, spaceVisits: 0, appleTotal: 0,
     cine: null, under: null, loot: 0 };
-  if (C) { run.biome = C.bi; C.finishX = START_X + C.L * PX_PER_M; }
+  if (C) { run.biome = C.bi; C.finishX = C.tower ? Infinity : START_X + C.L * PX_PER_M; } // de toren eindig je bovenop (zie towerLand)
   if (game.mp) game.mp.finishX = game.mp.len ? START_X + game.mp.len * PX_PER_M : 0;
 }
 function resetWorld() {
@@ -116,6 +116,7 @@ function resetWorld() {
   zoomK = 0; applyZoom(); // elke run begint volledig ingezoomd
   camX = Math.max(-100, G.x - viewW * 0.32); camY = baseTop(); lastCamX = camX;
   genUntil(camX + viewW + 900);
+  levelBuild(); // toren of kasteel (levels.js)
   game.holdLock = false;
   Music.biome = C ? C.bi : 0;
 }
@@ -123,7 +124,11 @@ function resetWorld() {
 // =====================================================================
 //  Wereldgenerator
 // =====================================================================
-function genUntil(xMax) { if (brOn()) xMax = Math.min(xMax, BR_X1); while (gen.x < xMax) genNext(); } // battle royale: alleen de kleine arena
+function genUntil(xMax) {
+  if (game.career && game.career.tower) return; // de toren wordt in één keer gebouwd (levels.js)
+  if (brOn()) xMax = Math.min(xMax, BR_X1); // battle royale: alleen de kleine arena
+  while (gen.x < xMax) genNext();
+} // battle royale: alleen de kleine arena
 // Past de lengte van een liaan aan zodat hij (ook uitgerekt) niet in de bodem hangt
 function fitVine(ay, len, stretch) {
   const maxLen = (HAZARD_Y - VINE_CLEAR - ay) / stretch;

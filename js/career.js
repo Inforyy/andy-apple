@@ -47,6 +47,8 @@ function updateCareer(dt) {
   if (C.ch.includes('wind') && G.state === 'air' && G.vx > 180) G.vx -= 200 * dt;
   if (run.boss) updateBoss(dt);
   updateProjs(dt);
+  if (run.tower) towerStep(dt);
+  if (run.castle) castleStep(dt);
 }
 function givePow(type, x, y) {
   const P = POWERUPS[type];
@@ -208,6 +210,8 @@ const projCol = k => PROJ_COL[k] || '#ffffff';
 
 // ---- tekenen in de wereld ----
 function drawCareerWorld() {
+  if (run && run.castle) drawCastleWorld();
+  if (run && run.tower) drawTowerDrops();
   // power-ups: een zwevende bel met een icoon
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   for (const p of pups) {

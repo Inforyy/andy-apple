@@ -93,7 +93,9 @@ function startReady(level) {
   if (C) {
     careerRunInit();
     const ch = C.ch.map(c => `${CHALLENGES[c].icon} ${CHALLENGES[c].name}`).join(' · ');
-    if (C.boss) showBanner(`👑 ${BOSSES[C.bi].name}`, `Baasgevecht! Ontwijk de aanvallen · ⏱ ${C.time} s`);
+    if (C.boss) showBanner(`👑 ${BOSSES[C.bi].name}`, `Het kasteel! Pas op voor de bijlen en de lava · ⏱ ${C.time} s`);
+    else if (C.tower) showBanner(`🏰 De toren`, `Klim naar de top · ${C.L} m hoog · ⏱ ${C.time} s`);
+    else if (C.mod) showBanner(`${MODS[C.mod].icon} ${MODS[C.mod].name}`, `${MODS[C.mod].info} · ⏱ ${C.time} s`);
     else showBanner(`Wereld ${C.world}-${C.idx + 1}`, `${ch || BIOMES[C.bi].name} · ${C.L} m · ⏱ ${C.time} s`);
   }
   else if (save.runs < 3) showBanner('Jungle', 'Houd ingedrukt om te springen');
@@ -121,7 +123,7 @@ function playEndless() {
 function begin() {
   game.mode = 'playing';
   renderHeadStart();
-  if (!game.career && (lvl('rocket') > 0 || run.headStart)) startRocket(run.headStart || 0); else jump();
+  if (!game.career && (lvl('rocket') > 0 || run.headStart)) startRocket(run.headStart || 0); else if (towerOn()) towerJump(); else jump();
 }
 // XP: vooral afstand, plus wat voor trucs en appels
 function awardXp(extra) {
@@ -789,7 +791,7 @@ function updateHud() {
     $('hint').classList.toggle('pulse', game.mode === 'mpcount');
     return;
   }
-  setText('hudDist', game.career ? `${Math.min(game.career.L, Math.floor(run.dist))} / ${game.career.L} m` : Math.floor(run.dist) + ' m');
+  setText('hudDist', game.career ? `${game.career.tower ? '🏰 ' : ''}${Math.min(game.career.L, Math.floor(run.dist))} / ${game.career.L} m` : Math.floor(run.dist) + ' m');
   setText('hudApples', '🍎 ' + Math.max(0, Math.floor(run.earned + 1e-6)));
   setText('hudValue', game.career ? (game.career.boss ? `👑 ${game.career.world}-${game.career.idx + 1}` : `${game.career.world}-${game.career.idx + 1}`) : '');
   $('hudValue').style.display = game.career ? '' : 'none';

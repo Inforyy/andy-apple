@@ -89,7 +89,7 @@ function swingStep(v, dt) {
     setHand();
     return;
   }
-  const g = v.space ? GRAVITY * SPACE_G : GRAVITY, elastic = v.type === 'elastic';
+  const g = (v.space ? GRAVITY * SPACE_G : GRAVITY) * modGrav(), elastic = v.type === 'elastic'; // modifier: zware Andy / maan
   if (elastic) { // bungee: het touw rekt uit en veert terug
     const acc = g * Math.cos(G.th) + G.R * G.om * G.om - 38 * (G.R - G.R0);
     G.vr = (G.vr + acc * dt) * 0.995;
@@ -123,7 +123,7 @@ function swingStep(v, dt) {
 }
 
 function tryGrab() {
-  const R = gripR(lvl('grip'));
+  const R = gripR(lvl('grip')) * modGrip();
   let best = null, bk = 0, bd = R * R;
   for (const v of vines) {
     if (!v.anchored || Math.abs(v.x - G.x) > 640) continue;
@@ -391,7 +391,8 @@ function hitHazard() {
   } else if (powOn('wings')) { // power-up vleugels: je stuitert van het water weer omhoog
     G.y = HAZARD_Y - G_R; G.vy = -1300; G.vx = Math.max(G.vx, 520);
     splash(G.x, 12); floatText(G.x, G.y - 60, '🪽 Wiek!', '#bfefff', 22); Sfx.boing();
-  } else if (canGoUnder()) enterUnder();
+  } else if (modBounce()) { /* modifier stuiterwater */ }
+  else if (canGoUnder()) enterUnder();
   else die();
 }
 // Vijanden kunnen Andy NOOIT laten vallen of doodgaan: ze stelen alleen appels.
@@ -543,7 +544,7 @@ function updateGorilla(dt, holdHang, holdAir) {
   } else if (G.state === 'stand') {
     G.vx = 0; G.vy = 0; G.angle *= 0.85; G.diving = false; G.standT += dt;
     // opnieuw springen vanaf de rots (met een nieuwe druk op de knop)
-    if (playing && input.down && input.presses !== G.standPress) jump();
+    if (playing && input.down && input.presses !== G.standPress) { if (towerOn()) towerJump(); else jump(); }
   } else if (G.state === 'air') {
     const sp0 = Math.hypot(G.vx, G.vy); // vaart vóór de krachten van deze stap (voor de topsnelheid hieronder)
     G.airT += dt;
@@ -563,14 +564,14 @@ function updateGorilla(dt, holdHang, holdAir) {
     const glide = falling ? 1 - 0.07 * wing : 1;
     // in de ruimte: bijna gewichtloos, en een zachte kracht houdt je in de ruimteband (tot je duikt of de tijd op is)
     const space = run.space && G.y < SPACE_Y + 600, float = space && run.spaceT < SPACE_TIME && G.dive < 0.25;
-    G.vy += AIR_G * glide * (space ? 0.16 : 1) * (1 + 2.8 * G.dive) * dt;
+    G.vy += AIR_G * modGrav() * glide * (space ? 0.16 : 1) * (1 + 2.8 * G.dive) * dt;
     if (float && G.y > SPACE_Y - 250) G.vy -= Math.min(900, (G.y - (SPACE_Y - 250)) * 1.6) * dt + G.vy * Math.min(1, dt * 1.2) * (G.vy > 0 ? 1 : 0);
     // ook zonder wingsuit-upgrade drijft Andy een klein beetje naar voren: zo kom je nooit hulpeloos
     // recht naar beneden vast te zitten tussen twee lianen in
     if (!brOn()) G.vx += 55 * dt;
     // wingsuit: een deel van de valsnelheid wordt voorwaartse vaart
     if (wing && falling && G.vx > 0) { const dv = Math.min(G.vy, 700) * 0.32 * wing * dt; G.vy -= dv; G.vx += dv * 0.85; }
-    const maxFall = MAX_FALL * glide * (1 + 1.1 * G.dive);
+    const maxFall = MAX_FALL * glide * (1 + 1.1 * G.dive) * Math.sqrt(modGrav());
     if (G.vy > maxFall) G.vy += (maxFall - G.vy) * Math.min(1, dt * 6);
     G.vx -= G.vx * 0.015 * dt;
     const sp = Math.hypot(G.vx, G.vy), maxS = maxSpeed() * (G.turboT > 0 ? 1.4 : 1) * (space ? 1.3 : 1) * (1 + 0.5 * G.dive); // duiken remt je voorwaartse vaart niet af
@@ -595,6 +596,7 @@ function updateGorilla(dt, holdHang, holdAir) {
         addPart({ type: 'ring', x: G.x, y: ROCK.top, vx: 0, vy: 0, life: 0.35, max: 0.35, col: 'rgba(255,255,255,.7)', r: 8, grow: 30, g: 0, flat: true });
       } else if (G.y + FEET > ROCK.top + 6) { G.x = ROCK.x1 + G_R * 0.6; G.vx = Math.abs(G.vx) * 0.3; }
     }
+    if (towerOn() && G.state === 'air' && towerLand(prevFeet)) return; // toren: op een ring geland
     const target = clamp(G.vx * 0.0004 + G.dive * 0.6 + clamp(G.vy * 0.0003, -0.2, 0.3), -0.7, 1.1);
     G.angle += (target - G.angle) * Math.min(1, dt * 8);
     updateTrick(dt, holdAir);
@@ -655,7 +657,7 @@ function updateGorilla(dt, holdHang, holdAir) {
   if (playing && G.state !== 'dead' && game.career && G.x >= game.career.finishX) levelComplete();
   if (playing && G.state !== 'dead' && game.mp && game.mp.finishX && G.x >= game.mp.finishX) mpFinished();
   if (playing && G.state !== 'dead') {
-    run.dist = Math.max(run.dist, (G.x - START_X) / PX_PER_M);
+    run.dist = Math.max(run.dist, towerOn() ? (TW_G - G.y - FEET) / PX_PER_M : (G.x - START_X) / PX_PER_M); // toren: hoe hoog je bent
     if (run.dist >= run.nextMile) {
       floatText(G.x, G.y - 80, `${run.nextMile} m!`, '#ffffff', 30);
       confetti(G.x, G.y - 40, 30);
@@ -1101,7 +1103,7 @@ function updateSpace(dt) {
   if (game.mode !== 'playing') return;
   run.launchT = (run.launchT || 0) - dt;
   // heel hoog gekomen zonder ballonpad: de ruimte trekt je de rest van de weg omhoog
-  if (!run.space && !run.under && G.state === 'air' && G.y < SPACE_ENTER_Y && G.vy < 0 && run.launchT <= 0) {
+  if (!run.space && !run.under && !game.career && G.state === 'air' && G.y < SPACE_ENTER_Y && G.vy < 0 && run.launchT <= 0) {
     G.vy = Math.min(G.vy, -1600); G.noDive = true; run.launchT = 4;
     floatText(G.x, G.y - 70, 'Zó hoog! De ruimte trekt je omhoog! 🌌', '#e2d6ff', 26);
     shake(5, 0.3); Sfx.rocket();
