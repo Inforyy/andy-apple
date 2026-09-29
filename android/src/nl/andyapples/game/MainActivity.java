@@ -5,6 +5,8 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -79,6 +81,7 @@ public class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 26) web.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, true);
         web.addJavascriptInterface(new Bridge(), "AndroidBridge");
         setContentView(web);
+        applyOrientation();
         hideSystemBars();
         web.loadUrl("file:///android_asset/index.html");
     }
@@ -94,6 +97,26 @@ public class MainActivity extends Activity {
                 }
             });
         }
+
+        /** Instellingen → Scherm: volledig scherm (systeembalken verbergen) aan of uit. */
+        @JavascriptInterface
+        public void setFullscreen(final boolean on) {
+            prefs().edit().putBoolean("full", on).apply();
+            runOnUiThread(new Runnable() { public void run() { if (web != null) hideSystemBars(); } });
+        }
+
+        @JavascriptInterface
+        public boolean isFullscreen() { return prefs().getBoolean("full", true); }
+
+        /** Instellingen → Scherm: altijd liggend, of meedraaien met de telefoon. */
+        @JavascriptInterface
+        public void setLandscape(final boolean on) {
+            prefs().edit().putBoolean("land", on).apply();
+            runOnUiThread(new Runnable() { public void run() { applyOrientation(); } });
+        }
+
+        @JavascriptInterface
+        public boolean isLandscape() { return prefs().getBoolean("land", true); }
 
     }
 
@@ -115,7 +138,15 @@ public class MainActivity extends Activity {
         getWindow().setAttributes(lp);
     }
 
+    private SharedPreferences prefs() { return getSharedPreferences("scherm", MODE_PRIVATE); }
+
+    private void applyOrientation() {
+        setRequestedOrientation(prefs().getBoolean("land", true) ? ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE : ActivityInfo.SCREEN_ORIENTATION_FULL_USER);
+    }
+
+    /** Volledig scherm (standaard): systeembalken weg. Uit: de balken blijven gewoon staan. */
     private void hideSystemBars() {
+        if (!prefs().getBoolean("full", true)) { web.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE); return; }
         web.setSystemUiVisibility(View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_FULLSCREEN
                 | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                 | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);

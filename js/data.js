@@ -206,17 +206,33 @@ const POWERUPS = {
   clock:  { icon: '⏰', name: '+20 seconden',  dur: 0,  col: '#7dff8a' },
   slow:   { icon: '⏳', name: 'Slowmotion',    dur: 7,  col: '#b8a4ff' }, // alles gaat half zo snel, ook de klok
 };
+// Modifiers: sommige gewone levels hebben een gekke regel (zie levels.js). grav: zwaartekracht, size: hoe groot Andy is,
+// grip: hoe ver hij kan grijpen, tempo: hoe snel alles gaat, bounce: het water kaatst je terug omhoog (kost tijd)
+const MODS = {
+  heavy:  { icon: '🪨', name: 'Zware Andy',        info: 'Andy is loodzwaar: je valt veel sneller omlaag',   grav: 1.75 },
+  moon:   { icon: '🌙', name: 'Maanzwaartekracht', info: 'Bijna geen zwaartekracht: je zweeft ver door',      grav: 0.5 },
+  giant:  { icon: '🦍', name: 'Reuzen-Andy',       info: 'Andy is enorm: lange armen, maar zwaar',            size: 1.6, grip: 1.4, grav: 1.25 },
+  tiny:   { icon: '🐜', name: 'Mini-Andy',         info: 'Andy is piepklein: korte armen, heel licht',        size: 0.6, grip: 0.8, grav: 0.85 },
+  bouncy: { icon: '🏀', name: 'Stuiterbal',        info: 'Val je in het water, dan stuiter je terug (−4 s)',  bounce: true },
+  hyper:  { icon: '⚡', name: 'Hyperspeed',        info: 'Alles gaat een stuk sneller',                        tempo: 1.3 },
+};
+const MOD_ORDER = ['heavy', 'moon', 'giant', 'tiny', 'bouncy', 'hyper'];
+const TOWER_RING = 620; // hoogte van één verdieping in een torenlevel (zie levels.js)
 function levelInfo(n) {
   const w = Math.min(WORLDS - 1, Math.floor((n - 1) / LEVELS_PER_WORLD)), idx = (n - 1) % LEVELS_PER_WORLD;
   const boss = idx === LEVELS_PER_WORLD - 1, tower = idx === TOWER_IDX, p = (n - 1) / (LEVELS - 1); // p: 0 bij level 1, 1 bij het laatste
   // up: hoe sterk je Andy is (0..1, alle upgrades). Een sterke Andy krijgt zwaardere levels en minder tijd.
   const up = upgradePower();
-  const L = Math.round(260 + p * 1900 + idx * 25 + (boss ? 150 : 0));
-  // uitdagingen: niet in de eerste twee levels en niet bij een baas; in een toren (en later, of met veel upgrades) twee
+  // modifier op level 3 en 6 van elke wereld (de toren en het kasteel zijn al bijzonder genoeg)
+  const mod = !boss && !tower && n > 2 && (idx === 2 || idx === 5) ? MOD_ORDER[(w * 2 + (idx === 5 ? 1 : 0)) % MOD_ORDER.length] : null;
+  // toren: je klimt omhoog; de lengte is dan de hoogte (in meters)
+  const layers = tower ? 5 + Math.floor(w / 3) + (up > 0.6 ? 1 : 0) : 0;
+  const L = tower ? Math.round(layers * TOWER_RING / PX_PER_M) : Math.round(260 + p * 1900 + idx * 25 + (boss ? 150 : 0));
+  // uitdagingen: niet in de eerste twee levels, niet in de toren, het kasteel of een level met een modifier
   const ch = [];
-  if (!boss && n > 2 && (idx > 0 || up > 0.5)) {
+  if (!boss && !tower && !mod && n > 2 && (idx > 0 || up > 0.5)) {
     ch.push(CHALLENGE_ORDER[(w * 3 + idx) % CHALLENGE_ORDER.length]);
-    if (tower || (w >= 5 && idx === 6) || (up > 0.8 && idx >= 4)) {
+    if ((w >= 5 && idx === 6) || (up > 0.8 && idx >= 4)) {
       const b = CHALLENGE_ORDER[(w * 3 + idx + 2) % CHALLENGE_ORDER.length];
       if (!ch.includes(b)) ch.push(b);
     }
@@ -225,9 +241,10 @@ function levelInfo(n) {
   const pace = 6 + 8 * p + 2.5 * up; // verwachte gemiddelde snelheid (m/s); upgrades tellen in de carrière maar voor een deel mee (CAREER_UP)
   let time = Math.round(L / pace + 14);
   if (ch.includes('rush')) time = Math.round(time * 0.72);
-  if (tower) time = Math.round(time * 0.9);
+  if (tower) time = Math.round((16 + layers * 10) * (1 - 0.12 * up) * (1 - 0.02 * w));
+  if (boss) time = Math.round(time * 1.2); // het kasteel: parkour kost tijd
   const diff = clamp(0.2 + p * 1.6 + (tower ? 0.15 : 0) + (boss ? 0.1 : 0), 0, 2) + 0.35 * up;
-  return { n, bi: w, world: w + 1, idx, boss, tower, L, p, up, ch, time, need: ch.includes('apples') ? Math.round(L / 11 * (1 + 0.15 * up)) : 0, diff };
+  return { n, bi: w, world: w + 1, idx, boss, tower, layers, mod, L, p, up, ch, time, need: ch.includes('apples') ? Math.round(L / 11 * (1 + 0.15 * up)) : 0, diff };
 }
 // hoe zwaar een level is, in 1..5 bolletjes (voor de kaart)
 const levelPips = I => clamp(Math.round(I.diff / 2.9 * 5 + 0.4), 1, 5);
@@ -359,7 +376,7 @@ const BASE_SPEED = 0.65; // met GAME_SPEED 1,2: de simulatie loopt op ~0,78× ec
 function timeScale() {
   let k = BASE_SPEED * (game.mp && !game.mp.local ? 1 : DBG.speed);
   if (!game.career && !game.mp && run) { const t = clamp(run.dist / TEMPO_DIST, 0, 1); k *= 1 + TEMPO_MAX * t * t * (3 - 2 * t); }
-  if (game.career) k *= 1 + 0.25 * game.career.p + 0.05 * game.career.up;
+  if (game.career) k *= (1 + 0.25 * game.career.p + 0.05 * game.career.up) * modTempo();
   if (game.career && run && run.pow && run.pow.type === 'slow' && run.pow.t > 0) k *= SLOWMO; // power-up slowmotion // carrière: latere levels (en een sterke Andy) lopen sneller
   if (!game.mp && run && run.cine) k *= cineSlow(); // slow motion bij een nieuwe biome
   return k;

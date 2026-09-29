@@ -9,7 +9,7 @@
 3. Tik op **Installeren**. Play Protect kan waarschuwen dat de app onbekend is (hij komt niet uit de Play Store): kies **Toch installeren**.
 4. Andy Apples staat nu tussen je apps.
 
-**Versie 1.6 heeft een nieuwe sleutel.** Had je een oudere versie (1.5 of eerder) geïnstalleerd, verwijder die dan eerst: Android installeert een app met een andere sleutel niet over de oude heen. Je voortgang in de app gaat daarbij verloren, tenzij je met een **account** speelt (dan staat hij online).
+**Sinds versie 1.6 is de app met een nieuwe sleutel ondertekend.** Latere versies installeren gewoon over 1.6 heen. Had je nog 1.5 of ouder, verwijder die dan eerst: Android installeert een app met een andere sleutel niet over de oude heen. Je voortgang in de app gaat daarbij verloren, tenzij je met een **account** speelt (dan staat hij online).
 
 Werkt vanaf **Android 7.0**. Je voortgang wordt in de app zelf bewaard. Die staat los van je voortgang in de browser: log in beide met hetzelfde **account** om hem gelijk te houden.
 
