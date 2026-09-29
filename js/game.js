@@ -206,7 +206,7 @@ function gameOver(quit) {
   $('btnOverLevels').style.display = game.career ? '' : 'none';
   $('ovDistLabel').textContent = game.career ? `Afstand (finish ${game.career.L} m)` : 'Afstand';
 
-  const hz = BIOMES[biomeIndexAt(run.dist)].hazardName;
+  const hz = castleOn() ? 'de lava' : BIOMES[biomeIndexAt(run.dist)].hazardName;
   const [title, reason] = quit ? ['Run gestopt', 'Je appels zijn bewaard.'] : run.fail ? [run.fail.title, run.fail.reason] : run.reason === 'drown' ? ['Verdronken!', 'Andy kwam niet op tijd boven water.'] : ['Plons!', `Andy viel in ${hz}.`];
   $('overTitle').textContent = title;
   $('overReason').textContent = reason;

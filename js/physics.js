@@ -939,7 +939,7 @@ function updateLoot(dt) {
 // Het moet voelen als een tweede kans die je moet verdienen.
 const UNDER_CHANCE = 0.2, UNDER_TIME = 22, UNDER_STING = 3, UNDER_FLOOR = HAZARD_Y + 1000, UNDER_TOP = HAZARD_Y + 45;
 function canGoUnder() {
-  return !game.mp && game.mode === 'playing' && !run.under && BIOMES[biomeIndexAt(run.dist)].style !== 'volcano' && Math.random() < UNDER_CHANCE;
+  return !game.mp && !castleOn() && !towerOn() && game.mode === 'playing' && !run.under && BIOMES[biomeIndexAt(run.dist)].style !== 'volcano' && Math.random() < UNDER_CHANCE;
 }
 function enterUnder() {
   if (G.state === 'hang') { freeHand(G.vine, G.k); G.vine = null; }

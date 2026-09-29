@@ -259,7 +259,7 @@ function castleBuild() {
   const end = C.finishX - 500;
   while (x < end) {
     const r = rnd();
-    if (r < 0.42) obs.push({ type: 'axe', x, L: 480 + rnd() * 160, amp: 0.85 + rnd() * 0.35, w: 1.5 + rnd() * 0.7 + C.bi * 0.04, ph: rnd() * 6 });
+    if (r < 0.42) obs.push({ type: 'axe', x, L: 1080 + rnd() * 240, amp: 0.3 + rnd() * 0.2, w: 1.5 + rnd() * 0.6 + C.bi * 0.04, ph: rnd() * 6 }); // lange bijl vanaf het plafond: zwaait door de hoogte waar jij zwaait
     else if (r < 0.75) obs.push({ type: 'geyser', x, per: 3.2 - C.bi * 0.06, ph: rnd() * 3, h: 0 });
     else obs.push({ type: 'crusher', x, mid: -420 + rnd() * 200, amp: 260 + rnd() * 120, w: 1.2 + rnd() * 0.6, ph: rnd() * 6 });
     x += 720 + rnd() * 420 - Math.min(250, C.bi * 15);
