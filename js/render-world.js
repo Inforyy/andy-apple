@@ -1211,11 +1211,11 @@ function drawCinematic() {
     ctx.fillStyle = rgbStr(B.rgb.sun, 0.35 * (1 - t));
     circ(W / 2, H / 2, ease(t) * Math.hypot(W, H) * 0.6);
   }
-  const bars = t < 0.35 ? ease(t / 0.35) : t > CINE_DUR - 0.5 ? ease((CINE_DUR - t) / 0.5) : 1, bh = H * 0.12 * bars;
+  const bars = t < 0.3 ? ease(t / 0.3) : t > CINE_DUR - 0.4 ? ease((CINE_DUR - t) / 0.4) : 1, bh = H * 0.12 * bars;
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, bh); ctx.fillRect(0, H - bh, W, bh);
-  const a = t < 0.3 ? 0 : t < 0.7 ? (t - 0.3) / 0.4 : t > CINE_DUR - 0.6 ? (CINE_DUR - t) / 0.6 : 1;
+  const a = t < 0.15 ? 0 : t < 0.45 ? (t - 0.15) / 0.3 : t > CINE_DUR - 0.5 ? (CINE_DUR - t) / 0.5 : 1;
   if (a <= 0) return;
-  const slide = (1 - ease((t - 0.3) / 0.6)) * W * 0.3;
+  const slide = (1 - ease((t - 0.15) / 0.45)) * W * 0.3;
   ctx.globalAlpha = clamp(a, 0, 1); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
   const ls = 'letterSpacing' in ctx;
   if (ls) ctx.letterSpacing = `${6 * u}px`;
@@ -1227,7 +1227,7 @@ function drawCinematic() {
   ctx.lineWidth = 10 * u; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.strokeText(title, W / 2 + slide, H * 0.44);
   ctx.fillStyle = '#ffffff'; ctx.fillText(title, W / 2 + slide, H * 0.44);
   if (ls) ctx.letterSpacing = '0px';
-  const lw = W * 0.42 * ease((t - 0.55) / 0.5);
+  const lw = W * 0.42 * ease((t - 0.35) / 0.4);
   ctx.fillStyle = B.c.sun; ctx.fillRect(W / 2 - lw / 2, H * 0.44 + fs * u * 0.62, lw, 5 * u);
   ctx.font = `800 ${22 * u}px Trebuchet MS, sans-serif`; ctx.lineWidth = 5 * u;
   ctx.strokeText(C.sub, W / 2 - slide * 0.3, H * 0.44 + fs * u * 1.05); ctx.fillText(C.sub, W / 2 - slide * 0.3, H * 0.44 + fs * u * 1.05);

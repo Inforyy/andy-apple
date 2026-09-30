@@ -808,13 +808,13 @@ function updateTrick(dt, holdAir) {
     if (G.y < HAZARD_Y - 220) { G.trick = TRICKS[(Math.random() * TRICKS.length) | 0]; G.trickT = 0; G.sq = -0.22; } // eerst even inveren
   }
 }
-// ---- Nieuwe biome: over de afgrond aan drie reuzenlianen ----
+// ---- Nieuwe biome: over de afgrond aan twee reuzenlianen ----
 // Op elke biomegrens houdt de wereld op: een klif, dan een diepe leegte zonder achtergrond of grond, en aan de
 // andere kant de klif van de nieuwe biome. Boven de leegte hangen TRANS.n reuzenlianen (zie transVineX en
 // drawBiomeCliffs). Komt Andy in de buurt, dan grijpt hij de eerste vanzelf, zwaait, springt naar de volgende,
 // en wordt na de laatste met extra vaart de nieuwe biome in geslingerd. De speler hoeft niets te doen.
 // Tijdens de zwaai verschijnen filmbalken en een titelkaart (zie drawCinematic). TRANS en transVineX staan in data.js.
-const CINE_DUR = 5.5;
+const CINE_DUR = 2.6;
 // de biomegrens (x) waar Andy nu in de buurt is, of null
 function transBoundary(x) {
   if (game.career) return null;

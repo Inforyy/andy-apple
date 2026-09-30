@@ -7,7 +7,9 @@
 //  Het netwerk is een ster: elke gast heeft één directe WebRTC-verbinding met de host, en de host
 //  stuurt de standen van iedereen door naar de rest. Iedereen speelt in precies dezelfde wereld
 //  (dezelfde seed), simuleert zijn eigen Andy en stuurt zijn positie; de anderen worden als extra
-//  gorilla's getekend. Supabase wordt alleen gebruikt om lobbies te vinden en om de verbinding op te zetten.
+//  gorilla's getekend. Supabase wordt gebruikt om lobbies te vinden en om de verbinding op te zetten.
+//  Lukt een directe verbinding niet (vaak als spelers op hetzelfde netwerk zitten), dan loopt het verkeer
+//  met die speler via de server (een eigen Supabase-kanaal per verbinding, zie relayOpen).
 // =====================================================================
 const MP_NAME_KEY = 'andyApples.name';
 const MP_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
@@ -21,12 +23,16 @@ const mpModeOf = m => MP_MODE_NAME[m] ? m : 'race';      // race: na de eerste f
 const MP_FREE_VINES = 10;
 const randHex = n => { const b = new Uint8Array(n); try { crypto.getRandomValues(b); } catch (e) { for (let i = 0; i < n; i++) b[i] = Math.random() * 256; } return Array.from(b, x => x.toString(16).padStart(2, '0')).join(''); };
 const CLIENT_ID = randHex(8); // per tabblad: wie is wie
+const RELAY_AFTER = 7000;   // ms: is er dan nog geen directe verbinding, dan via de server
+const RELAY_MS = 100;       // via de server worden berichten per 0,1 s gebundeld (minder berichten voor Supabase)
 const MP = { role: null, busy: false, local: false, aiLvl: null, inRoom: false, myId: CLIENT_ID,
   links: new Map(),   // host: id -> verbinding met een gast
   link: null,         // gast: verbinding met de host
   players: new Map(), // alle andere spelers in de lobby: id -> speler
   hostName: '', hostSig: null, preIce: [], sig: null, lobby: null, joinId: null, joinTimer: 0,
-  sel: { mode: 'race', len: 1000 }, cfg: null, match: null, sendAcc: 0, hideTimer: 0, wins: 0, games: 0 };
+  sel: { mode: 'race', len: 1000 }, cfg: null, match: null, sendAcc: 0, hideTimer: 0, wins: 0, games: 0,
+  bots: { n: 0, lvl: 1 }, botRun: [], botQ: [],   // apen (bots) in een eigen lobby: de host speelt ze
+  pub: false, pubTs: 0, pubReady: false, pubBad: new Map(), pubAt: 0, pubLast: '', votes: new Map(), myVote: '', joinSent: 0 }; // openbare lobby
 let ghostPin = { v: null, k: 0, x: 0, y: 0 };
 const GC1 = GC;
 const GC2 = Object.assign({}, GC, { band: '#2f7fe0', bandD: '#17498f', fur: '#4a3a30', furD: '#30251d', furL: '#7a6452' });
@@ -79,14 +85,16 @@ function mpIce() {
   return ICE.p;
 }
 // Een "link" is één WebRTC-verbinding: bij de host één per gast, bij een gast alleen die met de host.
-function newLink(id, name) { return { id, name: name || 'Speler', pc: null, dc: null, open: false, iceQ: [], lastMsg: performance.now(), timer: 0 }; }
+function newLink(id, name) { return { id, name: name || 'Speler', pc: null, dc: null, open: false, iceQ: [], lastMsg: performance.now(), lastSent: 0, timer: 0, relay: false, rch: null, out: [], ot: 0 }; }
 function linkPc(link, onIce, iceServers) {
   if (typeof RTCPeerConnection !== 'function') throw new Error('Deze browser ondersteunt geen multiplayer (WebRTC).');
   const pc = new RTCPeerConnection({ iceServers: iceServers || MP_ICE });
   link.pc = pc;
   if (onIce) pc.onicecandidate = e => { if (e.candidate) onIce(e.candidate.toJSON()); };
   pc.addEventListener('connectionstatechange', () => {
-    if (pc.connectionState === 'failed') linkDown(link, link.open ? 'De verbinding is weggevallen.' : 'Verbinden is mislukt. Probeer het opnieuw.');
+    if (pc.connectionState !== 'failed' || link.pc !== pc) return;
+    if (link.open) linkDown(link, 'De verbinding is weggevallen.');
+    else relayStart(link); // direct lukt niet: dan via de server
   });
   return pc;
 }
@@ -104,11 +112,81 @@ function addIce(link, c) {
 function flushIce(link) { const q = link.iceQ.splice(0); for (const c of q) addIce(link, c); }
 function closeLink(link, delay) {
   clearTimeout(link.timer);
-  const { pc, dc } = link;
-  link.open = false; link.pc = null; link.dc = null;
-  setTimeout(() => { try { if (dc) dc.close(); } catch (e) { /* */ } try { if (pc) pc.close(); } catch (e) { /* */ } }, delay || 0);
+  const { pc, dc } = link, ch = link.rch;
+  if (ch) relayFlush(link); // laatste berichten (zoals 'bye') nog versturen
+  link.open = false; link.pc = null; link.dc = null; link.rch = null;
+  setTimeout(() => {
+    try { if (dc) dc.close(); } catch (e) { /* */ } try { if (pc) pc.close(); } catch (e) { /* */ }
+    if (ch && sbClient) { try { sbClient.removeChannel(ch); } catch (e) { /* */ } }
+  }, (delay || 0) + (ch ? 400 : 0));
 }
-function sendLink(link, m) { const dc = link && link.dc; if (dc && dc.readyState === 'open') { try { dc.send(typeof m === 'string' ? m : JSON.stringify(m)); } catch (e) { /* negeren */ } } }
+function sendLink(link, m) {
+  if (!link) return;
+  const t = typeof m === 'string' ? m : JSON.stringify(m);
+  link.lastSent = performance.now();
+  if (link.relay) {
+    if (!link.rch) return;
+    link.out.push(t);
+    if (!link.ot) link.ot = setTimeout(() => relayFlush(link), RELAY_MS);
+    return;
+  }
+  const dc = link.dc;
+  if (dc && dc.readyState === 'open') { try { dc.send(t); } catch (e) { /* negeren */ } }
+}
+
+// ---- via de server (als een directe verbinding niet lukt) ----
+// Host en gast delen dan een eigen Realtime-kanaal; berichten gaan gebundeld (elke RELAY_MS) als één broadcast.
+const relayName = (hostId, guestId) => `andy-relay-${hostId}-${guestId}`;
+function relayFlush(link) {
+  clearTimeout(link.ot); link.ot = 0;
+  const b = link.out.splice(0);
+  if (b.length && link.rch) link.rch.send({ type: 'broadcast', event: 'm', payload: { b } }).catch(() => { /* */ });
+}
+function relayChan(name, link) {
+  return getSb().then(sb => new Promise((res, rej) => {
+    const ch = sb.channel(name, { config: { broadcast: { self: false } } });
+    ch.on('broadcast', { event: 'm' }, msg => {
+      if (link.rch !== ch || !msg || !msg.payload || !Array.isArray(msg.payload.b)) return;
+      link.lastMsg = performance.now();
+      if (!link.open) linkUp(link); // host: het eerste bericht van de gast = verbonden
+      for (const t of msg.payload.b) { let m; try { m = JSON.parse(t); } catch (x) { continue; } onLinkMsg(link, m); }
+    });
+    const to = setTimeout(() => rej(new Error('Geen verbinding met de server.')), 10000);
+    link.rch = ch;
+    ch.subscribe(st => {
+      if (st === 'SUBSCRIBED') { clearTimeout(to); res(ch); }
+      else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT') { clearTimeout(to); rej(new Error('Geen verbinding met de server.')); }
+    });
+  }));
+}
+function dropPc(link) {
+  const { pc, dc } = link;
+  link.pc = null; link.dc = null; link.iceQ = [];
+  try { if (dc) { dc.onclose = null; dc.close(); } } catch (e) { /* */ } try { if (pc) pc.close(); } catch (e) { /* */ }
+}
+// host: deze gast verbinden via de server; gast: de host daarom vragen
+function relayStart(link) {
+  if (link.relay || link.open) return;
+  if (MP.role === 'guest') { if (link === MP.link) sigSend({ t: 'relay?', to: MP.hostSig }); return; }
+  if (MP.role !== 'host' || MP.links.get(link.id) !== link) return;
+  link.relay = true;
+  dropPc(link);
+  clearTimeout(link.timer);
+  link.timer = setTimeout(() => { if (!link.open) linkDown(link, ''); }, 15000);
+  relayChan(relayName(CLIENT_ID, link.id), link).then(() => {
+    if (MP.links.get(link.id) === link) sigSend({ t: 'relay', to: link.id });
+  }, () => linkDown(link, ''));
+}
+// gast: de host zegt dat het via de server gaat
+async function guestRelay() {
+  let link = MP.link;
+  if (!link) link = MP.link = newLink('host', MP.hostName);
+  if (link.relay) return;
+  link.relay = true;
+  dropPc(link);
+  try { await relayChan(relayName(MP.hostSig, CLIENT_ID), link); } catch (e) { if (MP.link === link) joinFail('Verbinden is mislukt.'); return; }
+  if (MP.link === link && !link.open) linkUp(link); // stuurt 'hello': daaraan ziet de host dat we er zijn
+}
 // host: naar alle gasten (behalve "except"); gast: naar de host
 function mpSend(m, except) {
   if (MP.role === 'host') { const t = JSON.stringify(m); for (const l of MP.links.values()) if (l.open && l !== except) sendLink(l, t); }
@@ -123,11 +201,11 @@ function linkUp(link) {
     playerFor(link.id, link.name).inRoster = true;
     const M = MP.match;
     sendLink(link, { type: 'welcome', you: link.id, host: MP.myId, hostName: myName(), mode: MP.sel.mode, len: MP.sel.len, playing: M && !M.result ? 1 : 0 });
-    rosterSend(); lobbyTrack();
+    rosterSend(); lobbyTrack(); pubAnnounce();
     Sfx.buy();
   } else if (link === MP.link) {
     clearTimeout(MP.joinTimer);
-    sigClose();
+    if (!MP.pub) sigClose(); // in de openbare lobby blijft het kanaal open: daarmee kiezen we een nieuwe host als die weggaat
     sendLink(link, { type: 'hello', name: myName() });
   }
   mpRender();

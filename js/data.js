@@ -45,7 +45,7 @@ const KEEP_BEHIND = 2400;
 // TRANS: ay/L = ophangpunt en lengte van de reuzenlianen; before = hoe ver vóór de eerste liaan hij grijpt;
 // grab = hoe lang het vastpakken duurt, swing = één zwaai, fly = de sprong naar de volgende liaan (echte seconden);
 // th1 = hoek bij het loslaten; flyX = extra afstand die hij tussen twee lianen vliegt.
-const TRANS = { ay: CEIL_Y, L: 1400, hang: 46, n: 3, before: 1000, after: 900, grab: 0.4, swing: 1.3, fly: 0.5, th1: 0.9, flyX: 420 };
+const TRANS = { ay: CEIL_Y, L: 1400, hang: 46, n: 2, before: 1000, after: 900, grab: 0.3, swing: 0.95, fly: 0.4, th1: 0.9, flyX: 420 };
 TRANS.R = TRANS.L + TRANS.hang;
 TRANS.D = 2 * TRANS.R * Math.sin(TRANS.th1) + TRANS.flyX; // afstand tussen twee reuzenlianen
 TRANS.span = (TRANS.n - 1) / 2 * TRANS.D;                 // van de middelste (op de grens) tot de buitenste liaan
