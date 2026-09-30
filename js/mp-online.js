@@ -36,7 +36,7 @@ const MP = { role: null, busy: false, local: false, aiLvl: null, inRoom: false, 
   sel: { mode: 'race', len: 1000 }, cfg: null, match: null, sendAcc: 0, hideTimer: 0, wins: 0, games: 0,
   bots: { n: 0, lvl: 1 }, botRun: [], botQ: [],   // apen (bots) in een eigen lobby: de host speelt ze
   pub: false, pubTs: 0, pubReady: false, pubBad: new Map(), pubAt: 0, pubLast: '', votes: new Map(), myVote: '', joinSent: 0 }; // openbare lobby
-let ghostPin = { v: null, k: 0, x: 0, y: 0 };
+let ghostPin = { v: null, k: 0, x: 0, y: 0, more: [] }; // more: nog meer spelers die elk aan een eigen liaan hangen
 const GC1 = GC;
 const GC2 = Object.assign({}, GC, { band: '#2f7fe0', bandD: '#17498f', fur: '#4a3a30', furD: '#30251d', furL: '#7a6452' });
 // Kiwi (de AI-tegenstander): een oranje orang-oetan met groene bandana en een kiwischijfje
@@ -313,9 +313,6 @@ const roomCount = () => 1 + [...MP.players.values()].filter(P => P.inRoster).len
 // ---- berichten ----
 function onLinkMsg(link, m) {
   if (!m || typeof m.type !== 'string') return;
-  // ping: heen en terug meten (voor de ping-meter in de HUD); host en gast doen dit allebei
-  if (m.type === 'pi') { sendLink(link, { type: 'po', t: m.t }); return; }
-  if (m.type === 'po') { const rtt = performance.now() - m.t; if (rtt >= 0 && rtt < 30000) link.rtt = link.rtt ? link.rtt + (rtt - link.rtt) * 0.3 : rtt; return; }
   if (MP.role === 'host') {
     if (!MP.links.has(link.id)) return;
     switch (m.type) {
@@ -663,17 +660,25 @@ function mpTick() {
   if (MP.pub) pubTick();
   if ((MP.role || MP.pub || curScreen === 'mp') && Date.now() - VER.checked > 120000) verCheck(); // af en toe kijken of er een nieuwe versie is
 }
-// ping-meter rechtsboven, de hele tijd dat je online met anderen verbonden bent (lobby én potje):
-// een gast meet naar de host, de host toont de traagste gast
+// ping-meter rechtsboven, de hele tijd dat je in online multiplayer zit (lobby én potje): je eigen ping naar de
+// server (Supabase Realtime, een heartbeat heen en terug), met een kleur per niveau. Blijft het antwoord uit, dan
+// loopt het getal gewoon op, zodat je een haperende verbinding meteen ziet.
+const PING = { ms: 0, sent: 0, last: 0 };
 function pingTick(now) {
-  const links = (MP.link ? [MP.link] : [...MP.links.values()]).filter(l => l.open), el = $('mpPing');
-  const on = links.length > 0;
+  const el = $('mpPing'), on = mpActive() || !!game.mp;
   el.classList.toggle('hidden', !on);
-  if (!on) { for (const l of links) l.rtt = 0; return; }
-  for (const l of links) sendLink(l, { type: 'pi', t: now });
-  const ms = Math.max(0, ...links.map(l => l.rtt || 0));
-  el.textContent = ms ? `📶 ${Math.round(ms)} ms` : '📶 … ms';
-  el.classList.toggle('bad', ms > 100);
+  if (!on) { PING.ms = 0; PING.sent = 0; return; }
+  const sock = sbClient && sbClient.realtime && sbClient.realtime.socketAdapter && sbClient.realtime.socketAdapter.socket;
+  if (!PING.sent && now - PING.last >= 1000 && sock && typeof sock.ping === 'function') {
+    PING.last = now;
+    const t0 = now;
+    if (sock.ping(rtt => { if (PING.sent !== t0) return; PING.sent = 0; PING.ms = PING.ms ? PING.ms + (rtt - PING.ms) * 0.4 : rtt; }) !== false) PING.sent = t0;
+    else PING.ms = 0; // niet met de server verbonden
+  }
+  if (PING.sent && now - PING.sent > 10000) PING.sent = 0; // nooit antwoord gekregen: opnieuw proberen
+  const ms = PING.sent && now - PING.sent > PING.ms ? Math.max(PING.ms, now - PING.sent) : PING.ms; // wachten op antwoord telt mee
+  el.textContent = ms ? `📶 ${Math.round(ms)} ms` : '📶 – ms';
+  el.dataset.q = !ms ? '' : ms <= 50 ? 'good' : ms <= 80 ? 'ok' : ms <= 100 ? 'meh' : 'bad';
 }
 // verbinding kwijt: tijdens een potje eindigt dat zonder winnaar
 function mpLost(reason) {
@@ -1269,7 +1274,7 @@ function mpFrame(realDt, gdt) {
   if (MP.sendAcc >= sendEvery(M)) { MP.sendAcc = 0; mpSendState(); if (MP.botRun.length && !M.result) botsSendState(); }
   // wie te lang niets van zich laat horen, is weg
   if (!M.result && MP.role !== 'host' && MP.link && performance.now() - MP.link.lastMsg > 8000) mpLost('De host reageert niet meer.');
-  ghostPin.v = null;
+  ghostPin.v = null; ghostPin.more = [];
   for (const P of opps(M)) mpGhost(P, gdt, M);
   mpHud();
 }
@@ -1312,11 +1317,14 @@ function mpGhost(P, dt, M) {
   g.trick = s.tr ? { id: s.tr, dur: 1 } : null; g.trickT = L(a.tk, b.tk);
   if (M.mode === 'br') { g.brHp = +b.hp; g.brW = BR_WEAPONS[b.w] ? b.w : 'sling'; g.brAim = lerpAng(+a.am || 0, +b.am || 0, f); }
   // hangt hij aan een liaan? dan buigt die liaan bij jou ook mee (één tegelijk)
-  if (!ghostPin.v && g.state === 'hang' && s.vid >= 0) {
+  if (g.state === 'hang' && s.vid >= 0) {
     const v = vines.find(w => w.id === s.vid);
     if (v && v.id >= MP_FREE_VINES && v !== G.vine && v.anchored && s.k < v.pts.length) {
       const an = v.pts[0], reach = s.k * SEG_LEN * (v.type === 'elastic' ? ELASTIC_STRETCH : 1) + 60;
-      if (Math.hypot(g.hx - an.x, g.hy - an.y) < reach) { ghostPin.v = v; ghostPin.k = s.k; ghostPin.x = g.hx; ghostPin.y = g.hy; }
+      if (Math.hypot(g.hx - an.x, g.hy - an.y) < reach) {
+        if (!ghostPin.v) { ghostPin.v = v; ghostPin.k = s.k; ghostPin.x = g.hx; ghostPin.y = g.hy; }
+        else if (ghostPin.v !== v && !ghostPin.more.some(q => q.v === v)) ghostPin.more.push({ v, k: s.k, x: g.hx, y: g.hy });
+      }
     }
   }
 }

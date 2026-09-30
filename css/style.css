@@ -15,7 +15,8 @@ canvas{display:block;position:fixed;inset:0;touch-action:none;cursor:pointer}
 /* ping-meter: altijd rechtsboven zolang je online met anderen verbonden bent (links van de pauzeknop) */
 #mpPing{position:fixed;z-index:50;pointer-events:none;top:calc(max(12px,env(safe-area-inset-top)) + 11px);right:calc(max(14px,env(safe-area-inset-right)) + 54px);
   font-size:13px;padding:3px 10px;font-variant-numeric:tabular-nums}
-#mpPing.bad{background:rgba(200,20,20,.85)}
+#mpPing[data-q=good]{background:rgba(30,150,60,.85)}#mpPing[data-q=ok]{background:rgba(190,160,20,.9)}
+#mpPing[data-q=meh]{background:rgba(220,110,20,.9)}#mpPing[data-q=bad]{background:rgba(200,20,20,.85)}
 .pill.small{font-size:15px;padding:4px 11px}
 #hudDist{font-size:26px}
 #btnPause{pointer-events:auto;width:46px;height:46px;border-radius:50%;border:3px solid rgba(255,255,255,.85);background:rgba(0,0,0,.35);

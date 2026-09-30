@@ -56,7 +56,7 @@ const WORLD_VARS = {
   amb:         [() => amb,           v => { amb = v; },           () => makeAmb()],
   life:        [() => life,          v => { life = v; },          () => makeLife()],
   layerCaches: [() => layerCaches,   v => { layerCaches = v; },   () => ({})],
-  ghostPin:    [() => ghostPin,      v => { ghostPin = v; },      () => ({ v: null, k: 0, x: 0, y: 0 })],
+  ghostPin:    [() => ghostPin,      v => { ghostPin = v; },      () => ({ v: null, k: 0, x: 0, y: 0, more: [] })],
 };
 
 function restSeg(x, ay, len, type) {

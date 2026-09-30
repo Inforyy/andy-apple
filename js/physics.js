@@ -42,7 +42,8 @@ function simVine(v, dt) {
   }
   // multiplayer: hangt de tegenstander aan deze liaan, dan buigt hij ook bij jou mee
   let gq = null;
-  if (!hang && ghostPin.v === v && ghostPin.k < n) { gq = p[ghostPin.k]; gq.im = 0; gq.x = ghostPin.x; gq.y = ghostPin.y; gq.px = gq.x; gq.py = gq.y; }
+  const pin = hang ? null : ghostPin.v === v ? ghostPin : ghostPin.more && ghostPin.more.find(q => q.v === v); // (meerdere spelers: elk aan een eigen liaan)
+  if (pin && pin.k < n) { gq = p[pin.k]; gq.im = 0; gq.x = pin.x; gq.y = pin.y; gq.px = gq.x; gq.py = gq.y; }
   const stiff = elastic ? 0.25 : 1, reach = elastic ? ELASTIC_STRETCH : 1;
   const iters = hang ? 10 : 6;
   for (let it = 0; it < iters; it++) {
@@ -467,7 +468,7 @@ function step(dt) {
   const x0 = camX - 500, x1 = camX + viewW + 500, y0 = camY - 450, y1 = camY + viewH + 450;
   for (const v of vines) {
     // ook de liaan waar de tegenstander aan hangt (ghostPin): anders hangt die er buiten beeld bevroren bij
-    if (v === G.vine || v === ghostPin.v || v.jet || (v.x > x0 && v.x < x1 && v.ay < y1 && v.rest[3] > y0 - 200)) simVine(v, dt);
+    if (v === G.vine || v === ghostPin.v || (ghostPin.more && ghostPin.more.length && ghostPin.more.some(q => q.v === v)) || v.jet || (v.x > x0 && v.x < x1 && v.ay < y1 && v.rest[3] > y0 - 200)) simVine(v, dt);
   }
 
   updateGorilla(dt, holdHang, holdAir);
