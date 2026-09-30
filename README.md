@@ -137,7 +137,7 @@ In multiplayer staan upgrades uit, en appels en XP tellen niet mee voor je save.
 - **Battle royale** (online): een kleine arena waar je niet kunt wegvluchten. Iedereen begint op een eigen liaan met een appelkatapult. Pak fruitwapens uit de zwevende bellen (🍌 bananenblaster, 🥥 kokoskanon met hagel, 🍍 ananasbazooka die ontploft, 🍇 druivensniper, ❤️ extra leven), **richt met de muis en klik om te schieten**; grijpen doe je met `Spatie` of de rechtermuisknop (op een telefoon: links op het scherm = grijpen, rechts tikken = schieten op die plek). Zwaaien kan hier alle kanten op, ook naar achteren. Een zware treffer schiet je van je liaan; val je in het water of is je leven op, dan ben je af. Na 40 seconden drukt een storm de arena van beide kanten kleiner. Wie als laatste overblijft, wint; in de uitslag staat ook hoeveel spelers je eruit schoot.
 - **Achtervolging** (tegen Kiwi): Kiwi start 3 tellen na jou en wordt steeds sneller. Hoe lang hou je het vol? Je record wordt bewaard.
 
-Online gebruikt het spel Supabase alleen om lobbies te vinden en de verbinding op te zetten. Daarna praten de spelers direct met de host (WebRTC). Bij 20 spelers heeft de host een goede verbinding nodig.
+Online gebruikt het spel Supabase alleen om lobbies te vinden en de verbinding op te zetten. Daarna praten de spelers direct met de host (WebRTC). Bij 20 spelers heeft de host een goede verbinding nodig. Zitten spelers op hetzelfde (wifi-)netwerk, dan lukt een directe verbinding vaak niet; daarvoor is een TURN-server nodig (zie [TURN-server voor spelers op hetzelfde netwerk](#turn-server-voor-spelers-op-hetzelfde-netwerk)).
 
 ## Instellingen
 
@@ -271,7 +271,18 @@ Accounts, online lobbies en de ranglijst gebruiken één gratis [Supabase](https
    };
    ```
 
-7. Zet het spel online, bijvoorbeeld met **GitHub Pages**: repository → **Settings → Pages** → *Deploy from a branch* → `main` en `/ (root)`.
+7. Voor multiplayer op hetzelfde netwerk: stel een TURN-server in (zie hieronder).
+8. Zet het spel online, bijvoorbeeld met **GitHub Pages**: repository → **Settings → Pages** → *Deploy from a branch* → `main` en `/ (root)`.
+
+### TURN-server voor spelers op hetzelfde netwerk
+
+Online spelers verbinden direct met elkaar (WebRTC). Tussen verschillende netwerken lukt dat met de gratis STUN-servers van Google. Op hetzelfde netwerk vaak niet: browsers verbergen het lokale adres van een apparaat (achter een `.local`-naam die veel netwerken en de Android-app niet kunnen opzoeken), en veel routers sturen verkeer naar hun eigen publieke adres niet terug naar binnen. Een TURN-server lost dat op: die geeft het verkeer door als een directe verbinding niet lukt. Lukt het wel direct, dan wordt hij niet gebruikt.
+
+1. Maak een gratis account op [metered.ca](https://www.metered.ca/stun-turn) en maak een TURN-app aan.
+2. Kopieer bij **Developers → TURN Credentials** de link die de ICE-servers teruggeeft: `https://jouwapp.metered.live/api/v1/turn/credentials?apiKey=…`
+3. Vul hem in in `js/config.js` bij `turn: '…'`.
+
+Een andere TURN-server kan ook: zet dan een vaste lijst in `turn`, bijvoorbeeld `turn: [{ urls: 'turn:turn.example.com:3478', username: '…', credential: '…' }]`. De gegevens staan zichtbaar in de website; zet daarom een verbruikslimiet bij je TURN-provider.
 
 **Goed om te weten**
 - Een vergeten wachtwoord kun je (nog) niet in het spel resetten. Dat kan in Supabase bij **Authentication → Users**.

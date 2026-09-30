@@ -25,7 +25,7 @@ const MP = { role: null, busy: false, local: false, aiLvl: null, inRoom: false, 
   links: new Map(),   // host: id -> verbinding met een gast
   link: null,         // gast: verbinding met de host
   players: new Map(), // alle andere spelers in de lobby: id -> speler
-  hostName: '', hostSig: null, sig: null, lobby: null, joinId: null, joinTimer: 0,
+  hostName: '', hostSig: null, preIce: [], sig: null, lobby: null, joinId: null, joinTimer: 0,
   sel: { mode: 'race', len: 1000 }, cfg: null, match: null, sendAcc: 0, hideTimer: 0, wins: 0, games: 0 };
 let ghostPin = { v: null, k: 0, x: 0, y: 0 };
 const GC1 = GC;
@@ -57,15 +57,36 @@ function myName() {
 const escHtml = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 // ---- verbindingen ----
+// ICE-servers: STUN is genoeg tussen twee verschillende netwerken. Op hetzelfde netwerk lukt een directe verbinding
+// vaak niet (browsers verbergen het lokale adres achter een .local-naam die veel netwerken en Android niet oplossen,
+// en veel routers sturen verkeer naar hun eigen publieke adres niet terug naar binnen). Dan is een TURN-server nodig
+// die het verkeer doorgeeft: CONFIG.turn (zie README: "TURN-server voor spelers op hetzelfde netwerk").
+const ICE = { list: null, ts: 0, p: null };
+function mpIce() {
+  const t = CONFIG.turn;
+  if (Array.isArray(t)) return Promise.resolve(MP_ICE.concat(t));
+  if (typeof t !== 'string' || !t) return Promise.resolve(MP_ICE);
+  if (ICE.list && Date.now() - ICE.ts < 30 * 60e3) return Promise.resolve(ICE.list); // tijdelijke inloggegevens: af en toe vernieuwen
+  if (!ICE.p) {
+    const ctl = typeof AbortController === 'function' ? new AbortController() : null, to = ctl && setTimeout(() => ctl.abort(), 5000);
+    ICE.p = fetch(t, ctl ? { signal: ctl.signal } : {}).then(r => r.ok ? r.json() : null).then(j => {
+      const l = Array.isArray(j) ? j : j && Array.isArray(j.iceServers) ? j.iceServers : j && j.iceServers && j.iceServers.urls ? [j.iceServers] : [];
+      const ok = l.filter(x => x && (typeof x.urls === 'string' || Array.isArray(x.urls)));
+      if (ok.length) { ICE.list = MP_ICE.concat(ok); ICE.ts = Date.now(); }
+      return ICE.list || MP_ICE;
+    }).catch(() => ICE.list || MP_ICE).finally(() => { clearTimeout(to); ICE.p = null; }); // lukt het niet: dan maar alleen STUN
+  }
+  return ICE.p;
+}
 // Een "link" is één WebRTC-verbinding: bij de host één per gast, bij een gast alleen die met de host.
 function newLink(id, name) { return { id, name: name || 'Speler', pc: null, dc: null, open: false, iceQ: [], lastMsg: performance.now(), timer: 0 }; }
-function linkPc(link, onIce) {
+function linkPc(link, onIce, iceServers) {
   if (typeof RTCPeerConnection !== 'function') throw new Error('Deze browser ondersteunt geen multiplayer (WebRTC).');
-  const pc = new RTCPeerConnection({ iceServers: MP_ICE });
+  const pc = new RTCPeerConnection({ iceServers: iceServers || MP_ICE });
   link.pc = pc;
   if (onIce) pc.onicecandidate = e => { if (e.candidate) onIce(e.candidate.toJSON()); };
   pc.addEventListener('connectionstatechange', () => {
-    if (pc.connectionState === 'failed') linkDown(link, link.open ? 'De verbinding is weggevallen.' : 'Verbinden is mislukt. Tip: zet de apparaten op hetzelfde wifi-netwerk en probeer het opnieuw.');
+    if (pc.connectionState === 'failed') linkDown(link, link.open ? 'De verbinding is weggevallen.' : 'Verbinden is mislukt. Probeer het opnieuw.');
   });
   return pc;
 }
@@ -315,7 +336,9 @@ async function hostAccept(from, name) {
   MP.links.set(from, link);
   link.timer = setTimeout(() => { if (!link.open) linkDown(link, ''); }, 20000); // lukt het niet: plek weer vrij
   try {
-    const pc = linkPc(link, c => sigSend({ t: 'ice', to: from, c }));
+    const ice = await mpIce();
+    if (MP.links.get(from) !== link) return;
+    const pc = linkPc(link, c => sigSend({ t: 'ice', to: from, c }), ice);
     bindDc(link, pc.createDataChannel('andy', { ordered: true }));
     await pc.setLocalDescription(await pc.createOffer());
     if (link.pc === pc) sigSend({ t: 'offer', to: from, sdp: pc.localDescription.sdp });
@@ -327,10 +350,13 @@ async function guestOffer(m) {
   if (MP.link) return;
   MP.hostSig = m.from;
   const link = MP.link = newLink('host', MP.hostName), id = MP.joinId;
+  link.iceQ = MP.preIce.splice(0); // kandidaten die vóór het aanbod binnenkwamen
   clearTimeout(MP.joinTimer);
-  MP.joinTimer = setTimeout(() => { if (MP.joinId === id && !MP.inRoom) mpJoinFail('Verbinden is mislukt. Tip: zet de apparaten op hetzelfde wifi-netwerk.'); }, 20000);
+  MP.joinTimer = setTimeout(() => { if (MP.joinId === id && !MP.inRoom) mpJoinFail('Verbinden is mislukt. Probeer het opnieuw.'); }, 20000);
   try {
-    const pc = linkPc(link, c => sigSend({ t: 'ice', to: m.from, c }));
+    const ice = await mpIce();
+    if (MP.link !== link) return;
+    const pc = linkPc(link, c => sigSend({ t: 'ice', to: m.from, c }), ice);
     pc.ondatachannel = e => bindDc(link, e.channel);
     await pc.setRemoteDescription({ type: 'offer', sdp: m.sdp });
     flushIce(link);
@@ -354,7 +380,7 @@ function sigOnMsg(m) {
     if (MP.hostSig && m.from !== MP.hostSig) return;
     if (m.t === 'full') mpJoinFail('Deze lobby is vol.');
     else if (m.t === 'offer' && typeof m.sdp === 'string') guestOffer(m);
-    else if (m.t === 'ice') addIce(MP.link, m.c);
+    else if (m.t === 'ice') { if (MP.link) addIce(MP.link, m.c); else if (m.c && MP.preIce.length < 50) MP.preIce.push(m.c); }
   }
 }
 async function mpLobbyHost() {
@@ -409,7 +435,7 @@ function mpClose(sayBye) {
   if (MP.link) closeLink(MP.link, sayBye ? 300 : 0);
   MP.links = new Map(); MP.link = null; MP.players.clear();
   MP.role = null; MP.busy = false; MP.inRoom = false; MP.myId = CLIENT_ID;
-  MP.lobby = null; MP.joinId = null; MP.hostSig = null; MP.hostName = ''; MP.wins = 0; MP.games = 0;
+  MP.lobby = null; MP.joinId = null; MP.hostSig = null; MP.preIce = []; MP.hostName = ''; MP.wins = 0; MP.games = 0;
   clearTimeout(MP.joinTimer);
   sigClose();
   lobbyTrack();
@@ -495,7 +521,7 @@ function openMp() {
   $('mpName').title = $('mpName').readOnly ? 'Je gebruikersnaam; aan te passen bij Account' : '';
   mpRender();
   showScreen('mp');
-  lobbyWatch();
+  lobbyWatch(); mpIce(); // TURN-gegevens alvast ophalen, dan hoeft meedoen daar niet op te wachten
 }
 function mpSelect(mode, len) {
   if (MP.role !== 'host' && !MP.local) return;
