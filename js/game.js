@@ -722,7 +722,8 @@ function inputInit() {
   window.addEventListener('pointerup', pointerEnd);
   window.addEventListener('pointermove', e => { if (brOn()) brPointerMove(e); });
   window.addEventListener('pointercancel', pointerEnd);
-  canvas.addEventListener('contextmenu', e => e.preventDefault());
+  // lang indrukken: geen contextmenu (en in de Android-app geen trilling), behalve in invoervelden
+  document.addEventListener('contextmenu', e => { if (!/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) e.preventDefault(); });
   window.addEventListener('keydown', e => {
     const typing = e.target && (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT');
     if (typing) return;

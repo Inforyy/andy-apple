@@ -50,6 +50,14 @@ public class MainActivity extends Activity {
 
         web = new WebView(this);
         web.setBackgroundColor(Color.rgb(13, 42, 26));
+        // Scherm ingedrukt houden = een liaan vasthouden. Zonder dit ziet Android dat als "lang indrukken"
+        // (tekst selecteren / contextmenu) en trilt de telefoon steeds.
+        web.setHapticFeedbackEnabled(false);
+        web.setLongClickable(false);
+        web.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) { return true; } // afgehandeld: geen selectie, geen trilling
+        });
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true); // localStorage: hier staat je voortgang in
