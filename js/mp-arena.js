@@ -671,6 +671,13 @@ function wavesThrow(x) {
   arenaSend({ k: 'apple', x });
   return true;
 }
+// als geest: met wie kijk je mee? (blijft bij dezelfde speler zolang die leeft)
+function arenaWatch() {
+  const M = game.mp, A = M.ar, alive = P => P.ghost && !P.ev && !P.left && P.ghost.state !== 'dead';
+  let P = A.watch && MP.players.get(A.watch);
+  if (!P || !alive(P)) { P = opps(M).find(alive); A.watch = P ? P.id : null; }
+  return P ? P.ghost : null;
+}
 function wavesApple(A, x, own) { if (A.gapples) A.gapples.push({ x, y: CEIL_Y - 100, vy: 300, own }); }
 function arenaPointer(e) {
   const M = game.mp;

@@ -1153,12 +1153,13 @@ function mpEnd(reason, kind) {
   } else {
     M.rank = mpRanking(M, kind === 'forfeit');
     M.place = M.rank.findIndex(r => r.me) + 1;
-    M.result = M.place === 1 ? 'win' : 'lose';
+    M.result = M.place === 1 && kind !== 'forfeit' ? 'win' : 'lose'; // opgeven is nooit winnen
     const w = M.rank[0], n = M.rank.length;
     M.reason = reason || (M.mode === 'race'
       ? (w.ev ? `${w.me ? 'Jij was' : w.name + ' was'} als eerste bij de finish.` : `${w.me ? 'Jij kwam' : w.name + ' kwam'} het verst.`)
       : `${w.me ? 'Jij hield' : w.name + ' hield'} het langst vol.`);
     if (M.ar) { const R = arenaResult(M); if (R.result) M.result = R.result; M.title = R.title; if (!reason) M.reason = R.reason; }
+    if (kind === 'forfeit') { M.result = 'lose'; M.title = 'Opgegeven'; }
     save.mpGames++; MP.games++;
     if (M.result === 'win') { save.mpWins++; MP.wins++; }
     persist();
@@ -1243,8 +1244,8 @@ function mpStep(dt) {
   M.t += dt;
   // niets doen (niet drukken, in battle royale ook niet richten): na MP_AFK seconden doe je niet meer mee
   if (!M.bot && !M.local && !M.myEv && !M.result) {
-    const act = input.presses + (input.down ? 0.5 : 0) + (M.br ? M.br.aim : 0) + (M.mode === 'king' && input.down ? M.t : 0); // koning: vasthouden is ook iets doen
-    if (act !== M.act) { M.act = act; M.actT = M.t; }
+    const act = input.presses + (M.br ? M.br.aim : 0);
+    if (act !== M.act || input.down) { M.act = act; M.actT = M.t; } // ingedrukt houden (aan een liaan hangen) is ook iets doen
     else if (M.t - (M.actT || 0) > MP_AFK) { mpForfeit(`Je deed ${MP_AFK} seconden niets, dus je doet niet meer mee.`); return; }
   }
   if (M.mode === 'race' || M.mode === 'chase') {

@@ -65,6 +65,11 @@ function updateEffects(dt) {
 }
 
 function updateCamera(dt) {
+  const W = game.mp && game.mp.ar && game.mp.myEv ? arenaWatch() : null; // overleven: als geest kijk je mee met een levende speler
+  if (W) { const g0 = G; G = W; try { camFollow(dt); } finally { G = g0; } return; }
+  camFollow(dt);
+}
+function camFollow(dt) {
   // bij hoge snelheid kijkt de camera verder vooruit; vlieg je achteruit, dan schuift hij mee zodat je ziet waar je heen gaat
   const look = 0.33 - clamp(G.vx / 1800, 0, 1) * 0.1 + (G.state === 'air' ? clamp(-G.vx / 700, 0, 1) * 0.2 : 0);
   const tx = towerOn() ? G.x - viewW * 0.5 : Math.max(-100, G.x - viewW * (G.state === 'rocket' ? 0.25 : look)); // toren: Andy in het midden, vóór de toren
