@@ -677,7 +677,7 @@ function pingTick(now) {
   }
   if (PING.sent && now - PING.sent > 10000) PING.sent = 0; // nooit antwoord gekregen: opnieuw proberen
   const ms = PING.sent && now - PING.sent > PING.ms ? Math.max(PING.ms, now - PING.sent) : PING.ms; // wachten op antwoord telt mee
-  el.textContent = ms ? `📶 ${Math.round(ms)} ms` : '📶 – ms';
+  el.textContent = ms ? `${Math.round(ms)} ms` : '– ms';
   el.dataset.q = !ms ? '' : ms <= 50 ? 'good' : ms <= 80 ? 'ok' : ms <= 100 ? 'meh' : 'bad';
 }
 // verbinding kwijt: tijdens een potje eindigt dat zonder winnaar

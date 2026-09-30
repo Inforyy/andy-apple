@@ -1549,6 +1549,7 @@ function renderScene() {
   ctx.setTransform(S, 0, 0, S, -(camX + sx) * S + VOX, -(camY + sy) * S + VOY);
   if (under) drawUnderwater(P);
   if (!tower) drawRock();
+  if (game.mp && game.mp.ar && game.mp.mode === 'ctf') ctfRock(); // vlag veroveren: de rode basis (achter de spelers)
   drawSkyBirds();
   drawMarkers();
   drawBiomeCliffs();

@@ -440,13 +440,14 @@ function arenaKey(code) {
   if (code === 'KeyC') { ctfPeel(); return true; }
   return false;
 }
+// de rode basis: de startrots gespiegeld (vanuit render, vóór de spelers)
+function ctfRock() {
+  if (camX + viewW < CTF_RED.x0 - 100) return;
+  const cx = camX; camX = -1e4; // drawRock tekent alleen als de startrots in beeld is
+  ctx.save(); ctx.translate(ROCK.x0 + CTF_RED.x1, 0); ctx.scale(-1, 1);
+  try { drawRock(); } finally { ctx.restore(); camX = cx; }
+}
 function ctfDraw(M, A) {
-  // de rode basis: de startrots gespiegeld
-  if (camX + viewW > CTF_RED.x0 - 100) {
-    const cx = camX; camX = -1e4;
-    ctx.save(); ctx.translate(ROCK.x0 + CTF_RED.x1, 0); ctx.scale(-1, 1);
-    try { drawRock(); } finally { ctx.restore(); camX = cx; }
-  }
   // de bases: een gekleurde gloed
   for (let t = 0; t < 2; t++) {
     const [bx, by] = ctfFlagBase(t);
