@@ -18,7 +18,8 @@ const MP_MAX = 20;          // maximaal aantal spelers in een lobby (host meeget
 const RACE_GRACE = 20;
 const MP_STALE = 6000;      // ms: stuurt een speler in een potje zo lang geen stand, dan is hij weg (bijv. tabblad weggeklikt)
 const MP_AFK = 30;          // s: wie in een potje zo lang niets doet, doet niet meer mee (anders blijft het potje hangen)
-const MP_MODE_NAME = { race: 'Race', endurance: 'Endurance', br: 'Battle royale' };
+const MP_MODE_NAME = { race: 'Race', endurance: 'Endurance', br: 'Battle royale', king: 'Koning', waves: 'Overleven', ctf: 'Vlag' };
+const botsOk = mode => mode === 'race' || mode === 'endurance' || mode === 'waves'; // apen doen mee met race, endurance en overleven
 const mpModeOf = m => MP_MODE_NAME[m] ? m : 'race';      // race: na de eerste finish krijgen de anderen nog zoveel seconden (bij 3+ spelers)
 // De eerste lianen zijn niet gekoppeld: aan het begin hangt iedereen aan dezelfde lianen, en als die bij jou naar de hand
 // van een ander worden getrokken, grijp je mis en val je meteen. Pas vanaf liaan nummer MP_FREE_VINES buigt een liaan mee.
@@ -316,7 +317,7 @@ function onLinkMsg(link, m) {
     if (!MP.links.has(link.id)) return;
     switch (m.type) {
       case 'hello': link.name = cleanName(m.name) || 'Speler'; playerFor(link.id, link.name); rosterSend(); lobbyTrack(); mpRender(); break;
-      case 's': case 'ev': case 'quit': case 'br':
+      case 's': case 'ev': case 'quit': case 'br': case 'ar':
         if (m.type === 's' && MP.players.has(link.id)) MP.players.get(link.id).relayIn = link.viaR;
         onPlayerMsg(link.id, m);
         mpSend(Object.assign({}, m, { from: link.id }, link.viaR && m.type === 's' ? { rl: 1 } : null), link); // doorsturen naar de rest
@@ -344,7 +345,7 @@ function onLinkMsg(link, m) {
       mpRender(); if (curScreen === 'mpRes') mpAgainRender();
       break;
     case 'start': if (Array.isArray(m.ids) && m.ids.includes(MP.myId)) mpStartMatch(m); break;
-    case 's': case 'ev': case 'quit': case 'br': if (typeof m.from === 'string') onPlayerMsg(m.from, m); break;
+    case 's': case 'ev': case 'quit': case 'br': case 'ar': if (typeof m.from === 'string') onPlayerMsg(m.from, m); break;
     case 'full': mpJoinFail('Deze lobby is vol.'); break;
     case 'bye': mpLost('De host heeft de lobby gesloten.'); break;
   }
@@ -369,6 +370,7 @@ function onPlayerMsg(id, m) {
       else if (M.mode === 'endurance') showBanner(`${P.name} is af!`, '');
     }
   } else if (m.type === 'br') { brMsg(P, m); return; }
+  else if (m.type === 'ar') { arenaMsg(P, m); return; }
   else if (m.type === 'quit') P.left = true;
   mpCheck();
 }
@@ -459,7 +461,7 @@ function sigOpen(id, pub) {
     if (pub) ch.on('presence', { event: 'sync' }, () => {
       if (MP.sig !== ch) return;
       if (MP.pubReady) { pubSync(); return; }
-      MP.pubReady = true; setTimeout(() => { if (MP.sig === ch) pubSync(); }, 800); // eerst iedereen die er al is binnenkrijgen
+      MP.pubReady = true; MP.pubReadyAt = performance.now(); setTimeout(() => { if (MP.sig === ch) pubSync(); }, 800); // eerst iedereen die er al is binnenkrijgen
     });
     const t = setTimeout(() => rej(new Error('Geen verbinding met de server.')), 12000);
     ch.subscribe(st => {
@@ -641,6 +643,7 @@ function mpStale(R) {
 function mpTick() {
   // de ronde volgen tot iedereen klaar is, ook als je zelf al klaar bent of opgaf (de openbare lobby wacht daarop)
   const R = MP.round;
+  if (R && R.ar && MP.role === 'host') arenaHostTick(R); // Koning en Vlag: punten, tijd en de stand
   if (R && !R.done && MP.inRoom) {
     mpStale(R);
     if (R.result && mpOver(R)) R.done = true;
@@ -676,7 +679,7 @@ function mpLost(reason) {
 // =====================================================================
 const PUB_ID = 'pub';
 const PUB_WAIT = 15000;   // ms tussen de rondes (en na binnenkomst van de tweede speler)
-const PUB_MODES = ['race', 'endurance', 'br'];
+const PUB_MODES = ['race', 'endurance', 'br', 'king', 'waves', 'ctf'];
 async function pubEnter() {
   if (MP.busy || !await verGate()) return;
   mpClose(false);
@@ -704,7 +707,13 @@ function pubLeader() {
 function pubSync() {
   if (!MP.pub || !MP.sig || !MP.pubReady) return;
   const lead = pubLeader();
-  if (lead === CLIENT_ID) { if (MP.role !== 'host') pubHost(); }
+  if (lead === CLIENT_ID) {
+    if (MP.role === 'host') return;
+    // zie ik (nog) niemand anders? De rest van de lobby komt soms pas even later binnen: dan eerst nog even wachten
+    const wait = 2500 - (performance.now() - (MP.pubReadyAt || 0)), alone = Object.keys(MP.sig.presenceState()).every(k => k === CLIENT_ID);
+    if (alone && wait > 0) { clearTimeout(MP.pubWait); MP.pubWait = setTimeout(pubSync, wait); return; }
+    pubHost();
+  }
   else if (MP.role === 'host') { pubDrop(true); pubJoin(lead); } // er is al een andere host: overstappen
   else if (MP.hostSig !== lead) pubJoin(lead);
 }
@@ -748,7 +757,7 @@ function pubTick() {
 // host: loopt er nog een ronde? (pas klaar als iedereen klaar is, ook als de host zelf al opgaf)
 const pubBusy = () => MP.round && !MP.round.done ? 1 : 0;
 function pubTally() {
-  const t = { race: 0, endurance: 0, br: 0 };
+  const t = {}; for (const m of PUB_MODES) t[m] = 0;
   for (const [id, m] of MP.votes) if ((id === MP.myId || MP.players.has(id)) && t[m] != null) t[m]++;
   return t;
 }
@@ -775,7 +784,7 @@ function pubRound() {
   mpHostStart({ mode, len: [500, 1000, 1000, 2000][Math.floor(Math.random() * 4)] });
 }
 // de stemmen zoals de host ze doorgaf (bij de host: zelf geteld)
-const pubTally0 = () => MP.role === 'host' ? pubTally() : Object.assign({ race: 0, endurance: 0, br: 0 }, MP.pubInfo && MP.pubInfo.votes);
+const pubTally0 = () => MP.role === 'host' ? pubTally() : Object.assign(Object.fromEntries(PUB_MODES.map(m => [m, 0])), MP.pubInfo && MP.pubInfo.votes);
 const pubSecs = () => { const I = MP.pubInfo; return I && I.at ? Math.max(0, Math.ceil((I.at - Date.now()) / 1000)) : 0; };
 function pubStatus() {
   if (verOld()) return 'Nieuwe versie: werk bij om verder te spelen';
@@ -835,12 +844,12 @@ function botsStart(M) {
   for (const id of M.ids) {
     const P = MP.players.get(id);
     if (!P || !P.bot) continue;
-    const bm = { mode: M.mode, len: M.len, seed: M.seed, t: 0, myEv: null, falls: 0, result: null, stormX: START_X - 1100, bolt: 0, boltX: 0, bot: P };
+    const bm = { mode: M.mode, len: M.len, seed: M.seed, ids: M.ids, t: 0, myEv: null, falls: 0, result: null, stormX: START_X - 1100, bolt: 0, boltX: 0, bot: P };
     const w = {};
     for (const k in WORLD_VARS) w[k] = WORLD_VARS[k][2]();
     w.mp = bm;
     const B = { P, M: bm, w, ai: { lvl: MP.bots.lvl }, home: null };
-    botIn(B); try { resetWorld(); } finally { botOut(B); }
+    botIn(B); try { resetWorld(); if (ARENA[M.mode]) arenaStart(bm); } finally { botOut(B); }
     MP.botRun.push(B);
   }
 }
@@ -853,7 +862,7 @@ function mpBotsStep(n, gdt) {
     if (B.P.left || (B.M.myEv && B.M.t - B.M.myEv.t > 3)) continue; // klaar: nog even doorvliegen, dan stilzetten
     botIn(B);
     try {
-      for (let k = 0; k < n; k++) { aiThink(B.ai); step(DT); }
+      for (let k = 0; k < n; k++) { if (B.M.ar) waveBotThink(B.ai); else aiThink(B.ai); step(DT); }
       interpBegin(true); updateCamera(gdt); interpEnd();
       genUntil(Math.max(camX + viewW + 900, G.x + 2600)); // de aap kijkt tot 1700 px vooruit
       parts.length = 0; texts.length = 0; // effecten ziet niemand
@@ -882,6 +891,9 @@ const MP_MODE_DESC = {
   race: 'Eerst bij de finish wint. Val je, dan kom je terug, maar verlies je tijd.',
   br: 'Een kleine arena: pak fruitwapens, richt met de muis en klik om te schieten (SPATIE of rechtermuisknop = grijpen; op een telefoon: links = grijpen, rechts tikken = schieten). Zwaaien kan alle kanten op. De storm maakt de arena kleiner; wie als laatste overblijft, wint.',
   endurance: 'Wie het langst volhoudt, wint. Een storm jaagt je op.',
+  king: 'Hang aan de gouden liaan: 1 punt per seconde. Beuk de koning eraf door er met vaart tegenaan te zwaaien. Eerst 60 punten, of de meeste na 3 minuten.',
+  waves: 'Elke 10 seconden een nieuwe wave gevaren, steeds zwaarder. Je hebt 1 leven; wie af is, wordt een geest en gooit appels. Kan ook alleen.',
+  ctf: 'Twee teams. Steel de vlag van de ander en breng hem naar je eigen basis. Beuk vlagdragers eraf, knip lianen door (X) en leg bananenschillen (C). Eerst 3 punten, of wie na 5 minuten voorstaat.',
   kiwi: 'Race naar de finish tegen Kiwi.',
   chase: 'Kiwi zit je achterna en wordt steeds sneller. Hoe lang blijf je hem voor?',
 };
@@ -904,7 +916,7 @@ function mpRender() {
   const list = loc ? (vsAi ? [{ name: myName(), col: '#e8322b', me: 1 }, { name: 'Kiwi', col: GCK.band }]
     : [{ name: 'Speler 1', col: '#e8322b', keys: '<kbd>SPATIE</kbd> of links/boven tikken' }, { name: 'Speler 2', col: '#2f7fe0', keys: '<kbd>↑</kbd> <kbd>ENTER</kbd> of rechts/onder tikken' }])
     : [{ name: myName(), col: '#e8322b', me: 1, host }].concat([...MP.players.values()].filter(P => P.inRoster).map(P => ({ name: P.name, col: P.col, host: guest && P.host, bot: P.bot })));
-  const enough = loc || list.length >= 2;
+  const enough = loc || list.length >= 2 || (MP.sel.mode === 'waves' && !pub); // overleven kan ook alleen
   $('mpPlayers').classList.toggle('stack', loc && !vsAi);
   $('mpPlayers').innerHTML = list.map(p => `<li class="${p.me ? 'me' : ''}"><i style="background:${p.col}"></i><b>${escHtml(p.name)}</b>${p.me && !loc ? ' <small>jij</small>' : ''}${p.host ? ' <small>host</small>' : ''}${p.bot ? ' <small>aap</small>' : ''}${p.keys ? `<span class="keys">${p.keys}</span>` : ''}</li>`).join('')
     + (enough ? '' : `<li class="empty">${pub ? 'Wachten op nog een speler…' : 'Wachten op andere spelers… (of voeg apen toe)'}</li>`);
@@ -912,8 +924,8 @@ function mpRender() {
   $('btnMpShare').classList.toggle('hidden', !((host && MP.lobby) || pub));
   // modus: achtervolging alleen tegen Kiwi; tegen Kiwi verder alleen race (geen keuze), endurance alleen met twee spelers
   if (MP.sel.mode === 'chase' && !vsAi) MP.sel.mode = 'race';
-  if (MP.sel.mode === 'br' && loc) MP.sel.mode = 'race'; // battle royale alleen online (richten met de muis)
-  $('mpModeBr').classList.toggle('hidden', loc);
+  if ((MP.sel.mode === 'br' || ARENA[MP.sel.mode]) && loc) MP.sel.mode = 'race'; // battle royale en de arena-modi alleen online
+  for (const id of ['mpModeBr', 'mpModeKing', 'mpModeWaves', 'mpModeCtf']) $(id).classList.toggle('hidden', loc);
   if (vsAi && MP.sel.mode === 'endurance') MP.sel.mode = 'race';
   $('mpModeRow').classList.toggle('hidden', vsAi);
   $('mpModeChase').classList.toggle('hidden', !chase);
@@ -934,12 +946,12 @@ function mpRender() {
   for (const b of document.querySelectorAll('[data-ai]')) b.classList.toggle('sel', +b.dataset.ai === MP.aiLvl);
   // apen: alleen in een eigen online lobby; de host kiest
   const bots = !loc && !pub;
-  const br = MP.sel.mode === 'br'; // apen doen niet mee met battle royale: dan ook geen knoppen
+  const br = !botsOk(MP.sel.mode); // apen doen alleen mee met race, endurance en overleven: anders ook geen knoppen
   $('mpBots').classList.toggle('hidden', !bots || br);
   $('mpBotLvls').classList.toggle('hidden', !bots || br || !MP.bots.n);
   for (const b of document.querySelectorAll('[data-bots]')) { b.classList.toggle('sel', +b.dataset.bots === MP.bots.n); b.disabled = !host; }
   for (const b of document.querySelectorAll('[data-botlvl]')) { b.classList.toggle('sel', +b.dataset.botlvl === MP.bots.lvl); b.disabled = !host; }
-  $('mpBotNote').textContent = bots && MP.bots.n && MP.sel.mode === 'br' ? 'Apen doen niet mee met battle royale.' : '';
+  $('mpBotNote').textContent = bots && MP.bots.n && br ? 'Apen doen alleen mee met race, endurance en overleven.' : '';
   // start (openbare lobby: vanzelf)
   $('btnMpStart').classList.toggle('hidden', !canPick);
   $('btnMpStart').disabled = !enough || (!loc && verOld()); // de host moet de nieuwste versie hebben
@@ -969,9 +981,9 @@ function mpSelect(mode, len) {
 function mpHostStart(cfg) {
   if (MP.role !== 'host') return;
   if (cfg.mode === 'chase') cfg = { mode: 'race', len: cfg.len }; // achtervolging is alleen tegen Kiwi
-  const bots = cfg.mode === 'br' ? [] : [...MP.players.values()].filter(P => P.bot && P.inRoster).map(P => P.id); // apen doen niet mee met battle royale
+  const bots = !botsOk(cfg.mode) ? [] : [...MP.players.values()].filter(P => P.bot && P.inRoster).map(P => P.id); // apen doen mee met race, endurance en overleven
   const ids = [MP.myId].concat(openLinks().map(l => l.id).filter(id => MP.players.has(id)), bots).slice(0, MP_MAX);
-  if (ids.length < 2) return;
+  if (ids.length < 2 && cfg.mode !== 'waves') return; // overleven kan ook alleen
   MP.pubAt = 0;
   const c = { type: 'start', mode: cfg.mode, len: cfg.len, seed: 1 + ((Math.random() * 2147483000) | 0), ids };
   mpSend(c);
@@ -997,6 +1009,7 @@ function mpStartMatch(c) {
   game.paused = false; game.career = null; game.mp = M;
   resetWorld();
   if (mode === 'br') brStart(M); else brStop();
+  if (ARENA[mode]) arenaStart(M); else arenaStop();
   if (MP.role === 'host') botsStart(M); else MP.botRun = [];
   game.mode = 'mpcount';
   input.down = false;
@@ -1016,7 +1029,10 @@ function mpStartMatch(c) {
   tr.classList.toggle('hidden', mode !== 'race');
   lobbyTrack();
   const who = ids.length > 2 ? ` · ${ids.length} spelers` : '';
-  if (mode === 'br') showBanner(`Battle royale${who}`, IS_MOBILE ? 'Links = grijpen · rechts tikken = schieten' : 'Richt met de muis, klik = schieten · SPATIE = grijpen');
+  if (mode === 'king') showBanner(`Koning van de liaan${who}`, 'Hang aan de gouden liaan · beuk de koning eraf');
+  else if (mode === 'waves') showBanner(`Overleven${who}`, 'Elke 10 seconden een nieuwe wave');
+  else if (mode === 'ctf') showBanner(`Vlag veroveren · jij bent ${ctfTeam(M, MP.myId) ? 'rood' : 'blauw'}`, 'X = lianen knippen · C = bananenschil');
+  else if (mode === 'br') showBanner(`Battle royale${who}`, IS_MOBILE ? 'Links = grijpen · rechts tikken = schieten' : 'Richt met de muis, klik = schieten · SPATIE = grijpen');
   else showBanner(mode === 'race' ? `Race · ${M.len} m${who}` : `Endurance${who}`, mode === 'race' ? 'Eerst bij de finish wint' : 'Blijf de storm voor');
 }
 // eigen gebeurtenis: finish (race) of af (endurance)
@@ -1032,6 +1048,7 @@ function mpFinished() {
 }
 function mpDied() {
   const M = game.mp;
+  if (M.ar && arenaDied(M)) return; // arena: terugkomen (Koning, Vlag) of een extra leven (Overleven)
   if (M.mode === 'race' || M.mode === 'chase') {
     M.falls++;
     floatText(G.x, G.y - 70, 'Plons! Even terug…', '#ffffff', 24);
@@ -1039,6 +1056,7 @@ function mpDied() {
   }
   if (M.myEv) return;
   if (M.bot) { M.myEv = { t: M.t, d: run.dist }; MP.botQ.push({ type: 'ev', id: M.seed, t: M.t, d: run.dist, from: M.bot.id }); return; }
+  if (M.ar) { M.myEv = { t: M.t, d: run.dist }; mpSend({ type: 'ev', id: M.seed, t: M.t, d: run.dist, from: MP.myId }); showBanner('Je bent af!', '👻 Je bent nu een geest: tik om appels te gooien'); mpCheck(); return; }
   M.myEv = { t: M.t, d: run.dist, by: M.mode === 'br' ? brKiller(M) : null };
   mpSend({ type: 'ev', id: M.seed, t: M.t, d: run.dist, from: MP.myId, by: M.myEv.by });
   if (M.mode === 'br') brOut(MP.myId, M.myEv.by);
@@ -1056,6 +1074,8 @@ function mpCheck() {
 function mpOver(M) {
   const all = [{ me: 1, ev: M.myEv, left: !!M.quit, t: M.t }].concat(opps(M).map(P => ({ ev: P.ev, left: P.left, bot: P.bot, t: P.ev ? Math.max(P.t, P.ev.t) : P.t })));
   const busy = all.filter(x => !x.ev && !x.left);
+  const ao = M.ar ? arenaOver(M, all, busy) : null;
+  if (ao != null) return ao;
   if (M.mode === 'race') {
     const evs = all.filter(x => x.ev).map(x => x.ev.t), first = evs.length ? Math.min(...evs) : null;
     const grace = all.length <= 2 ? 0 : RACE_GRACE;
@@ -1063,10 +1083,11 @@ function mpOver(M) {
   }
   // endurance en battle royale: klaar als er nog één over is, of als alleen apen nog leven (goede apen houden het bijna eindeloos vol)
   const dead = all.filter(x => x.ev).map(x => x.ev.t), last = dead.length ? Math.max(...dead) : 0;
-  return !busy.length || (busy.length === 1 && all.length > 1 && busy[0].t > last) || busy.every(x => x.bot && x.t > last);
+  return !busy.length || (busy.length === 1 && all.length > 1 && busy[0].t > last) || busy.every(x => x.bot); // alleen apen over: die hielden het langer vol
 }
 // eindstand: race = finishtijd (daarna afstand), endurance = wie het langst volhield
 function mpRanking(M, forfeit) {
+  if (M.ar) return arenaRank(M, forfeit);
   const rows = [{ id: MP.myId, name: myName(), col: '#e8322b', me: true, ev: M.myEv, left: !!forfeit, dist: run.dist, apples: Math.max(0, Math.floor(run.earned)), falls: M.falls, t: M.t }]
     .concat(opps(M).map(P => ({ id: P.id, name: P.name, col: P.col, ev: P.ev, left: P.left, dist: P.ev ? Math.max(P.ev.d, P.dist) : P.dist, apples: P.apples, falls: P.falls, t: P.t })));
   const tie = (a, b) => a.id < b.id ? -1 : 1;
@@ -1096,12 +1117,13 @@ function mpEnd(reason, kind) {
     M.reason = reason || (M.mode === 'race'
       ? (w.ev ? `${w.me ? 'Jij was' : w.name + ' was'} als eerste bij de finish.` : `${w.me ? 'Jij kwam' : w.name + ' kwam'} het verst.`)
       : `${w.me ? 'Jij hield' : w.name + ' hield'} het langst vol.`);
+    if (M.ar) { const R = arenaResult(M); if (R.result) M.result = R.result; M.title = R.title; if (!reason) M.reason = R.reason; }
     save.mpGames++; MP.games++;
     if (M.result === 'win') { save.mpWins++; MP.wins++; }
     persist();
     if (M.result === 'win') { showBanner('Gewonnen!', M.reason); confetti(G.x + 60, G.y - 160, 140); Sfx.jingle(2); flashT = 0.3; }
     else {
-      showBanner(n > 2 ? `${M.place}e van ${n}` : 'Verloren', M.reason);
+      showBanner(M.title || (n > 2 ? `${M.place}e van ${n}` : 'Verloren'), M.reason);
       Sfx.lose();
     }
   }
@@ -1109,13 +1131,14 @@ function mpEnd(reason, kind) {
 }
 function mpShowResult() {
   const M = MP.match;
+  arenaStop();
   $('mpHud').classList.add('hidden');
   $('mpCount').textContent = '';
   const n = M.rank ? M.rank.length : 0;
-  $('mpResTitle').textContent = M.result === 'conn' ? 'Verbinding verbroken' : M.result === 'win' ? 'Gewonnen!' : n > 2 ? `${M.place}e plaats` : 'Verloren';
+  $('mpResTitle').textContent = M.result === 'conn' ? 'Verbinding verbroken' : M.title || (M.result === 'win' ? 'Gewonnen!' : n > 2 ? `${M.place}e plaats` : 'Verloren');
   $('mpResSub').textContent = M.reason;
   const fmt = t => fmtTime(t);
-  const val = r => M.mode === 'br' ? `${r.left && !r.ev ? 'weg · ' : ''}🎯 ${brKills(r.id)}` : r.left && !r.ev ? 'weg' : M.mode === 'race' ? (r.ev ? fmt(r.ev.t) : `${Math.floor(Math.min(M.len, r.dist))} m`) : (r.ev ? fmt(r.ev.t) : `${Math.floor(r.dist)} m`);
+  const val = r => r.val ? `${r.left && !r.ev ? 'weg · ' : ''}${r.val}` : M.mode === 'br' ? `${r.left && !r.ev ? 'weg · ' : ''}🎯 ${brKills(r.id)}` : r.left && !r.ev ? 'weg' : M.mode === 'race' ? (r.ev ? fmt(r.ev.t) : `${Math.floor(Math.min(M.len, r.dist))} m`) : (r.ev ? fmt(r.ev.t) : `${Math.floor(r.dist)} m`);
   $('mpResTable').innerHTML = M.rank ? `<ol class="rank">${M.rank.map((r, i) => `<li class="${r.me ? 'me' : ''}"><b>${i + 1}</b><i style="background:${r.col}"></i><span>${escHtml(r.name)}${r.me ? ' (jij)' : ''}</span><span>${val(r)}</span></li>`).join('')}</ol>` : '';
   $('mpResScore').textContent = MP.games ? `Jij won ${MP.wins} van ${MP.games} potje${MP.games === 1 ? '' : 's'} in deze lobby.` : '';
   mpAgainRender();
@@ -1179,13 +1202,14 @@ function mpStep(dt) {
   M.t += dt;
   // niets doen (niet drukken, in battle royale ook niet richten): na MP_AFK seconden doe je niet meer mee
   if (!M.bot && !M.local && !M.myEv && !M.result) {
-    const act = input.presses + (input.down ? 0.5 : 0) + (M.br ? M.br.aim : 0);
+    const act = input.presses + (input.down ? 0.5 : 0) + (M.br ? M.br.aim : 0) + (M.mode === 'king' && input.down ? M.t : 0); // koning: vasthouden is ook iets doen
     if (act !== M.act) { M.act = act; M.actT = M.t; }
     else if (M.t - (M.actT || 0) > MP_AFK) { mpForfeit(`Je deed ${MP_AFK} seconden niets, dus je doet niet meer mee.`); return; }
   }
   if (M.mode === 'race' || M.mode === 'chase') {
     if (G.state === 'dead' && G.deadT > 1.2 && !M.myEv) mpRespawn();
   } else if (M.mode === 'br') brStep(dt);
+  else if (M.ar) arenaStep(dt);
   else {
     // de storm komt na een paar tellen op gang en gaat steeds sneller; hij blijft nooit te ver achter
     const sp = M.t < 4 ? 0 : Math.min(1500, 250 + 8 * (M.t - 4));
@@ -1299,6 +1323,8 @@ function mpHud() {
     $('mpDotMe').style.left = (clamp(run.dist / M.len, 0, 1) * 100).toFixed(1) + '%';
     for (const P of opps(M)) if (P.dot) { P.dot.style.left = (clamp((P.ev ? M.len : P.dist) / M.len, 0, 1) * 100).toFixed(1) + '%'; P.dot.style.opacity = P.left ? 0.3 : 1; }
     info = n > 2 ? `${tm} · plek ${mpPlace(M)} van ${n}` : tm;
+  } else if (M.ar) {
+    info = arenaHud(M);
   } else if (M.mode === 'br') {
     info = `${tm} · 🎯 ${brKills(MP.myId)} · nog ${mpPlace(M)} van ${n} over`;
   } else {
@@ -1321,7 +1347,8 @@ function mpOthers() {
   const M = game.mp;
   if (!M) return [];
   if (M.local) return [{ g: LOCAL.worlds[1 - M.idx].G, name: localName(1 - M.idx), pal: M.idx === 1 ? myLook() : oppPal(), tag: M.idx === 1 ? '#a8141c' : (LOCAL.ai ? '#2c6e18' : '#17498f'), local: true }];
-  return opps(M).filter(P => P.ghost && !(P.left && !P.ev)).map(P => ({ g: P.ghost, name: P.name, pal: P.bot ? botPal(P.col) : palOf(P.col), tag: shade(P.col, -0.35) }));
+  const col = P => M.mode === 'ctf' && M.ar ? CTF_COL[ctfTeam(M, P.id)] : P.col; // vlag: in de kleur van je team
+  return opps(M).filter(P => P.ghost && !(P.left && !P.ev)).map(P => ({ g: P.ghost, name: P.name, pal: P.bot ? botPal(col(P)) : palOf(col(P)), tag: shade(col(P), -0.35) }));
 }
 // apen zijn oranje orang-oetans (zoals Kiwi), met een eigen bandanakleur
 const botPal = col => Object.assign({}, palOf(col), { kiwi: true, fur: GCK.fur, furD: GCK.furD, furL: GCK.furL, skin: GCK.skin, skinD: GCK.skinD });
@@ -1347,6 +1374,7 @@ function drawGhost() {
 function drawStorm() {
   const M = game.mp;
   if (M.br) { drawBr(); return; }
+  if (M.ar) { arenaDraw(); return; }
   if (M.mode !== 'endurance') return;
   const sx = M.stormX;
   if (sx < camX - 120) return;
@@ -1373,6 +1401,7 @@ function drawStorm() {
 function drawMpOverlay() {
   const M = game.mp;
   if (M.br) drawBrOverlay();
+  if (M.ar) arenaOverlay();
   const off = mpOthers().filter(o => o.g && !(o.g.state === 'dead' && o.g.y > HAZARD_Y + 60) && (o.g.x - camX < -20 || o.g.x - camX > viewW + 20))
     .sort((a, b) => Math.abs(a.g.x - G.x) - Math.abs(b.g.x - G.x)).slice(0, 3);
   for (const o of off) {

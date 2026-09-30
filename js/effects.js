@@ -57,7 +57,7 @@ function updateEffects(dt) {
   for (let i = vines.length - 1; i >= 0; i--) {
     const v = vines[i];
     if (v === G.vine) continue;
-    if (v.x < camX - KEEP_BEHIND || (!v.anchored && v.pts[0].y > HAZARD_Y + 200)) vines.splice(i, 1);
+    if ((v.x < camX - KEEP_BEHIND && !arenaMode()) || (!v.anchored && v.pts[0].y > HAZARD_Y + 200)) vines.splice(i, 1); // arena: niets opruimen (de vlagarena is breed)
   }
   for (let i = shrooms.length - 1; i >= 0; i--) if (shrooms[i].x < camX - KEEP_BEHIND) shrooms.splice(i, 1);
   shakeT = Math.max(0, shakeT - dt); if (shakeT === 0) shakeAmp = 0;

@@ -379,6 +379,7 @@ function timeScale() {
   if (game.career) k *= (1 + 0.25 * game.career.p + 0.05 * game.career.up) * modTempo();
   if (game.career && run && run.pow && run.pow.type === 'slow' && run.pow.t > 0) k *= SLOWMO; // power-up slowmotion // carrière: latere levels (en een sterke Andy) lopen sneller
   if (!game.mp && run && run.cine) k *= cineSlow(); // slow motion bij een nieuwe biome
+  if (game.mp && game.mp.ar) k *= arenaTimeK(); // overleven: slowmotion of turbo
   return k;
 }
 // Paletten worden bewaard en hergebruikt (niet elk beeld opnieuw 28 kleuren mengen). Lees ze alleen, pas ze niet aan.

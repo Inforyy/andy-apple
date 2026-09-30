@@ -126,6 +126,7 @@ function resetWorld() {
 // =====================================================================
 function genUntil(xMax) {
   if (game.career && game.career.tower) return; // de toren wordt in één keer gebouwd (levels.js)
+  if (arenaMode()) return; // arena-modi: vaste lianen (mp-arena.js)
   if (brOn()) xMax = Math.min(xMax, BR_X1); // battle royale: alleen de kleine arena
   while (gen.x < xMax) genNext();
 } // battle royale: alleen de kleine arena

@@ -82,6 +82,7 @@ function drawFinish() {
   ctx.fillText('FINISH', x + 26, by + 23);
 }
 function drawMarkers() {
+  if (freeSwing()) return; // battle royale en arena's: geen afstandsbordjes
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const m0 = Math.max(100, Math.floor(((camX - START_X) / PX_PER_M) / 100) * 100);
   for (let m = m0; m < m0 + 300; m += 100) {

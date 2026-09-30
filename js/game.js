@@ -58,6 +58,7 @@ function showBanner(big, small) {
 }
 function mpLeaveMatch() {
   game.mp = null; MP.match = null; ghostPin.v = null;
+  arenaStop();
   $('mpHud').classList.add('hidden'); $('mpCount').textContent = '';
 }
 function toMenu() {
@@ -604,6 +605,10 @@ function uiInit() {
   on('mpModeEnd', () => mpSelect('endurance'));
   on('mpModeBr', () => mpSelect('br'));
   on('mpModeChase', () => mpSelect('chase'));
+  on('mpModeKing', () => mpSelect('king'));
+  on('mpModeWaves', () => mpSelect('waves'));
+  on('mpModeCtf', () => mpSelect('ctf'));
+  for (const [id, fn] of [['btnArCut', () => ctfCut()], ['btnArPeel', () => ctfPeel()]]) $(id).addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); fn(); });
   for (const b of document.querySelectorAll('[data-len]')) on(b, () => mpSelect(null, +b.dataset.len));
   for (const b of document.querySelectorAll('[data-bots]')) on(b, () => mpSetBots(+b.dataset.bots, null));
   for (const b of document.querySelectorAll('[data-botlvl]')) on(b, () => mpSetBots(null, +b.dataset.botlvl));
@@ -700,6 +705,7 @@ function inputInit() {
     if (curScreen) return;
     try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* negeren */ }
     if (brOn() && game.mp.br) { brPointerDown(e); return; } // battle royale: richten en schieten
+    if (arenaPointer(e)) return; // overleven: als geest een appel gooien
     if (LOCAL.on) { // op één scherm: elke speler tikt op zijn eigen helft
       const p = localSide(...toGame(e.clientX, e.clientY));
       localPointers.set(e.pointerId, p);
@@ -710,6 +716,7 @@ function inputInit() {
     press();
   });
   const pointerEnd = e => {
+    if (e.target && e.target.closest && e.target.closest('#arBtns')) return; // de knoppen van vlag veroveren
     if (brPointerUp(e)) return;
     if (localPointers.has(e.pointerId)) {
       const p = localPointers.get(e.pointerId);
@@ -728,6 +735,7 @@ function inputInit() {
     const typing = e.target && (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT');
     if (typing) return;
     if (curScreen === 'career' && mapKey(e.code)) { e.preventDefault(); return; } // de wereldkaart
+    if (!curScreen && arenaKey(e.code)) { e.preventDefault(); return; } // vlag veroveren: X = knippen, C = bananenschil
     if (LOCAL.on && !curScreen) {
       const p = localKey(e.code);
       if (p >= 0) { e.preventDefault(); if (!e.repeat) localPress(p); return; }

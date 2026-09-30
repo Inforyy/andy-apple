@@ -24,7 +24,7 @@
 <meta name="twitter:description" content="Slinger als Andy de gorilla aan lianen door jungle, vulkanen, de ruimte en Snoepland. Eén knop, 55 levels en multiplayer tot 20 spelers. Gratis in je browser.">
 <meta name="twitter:image" content="https://stijnbarendse.nl/appel/og-andy.jpg">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%8E%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="css/style.css?v=14ff2e1178">
+<link rel="stylesheet" href="css/style.css?v=739c25176c">
 <!-- Opstartscherm: inline, zodat het er staat voordat de rest geladen en getekend is -->
 <style>
 #splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
@@ -83,6 +83,8 @@
     </div>
   </div>
   <div id="mpHud" class="hidden"><div class="track" id="mpTrack"><span class="flag" id="mpFlag">🏁</span><div class="dot me" id="mpDotMe"><span class="tag">Jij</span></div></div><div class="info" id="mpInfo"></div></div>
+  <!-- vlag veroveren: lianen knippen (X) en een bananenschil leggen (C) -->
+  <div id="arBtns" class="hidden"><button id="btnArCut" title="Liaan doorknippen (X)">✂️</button><button id="btnArPeel" title="Bananenschil leggen (C)">🍌</button></div>
   <div id="mpCount"></div>
   <div id="banner"><div class="big"></div><div class="small"></div></div>
   <div id="hint"></div>
@@ -189,6 +191,9 @@
               <button id="mpModeRace" data-mode="race">Race</button>
               <button id="mpModeEnd" data-mode="endurance">Endurance</button>
               <button id="mpModeBr" data-mode="br">Battle royale</button>
+              <button id="mpModeKing" data-mode="king">Koning</button>
+              <button id="mpModeWaves" data-mode="waves">Overleven</button>
+              <button id="mpModeCtf" data-mode="ctf">Vlag</button>
               <button class="hidden" id="mpModeChase" data-mode="chase">Achtervolging</button>
             </div>
           </div>
@@ -239,6 +244,9 @@
     <ul>
       <li><b>Race</b>: eerst bij de finish wint. Val je, dan kom je na een tel terug op een liaan.</li>
       <li><b>Endurance</b>: wie het langst volhoudt, wint. Een storm jaagt je steeds sneller op.</li>
+      <li><b>Koning van de liaan</b>: hang aan de gouden liaan (1 punt per seconde). Zwaai met vaart tegen de koning aan om hem eraf te beuken. Eerst 60 punten, of de meeste na 3 minuten.</li>
+      <li><b>Overleven</b>: elke 10 seconden een nieuwe wave gevaren, steeds zwaarder. Je hebt 1 leven; wie af is, wordt een geest en gooit appels naar de rest. Ook alleen of tegen apen te spelen.</li>
+      <li><b>Vlag veroveren</b>: blauw tegen rood. Steel de vlag van de ander en breng hem naar je eigen basis. Beuk vlagdragers eraf, knip lianen door (<kbd>X</kbd> of ✂️) en leg bananenschillen (<kbd>C</kbd> of 🍌).</li>
       <li><b>Achtervolging</b> (tegen Kiwi): Kiwi start een paar tellen na jou en probeert je in te halen. Hij wordt steeds sneller; hoe lang hou je het vol?</li>
       <li>Upgrades staan uit; appels en XP tellen niet mee voor je save.</li>
     </ul>
@@ -253,7 +261,7 @@
     <div class="results" id="mpResTable"></div>
     <div id="mpResScore" class="sub"></div>
     <div id="mpResVote" class="hidden"><p class="sub">Stem op de volgende ronde</p>
-      <div class="seg"><button data-vote="race">Race</button><button data-vote="endurance">Endurance</button><button data-vote="br">Battle royale</button></div>
+      <div class="seg"><button data-vote="race">Race</button><button data-vote="endurance">Endurance</button><button data-vote="br">Battle royale</button><button data-vote="king">Koning</button><button data-vote="waves">Overleven</button><button data-vote="ctf">Vlag</button></div>
     </div>
     <div class="p-foot">
       <div class="row"><button class="btn" id="btnMpLobby">Lobby</button></div>
@@ -489,27 +497,28 @@
   </div>
 </div>
 
-<script src="js/version.js?v=14ff2e1178"></script>
-<script src="js/config.js?v=14ff2e1178"></script>
-<script src="js/util.js?v=14ff2e1178"></script>
-<script src="js/data.js?v=14ff2e1178"></script>
-<script src="js/save.js?v=14ff2e1178"></script>
-<script src="js/audio.js?v=14ff2e1178"></script>
-<script src="js/view.js?v=14ff2e1178"></script>
-<script src="js/world.js?v=14ff2e1178"></script>
-<script src="js/physics.js?v=14ff2e1178"></script>
-<script src="js/effects.js?v=14ff2e1178"></script>
-<script src="js/render-bg.js?v=14ff2e1178"></script>
-<script src="js/render-world.js?v=14ff2e1178"></script>
-<script src="js/model3d.js?v=14ff2e1178"></script>
-<script src="js/online.js?v=14ff2e1178"></script>
-<script src="js/mp-online.js?v=14ff2e1178"></script>
-<script src="js/mp-local.js?v=14ff2e1178"></script>
-<script src="js/mp-br.js?v=14ff2e1178"></script>
-<script src="js/career.js?v=14ff2e1178"></script>
-<script src="js/levels.js?v=14ff2e1178"></script>
-<script src="js/worldmap.js?v=14ff2e1178"></script>
-<script src="js/game.js?v=14ff2e1178"></script>
-<script src="js/main.js?v=14ff2e1178"></script>
+<script src="js/version.js?v=739c25176c"></script>
+<script src="js/config.js?v=739c25176c"></script>
+<script src="js/util.js?v=739c25176c"></script>
+<script src="js/data.js?v=739c25176c"></script>
+<script src="js/save.js?v=739c25176c"></script>
+<script src="js/audio.js?v=739c25176c"></script>
+<script src="js/view.js?v=739c25176c"></script>
+<script src="js/world.js?v=739c25176c"></script>
+<script src="js/physics.js?v=739c25176c"></script>
+<script src="js/effects.js?v=739c25176c"></script>
+<script src="js/render-bg.js?v=739c25176c"></script>
+<script src="js/render-world.js?v=739c25176c"></script>
+<script src="js/model3d.js?v=739c25176c"></script>
+<script src="js/online.js?v=739c25176c"></script>
+<script src="js/mp-online.js?v=739c25176c"></script>
+<script src="js/mp-local.js?v=739c25176c"></script>
+<script src="js/mp-br.js?v=739c25176c"></script>
+<script src="js/mp-arena.js?v=739c25176c"></script>
+<script src="js/career.js?v=739c25176c"></script>
+<script src="js/levels.js?v=739c25176c"></script>
+<script src="js/worldmap.js?v=739c25176c"></script>
+<script src="js/game.js?v=739c25176c"></script>
+<script src="js/main.js?v=739c25176c"></script>
 </body>
 </html>

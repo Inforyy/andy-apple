@@ -574,3 +574,11 @@ html.short .modes-grid .mode-t{font-size:20px}
 .lobbies li.old{opacity:.6}
 .mp-update{background:#fff3c4;border-color:#f0c34a}
 .mp-update .set-lbl{white-space:normal;line-height:1.3;font-size:14px}
+/* multiplayer: zes spelmodi in twee rijen */
+#mpModeRow .seg,#mpResVote .seg{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr))}
+/* vlag veroveren: knoppen rechtsonder */
+#arBtns{position:fixed;right:calc(14px + env(safe-area-inset-right));bottom:calc(14px + env(safe-area-inset-bottom));display:flex;gap:10px;z-index:6}
+#arBtns.hidden{display:none}
+#arBtns button{width:64px;height:64px;border-radius:50%;border:3px solid rgba(255,255,255,.7);background:rgba(0,0,0,.45);color:#fff;font:900 22px Trebuchet MS,sans-serif;cursor:pointer;touch-action:none}
+#arBtns button.off{opacity:.5}
+body.arena #hudDist{display:none}
