@@ -8,8 +8,9 @@
 //  stuurt de standen van iedereen door naar de rest. Iedereen speelt in precies dezelfde wereld
 //  (dezelfde seed), simuleert zijn eigen Andy en stuurt zijn positie; de anderen worden als extra
 //  gorilla's getekend. Supabase wordt gebruikt om lobbies te vinden en om de verbinding op te zetten.
-//  Lukt een directe verbinding niet (vaak als spelers op hetzelfde netwerk zitten), dan loopt het verkeer
-//  met die speler via de server (een eigen Supabase-kanaal per verbinding, zie relayStart).
+//  Elke verbinding wordt tegelijk direct én via de server (een eigen Supabase-kanaal, zie relayOpen) opgezet:
+//  wat het eerst werkt, wordt gebruikt, en zodra direct werkt gaat alles direct. Op hetzelfde netwerk lukt
+//  direct vaak niet; dan blijft het via de server gaan.
 // =====================================================================
 const MP_NAME_KEY = 'andyApples.name';
 const MP_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
@@ -23,7 +24,6 @@ const mpModeOf = m => MP_MODE_NAME[m] ? m : 'race';      // race: na de eerste f
 const MP_FREE_VINES = 10;
 const randHex = n => { const b = new Uint8Array(n); try { crypto.getRandomValues(b); } catch (e) { for (let i = 0; i < n; i++) b[i] = Math.random() * 256; } return Array.from(b, x => x.toString(16).padStart(2, '0')).join(''); };
 const CLIENT_ID = randHex(8); // per tabblad: wie is wie
-const RELAY_AFTER = 7000;   // ms: is er dan nog geen directe verbinding, dan via de server
 const RELAY_MS = 100;       // via de server worden berichten per 0,1 s gebundeld (minder berichten voor Supabase)
 const MP = { role: null, busy: false, local: false, aiLvl: null, inRoom: false, myId: CLIENT_ID,
   links: new Map(),   // host: id -> verbinding met een gast
@@ -66,7 +66,7 @@ const escHtml = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&l
 // ICE-servers: STUN is genoeg tussen twee verschillende netwerken. Op hetzelfde netwerk lukt een directe verbinding
 // vaak niet (browsers verbergen het lokale adres achter een .local-naam die veel netwerken en Android niet oplossen,
 // en veel routers sturen verkeer naar hun eigen publieke adres niet terug naar binnen). Dan gaat het via de server
-// (relayStart hieronder); met een eigen TURN-server in CONFIG.turn lukt direct vaker (optioneel).
+// (relayOpen hieronder); met een eigen TURN-server in CONFIG.turn lukt direct vaker (optioneel).
 const ICE = { list: null, ts: 0, p: null };
 function mpIce() {
   const t = CONFIG.turn;
@@ -128,7 +128,9 @@ function verRender() {
 }
 
 // Een "link" is één WebRTC-verbinding: bij de host één per gast, bij een gast alleen die met de host.
-function newLink(id, name) { return { id, name: name || 'Speler', pc: null, dc: null, open: false, iceQ: [], lastMsg: performance.now(), lastSent: 0, timer: 0, relay: false, rch: null, out: [], ot: 0 }; }
+function newLink(id, name) { return { id, name: name || 'Speler', pc: null, dc: null, open: false, iceQ: [], lastMsg: performance.now(), lastSent: 0, timer: 0, rch: null, rOk: false, viaR: false, out: [], ot: 0 }; }
+// rch = kanaal via de server, rOk = dat werkt aan beide kanten, viaR = het laatste bericht kwam via de server
+const dcOpen = link => !!(link.dc && link.dc.readyState === 'open');
 function linkPc(link, onIce, iceServers) {
   if (typeof RTCPeerConnection !== 'function') throw new Error('Deze browser ondersteunt geen multiplayer (WebRTC).');
   const pc = new RTCPeerConnection({ iceServers: iceServers || MP_ICE });
@@ -136,16 +138,20 @@ function linkPc(link, onIce, iceServers) {
   if (onIce) pc.onicecandidate = e => { if (e.candidate) onIce(e.candidate.toJSON()); };
   pc.addEventListener('connectionstatechange', () => {
     if (pc.connectionState !== 'failed' || link.pc !== pc) return;
-    if (link.open) linkDown(link, 'De verbinding is weggevallen.');
-    else relayStart(link); // direct lukt niet: dan via de server
+    dropPc(link); // direct lukt niet (meer): dan blijft alleen de weg via de server over
+    if (link.open && !link.rOk) linkDown(link, 'De verbinding is weggevallen.');
   });
   return pc;
 }
 function bindDc(link, dc) {
   link.dc = dc;
-  dc.onopen = () => linkUp(link);
-  dc.onclose = () => linkDown(link, 'De verbinding is verbroken.');
-  dc.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (x) { return; } link.lastMsg = performance.now(); onLinkMsg(link, m); };
+  dc.onopen = () => {
+    if (!link.open) linkUp(link); // anders: vanaf nu direct in plaats van via de server
+    if (link === MP.link && !MP.pub) sigClose(); // gast: klaar met verbinden
+    mpRender();
+  };
+  dc.onclose = () => { if (link.dc !== dc) return; link.dc = null; if (!link.rOk) linkDown(link, 'De verbinding is verbroken.'); }; // anders verder via de server
+  dc.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (x) { return; } link.lastMsg = performance.now(); link.viaR = false; onLinkMsg(link, m); };
 }
 function addIce(link, c) {
   if (!link || !c) return;
@@ -167,17 +173,13 @@ function sendLink(link, m) {
   if (!link) return;
   const t = typeof m === 'string' ? m : JSON.stringify(m);
   link.lastSent = performance.now();
-  if (link.relay) {
-    if (!link.rch) return;
-    link.out.push(t);
-    if (!link.ot) link.ot = setTimeout(() => relayFlush(link), RELAY_MS);
-    return;
-  }
-  const dc = link.dc;
-  if (dc && dc.readyState === 'open') { try { dc.send(t); } catch (e) { /* negeren */ } }
+  if (dcOpen(link)) { try { link.dc.send(t); } catch (e) { /* negeren */ } return; } // direct als dat kan
+  if (!link.rch || !link.rOk) return;
+  link.out.push(t);
+  if (!link.ot) link.ot = setTimeout(() => relayFlush(link), RELAY_MS);
 }
 
-// ---- via de server (als een directe verbinding niet lukt) ----
+// ---- via de server (tegelijk met direct; blijft over als direct niet lukt of wegvalt) ----
 // Host en gast delen dan een eigen Realtime-kanaal; berichten gaan gebundeld (elke RELAY_MS) als één broadcast.
 const relayName = (hostId, guestId) => `andy-relay-${hostId}-${guestId}`;
 function relayFlush(link) {
@@ -190,8 +192,8 @@ function relayChan(name, link) {
     const ch = sb.channel(name, { config: { broadcast: { self: false } } });
     ch.on('broadcast', { event: 'm' }, msg => {
       if (link.rch !== ch || !msg || !msg.payload || !Array.isArray(msg.payload.b)) return;
-      link.lastMsg = performance.now();
-      if (!link.open) linkUp(link); // host: het eerste bericht van de gast = verbonden
+      link.lastMsg = performance.now(); link.viaR = true; link.rOk = true; // host: het eerste bericht van de gast = via de server verbonden
+      if (!link.open) linkUp(link);
       for (const t of msg.payload.b) { let m; try { m = JSON.parse(t); } catch (x) { continue; } onLinkMsg(link, m); }
     });
     const to = setTimeout(() => rej(new Error('Geen verbinding met de server.')), 10000);
@@ -201,7 +203,10 @@ function relayChan(name, link) {
         clearTimeout(to);
         if (link.rch === ch) res(ch);
         else { try { sb.removeChannel(ch); } catch (e) { /* */ } rej(new Error('Verbinding gesloten.')); } // intussen afgesloten
-      } else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT') { clearTimeout(to); rej(new Error('Geen verbinding met de server.')); }
+      } else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT') {
+        clearTimeout(to); if (link.rch === ch) { link.rch = null; try { sb.removeChannel(ch); } catch (e) { /* */ } }
+        rej(new Error('Geen verbinding met de server.'));
+      }
     });
   }));
 }
@@ -210,28 +215,21 @@ function dropPc(link) {
   link.pc = null; link.dc = null; link.iceQ = [];
   try { if (dc) { dc.onclose = null; dc.close(); } } catch (e) { /* */ } try { if (pc) pc.close(); } catch (e) { /* */ }
 }
-// host: deze gast verbinden via de server; gast: de host daarom vragen
-function relayStart(link) {
-  if (link.relay || link.open) return;
-  if (MP.role === 'guest') { if (link === MP.link) sigSend({ t: 'relay?', to: MP.hostSig }); return; }
-  if (MP.role !== 'host' || MP.links.get(link.id) !== link) return;
-  link.relay = true;
-  dropPc(link);
-  clearTimeout(link.timer);
-  link.timer = setTimeout(() => { if (!link.open) linkDown(link, ''); }, 15000);
+// host: meteen ook een kanaal via de server openen (tegelijk met direct)
+function relayOpen(link) {
   relayChan(relayName(CLIENT_ID, link.id), link).then(() => {
     if (MP.links.get(link.id) === link) sigSend({ t: 'relay', to: link.id });
-  }, () => linkDown(link, ''));
+  }, () => { /* dan alleen direct */ });
 }
-// gast: de host zegt dat het via de server gaat
-async function guestRelay() {
-  let link = MP.link;
-  if (!link) link = MP.link = newLink('host', MP.hostName);
-  if (link.relay) return;
-  link.relay = true;
-  dropPc(link);
-  try { await relayChan(relayName(MP.hostSig, CLIENT_ID), link); } catch (e) { if (MP.link === link) joinFail('Verbinden is mislukt.'); return; }
-  if (MP.link === link && !link.open) linkUp(link); // stuurt 'hello': daaraan ziet de host dat we er zijn
+// gast: de host heeft een kanaal via de server klaarstaan
+async function guestRelay(from) {
+  if (!MP.hostSig) MP.hostSig = from;
+  const link = MP.link || guestLink();
+  if (link.rch) return;
+  try { await relayChan(relayName(MP.hostSig, CLIENT_ID), link); } catch (e) { return; } // dan alleen direct
+  if (MP.link !== link) return;
+  link.rOk = true;
+  if (!link.open) linkUp(link); // stuurt 'hello': daaraan ziet de host dat we er zijn
 }
 // host: naar alle gasten (behalve "except"); gast: naar de host
 function mpSend(m, except) {
@@ -251,7 +249,8 @@ function linkUp(link) {
     Sfx.buy();
   } else if (link === MP.link) {
     clearTimeout(MP.joinTimer);
-    if (!MP.pub) sigClose(); // in de openbare lobby blijft het kanaal open: daarmee kiezen we een nieuwe host als die weggaat
+    // het kanaal blijft nog open zolang direct verbinden bezig is (in de openbare lobby altijd: daarmee kiezen we een nieuwe host)
+    if (!MP.pub) setTimeout(() => { if (MP.link === link && !dcOpen(link)) { dropPc(link); sigClose(); } }, 15000);
     sendLink(link, { type: 'hello', name: myName() });
   }
   mpRender();
@@ -316,8 +315,9 @@ function onLinkMsg(link, m) {
     switch (m.type) {
       case 'hello': link.name = cleanName(m.name) || 'Speler'; playerFor(link.id, link.name); rosterSend(); lobbyTrack(); mpRender(); break;
       case 's': case 'ev': case 'quit': case 'br':
+        if (m.type === 's' && MP.players.has(link.id)) MP.players.get(link.id).relayIn = link.viaR;
         onPlayerMsg(link.id, m);
-        mpSend(Object.assign({}, m, { from: link.id }, link.relay && m.type === 's' ? { rl: 1 } : null), link); // doorsturen naar de rest
+        mpSend(Object.assign({}, m, { from: link.id }, link.viaR && m.type === 's' ? { rl: 1 } : null), link); // doorsturen naar de rest
         break;
       case 'vote': if (MP.pub && MP_MODE_NAME[m.mode]) { MP.votes.set(link.id, m.mode); pubAnnounce(); mpRender(); } break;
       case 'bye': linkDown(link, ''); break;
@@ -353,7 +353,8 @@ function onPlayerMsg(id, m) {
   P.lastMsg = performance.now();
   if (!M || m.id !== M.seed || !M.ids.includes(id)) return;
   if (m.type === 's') {
-    if (m.rl) P.relay = true; // komt via de server: schokkeriger, dus iets verder in het verleden tekenen
+    P.relay = !!m.rl || !!P.relayIn; // komt via de server: schokkeriger, dus iets verder in het verleden tekenen
+    if (P.snaps.length && +m.t < P.snaps[P.snaps.length - 1].t) return; // bij het overschakelen naar direct kan een oude stand later binnenkomen
     P.snaps.push(m); if (P.snaps.length > 40) P.snaps.shift();
     P.t = Math.max(P.t, +m.t || 0); P.dist = +m.d || 0; P.apples = m.ap | 0; P.falls = m.f | 0;
   } else if (m.type === 'ev') {
@@ -477,35 +478,40 @@ function sigSend(m) {
 async function hostAccept(from, name) {
   const link = newLink(from, cleanName(name) || 'Speler');
   MP.links.set(from, link);
-  link.timer = setTimeout(() => { if (!link.open) relayStart(link); }, RELAY_AFTER); // lukt het direct niet: via de server
+  link.timer = setTimeout(() => { if (!link.open) linkDown(link, ''); }, 15000); // lukt het allebei niet: plek weer vrij
+  relayOpen(link); // tegelijk via de server en direct: wat het eerst werkt, wordt gebruikt
   try {
     const ice = await mpIce();
-    if (MP.links.get(from) !== link || link.relay) return;
+    if (MP.links.get(from) !== link) return;
     const pc = linkPc(link, c => sigSend({ t: 'ice', to: from, c }), ice);
     bindDc(link, pc.createDataChannel('andy', { ordered: true }));
     await pc.setLocalDescription(await pc.createOffer());
     if (link.pc === pc) sigSend({ t: 'offer', to: from, sdp: pc.localDescription.sdp });
-  } catch (e) { linkDown(link, ''); }
+  } catch (e) { dropPc(link); } // direct lukt niet: via de server kan nog
   mpRender();
 }
 // gast: de host stuurt zijn aanbod
-async function guestOffer(m) {
-  if (MP.link) return;
-  MP.hostSig = m.from;
+function guestLink() {
   const link = MP.link = newLink('host', MP.hostName), id = MP.joinId;
-  link.iceQ = MP.preIce.splice(0); // kandidaten die vóór het aanbod binnenkwamen
   clearTimeout(MP.joinTimer);
-  MP.joinTimer = setTimeout(() => { if (MP.joinId === id && !MP.inRoom) joinFail('Verbinden is mislukt. Probeer het opnieuw.'); }, 30000);
+  MP.joinTimer = setTimeout(() => { if (MP.joinId === id && !MP.inRoom) joinFail('Verbinden is mislukt. Probeer het opnieuw.'); }, 20000);
+  return link;
+}
+async function guestOffer(m) {
+  if (MP.link && MP.link.pc) return;
+  MP.hostSig = m.from;
+  const link = MP.link || guestLink();
+  link.iceQ = MP.preIce.splice(0).concat(link.iceQ); // kandidaten die vóór het aanbod binnenkwamen
   try {
     const ice = await mpIce();
-    if (MP.link !== link || link.relay) return;
+    if (MP.link !== link) return;
     const pc = linkPc(link, c => sigSend({ t: 'ice', to: m.from, c }), ice);
     pc.ondatachannel = e => bindDc(link, e.channel);
     await pc.setRemoteDescription({ type: 'offer', sdp: m.sdp });
     flushIce(link);
     await pc.setLocalDescription(await pc.createAnswer());
     if (MP.link === link) sigSend({ t: 'answer', to: m.from, sdp: pc.localDescription.sdp });
-  } catch (e) { joinFail('Verbinden is mislukt.'); }
+  } catch (e) { if (MP.link === link) dropPc(link); } // direct lukt niet: via de server kan nog
   mpRender();
 }
 function sigOnMsg(m) {
@@ -517,8 +523,7 @@ function sigOnMsg(m) {
       if (m.ver !== GAME_VERSION) { sigSend({ t: 'ver', to: m.from, v: GAME_VERSION }); return; } // alleen dezelfde versie
       if (roomCount() + [...MP.links.values()].filter(l => !l.open).length >= MP_MAX) { sigSend({ t: 'full', to: m.from }); return; }
       hostAccept(m.from, m.name);
-    } else if (m.t === 'relay?' && link) relayStart(link);
-    else if (!link || !link.pc) return;
+    } else if (!link || !link.pc) return;
     else if (m.t === 'answer' && typeof m.sdp === 'string') link.pc.setRemoteDescription({ type: 'answer', sdp: m.sdp }).then(() => flushIce(link), () => linkDown(link, ''));
     else if (m.t === 'ice') addIce(link, m.c);
   } else if (MP.role === 'guest') {
@@ -526,7 +531,7 @@ function sigOnMsg(m) {
     if (m.t === 'ver') verCheck(true).then(() => mpJoinFail(verOld() ? 'Je speelt een oude versie. Werk het spel bij om mee te doen.' : 'Deze lobby draait een andere versie van het spel.'));
     else if (m.t === 'full') joinFail('Deze lobby is vol.');
     else if (m.t === 'offer' && typeof m.sdp === 'string') guestOffer(m);
-    else if (m.t === 'relay' && MP.hostSig === m.from) guestRelay();
+    else if (m.t === 'relay') guestRelay(m.from);
     else if (m.t === 'ice') { if (MP.link) addIce(MP.link, m.c); else if (m.c && MP.preIce.length < 50) MP.preIce.push(m.c); }
   }
 }
@@ -621,7 +626,7 @@ function mpInit() {
 function mpTick() {
   const now = performance.now();
   const keep = (l, lost) => {
-    if (!l.relay || !l.open) return;
+    if (!l.open || dcOpen(l) || !l.rOk) return; // alleen als het via de server gaat
     if (now - l.lastMsg > 15000) lost(); else if (now - l.lastSent > 3000) sendLink(l, { type: 'ping' });
   };
   for (const l of [...MP.links.values()]) keep(l, () => linkDown(l, ''));
@@ -1209,7 +1214,7 @@ const lerpAng = (a, b, f) => { let d = b - a; while (d > Math.PI) d -= 2 * Math.
 function mpGhost(P, dt, M) {
   const S = P.snaps;
   if (!S.length) return;
-  const late = P.relay || (MP.link && MP.link.relay) ? 0.18 : 0; // via de server komen standen gebundeld binnen
+  const late = P.relay || (MP.link && MP.link.viaR) ? 0.18 : 0; // via de server komen standen gebundeld binnen
   const newest = S[S.length - 1], target = newest.t - (0.07 + 1.5 * sendEvery(M) + late);
   if (P.rt === null || Math.abs(P.rt - target) > 0.6) P.rt = target;
   else P.rt += dt + (target - P.rt) * 0.08;

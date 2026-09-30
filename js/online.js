@@ -21,7 +21,7 @@ function getSb() {
     if (!(window.supabase && window.supabase.createClient)) { sbLoading = null; throw new Error('Geen verbinding met de server. Heb je internet?'); }
     sbClient = window.supabase.createClient(CONFIG.supabase.url.replace(/\/+$/, ''), CONFIG.supabase.key, {
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: /^https?:$/.test(location.protocol), storageKey: 'andyApples.auth' },
-      realtime: { params: { eventsPerSecond: 40 } }, // multiplayer via de server (zie relayStart in mp-online.js) stuurt ~10 berichten per seconde
+      realtime: { params: { eventsPerSecond: 40 } }, // multiplayer via de server (zie relayOpen in mp-online.js) stuurt ~10 berichten per seconde
     });
     return sbClient;
   })();
