@@ -591,6 +591,7 @@ function uiInit() {
   on('btnMpSetupBack', () => { mpRender(); showScreen('mp'); });
   on('btnMpHost', () => { MP.local = false; mpLobbyHost(); });
   on('btnMpShare', mpShare);
+  on('btnMpUpdate', verUpdate);
   const AI_KEY = 'andyApples.aiLevel';
   const vsKiwi = () => { mpClose(false); MP.local = true; let l = 1; try { l = clamp(+(localStorage.getItem(AI_KEY) || 1), 0, 3); } catch (e) { /* */ } MP.aiLvl = l; mpMsg(''); };
   on('btnModeOnline', () => { MP.local = false; MP.aiLvl = null; openMp(); });

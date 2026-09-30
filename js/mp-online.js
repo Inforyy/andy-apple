@@ -84,6 +84,49 @@ function mpIce() {
   }
   return ICE.p;
 }
+// ---- versie ----
+// Online spelen kan alleen met dezelfde versie (GAME_VERSION uit js/version.js, gemaakt door tools/version.mjs).
+// version.json op de server zegt wat de nieuwste versie is: wie een oudere heeft (een open tabblad van gisteren,
+// een oude app), krijgt een melding en kan geen lobby maken of meedoen. De host van een lobby is dus altijd bij,
+// en de openbare lobby heeft per versie een eigen kanaal. Bij het meedoen controleert de host ook nog de versie.
+const VER = { latest: null, checked: 0, p: null };
+const verUrl = () => /^https?:$/.test(location.protocol) && !IN_APP ? 'version.json' : CONFIG.siteUrl ? CONFIG.siteUrl.replace(/\/?$/, '/') + 'version.json' : '';
+function verCheck(force) {
+  const url = verUrl();
+  if (!url) return Promise.resolve(null);
+  if (VER.p) return VER.p;
+  if (!force && VER.checked && Date.now() - VER.checked < 120000) return Promise.resolve(VER.latest);
+  const ctl = typeof AbortController === 'function' ? new AbortController() : null, to = ctl && setTimeout(() => ctl.abort(), 5000);
+  VER.p = fetch(url + '?t=' + Date.now(), Object.assign({ cache: 'no-store' }, ctl ? { signal: ctl.signal } : {}))
+    .then(r => r.ok ? r.json() : null)
+    .then(j => { if (j && typeof j.v === 'string' && /^[0-9a-f]{6,40}$/.test(j.v)) VER.latest = j.v; }, () => { /* offline: dan weten we het niet */ })
+    .then(() => { clearTimeout(to); VER.checked = Date.now(); VER.p = null; verRender(); return VER.latest; });
+  return VER.p;
+}
+// true = er staat een nieuwere versie online (onbekend, bijv. offline, telt als bij)
+const verOld = () => !!VER.latest && VER.latest !== GAME_VERSION;
+// vóór een lobby maken of meedoen: eerst (kort) controleren
+async function verGate() {
+  await verCheck();
+  if (!verOld()) return true;
+  mpMsg(IN_APP ? 'Je app is verouderd. Download de nieuwe versie om online te spelen.' : 'Je speelt een oude versie. Klik op Bijwerken om online te spelen.', false);
+  mpRender();
+  return false;
+}
+function verUpdate() {
+  if (IN_APP || !/^https?:$/.test(location.protocol)) { if (IN_APP ? CONFIG.apkUrl : CONFIG.siteUrl) location.href = IN_APP ? CONFIG.apkUrl : CONFIG.siteUrl; return; }
+  // de pagina zelf vers ophalen (de scripts hebben ?v=versie in hun adres, dus die komen dan ook vers)
+  fetch(location.pathname, { cache: 'reload' }).catch(() => { /* */ }).then(() => location.reload());
+}
+function verRender() {
+  const old = verOld(), el = $('mpUpdate');
+  if (!el) return;
+  el.classList.toggle('hidden', !old);
+  $('mpUpdateTxt').textContent = IN_APP ? 'Er is een nieuwe versie van de app. Download die om online te spelen.' : 'Er is een nieuwe versie van Andy Apples. Werk bij om online te spelen.';
+  $('btnMpUpdate').textContent = IN_APP ? 'Downloaden' : !/^https?:$/.test(location.protocol) ? 'Naar de site' : 'Bijwerken';
+  if (curScreen === 'mp') mpRender(); else if (curScreen === 'mpRes') mpAgainRender();
+}
+
 // Een "link" is één WebRTC-verbinding: bij de host één per gast, bij een gast alleen die met de host.
 function newLink(id, name) { return { id, name: name || 'Speler', pc: null, dc: null, open: false, iceQ: [], lastMsg: performance.now(), lastSent: 0, timer: 0, relay: false, rch: null, out: [], ot: 0 }; }
 function linkPc(link, onIce, iceServers) {
@@ -332,7 +375,7 @@ function onPlayerMsg(id, m) {
 const LOBBY = { ch: null, status: 'off', list: [], tracked: false, ready: null, pubN: 0 };
 function lobbyInfo() {
   const M = MP.match;
-  return { lobby: MP.lobby.id, name: MP.pub ? 'Openbare lobby' : myName(), n: roomCount(), max: MP_MAX, mode: MP.sel.mode, st: M && !M.result ? 1 : 0, ts: MP.lobby.ts, v: 2 };
+  return { lobby: MP.lobby.id, name: MP.pub ? 'Openbare lobby' : myName(), n: roomCount(), max: MP_MAX, mode: MP.sel.mode, st: M && !M.result ? 1 : 0, ts: MP.lobby.ts, v: 2, ver: GAME_VERSION };
 }
 function lobbyWatch() {
   if (!sbOn()) { LOBBY.status = 'off'; lobbyRender(); return Promise.resolve(false); }
@@ -349,11 +392,11 @@ function lobbyWatch() {
       const st = ch.presenceState(), seen = new Set(), list = [];
       LOBBY.pubN = 0;
       for (const k in st) {
-        for (const p of st[k]) if (p && p.lobby === PUB_ID) LOBBY.pubN = Math.max(LOBBY.pubN, clamp(p.n | 0, 0, MP_MAX)); // de openbare lobby staat altijd bovenaan
+        for (const p of st[k]) if (p && p.lobby === PUB_ID && p.ver === GAME_VERSION) LOBBY.pubN = Math.max(LOBBY.pubN, clamp(p.n | 0, 0, MP_MAX)); // de openbare lobby staat altijd bovenaan
         if (k === CLIENT_ID) continue;
         for (const p of st[k]) if (p && typeof p.lobby === 'string' && p.lobby !== PUB_ID && !seen.has(p.lobby)) {
           seen.add(p.lobby);
-          list.push({ id: p.lobby, name: cleanName(p.name) || 'Andy', n: clamp(p.n | 0 || 1, 1, MP_MAX), max: clamp(p.max | 0 || 2, 2, MP_MAX), mode: mpModeOf(p.mode), st: !!p.st, ts: +p.ts || 0 });
+          list.push({ id: p.lobby, name: cleanName(p.name) || 'Andy', n: clamp(p.n | 0 || 1, 1, MP_MAX), max: clamp(p.max | 0 || 2, 2, MP_MAX), mode: mpModeOf(p.mode), st: !!p.st, ts: +p.ts || 0, ver: typeof p.ver === 'string' ? p.ver : '' });
         }
       }
       LOBBY.list = list.sort((x, y) => (x.n >= x.max) - (y.n >= y.max) || y.n - x.n || y.ts - x.ts);
@@ -390,16 +433,16 @@ function lobbyRender() {
   else if (LOBBY.status === 'loading' || LOBBY.status === 'off') ul.innerHTML = empty('Lobbies zoeken…');
   else if (LOBBY.status === 'err') ul.innerHTML = empty('Geen verbinding met de server. Heb je internet?');
   else {
-    const n = LOBBY.pubN;
+    const n = LOBBY.pubN, old = verOld();
     ul.innerHTML = `<li class="pub"><span>🌍 Openbare lobby <small>${n ? `${n} speler${n === 1 ? '' : 's'}` : 'nog leeg'} · altijd open</small></span>` +
-      `<button class="btn green sm" data-lobby="${PUB_ID}"${n >= MP_MAX ? ' disabled' : ''}>${n >= MP_MAX ? 'Vol' : 'Meedoen'}</button></li>` + LOBBY.list.map(l => {
-      const full = l.n >= l.max;
-      return `<li><span>${escHtml(l.name)} <small>${l.n}/${l.max} · ${MP_MODE_NAME[l.mode]}${l.st ? ' · bezig' : ''}</small></span>` +
-        `<button class="btn green sm" data-lobby="${escHtml(l.id)}"${full ? ' disabled' : ''}>${full ? 'Vol' : 'Meedoen'}</button></li>`;
+      `<button class="btn green sm" data-lobby="${PUB_ID}"${n >= MP_MAX || old ? ' disabled' : ''}>${n >= MP_MAX ? 'Vol' : 'Meedoen'}</button></li>` + LOBBY.list.map(l => {
+      const full = l.n >= l.max, other = l.ver !== GAME_VERSION; // een andere versie: meedoen kan niet
+      return `<li${other ? ' class="old"' : ''}><span>${escHtml(l.name)} <small>${l.n}/${l.max} · ${MP_MODE_NAME[l.mode]}${l.st ? ' · bezig' : ''}</small></span>` +
+        `<button class="btn green sm" data-lobby="${escHtml(l.id)}"${full || other || old ? ' disabled' : ''}>${other ? 'Andere versie' : full ? 'Vol' : 'Meedoen'}</button></li>`;
     }).join('');
     for (const bt of ul.querySelectorAll('button')) on(bt, () => { const l = LOBBY.list.find(x => x.id === bt.dataset.lobby); mpLobbyJoin(bt.dataset.lobby, l && l.name); });
   }
-  $('btnMpHost').disabled = !sbOn() || LOBBY.status !== 'on';
+  $('btnMpHost').disabled = !sbOn() || LOBBY.status !== 'on' || verOld();
 }
 
 // ---- signalering: per lobby een eigen kanaal ----
@@ -471,6 +514,7 @@ function sigOnMsg(m) {
     const link = MP.links.get(m.from);
     if (m.t === 'join') {
       if (link) return; // al bezig
+      if (m.ver !== GAME_VERSION) { sigSend({ t: 'ver', to: m.from, v: GAME_VERSION }); return; } // alleen dezelfde versie
       if (roomCount() + [...MP.links.values()].filter(l => !l.open).length >= MP_MAX) { sigSend({ t: 'full', to: m.from }); return; }
       hostAccept(m.from, m.name);
     } else if (m.t === 'relay?' && link) relayStart(link);
@@ -479,14 +523,15 @@ function sigOnMsg(m) {
     else if (m.t === 'ice') addIce(link, m.c);
   } else if (MP.role === 'guest') {
     if (MP.hostSig && m.from !== MP.hostSig) return;
-    if (m.t === 'full') joinFail('Deze lobby is vol.');
+    if (m.t === 'ver') verCheck(true).then(() => mpJoinFail(verOld() ? 'Je speelt een oude versie. Werk het spel bij om mee te doen.' : 'Deze lobby draait een andere versie van het spel.'));
+    else if (m.t === 'full') joinFail('Deze lobby is vol.');
     else if (m.t === 'offer' && typeof m.sdp === 'string') guestOffer(m);
     else if (m.t === 'relay' && MP.hostSig === m.from) guestRelay();
     else if (m.t === 'ice') { if (MP.link) addIce(MP.link, m.c); else if (m.c && MP.preIce.length < 50) MP.preIce.push(m.c); }
   }
 }
 async function mpLobbyHost() {
-  if (MP.busy) return;
+  if (MP.busy || !await verGate()) return; // de host moet de nieuwste versie hebben
   mpClose(false);
   try { const b = JSON.parse(localStorage.getItem('andyApples.bots') || 'null'); if (b) MP.bots = { n: clamp(b.n | 0, 0, BOT_MAX), lvl: clamp(b.lvl | 0, 0, AI_LV.length - 1) }; } catch (e) { /* */ }
   MP.role = 'host'; MP.busy = true; MP.lobby = { id: randHex(5), ts: Date.now() };
@@ -504,13 +549,13 @@ async function mpLobbyHost() {
 }
 async function mpLobbyJoin(id, name) {
   if (id === PUB_ID) { pubEnter(); return; }
-  if (!/^[0-9a-f]{6,16}$/.test(id || '')) return;
+  if (!/^[0-9a-f]{6,16}$/.test(id || '') || !await verGate()) return;
   mpClose(false);
   MP.role = 'guest'; MP.busy = true; MP.joinId = id; MP.hostName = cleanName(name) || 'de host';
   mpMsg(''); mpRender();
   try { await sigOpen(id); } catch (e) { if (MP.joinId === id) mpJoinFail(e.message); return; }
   if (MP.joinId !== id) return;
-  sigSend({ t: 'join', name: myName() });
+  sigSend({ t: 'join', name: myName(), ver: GAME_VERSION });
   // geen antwoord binnen 8 s: de lobby is gesloten (daarna krijgt het verbinden zelf 20 s)
   MP.joinTimer = setTimeout(() => { if (MP.joinId === id && !MP.inRoom && !MP.link) mpJoinFail('Deze lobby is niet meer beschikbaar.'); }, 8000);
 }
@@ -582,6 +627,7 @@ function mpTick() {
   for (const l of [...MP.links.values()]) keep(l, () => linkDown(l, ''));
   if (MP.link) keep(MP.link, () => mpLost('De host reageert niet meer.'));
   if (MP.pub) pubTick();
+  if ((MP.role || MP.pub || curScreen === 'mp') && Date.now() - VER.checked > 120000) verCheck(); // af en toe kijken of er een nieuwe versie is
 }
 // verbinding kwijt: tijdens een potje eindigt dat zonder winnaar
 function mpLost(reason) {
@@ -605,13 +651,13 @@ const PUB_ID = 'pub';
 const PUB_WAIT = 15000;   // ms tussen de rondes (en na binnenkomst van de tweede speler)
 const PUB_MODES = ['race', 'endurance', 'br'];
 async function pubEnter() {
-  if (MP.busy) return;
+  if (MP.busy || !await verGate()) return;
   mpClose(false);
   MP.pub = true; MP.busy = true; MP.pubTs = Date.now(); MP.pubReady = false; MP.pubBad = new Map(); MP.hostName = 'Openbare lobby';
   mpMsg(''); mpRender();
   try {
     if (!(await lobbyWatch())) throw new Error('Geen verbinding met de server. Heb je internet?');
-    await sigOpen(PUB_ID, true);
+    await sigOpen(PUB_ID + '-' + GAME_VERSION, true); // per versie een eigen openbare lobby
   } catch (e) { if (MP.pub) { mpClose(false); mpMsg(e.message, false); mpRender(); } }
 }
 // wie is de host? Wie al host is, blijft het (een nieuwe speler met een verkeerd klokje neemt het niet over).
@@ -653,7 +699,7 @@ function pubJoin(lead) {
   if (MP.role) pubDrop(false);
   MP.role = 'guest'; MP.busy = true; MP.hostSig = lead; MP.joinId = PUB_ID; MP.hostName = 'Openbare lobby';
   MP.joinSent = performance.now();
-  sigSend({ t: 'join', to: lead, name: myName() });
+  sigSend({ t: 'join', to: lead, name: myName(), ver: GAME_VERSION });
   const id = lead;
   MP.joinTimer = setTimeout(() => { if (MP.pub && MP.hostSig === id && !MP.inRoom && !MP.link) joinFail('De host reageert niet.'); }, 12000);
   mpRender();
@@ -661,11 +707,11 @@ function pubJoin(lead) {
 // host: aftellen naar de volgende ronde en de stemmen naar iedereen
 function pubTick() {
   if (MP.role === 'guest' && !MP.link && MP.hostSig && performance.now() - MP.joinSent > 2500) { // de host was misschien nog niet klaar: opnieuw vragen
-    MP.joinSent = performance.now(); sigSend({ t: 'join', to: MP.hostSig, name: myName() });
+    MP.joinSent = performance.now(); sigSend({ t: 'join', to: MP.hostSig, name: myName(), ver: GAME_VERSION });
   }
   if (MP.role === 'host') {
     const M = MP.match, busy = M && !M.result;
-    if (busy || roomCount() < 2) { if (MP.pubAt) { MP.pubAt = 0; pubAnnounce(); mpRender(); } }
+    if (busy || roomCount() < 2 || verOld()) { if (MP.pubAt) { MP.pubAt = 0; pubAnnounce(); mpRender(); } }
     else if (!MP.pubAt) { MP.pubAt = Date.now() + PUB_WAIT; pubAnnounce(); mpRender(); }
     else if (Date.now() >= MP.pubAt) { MP.pubAt = 0; pubRound(); }
   }
@@ -699,6 +745,7 @@ function pubRound() {
 const pubTally0 = () => MP.role === 'host' ? pubTally() : Object.assign({ race: 0, endurance: 0, br: 0 }, MP.pubInfo && MP.pubInfo.votes);
 const pubSecs = () => { const I = MP.pubInfo; return I && I.at ? Math.max(0, Math.ceil((I.at - Date.now()) / 1000)) : 0; };
 function pubStatus() {
+  if (verOld()) return 'Nieuwe versie: werk bij om verder te spelen';
   if (!MP.inRoom) return 'Verbinden…';
   const M = MP.match;
   if (M && !M.result && game.mp === M) return '';
@@ -858,7 +905,7 @@ function mpRender() {
   $('mpBotNote').textContent = bots && MP.bots.n && MP.sel.mode === 'br' ? 'Apen doen niet mee met battle royale.' : '';
   // start (openbare lobby: vanzelf)
   $('btnMpStart').classList.toggle('hidden', !canPick);
-  $('btnMpStart').disabled = !enough;
+  $('btnMpStart').disabled = !enough || (!loc && verOld()); // de host moet de nieuwste versie hebben
   $('mpGuestWait').classList.toggle('hidden', canPick);
   $('mpGuestWait').textContent = pub ? pubStatus() : 'Wachten tot de host start…';
 }
@@ -872,7 +919,7 @@ function openMp() {
   $('mpName').title = $('mpName').readOnly ? 'Je gebruikersnaam; aan te passen bij Account' : '';
   mpRender();
   showScreen('mp');
-  lobbyWatch(); mpIce(); // TURN-gegevens alvast ophalen, dan hoeft meedoen daar niet op te wachten
+  lobbyWatch(); mpIce(); verCheck(true); // TURN-gegevens alvast ophalen, dan hoeft meedoen daar niet op te wachten
 }
 function mpSelect(mode, len) {
   if (MP.pub && !MP.local) { if (mode) pubVote(mode); return; } // openbare lobby: stemmen
@@ -1045,7 +1092,7 @@ function mpAgainRender() {
     return;
   }
   if (!MP.inRoom) { b.disabled = true; b.textContent = 'Verbinding verbroken'; return; }
-  if (MP.role === 'host') { const ok = roomCount() > 1; b.disabled = !ok; b.textContent = ok ? 'Nieuwe ronde' : 'Niemand meer in de lobby'; }
+  if (MP.role === 'host') { const ok = roomCount() > 1 && !verOld(); b.disabled = !ok; b.textContent = verOld() ? 'Nieuwe versie: werk bij' : ok ? 'Nieuwe ronde' : 'Niemand meer in de lobby'; }
   else { b.disabled = true; b.textContent = 'Wachten op de host…'; }
 }
 function mpAgain() {

@@ -1,0 +1,24 @@
+# Houdt de versie van het spel bij (tools/version.mjs): vergeet iemand die bij te werken, dan doet deze
+# workflow het na de push naar main alsnog, met een eigen commit. Online spelen kan alleen met dezelfde versie.
+name: Versie bijwerken
+on:
+  push:
+    branches: [main]
+    paths: ['index.html', 'css/**', 'js/**']
+permissions:
+  contents: write
+concurrency: version
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node tools/version.mjs
+      - name: Commit als de versie veranderd is
+        run: |
+          if git diff --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Versie bijgewerkt ($(node -e "process.stdout.write(require('./version.json').v)"))"
+          git pull --rebase origin main && node tools/version.mjs && git commit -am "Versie bijgewerkt" || true
+          git push origin HEAD:main

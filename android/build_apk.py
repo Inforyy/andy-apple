@@ -18,7 +18,7 @@ en een JDK (javac, java, keytool).
 
 Gebruik:  python3 build_apk.py --tools DIR --keystore andy.p12 --storepass WACHTWOORD [--version 1.0 --code 1]
 """
-import argparse, os, shutil, struct, subprocess, sys, tempfile, zipfile
+import argparse, os, re, shutil, struct, subprocess, sys, tempfile, zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -191,7 +191,9 @@ GAME_DIRS = ('css', 'js')   # mappen naast index.html die bij het spel horen
 
 def game_assets():
     """(naam in de APK, bytes) voor index.html en alles in GAME_DIRS, in vaste volgorde."""
-    out = [('assets/index.html', open(os.path.join(ROOT, 'index.html'), 'rb').read())]
+    # zonder ?v=versie achter de scripts (dat is voor de browsercache op de site; in de app staan ze los)
+    html = re.sub(rb'((?:src|href)="(?:js|css)/[^"?]+)\?v=[^"]*"', rb'\1"', open(os.path.join(ROOT, 'index.html'), 'rb').read())
+    out = [('assets/index.html', html)]
     for d in GAME_DIRS:
         for base, dirs, files in sorted(os.walk(os.path.join(ROOT, d))):
             dirs.sort()

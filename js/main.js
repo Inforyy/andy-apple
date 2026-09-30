@@ -157,6 +157,8 @@ function checkJoinLink() {
 }
 window.addEventListener('hashchange', checkJoinLink);
 checkJoinLink();
+// staat er een nieuwere versie online (bijv. een tabblad dat al lang openstaat)? Dan even melden.
+if (!IN_APP) setTimeout(() => verCheck().then(() => { if (verOld() && curScreen === 'menu') showBanner('Nieuwe versie!', 'Herlaad de pagina om bij te werken'); }), 4000);
 if (lbOn()) lbSubmit().catch(() => { /* offline */ });
 try { if (sbOn() && (localStorage.getItem('andyApples.auth') || /access_token|code=/.test(location.hash + location.search))) accEnsure().catch(() => { /* offline */ }); } catch (e) { /* */ }
 requestAnimationFrame(frame);

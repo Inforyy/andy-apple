@@ -570,3 +570,7 @@ html.short .modes-grid .mode-t{font-size:20px}
 #mpResVote .sub{margin:0 0 6px}
 #mpModeRow .seg button,#mpResVote .seg button{padding-left:6px;padding-right:6px}
 .seg button .vc{font-style:normal;display:inline-block;min-width:18px;padding:0 5px;margin-left:3px;border-radius:9px;background:#c2410c;color:#fff;font-size:12px;line-height:18px}
+/* een lobby met een andere versie; melding als er een nieuwe versie online staat */
+.lobbies li.old{opacity:.6}
+.mp-update{background:#fff3c4;border-color:#f0c34a}
+.mp-update .set-lbl{white-space:normal;line-height:1.3;font-size:14px}

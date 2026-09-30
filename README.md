@@ -139,7 +139,7 @@ In multiplayer staan upgrades uit, en appels en XP tellen niet mee voor je save.
 - **Battle royale** (online): een kleine arena waar je niet kunt wegvluchten. Iedereen begint op een eigen liaan met een appelkatapult. Pak fruitwapens uit de zwevende bellen (🍌 bananenblaster, 🥥 kokoskanon met hagel, 🍍 ananasbazooka die ontploft, 🍇 druivensniper, ❤️ extra leven), **richt met de muis en klik om te schieten**; grijpen doe je met `Spatie` of de rechtermuisknop (op een telefoon: links op het scherm = grijpen, rechts tikken = schieten op die plek). Zwaaien kan hier alle kanten op, ook naar achteren. Een zware treffer schiet je van je liaan; val je in het water of is je leven op, dan ben je af. Na 40 seconden drukt een storm de arena van beide kanten kleiner. Wie als laatste overblijft, wint; in de uitslag staat ook hoeveel spelers je eruit schoot.
 - **Achtervolging** (tegen Kiwi): Kiwi start 3 tellen na jou en wordt steeds sneller. Hoe lang hou je het vol? Je record wordt bewaard.
 
-Online gebruikt het spel Supabase om lobbies te vinden en de verbinding op te zetten. Daarna praten de spelers direct met de host (WebRTC). Lukt dat na 7 seconden nog niet (vaak als spelers op hetzelfde wifi-netwerk zitten), dan loopt het verkeer met die speler vanzelf via Supabase. Dat werkt altijd, maar is iets minder vloeiend. Bij 20 spelers heeft de host een goede verbinding nodig. Er is geen server die het spel draait: ook in de openbare lobby is één van de spelers de host, en gaat die weg, dan neemt een ander het over.
+Online gebruikt het spel Supabase om lobbies te vinden en de verbinding op te zetten. Daarna praten de spelers direct met de host (WebRTC). Lukt dat na 7 seconden nog niet (vaak als spelers op hetzelfde wifi-netwerk zitten), dan loopt het verkeer met die speler vanzelf via Supabase. Dat werkt altijd, maar is iets minder vloeiend. Bij 20 spelers heeft de host een goede verbinding nodig. Er is geen server die het spel draait: ook in de openbare lobby is één van de spelers de host, en gaat die weg, dan neemt een ander het over. Online spelen kan alleen met de nieuwste versie van het spel; heb je een oude (bijvoorbeeld een tabblad dat al lang openstaat), dan krijg je een melding met **Bijwerken**. De Android-app moet daarvoor ook bij zijn.
 
 ## Instellingen
 
@@ -175,6 +175,7 @@ Er is geen build-stap en geen npm. `index.html` bevat de schermen, `css/style.cs
 
 | Bestand | Wat |
 | --- | --- |
+| `version.js` | de versie van het spel (automatisch, zie **Versie** hieronder) |
 | `config.js` | Supabase-instellingen (zie [Supabase instellen](#supabase-instellen)) |
 | `data.js` | werelden, upgrades, levels, Kiwi-niveaus, moeilijkheid en tempo: **hier begin je bij uitbreiden of balanceren** |
 | `util.js`, `save.js`, `audio.js` | hulpfuncties, opslag, geluid en muziek |
@@ -185,6 +186,7 @@ Er is geen build-stap en geen npm. `index.html` bevat de schermen, `css/style.cs
 | `career.js`, `levels.js`, `worldmap.js` | carrière: tijd, uitdagingen, power-ups en bazen in een level; de toren, het kasteel en de modifiers; de 3D-wereldkaart, filmpjes en het laadscherm |
 | `game.js`, `main.js` | spelverloop, menu's, invoer en HUD; hoofdlus en opstarten |
 
+- **Versie**: draai `node tools/version.mjs` vóór elke commit die het spel verandert (`index.html`, `css/`, `js/`). Het rekent een vingerafdruk van die bestanden uit en zet die in `js/version.js`, `version.json` en als `?v=…` achter de scripts in `index.html`, zodat browsers na een update nooit oude, gecachte scripts gebruiken. Online spelen kan alleen met dezelfde versie: wie een oude versie heeft, krijgt in Multiplayer een melding met **Bijwerken** en kan geen lobby maken of meedoen. Vergeet je het, dan werkt de GitHub-workflow `.github/workflows/version.yml` de versie na de push naar `main` alsnog bij, en de rooktest faalt zolang hij niet klopt. Zet bij het online zetten ook `version.json` op de server.
 - **Testen**: `node tools/smoke.mjs` (Node 18+ en Chrome/Chromium). Klikt door de menu's, speelt alle modi en faalt bij elke JavaScript-fout.
 - **Prestaties meten**: `node tools/perf.mjs`. Meet per kwaliteitsniveau en wereld de framerate en rekentijd, en hoeveel geheugen de achtergrond gebruikt. Vergelijk vóór en na een wijziging op dezelfde computer.
 - **Android-app bouwen**: zie [`android/README.md`](android/README.md). De APK in de repo wordt niet vanzelf bijgewerkt als het spel verandert.

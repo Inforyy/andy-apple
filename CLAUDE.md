@@ -19,6 +19,7 @@ GitHub Pages deploys from `main` root. Work happens on `claude/*` branches that 
 ## Commands
 
 - **Run**: open `index.html` in a browser. It must keep working via `file://`, which is why there are no ES modules.
+- **Version stamp**: run `node tools/version.mjs` before every commit that changes `index.html`, `css/` or `js/` (and again after rebasing onto new upstream commits). It hashes those files into `js/version.js` (`GAME_VERSION`), `version.json` and the `?v=` query on every script/stylesheet tag in `index.html`. Online play requires the same version (see the version section at the top of `mp-online.js`: `verCheck`/`verGate`, `ver` in lobby presence and in `join`, the public lobby channel is per version). The smoke test fails if the stamp is stale; `.github/workflows/version.yml` restamps after a push to `main` as a safety net. `android/build_apk.py` strips the `?v=` queries.
 - **Smoke test**: `node tools/smoke.mjs` (Node 18+, finds `chromium`/`google-chrome` itself or uses `CHROME=...`). It needs no npm packages; it drives headless Chromium over the DevTools protocol.
   - It clicks through the menus and plays Endless (with a head-start, a trip to space, the Matrix secret, the automatic giant-vine biome transition, going underwater and opening a loot box), the career (world map with the unlock and world-clear cutscenes, the loading screen, save migration, upgrade scaling, a boss level and a failed level) and career levels (including the four style biomes), split-screen, Kiwi and the chase mode.
   - It fails on any JS exception or `console.error`.
@@ -38,7 +39,7 @@ GitHub Pages deploys from `main` root. Work happens on `claude/*` branches that 
 ### Script loading: classic scripts sharing one global scope
 `index.html` loads the scripts in this fixed order:
 
-`config, util, data, save, audio, view, world, physics, effects, render-bg, render-world, model3d, online, mp-online, mp-local, mp-br, career, levels, worldmap, game, main`
+`version, config, util, data, save, audio, view, world, physics, effects, render-bg, render-world, model3d, online, mp-online, mp-local, mp-br, career, levels, worldmap, game, main`
 
 Top-level `let`/`const`/`function` in these classic scripts share the global lexical scope. Any file can therefore read **and reassign** another file's `let` (e.g. `camX`, `G`, `vines`, `save`), which the code relies on heavily. This is why the code does not use ES modules: imported bindings are read-only, and `type="module"` doesn't work on `file://`. Consequences:
 

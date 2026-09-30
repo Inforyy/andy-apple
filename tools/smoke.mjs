@@ -63,6 +63,8 @@ function check(ok, what) {
 }
 
 async function main() {
+  // de versie (tools/version.mjs) moet kloppen: online spelen kan alleen met dezelfde versie
+  try { execSync('node tools/version.mjs --check', { cwd: ROOT, stdio: 'pipe' }); } catch (e) { throw new Error(String(e.stdout || e.message).trim()); }
   // wachten tot Chromium zijn debugpoort heeft opgeschreven
   let port;
   for (let i = 0; i < 100 && !port; i++) {
