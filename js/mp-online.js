@@ -313,6 +313,9 @@ const roomCount = () => 1 + [...MP.players.values()].filter(P => P.inRoster).len
 // ---- berichten ----
 function onLinkMsg(link, m) {
   if (!m || typeof m.type !== 'string') return;
+  // ping: heen en terug meten (voor de ping-meter in de HUD); host en gast doen dit allebei
+  if (m.type === 'pi') { sendLink(link, { type: 'po', t: m.t }); return; }
+  if (m.type === 'po') { const rtt = performance.now() - m.t; if (rtt >= 0 && rtt < 30000) link.rtt = link.rtt ? link.rtt + (rtt - link.rtt) * 0.3 : rtt; return; }
   if (MP.role === 'host') {
     if (!MP.links.has(link.id)) return;
     switch (m.type) {
@@ -656,8 +659,21 @@ function mpTick() {
   };
   for (const l of [...MP.links.values()]) keep(l, () => linkDown(l, ''));
   if (MP.link) keep(MP.link, () => mpLost('De host reageert niet meer.'));
+  pingTick(now);
   if (MP.pub) pubTick();
   if ((MP.role || MP.pub || curScreen === 'mp') && Date.now() - VER.checked > 120000) verCheck(); // af en toe kijken of er een nieuwe versie is
+}
+// ping-meter rechtsboven, de hele tijd dat je online met anderen verbonden bent (lobby én potje):
+// een gast meet naar de host, de host toont de traagste gast
+function pingTick(now) {
+  const links = (MP.link ? [MP.link] : [...MP.links.values()]).filter(l => l.open), el = $('mpPing');
+  const on = links.length > 0;
+  el.classList.toggle('hidden', !on);
+  if (!on) { for (const l of links) l.rtt = 0; return; }
+  for (const l of links) sendLink(l, { type: 'pi', t: now });
+  const ms = Math.max(0, ...links.map(l => l.rtt || 0));
+  el.textContent = ms ? `📶 ${Math.round(ms)} ms` : '📶 … ms';
+  el.classList.toggle('bad', ms > 100);
 }
 // verbinding kwijt: tijdens een potje eindigt dat zonder winnaar
 function mpLost(reason) {

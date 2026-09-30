@@ -24,7 +24,7 @@
 <meta name="twitter:description" content="Slinger als Andy de gorilla aan lianen door jungle, vulkanen, de ruimte en Snoepland. Eén knop, 55 levels en multiplayer tot 20 spelers. Gratis in je browser.">
 <meta name="twitter:image" content="https://stijnbarendse.nl/appel/og-andy.jpg">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%8E%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="css/style.css?v=739c25176c">
+<link rel="stylesheet" href="css/style.css?v=8692e73064">
 <!-- Opstartscherm: inline, zodat het er staat voordat de rest geladen en getekend is -->
 <style>
 #splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
@@ -70,6 +70,7 @@
 </svg>
 <canvas id="game"></canvas>
 
+<div id="mpPing" class="pill hidden" title="Ping naar de andere spelers"></div>
 <div id="hud" class="hidden">
   <div class="hud-top">
     <div class="hud-col">
@@ -497,28 +498,28 @@
   </div>
 </div>
 
-<script src="js/version.js?v=739c25176c"></script>
-<script src="js/config.js?v=739c25176c"></script>
-<script src="js/util.js?v=739c25176c"></script>
-<script src="js/data.js?v=739c25176c"></script>
-<script src="js/save.js?v=739c25176c"></script>
-<script src="js/audio.js?v=739c25176c"></script>
-<script src="js/view.js?v=739c25176c"></script>
-<script src="js/world.js?v=739c25176c"></script>
-<script src="js/physics.js?v=739c25176c"></script>
-<script src="js/effects.js?v=739c25176c"></script>
-<script src="js/render-bg.js?v=739c25176c"></script>
-<script src="js/render-world.js?v=739c25176c"></script>
-<script src="js/model3d.js?v=739c25176c"></script>
-<script src="js/online.js?v=739c25176c"></script>
-<script src="js/mp-online.js?v=739c25176c"></script>
-<script src="js/mp-local.js?v=739c25176c"></script>
-<script src="js/mp-br.js?v=739c25176c"></script>
-<script src="js/mp-arena.js?v=739c25176c"></script>
-<script src="js/career.js?v=739c25176c"></script>
-<script src="js/levels.js?v=739c25176c"></script>
-<script src="js/worldmap.js?v=739c25176c"></script>
-<script src="js/game.js?v=739c25176c"></script>
-<script src="js/main.js?v=739c25176c"></script>
+<script src="js/version.js?v=8692e73064"></script>
+<script src="js/config.js?v=8692e73064"></script>
+<script src="js/util.js?v=8692e73064"></script>
+<script src="js/data.js?v=8692e73064"></script>
+<script src="js/save.js?v=8692e73064"></script>
+<script src="js/audio.js?v=8692e73064"></script>
+<script src="js/view.js?v=8692e73064"></script>
+<script src="js/world.js?v=8692e73064"></script>
+<script src="js/physics.js?v=8692e73064"></script>
+<script src="js/effects.js?v=8692e73064"></script>
+<script src="js/render-bg.js?v=8692e73064"></script>
+<script src="js/render-world.js?v=8692e73064"></script>
+<script src="js/model3d.js?v=8692e73064"></script>
+<script src="js/online.js?v=8692e73064"></script>
+<script src="js/mp-online.js?v=8692e73064"></script>
+<script src="js/mp-local.js?v=8692e73064"></script>
+<script src="js/mp-br.js?v=8692e73064"></script>
+<script src="js/mp-arena.js?v=8692e73064"></script>
+<script src="js/career.js?v=8692e73064"></script>
+<script src="js/levels.js?v=8692e73064"></script>
+<script src="js/worldmap.js?v=8692e73064"></script>
+<script src="js/game.js?v=8692e73064"></script>
+<script src="js/main.js?v=8692e73064"></script>
 </body>
 </html>
