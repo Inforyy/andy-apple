@@ -17,6 +17,14 @@ canvas{display:block;position:fixed;inset:0;touch-action:none;cursor:pointer}
   font-size:13px;padding:3px 10px;font-variant-numeric:tabular-nums}
 #mpPing[data-q=good]{background:rgba(30,150,60,.85)}#mpPing[data-q=ok]{background:rgba(190,160,20,.9)}
 #mpPing[data-q=meh]{background:rgba(220,110,20,.9)}#mpPing[data-q=bad]{background:rgba(200,20,20,.85)}
+/* eenmalige melding bij een langdurig slechte verbinding, onder de ping-meter (tik om weg te halen) */
+#mpWarn{position:fixed;z-index:50;top:calc(max(12px,env(safe-area-inset-top)) + 64px);right:max(14px,env(safe-area-inset-right));
+  max-width:min(270px,calc(100vw - 28px));padding:9px 13px;border-radius:14px;background:rgba(20,10,10,.82);border-left:4px solid #e0302a;
+  color:#fff;font-size:13px;line-height:1.35;display:flex;flex-direction:column;gap:2px;pointer-events:auto;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+#mpWarn b{font-size:15px;font-weight:900}
+#mpWarn.in{animation:mpWarnIn .3s ease-out}#mpWarn.out{animation:mpWarnOut .3s ease-in forwards}
+@keyframes mpWarnIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+@keyframes mpWarnOut{to{opacity:0;transform:translateX(24px)}}
 .pill.small{font-size:15px;padding:4px 11px}
 #hudDist{font-size:26px}
 #btnPause{pointer-events:auto;width:46px;height:46px;border-radius:50%;border:3px solid rgba(255,255,255,.85);background:rgba(0,0,0,.35);

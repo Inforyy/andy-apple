@@ -618,6 +618,9 @@ function mpClose(sayBye) {
 const mpActive = () => !!(MP.role || MP.sig || MP.link || MP.links.size || MP.pub);
 // Bij het opstarten (vanuit main.js)
 function mpInit() {
+  // melding over een slechte verbinding: tik om weg te halen (zonder dat het spel die tik als sprong ziet)
+  for (const ev of ['pointerdown', 'touchstart', 'mousedown']) $('mpWarn').addEventListener(ev, e => e.stopPropagation(), { passive: true });
+  $('mpWarn').addEventListener('click', pingWarnHide);
   // venster dicht of weg: meteen laten weten dat je weg bent (anders duurt het tot de time-out)
   window.addEventListener('pagehide', () => {
     if (!MP.inRoom) return;
@@ -663,11 +666,13 @@ function mpTick() {
 // ping-meter rechtsboven, de hele tijd dat je in online multiplayer zit (lobby én potje): je eigen ping naar de
 // server (Supabase Realtime, een heartbeat heen en terug), met een kleur per niveau. Blijft het antwoord uit, dan
 // loopt het getal gewoon op, zodat je een haperende verbinding meteen ziet.
-const PING = { ms: 0, sent: 0, last: 0 };
+// Is de ping een hele tijd hoog, dan komt er (één keer per sessie) een melding rechtsboven.
+const PING = { ms: 0, sent: 0, last: 0, tick: 0, bad: 0, warned: false };
+const PING_BAD_MS = 100, PING_WARN_AFTER = 20, PING_WARN_SHOW = 10000; // hoog = boven 100 ms; na 20 s slecht; melding 10 s
 function pingTick(now) {
   const el = $('mpPing'), on = mpActive() || !!game.mp;
   el.classList.toggle('hidden', !on);
-  if (!on) { PING.ms = 0; PING.sent = 0; return; }
+  if (!on) { PING.ms = 0; PING.sent = 0; PING.bad = 0; PING.tick = 0; pingWarnHide(); return; }
   const sock = sbClient && sbClient.realtime && sbClient.realtime.socketAdapter && sbClient.realtime.socketAdapter.socket;
   if (!PING.sent && now - PING.last >= 1000 && sock && typeof sock.ping === 'function') {
     PING.last = now;
@@ -679,6 +684,21 @@ function pingTick(now) {
   const ms = PING.sent && now - PING.sent > PING.ms ? Math.max(PING.ms, now - PING.sent) : PING.ms; // wachten op antwoord telt mee
   el.textContent = ms ? `${Math.round(ms)} ms` : '– ms';
   el.dataset.q = !ms ? '' : ms <= 50 ? 'good' : ms <= 80 ? 'ok' : ms <= 100 ? 'meh' : 'bad';
+  // slechte tijd optellen; gaat het even goed, dan zakt de teller half zo snel terug (een enkel goed moment wist hem niet)
+  const dt = PING.tick ? Math.min(2, (now - PING.tick) / 1000) : 0; PING.tick = now;
+  PING.bad = ms > PING_BAD_MS ? PING.bad + dt : Math.max(0, PING.bad - dt * 0.5);
+  if (!PING.warned && PING.bad >= PING_WARN_AFTER) { PING.warned = true; pingWarn(); }
+}
+function pingWarn() {
+  const w = $('mpWarn');
+  w.classList.remove('hidden', 'out'); void w.offsetWidth; w.classList.add('in');
+  clearTimeout(w._t); w._t = setTimeout(() => pingWarnHide(), PING_WARN_SHOW);
+}
+function pingWarnHide() {
+  const w = $('mpWarn');
+  if (w.classList.contains('hidden')) return;
+  clearTimeout(w._t); w.classList.remove('in'); w.classList.add('out');
+  setTimeout(() => w.classList.add('hidden'), 300);
 }
 // verbinding kwijt: tijdens een potje eindigt dat zonder winnaar
 function mpLost(reason) {
