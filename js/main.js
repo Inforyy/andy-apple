@@ -103,6 +103,7 @@ function frameSolo(dt) {
     if (acc > STEP) acc = 0;
     renderAlpha = acc / STEP;
     const gdt = dt * GAME_SPEED * ts;
+    if (steps && game.mp) mpBotsStep(steps, gdt); // online: de apen van de host evenveel stappen
     mpFrame(dt, gdt);
     updateEffects(gdt);
     const oy = camY;

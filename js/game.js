@@ -48,6 +48,7 @@ function gpuWarn(slow) {
   $('gpuWarn').classList.remove('hidden');
 }
 function showBanner(big, small) {
+  if (botSim) return; // een aap van de host (mp-online.js): die ziet niemand
   const b = $('banner');
   b.querySelector('.big').textContent = big;
   b.querySelector('.small').textContent = small || '';
@@ -603,6 +604,9 @@ function uiInit() {
   on('mpModeBr', () => mpSelect('br'));
   on('mpModeChase', () => mpSelect('chase'));
   for (const b of document.querySelectorAll('[data-len]')) on(b, () => mpSelect(null, +b.dataset.len));
+  for (const b of document.querySelectorAll('[data-bots]')) on(b, () => mpSetBots(+b.dataset.bots, null));
+  for (const b of document.querySelectorAll('[data-botlvl]')) on(b, () => mpSetBots(null, +b.dataset.botlvl));
+  for (const b of document.querySelectorAll('[data-vote]')) on(b, () => pubVote(b.dataset.vote));
   on('btnMpStart', () => MP.local ? localStart(MP.sel, MP.aiLvl) : mpHostStart(MP.sel));
   on('btnMpAgain', mpAgain);
   on('btnMpLobby', () => { mpLeaveMatch(); openMp(); });

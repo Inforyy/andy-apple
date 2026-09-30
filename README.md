@@ -127,7 +127,9 @@ Zwaaikracht en Lanceerkracht verhogen ook je topsnelheid: snelheid moet je verdi
 In multiplayer staan upgrades uit, en appels en XP tellen niet mee voor je save. Iedereen speelt in dezelfde wereld en ziet de anderen als extra gorilla's.
 
 **Manieren van spelen**
-- **Online lobbies (tot 20 spelers)**: kies **Gamemodes → Multiplayer → + Nieuwe lobby**. Je lobby verschijnt in de lijst van anderen, of je stuurt een uitnodigingslink. De host kiest de spelmodus en start vanaf 2 spelers. Na afloop start de host een nieuwe ronde.
+- **Openbare lobby**: staat altijd bovenaan in **Gamemodes → Multiplayer** en is altijd open. Zodra er 2 spelers zijn, start er vanzelf een ronde (na 15 seconden, en daarna steeds 15 seconden na elke ronde). Iedereen kan stemmen op de volgende spelmodus; de meeste stemmen wint, en zonder stemmen kiest het spel een willekeurige modus.
+- **Eigen lobby (tot 20 spelers)**: kies **+ Nieuwe lobby**. Je lobby verschijnt in de lijst van anderen, of je stuurt een uitnodigingslink. De host kiest de spelmodus en start vanaf 2 spelers. Na afloop start de host een nieuwe ronde.
+- **Apen (bots)**: in een eigen lobby kiest de host bij **Apen** hoeveel apen er meedoen (1 tot 5) en hoe goed ze zijn (*Makkelijk* t/m *Expert*). Zo kun je ook met z'n tweeën, of alleen, een volle race spelen. Apen doen mee met Race en Endurance, niet met Battle royale. Bij Endurance eindigt de ronde als er geen mensen meer over zijn.
 - **Duel** (2 spelers, één scherm): speler 1 speelt met `Spatie` (of de linker/bovenste helft van het scherm), speler 2 met `↑` of `Enter` (of de rechter/onderste helft). Geen internet nodig.
 - **Tegen Kiwi (AI)**: een race naar de finish tegen een orang-oetan op niveau *Makkelijk*, *Normaal*, *Moeilijk* of *Expert*.
 
@@ -137,7 +139,7 @@ In multiplayer staan upgrades uit, en appels en XP tellen niet mee voor je save.
 - **Battle royale** (online): een kleine arena waar je niet kunt wegvluchten. Iedereen begint op een eigen liaan met een appelkatapult. Pak fruitwapens uit de zwevende bellen (🍌 bananenblaster, 🥥 kokoskanon met hagel, 🍍 ananasbazooka die ontploft, 🍇 druivensniper, ❤️ extra leven), **richt met de muis en klik om te schieten**; grijpen doe je met `Spatie` of de rechtermuisknop (op een telefoon: links op het scherm = grijpen, rechts tikken = schieten op die plek). Zwaaien kan hier alle kanten op, ook naar achteren. Een zware treffer schiet je van je liaan; val je in het water of is je leven op, dan ben je af. Na 40 seconden drukt een storm de arena van beide kanten kleiner. Wie als laatste overblijft, wint; in de uitslag staat ook hoeveel spelers je eruit schoot.
 - **Achtervolging** (tegen Kiwi): Kiwi start 3 tellen na jou en wordt steeds sneller. Hoe lang hou je het vol? Je record wordt bewaard.
 
-Online gebruikt het spel Supabase alleen om lobbies te vinden en de verbinding op te zetten. Daarna praten de spelers direct met de host (WebRTC). Bij 20 spelers heeft de host een goede verbinding nodig. Zitten spelers op hetzelfde (wifi-)netwerk, dan lukt een directe verbinding vaak niet; daarvoor is een TURN-server nodig (zie [TURN-server voor spelers op hetzelfde netwerk](#turn-server-voor-spelers-op-hetzelfde-netwerk)).
+Online gebruikt het spel Supabase om lobbies te vinden en de verbinding op te zetten. Daarna praten de spelers direct met de host (WebRTC). Lukt dat na 7 seconden nog niet (vaak als spelers op hetzelfde wifi-netwerk zitten), dan loopt het verkeer met die speler vanzelf via Supabase. Dat werkt altijd, maar is iets minder vloeiend. Bij 20 spelers heeft de host een goede verbinding nodig. Er is geen server die het spel draait: ook in de openbare lobby is één van de spelers de host, en gaat die weg, dan neemt een ander het over.
 
 ## Instellingen
 
@@ -271,18 +273,13 @@ Accounts, online lobbies en de ranglijst gebruiken één gratis [Supabase](https
    };
    ```
 
-7. Voor multiplayer op hetzelfde netwerk: stel een TURN-server in (zie hieronder).
-8. Zet het spel online, bijvoorbeeld met **GitHub Pages**: repository → **Settings → Pages** → *Deploy from a branch* → `main` en `/ (root)`.
+7. Zet het spel online, bijvoorbeeld met **GitHub Pages**: repository → **Settings → Pages** → *Deploy from a branch* → `main` en `/ (root)`.
 
-### TURN-server voor spelers op hetzelfde netwerk
+### Multiplayer via de server
 
-Online spelers verbinden direct met elkaar (WebRTC). Tussen verschillende netwerken lukt dat met de gratis STUN-servers van Google. Op hetzelfde netwerk vaak niet: browsers verbergen het lokale adres van een apparaat (achter een `.local`-naam die veel netwerken en de Android-app niet kunnen opzoeken), en veel routers sturen verkeer naar hun eigen publieke adres niet terug naar binnen. Een TURN-server lost dat op: die geeft het verkeer door als een directe verbinding niet lukt. Lukt het wel direct, dan wordt hij niet gebruikt.
+Er hoeft niets extra's ingesteld te worden. Lukt een directe verbinding tussen twee spelers niet, dan gebruikt het spel een eigen Realtime-kanaal per speler op hetzelfde Supabase-project (berichten gebundeld per 0,1 s). Dat telt mee voor de Realtime-berichten van je Supabase-plan; het gratis plan is ruim genoeg voor af en toe een potje.
 
-1. Maak een gratis account op [metered.ca](https://www.metered.ca/stun-turn) en maak een TURN-app aan.
-2. Kopieer bij **Developers → TURN Credentials** de link die de ICE-servers teruggeeft: `https://jouwapp.metered.live/api/v1/turn/credentials?apiKey=…`
-3. Vul hem in in `js/config.js` bij `turn: '…'`.
-
-Een andere TURN-server kan ook: zet dan een vaste lijst in `turn`, bijvoorbeeld `turn: [{ urls: 'turn:turn.example.com:3478', username: '…', credential: '…' }]`. De gegevens staan zichtbaar in de website; zet daarom een verbruikslimiet bij je TURN-provider.
+Wil je dat liever niet? Met een eigen TURN-server lukt een directe verbinding vaker. Zet die in `js/config.js` bij `turn`: een adres dat de ICE-servers teruggeeft, of een vaste lijst, bijvoorbeeld `turn: [{ urls: 'turn:turn.example.com:3478', username: '…', credential: '…' }]`. Dit is niet nodig.
 
 **Goed om te weten**
 - Een vergeten wachtwoord kun je (nog) niet in het spel resetten. Dat kan in Supabase bij **Authentication → Users**.

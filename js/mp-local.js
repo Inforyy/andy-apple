@@ -155,8 +155,9 @@ function aiScore(L) {
   }
   return 0;
 }
-function aiThink() {
-  const A = LOCAL.ai, L = AI_LV[A.lvl];
+// A = Kiwi (op één scherm) of een aap in een online lobby (mpBotsStep in mp-online.js)
+function aiThink(A = LOCAL.ai) {
+  const L = AI_LV[A.lvl];
   if (!G || game.mode !== 'playing' || G.state === 'dead') { A.relAt = 0; if (input.down && game.mode === 'playing') aiSet(false); return; }
   A.t = (A.t || 0) + DT;
   if (game.mp.chase && game.mp.t < CHASE_DELAY) { if (input.down) aiSet(false); return; } // achtervolging: Kiwi geeft je een voorsprong

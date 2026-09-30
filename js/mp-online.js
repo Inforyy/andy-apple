@@ -9,7 +9,7 @@
 //  (dezelfde seed), simuleert zijn eigen Andy en stuurt zijn positie; de anderen worden als extra
 //  gorilla's getekend. Supabase wordt gebruikt om lobbies te vinden en om de verbinding op te zetten.
 //  Lukt een directe verbinding niet (vaak als spelers op hetzelfde netwerk zitten), dan loopt het verkeer
-//  met die speler via de server (een eigen Supabase-kanaal per verbinding, zie relayOpen).
+//  met die speler via de server (een eigen Supabase-kanaal per verbinding, zie relayStart).
 // =====================================================================
 const MP_NAME_KEY = 'andyApples.name';
 const MP_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
@@ -65,8 +65,8 @@ const escHtml = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&l
 // ---- verbindingen ----
 // ICE-servers: STUN is genoeg tussen twee verschillende netwerken. Op hetzelfde netwerk lukt een directe verbinding
 // vaak niet (browsers verbergen het lokale adres achter een .local-naam die veel netwerken en Android niet oplossen,
-// en veel routers sturen verkeer naar hun eigen publieke adres niet terug naar binnen). Dan is een TURN-server nodig
-// die het verkeer doorgeeft: CONFIG.turn (zie README: "TURN-server voor spelers op hetzelfde netwerk").
+// en veel routers sturen verkeer naar hun eigen publieke adres niet terug naar binnen). Dan gaat het via de server
+// (relayStart hieronder); met een eigen TURN-server in CONFIG.turn lukt direct vaker (optioneel).
 const ICE = { list: null, ts: 0, p: null };
 function mpIce() {
   const t = CONFIG.turn;
@@ -154,8 +154,11 @@ function relayChan(name, link) {
     const to = setTimeout(() => rej(new Error('Geen verbinding met de server.')), 10000);
     link.rch = ch;
     ch.subscribe(st => {
-      if (st === 'SUBSCRIBED') { clearTimeout(to); res(ch); }
-      else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT') { clearTimeout(to); rej(new Error('Geen verbinding met de server.')); }
+      if (st === 'SUBSCRIBED') {
+        clearTimeout(to);
+        if (link.rch === ch) res(ch);
+        else { try { sb.removeChannel(ch); } catch (e) { /* */ } rej(new Error('Verbinding gesloten.')); } // intussen afgesloten
+      } else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT') { clearTimeout(to); rej(new Error('Geen verbinding met de server.')); }
     });
   }));
 }
@@ -200,7 +203,7 @@ function linkUp(link) {
     MP.inRoom = true; MP.busy = false;
     playerFor(link.id, link.name).inRoster = true;
     const M = MP.match;
-    sendLink(link, { type: 'welcome', you: link.id, host: MP.myId, hostName: myName(), mode: MP.sel.mode, len: MP.sel.len, playing: M && !M.result ? 1 : 0 });
+    sendLink(link, { type: 'welcome', you: link.id, host: MP.myId, hostName: myName(), mode: MP.sel.mode, len: MP.sel.len, bots: MP.bots, playing: M && !M.result ? 1 : 0 });
     rosterSend(); lobbyTrack(); pubAnnounce();
     Sfx.buy();
   } else if (link === MP.link) {
@@ -214,6 +217,7 @@ function linkDown(link, reason) {
   if (MP.role === 'host') {
     if (MP.links.get(link.id) !== link) return;
     MP.links.delete(link.id);
+    MP.votes.delete(link.id);
     closeLink(link);
     const P = MP.players.get(link.id);
     if (P) {
@@ -222,7 +226,7 @@ function linkDown(link, reason) {
       if (M && !M.result && M.ids.includes(P.id)) { P.left = true; showBanner(`${P.name} is weg`, ''); mpCheck(); }
       else MP.players.delete(P.id);
     }
-    rosterSend(); lobbyTrack(); mpRender();
+    rosterSend(); lobbyTrack(); pubAnnounce(); mpRender();
   } else if (link === MP.link) mpLost(MP.inRoom ? 'De verbinding met de host is weg.' : reason);
 }
 
@@ -236,7 +240,8 @@ function playerFor(id, name) {
 // host: de lijst met spelers naar iedereen sturen
 function rosterSend() {
   if (MP.role !== 'host') return;
-  const list = [{ id: MP.myId, name: myName(), host: 1 }].concat(openLinks().map(l => ({ id: l.id, name: MP.players.has(l.id) ? MP.players.get(l.id).name : l.name })));
+  const list = [{ id: MP.myId, name: myName(), host: 1 }].concat(openLinks().map(l => ({ id: l.id, name: MP.players.has(l.id) ? MP.players.get(l.id).name : l.name })),
+    [...MP.players.values()].filter(P => P.bot && P.inRoster).map(P => ({ id: P.id, name: P.name, bot: 1 })));
   mpSend({ type: 'roster', list });
 }
 // gast: de lijst van de host overnemen
@@ -248,7 +253,7 @@ function applyRoster(list) {
     ids.add(r.id);
     if (r.host) MP.hostName = cleanName(r.name) || MP.hostName;
     if (r.id === MP.myId) continue;
-    const P = playerFor(r.id, r.name); P.inRoster = true; P.host = !!r.host;
+    const P = playerFor(r.id, r.name); P.inRoster = true; P.host = !!r.host; P.bot = !!r.bot;
   }
   for (const P of [...MP.players.values()]) {
     if (ids.has(P.id)) continue;
@@ -269,8 +274,9 @@ function onLinkMsg(link, m) {
       case 'hello': link.name = cleanName(m.name) || 'Speler'; playerFor(link.id, link.name); rosterSend(); lobbyTrack(); mpRender(); break;
       case 's': case 'ev': case 'quit': case 'br':
         onPlayerMsg(link.id, m);
-        mpSend(Object.assign({}, m, { from: link.id }), link); // doorsturen naar de rest
+        mpSend(Object.assign({}, m, { from: link.id }, link.relay && m.type === 's' ? { rl: 1 } : null), link); // doorsturen naar de rest
         break;
+      case 'vote': if (MP.pub && MP_MODE_NAME[m.mode]) { MP.votes.set(link.id, m.mode); pubAnnounce(); mpRender(); } break;
       case 'bye': linkDown(link, ''); break;
     }
     return;
@@ -281,11 +287,17 @@ function onLinkMsg(link, m) {
       MP.myId = String(m.you || CLIENT_ID); MP.hostName = cleanName(m.hostName) || MP.hostName || 'Host';
       MP.inRoom = true; MP.busy = false;
       if (m.mode) MP.sel = { mode: mpModeOf(m.mode), len: [500, 1000, 2000].includes(m.len) ? m.len : 1000 };
+      if (m.bots) MP.bots = { n: clamp(m.bots.n | 0, 0, BOT_MAX), lvl: clamp(m.bots.lvl | 0, 0, AI_LV.length - 1) };
       mpMsg(m.playing ? 'Er loopt nog een potje. Je doet mee in de volgende ronde.' : '', true);
       Sfx.buy(); mpRender();
       break;
     case 'roster': applyRoster(m.list); break;
-    case 'lobby': MP.sel = { mode: mpModeOf(m.mode), len: [500, 1000, 2000].includes(m.len) ? m.len : 1000 }; mpRender(); break;
+    case 'lobby':
+      MP.sel = { mode: mpModeOf(m.mode), len: [500, 1000, 2000].includes(m.len) ? m.len : 1000 };
+      if (m.bots) MP.bots = { n: clamp(m.bots.n | 0, 0, BOT_MAX), lvl: clamp(m.bots.lvl | 0, 0, AI_LV.length - 1) };
+      if (m.pub) MP.pubInfo = { at: m.pub.at > 0 ? Date.now() + Math.min(60000, +m.pub.at) : 0, votes: m.pub.votes && typeof m.pub.votes === 'object' ? m.pub.votes : {} };
+      mpRender(); if (curScreen === 'mpRes') mpAgainRender();
+      break;
     case 'start': if (Array.isArray(m.ids) && m.ids.includes(MP.myId)) mpStartMatch(m); break;
     case 's': case 'ev': case 'quit': case 'br': if (typeof m.from === 'string') onPlayerMsg(m.from, m); break;
     case 'full': mpJoinFail('Deze lobby is vol.'); break;
@@ -298,6 +310,7 @@ function onPlayerMsg(id, m) {
   P.lastMsg = performance.now();
   if (!M || m.id !== M.seed || !M.ids.includes(id)) return;
   if (m.type === 's') {
+    if (m.rl) P.relay = true; // komt via de server: schokkeriger, dus iets verder in het verleden tekenen
     P.snaps.push(m); if (P.snaps.length > 40) P.snaps.shift();
     P.t = Math.max(P.t, +m.t || 0); P.dist = +m.d || 0; P.apples = m.ap | 0; P.falls = m.f | 0;
   } else if (m.type === 'ev') {
@@ -316,10 +329,10 @@ function onPlayerMsg(id, m) {
 // ---- Lobbylijst (Supabase Realtime presence) ----
 // Iedereen in het multiplayermenu luistert naar het kanaal "andy-lobbies". Een host meldt zijn lobby
 // daar aan (naam, aantal spelers, modus) en verschijnt zo in de lijst van de anderen.
-const LOBBY = { ch: null, status: 'off', list: [], tracked: false, ready: null };
+const LOBBY = { ch: null, status: 'off', list: [], tracked: false, ready: null, pubN: 0 };
 function lobbyInfo() {
   const M = MP.match;
-  return { lobby: MP.lobby.id, name: myName(), n: roomCount(), max: MP_MAX, mode: MP.sel.mode, st: M && !M.result ? 1 : 0, ts: MP.lobby.ts, v: 2 };
+  return { lobby: MP.lobby.id, name: MP.pub ? 'Openbare lobby' : myName(), n: roomCount(), max: MP_MAX, mode: MP.sel.mode, st: M && !M.result ? 1 : 0, ts: MP.lobby.ts, v: 2 };
 }
 function lobbyWatch() {
   if (!sbOn()) { LOBBY.status = 'off'; lobbyRender(); return Promise.resolve(false); }
@@ -334,9 +347,11 @@ function lobbyWatch() {
     ch.on('presence', { event: 'sync' }, () => {
       if (LOBBY.ch !== ch) return;
       const st = ch.presenceState(), seen = new Set(), list = [];
+      LOBBY.pubN = 0;
       for (const k in st) {
+        for (const p of st[k]) if (p && p.lobby === PUB_ID) LOBBY.pubN = Math.max(LOBBY.pubN, clamp(p.n | 0, 0, MP_MAX)); // de openbare lobby staat altijd bovenaan
         if (k === CLIENT_ID) continue;
-        for (const p of st[k]) if (p && typeof p.lobby === 'string' && !seen.has(p.lobby)) {
+        for (const p of st[k]) if (p && typeof p.lobby === 'string' && p.lobby !== PUB_ID && !seen.has(p.lobby)) {
           seen.add(p.lobby);
           list.push({ id: p.lobby, name: cleanName(p.name) || 'Andy', n: clamp(p.n | 0 || 1, 1, MP_MAX), max: clamp(p.max | 0 || 2, 2, MP_MAX), mode: mpModeOf(p.mode), st: !!p.st, ts: +p.ts || 0 });
         }
@@ -374,9 +389,10 @@ function lobbyRender() {
   if (!sbOn()) ul.innerHTML = empty('Online lobbies zijn nog niet ingesteld. Speel op dit apparaat.');
   else if (LOBBY.status === 'loading' || LOBBY.status === 'off') ul.innerHTML = empty('Lobbies zoeken…');
   else if (LOBBY.status === 'err') ul.innerHTML = empty('Geen verbinding met de server. Heb je internet?');
-  else if (!LOBBY.list.length) ul.innerHTML = empty('Nog geen open lobbies. Maak er zelf een!');
   else {
-    ul.innerHTML = LOBBY.list.map(l => {
+    const n = LOBBY.pubN;
+    ul.innerHTML = `<li class="pub"><span>🌍 Openbare lobby <small>${n ? `${n} speler${n === 1 ? '' : 's'}` : 'nog leeg'} · altijd open</small></span>` +
+      `<button class="btn green sm" data-lobby="${PUB_ID}"${n >= MP_MAX ? ' disabled' : ''}>${n >= MP_MAX ? 'Vol' : 'Meedoen'}</button></li>` + LOBBY.list.map(l => {
       const full = l.n >= l.max;
       return `<li><span>${escHtml(l.name)} <small>${l.n}/${l.max} · ${MP_MODE_NAME[l.mode]}${l.st ? ' · bezig' : ''}</small></span>` +
         `<button class="btn green sm" data-lobby="${escHtml(l.id)}"${full ? ' disabled' : ''}>${full ? 'Vol' : 'Meedoen'}</button></li>`;
@@ -387,14 +403,20 @@ function lobbyRender() {
 }
 
 // ---- signalering: per lobby een eigen kanaal ----
-function sigOpen(id) {
+// De openbare lobby gebruikt op dit kanaal ook presence: daarmee ziet iedereen wie er is en wie de host is.
+function sigOpen(id, pub) {
   return getSb().then(sb => new Promise((res, rej) => {
-    const ch = sb.channel('andy-lobby-' + id, { config: { broadcast: { self: false } } });
+    const ch = sb.channel('andy-lobby-' + id, { config: pub ? { broadcast: { self: false }, presence: { key: CLIENT_ID } } : { broadcast: { self: false } } });
     MP.sig = ch;
     ch.on('broadcast', { event: 'sig' }, msg => { if (MP.sig === ch && msg && msg.payload) sigOnMsg(msg.payload); });
+    if (pub) ch.on('presence', { event: 'sync' }, () => {
+      if (MP.sig !== ch) return;
+      if (MP.pubReady) { pubSync(); return; }
+      MP.pubReady = true; setTimeout(() => { if (MP.sig === ch) pubSync(); }, 800); // eerst iedereen die er al is binnenkrijgen
+    });
     const t = setTimeout(() => rej(new Error('Geen verbinding met de server.')), 12000);
     ch.subscribe(st => {
-      if (st === 'SUBSCRIBED') { clearTimeout(t); res(ch); }
+      if (st === 'SUBSCRIBED') { clearTimeout(t); if (pub) ch.track({ ts: MP.pubTs, host: 0 }).catch(() => { /* */ }); res(ch); }
       else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT') { clearTimeout(t); rej(new Error('Geen verbinding met de server.')); }
     });
   }));
@@ -412,10 +434,10 @@ function sigSend(m) {
 async function hostAccept(from, name) {
   const link = newLink(from, cleanName(name) || 'Speler');
   MP.links.set(from, link);
-  link.timer = setTimeout(() => { if (!link.open) linkDown(link, ''); }, 20000); // lukt het niet: plek weer vrij
+  link.timer = setTimeout(() => { if (!link.open) relayStart(link); }, RELAY_AFTER); // lukt het direct niet: via de server
   try {
     const ice = await mpIce();
-    if (MP.links.get(from) !== link) return;
+    if (MP.links.get(from) !== link || link.relay) return;
     const pc = linkPc(link, c => sigSend({ t: 'ice', to: from, c }), ice);
     bindDc(link, pc.createDataChannel('andy', { ordered: true }));
     await pc.setLocalDescription(await pc.createOffer());
@@ -430,17 +452,17 @@ async function guestOffer(m) {
   const link = MP.link = newLink('host', MP.hostName), id = MP.joinId;
   link.iceQ = MP.preIce.splice(0); // kandidaten die vóór het aanbod binnenkwamen
   clearTimeout(MP.joinTimer);
-  MP.joinTimer = setTimeout(() => { if (MP.joinId === id && !MP.inRoom) mpJoinFail('Verbinden is mislukt. Probeer het opnieuw.'); }, 20000);
+  MP.joinTimer = setTimeout(() => { if (MP.joinId === id && !MP.inRoom) joinFail('Verbinden is mislukt. Probeer het opnieuw.'); }, 30000);
   try {
     const ice = await mpIce();
-    if (MP.link !== link) return;
+    if (MP.link !== link || link.relay) return;
     const pc = linkPc(link, c => sigSend({ t: 'ice', to: m.from, c }), ice);
     pc.ondatachannel = e => bindDc(link, e.channel);
     await pc.setRemoteDescription({ type: 'offer', sdp: m.sdp });
     flushIce(link);
     await pc.setLocalDescription(await pc.createAnswer());
     if (MP.link === link) sigSend({ t: 'answer', to: m.from, sdp: pc.localDescription.sdp });
-  } catch (e) { mpJoinFail('Verbinden is mislukt.'); }
+  } catch (e) { joinFail('Verbinden is mislukt.'); }
   mpRender();
 }
 function sigOnMsg(m) {
@@ -451,19 +473,22 @@ function sigOnMsg(m) {
       if (link) return; // al bezig
       if (roomCount() + [...MP.links.values()].filter(l => !l.open).length >= MP_MAX) { sigSend({ t: 'full', to: m.from }); return; }
       hostAccept(m.from, m.name);
-    } else if (!link || !link.pc) return;
+    } else if (m.t === 'relay?' && link) relayStart(link);
+    else if (!link || !link.pc) return;
     else if (m.t === 'answer' && typeof m.sdp === 'string') link.pc.setRemoteDescription({ type: 'answer', sdp: m.sdp }).then(() => flushIce(link), () => linkDown(link, ''));
     else if (m.t === 'ice') addIce(link, m.c);
   } else if (MP.role === 'guest') {
     if (MP.hostSig && m.from !== MP.hostSig) return;
-    if (m.t === 'full') mpJoinFail('Deze lobby is vol.');
+    if (m.t === 'full') joinFail('Deze lobby is vol.');
     else if (m.t === 'offer' && typeof m.sdp === 'string') guestOffer(m);
+    else if (m.t === 'relay' && MP.hostSig === m.from) guestRelay();
     else if (m.t === 'ice') { if (MP.link) addIce(MP.link, m.c); else if (m.c && MP.preIce.length < 50) MP.preIce.push(m.c); }
   }
 }
 async function mpLobbyHost() {
   if (MP.busy) return;
   mpClose(false);
+  try { const b = JSON.parse(localStorage.getItem('andyApples.bots') || 'null'); if (b) MP.bots = { n: clamp(b.n | 0, 0, BOT_MAX), lvl: clamp(b.lvl | 0, 0, AI_LV.length - 1) }; } catch (e) { /* */ }
   MP.role = 'host'; MP.busy = true; MP.lobby = { id: randHex(5), ts: Date.now() };
   const id = MP.lobby.id;
   mpMsg(''); mpRender();
@@ -473,10 +498,12 @@ async function mpLobbyHost() {
   } catch (e) { if (MP.lobby && MP.lobby.id === id) { mpClose(false); mpMsg(e.message, false); } mpRender(); return; }
   if (!MP.lobby || MP.lobby.id !== id) return;
   MP.busy = false; MP.inRoom = true;
+  botsSync();
   lobbyTrack();
   mpRender();
 }
 async function mpLobbyJoin(id, name) {
+  if (id === PUB_ID) { pubEnter(); return; }
   if (!/^[0-9a-f]{6,16}$/.test(id || '')) return;
   mpClose(false);
   MP.role = 'guest'; MP.busy = true; MP.joinId = id; MP.hostName = cleanName(name) || 'de host';
@@ -488,12 +515,19 @@ async function mpLobbyJoin(id, name) {
   MP.joinTimer = setTimeout(() => { if (MP.joinId === id && !MP.inRoom && !MP.link) mpJoinFail('Deze lobby is niet meer beschikbaar.'); }, 8000);
 }
 function mpJoinFail(msg) { mpClose(false); mpMsg(msg, false); mpRender(); }
+// verbinden met de host mislukt; in de openbare lobby proberen we het met een andere host
+function joinFail(msg) {
+  if (!MP.pub || /vol/.test(msg)) { mpJoinFail(msg); return; }
+  if (MP.hostSig) MP.pubBad.set(MP.hostSig, Date.now() + 30000);
+  pubDrop(false); pubSync();
+}
 // via uitnodiging(.html): die pagina heeft een eigen link-preview ("Je bent uitgenodigd!") en stuurt meteen door naar het spel.
 // Zonder .html: de server (en GitHub Pages) vindt uitnodiging.html ook zo, en een .html-adres zou eerst worden doorgestuurd.
 function mpInviteLink() {
   const base = CONFIG.siteUrl || (/^https?:$/.test(location.protocol) ? location.origin + location.pathname : '');
   const dir = base.replace(/index\.html$/, '').replace(/\/?$/, '/');
-  return base && MP.lobby ? `${dir}uitnodiging#join=${MP.lobby.id}` : '';
+  const id = MP.pub ? PUB_ID : MP.lobby && MP.lobby.id;
+  return base && id ? `${dir}uitnodiging#join=${id}` : '';
 }
 function mpShare() {
   const link = mpInviteLink();
@@ -507,31 +541,256 @@ function mpShare() {
 }
 
 // ---- sluiten ----
-function mpClose(sayBye) {
+// alle verbindingen en spelers weg (het signaleringskanaal blijft)
+function mpReset(sayBye) {
   if (sayBye) mpSend({ type: 'bye' });
   for (const l of MP.links.values()) closeLink(l, sayBye ? 300 : 0);
   if (MP.link) closeLink(MP.link, sayBye ? 300 : 0);
   MP.links = new Map(); MP.link = null; MP.players.clear();
   MP.role = null; MP.busy = false; MP.inRoom = false; MP.myId = CLIENT_ID;
-  MP.lobby = null; MP.joinId = null; MP.hostSig = null; MP.preIce = []; MP.hostName = ''; MP.wins = 0; MP.games = 0;
+  MP.lobby = null; MP.joinId = null; MP.hostSig = null; MP.preIce = []; MP.wins = 0; MP.games = 0;
+  MP.botRun = []; MP.botQ = []; MP.votes.clear(); MP.myVote = ''; MP.pubAt = 0; MP.pubInfo = null;
   clearTimeout(MP.joinTimer);
+}
+function mpClose(sayBye) {
+  const pubCh = MP.pub && MP.sig;
+  mpReset(sayBye);
+  MP.hostName = ''; MP.pub = false; MP.pubReady = false;
+  if (pubCh) pubCh.untrack().catch(() => { /* */ });
   sigClose();
   lobbyTrack();
 }
-const mpActive = () => !!(MP.role || MP.sig || MP.link || MP.links.size);
+const mpActive = () => !!(MP.role || MP.sig || MP.link || MP.links.size || MP.pub);
 // Bij het opstarten (vanuit main.js)
 function mpInit() {
   // venster dicht of weg: meteen laten weten dat je weg bent (anders duurt het tot de time-out)
-  window.addEventListener('pagehide', () => { if (MP.inRoom) mpSend({ type: 'bye' }); });
+  window.addEventListener('pagehide', () => {
+    if (!MP.inRoom) return;
+    mpSend({ type: 'bye' });
+    for (const l of MP.links.values()) if (l.rch) relayFlush(l);
+    if (MP.link && MP.link.rch) relayFlush(MP.link);
+  });
+  setInterval(mpTick, 500);
+}
+// twee keer per seconde: verbindingen via de server in leven houden, en de openbare lobby
+function mpTick() {
+  const now = performance.now();
+  const keep = (l, lost) => {
+    if (!l.relay || !l.open) return;
+    if (now - l.lastMsg > 15000) lost(); else if (now - l.lastSent > 3000) sendLink(l, { type: 'ping' });
+  };
+  for (const l of [...MP.links.values()]) keep(l, () => linkDown(l, ''));
+  if (MP.link) keep(MP.link, () => mpLost('De host reageert niet meer.'));
+  if (MP.pub) pubTick();
 }
 // verbinding kwijt: tijdens een potje eindigt dat zonder winnaar
 function mpLost(reason) {
-  const was = MP.inRoom || MP.role, M = MP.match;
-  mpClose(false);
-  if (M && !M.result && game.mp === M) mpEnd(reason, 'conn');
+  const was = MP.inRoom || MP.role, M = MP.match, pub = MP.pub;
+  if (pub) { pubDrop(false); setTimeout(pubSync, 1500); } // openbare lobby: een nieuwe host zoeken (of zelf host worden)
+  else mpClose(false);
+  if (M && !M.result && game.mp === M) mpEnd(pub ? 'De host is weg. We zoeken een nieuwe host.' : reason, 'conn');
   else if (curScreen === 'mpRes') mpAgainRender();
-  if (was && reason) mpMsg(reason, false);
+  if (was && reason && !pub) mpMsg(reason, false);
   mpRender();
+}
+
+// =====================================================================
+//  Openbare lobby: altijd open, voor iedereen
+//  Er is geen server die het spel draait, dus één van de spelers is de host. Wie er als eerste is, wordt
+//  host (presence op het kanaal "andy-lobby-pub"); gaat die weg, dan neemt de volgende het over. De host
+//  start vanzelf een ronde zodra er 2 spelers zijn. Iedereen kan stemmen op de spelmodus; zonder stemmen
+//  kiest het spel een willekeurige modus.
+// =====================================================================
+const PUB_ID = 'pub';
+const PUB_WAIT = 15000;   // ms tussen de rondes (en na binnenkomst van de tweede speler)
+const PUB_MODES = ['race', 'endurance', 'br'];
+async function pubEnter() {
+  if (MP.busy) return;
+  mpClose(false);
+  MP.pub = true; MP.busy = true; MP.pubTs = Date.now(); MP.pubReady = false; MP.pubBad = new Map(); MP.hostName = 'Openbare lobby';
+  mpMsg(''); mpRender();
+  try {
+    if (!(await lobbyWatch())) throw new Error('Geen verbinding met de server. Heb je internet?');
+    await sigOpen(PUB_ID, true);
+  } catch (e) { if (MP.pub) { mpClose(false); mpMsg(e.message, false); mpRender(); } }
+}
+// wie is de host? Wie al host is, blijft het (een nieuwe speler met een verkeerd klokje neemt het niet over).
+// Anders (of bij twee hosts tegelijk) wint wie er het eerst was.
+function pubLeader() {
+  const st = MP.sig ? MP.sig.presenceState() : {}, now = Date.now(), all = [];
+  for (const k in st) {
+    const p = st[k] && st[k][0];
+    if (!p || k === CLIENT_ID || (MP.pubBad.get(k) || 0) > now) continue;
+    all.push({ id: k, ts: +p.ts || 0, host: !!p.host });
+  }
+  all.push({ id: CLIENT_ID, ts: MP.pubTs, host: MP.role === 'host' });
+  const hosts = all.filter(x => x.host), pool = hosts.length ? hosts : all;
+  pool.sort((a, b) => a.ts - b.ts || (a.id < b.id ? -1 : 1));
+  return pool[0].id;
+}
+function pubSync() {
+  if (!MP.pub || !MP.sig || !MP.pubReady) return;
+  const lead = pubLeader();
+  if (lead === CLIENT_ID) { if (MP.role !== 'host') pubHost(); }
+  else if (MP.role === 'host') { pubDrop(true); pubJoin(lead); } // er is al een andere host: overstappen
+  else if (MP.hostSig !== lead) pubJoin(lead);
+}
+// verbindingen weg, maar in de openbare lobby blijven
+function pubDrop(sayBye) {
+  const wasHost = MP.role === 'host';
+  mpReset(sayBye);
+  MP.busy = true;
+  if (wasHost && MP.sig) MP.sig.track({ ts: MP.pubTs, host: 0 }).catch(() => { /* */ });
+  lobbyTrack();
+}
+function pubHost() {
+  pubDrop(false);
+  MP.role = 'host'; MP.busy = false; MP.inRoom = true; MP.lobby = { id: PUB_ID, ts: MP.pubTs };
+  if (MP.sig) MP.sig.track({ ts: MP.pubTs, host: 1 }).catch(() => { /* */ });
+  lobbyTrack(); mpRender();
+}
+function pubJoin(lead) {
+  if (MP.role) pubDrop(false);
+  MP.role = 'guest'; MP.busy = true; MP.hostSig = lead; MP.joinId = PUB_ID; MP.hostName = 'Openbare lobby';
+  MP.joinSent = performance.now();
+  sigSend({ t: 'join', to: lead, name: myName() });
+  const id = lead;
+  MP.joinTimer = setTimeout(() => { if (MP.pub && MP.hostSig === id && !MP.inRoom && !MP.link) joinFail('De host reageert niet.'); }, 12000);
+  mpRender();
+}
+// host: aftellen naar de volgende ronde en de stemmen naar iedereen
+function pubTick() {
+  if (MP.role === 'guest' && !MP.link && MP.hostSig && performance.now() - MP.joinSent > 2500) { // de host was misschien nog niet klaar: opnieuw vragen
+    MP.joinSent = performance.now(); sigSend({ t: 'join', to: MP.hostSig, name: myName() });
+  }
+  if (MP.role === 'host') {
+    const M = MP.match, busy = M && !M.result;
+    if (busy || roomCount() < 2) { if (MP.pubAt) { MP.pubAt = 0; pubAnnounce(); mpRender(); } }
+    else if (!MP.pubAt) { MP.pubAt = Date.now() + PUB_WAIT; pubAnnounce(); mpRender(); }
+    else if (Date.now() >= MP.pubAt) { MP.pubAt = 0; pubRound(); }
+  }
+  pubTimerRender();
+}
+function pubTally() {
+  const t = { race: 0, endurance: 0, br: 0 };
+  for (const [id, m] of MP.votes) if ((id === MP.myId || MP.players.has(id)) && t[m] != null) t[m]++;
+  return t;
+}
+function pubAnnounce() {
+  if (!MP.pub || MP.role !== 'host') return;
+  MP.pubInfo = { at: MP.pubAt, votes: pubTally() };
+  mpSend({ type: 'lobby', mode: MP.sel.mode, len: MP.sel.len, pub: { at: MP.pubAt ? MP.pubAt - Date.now() : 0, votes: MP.pubInfo.votes } });
+}
+function pubVote(mode) {
+  if (!MP.pub || !MP_MODE_NAME[mode]) return;
+  MP.myVote = mode;
+  if (MP.role === 'host') { MP.votes.set(MP.myId, mode); pubAnnounce(); } else mpSend({ type: 'vote', mode });
+  mpRender(); if (curScreen === 'mpRes') mpAgainRender();
+}
+// de meeste stemmen wint (gelijk: loten); geen stemmen: een willekeurige andere modus dan de vorige keer
+function pubRound() {
+  const t = pubTally(), best = Math.max(...Object.values(t));
+  const pool = best ? PUB_MODES.filter(m => t[m] === best) : PUB_MODES.filter(m => m !== MP.pubLast);
+  const mode = pool[Math.floor(Math.random() * pool.length)];
+  MP.pubLast = mode; MP.votes.clear(); MP.myVote = '';
+  mpHostStart({ mode, len: [500, 1000, 1000, 2000][Math.floor(Math.random() * 4)] });
+}
+// de stemmen zoals de host ze doorgaf (bij de host: zelf geteld)
+const pubTally0 = () => MP.role === 'host' ? pubTally() : Object.assign({ race: 0, endurance: 0, br: 0 }, MP.pubInfo && MP.pubInfo.votes);
+const pubSecs = () => { const I = MP.pubInfo; return I && I.at ? Math.max(0, Math.ceil((I.at - Date.now()) / 1000)) : 0; };
+function pubStatus() {
+  if (!MP.inRoom) return 'Verbinden…';
+  const M = MP.match;
+  if (M && !M.result && game.mp === M) return '';
+  const s = pubSecs();
+  if (s) return `Volgende ronde over ${s} s`;
+  const n = MP.role === 'host' ? roomCount() : 1 + [...MP.players.values()].filter(P => P.inRoster).length;
+  return n < 2 ? 'Wachten op nog een speler…' : 'Er loopt nog een ronde…';
+}
+function pubTimerRender() {
+  if (curScreen === 'mp') setText('mpGuestWait', pubStatus());
+  if (curScreen === 'mpRes') mpAgainRender();
+}
+
+// =====================================================================
+//  Apen (bots) in een eigen lobby
+//  De host kiest hoeveel apen er meedoen (0-5) en hoe goed ze zijn. De host speelt ze zelf: elke aap
+//  heeft een eigen wereld met dezelfde seed (net als Kiwi op één scherm) en stuurt zijn stand zoals een
+//  echte speler. Voor de anderen is een aap gewoon een speler. Bij battle royale doen ze niet mee.
+// =====================================================================
+const BOT_MAX = 5;
+const BOT_NAMES = ['Kiwi', 'Mango', 'Coco', 'Bonzo', 'Loeki'];
+let botSim = null; // de aap die nu wordt gesimuleerd (geen geluid, geen banners)
+function mpSetBots(n, lvl) {
+  if (MP.role !== 'host' || MP.pub) return;
+  if (n != null) MP.bots.n = clamp(n | 0, 0, BOT_MAX);
+  if (lvl != null) MP.bots.lvl = clamp(lvl | 0, 0, AI_LV.length - 1);
+  try { localStorage.setItem('andyApples.bots', JSON.stringify(MP.bots)); } catch (e) { /* */ }
+  botsSync();
+  mpSend({ type: 'lobby', mode: MP.sel.mode, len: MP.sel.len, bots: MP.bots });
+}
+// host: precies zoveel apen in de lobby als gekozen
+function botsSync() {
+  if (MP.role !== 'host') return;
+  const M = MP.match, n = MP.pub ? 0 : MP.bots.n;
+  BOT_NAMES.forEach((nm, i) => {
+    const id = 'bot' + i;
+    if (i < n) { const P = playerFor(id, nm); P.bot = true; P.inRoster = true; return; }
+    const P = MP.players.get(id);
+    if (!P) return;
+    P.inRoster = false;
+    if (M && !M.result && M.ids.includes(id)) { P.left = true; mpSend({ type: 'quit', id: M.seed, from: id }); }
+    else MP.players.delete(id);
+  });
+  rosterSend(); lobbyTrack(); mpRender();
+}
+function botIn(B) { B.home = grabWorld(); putWorld(B.w); botSim = B; }
+function botOut(B) { B.w = grabWorld(); putWorld(B.home); B.home = null; botSim = null; }
+// host, bij de start van een potje: elke aap een eigen wereld
+function botsStart(M) {
+  MP.botRun = []; MP.botQ = [];
+  for (const id of M.ids) {
+    const P = MP.players.get(id);
+    if (!P || !P.bot) continue;
+    const bm = { mode: M.mode, len: M.len, seed: M.seed, t: 0, myEv: null, falls: 0, result: null, stormX: START_X - 1100, bolt: 0, boltX: 0, bot: P };
+    const w = {};
+    for (const k in WORLD_VARS) w[k] = WORLD_VARS[k][2]();
+    w.mp = bm;
+    const B = { P, M: bm, w, ai: { lvl: MP.bots.lvl }, home: null };
+    botIn(B); try { resetWorld(); } finally { botOut(B); }
+    MP.botRun.push(B);
+  }
+}
+// host, elk beeld: de apen evenveel stappen laten zetten als jij
+function mpBotsStep(n, gdt) {
+  const M = game.mp;
+  if (!MP.botRun.length || !M || M !== MP.match || M.result) return;
+  const q = Sfx.quiet; Sfx.quiet = true;
+  for (const B of MP.botRun) {
+    if (B.P.left || (B.M.myEv && B.M.t - B.M.myEv.t > 3)) continue; // klaar: nog even doorvliegen, dan stilzetten
+    botIn(B);
+    try {
+      for (let k = 0; k < n; k++) { aiThink(B.ai); step(DT); }
+      interpBegin(true); updateCamera(gdt); interpEnd();
+      genUntil(Math.max(camX + viewW + 900, G.x + 2600)); // de aap kijkt tot 1700 px vooruit
+      parts.length = 0; texts.length = 0; // effecten ziet niemand
+    } finally { botOut(B); }
+  }
+  Sfx.quiet = q;
+  botFlush();
+}
+// wat de apen deden (finish, af) pas verwerken als jouw eigen wereld weer is ingeladen
+function botFlush() {
+  for (const m of MP.botQ.splice(0)) { onPlayerMsg(m.from, m); mpSend(m); }
+}
+function botsSendState() {
+  for (const B of MP.botRun) {
+    if (B.P.left || (B.M.myEv && B.M.t - B.M.myEv.t > 3)) continue;
+    botIn(B);
+    let m;
+    try { m = stateMsg(B.M, B.P.id); } finally { botOut(B); }
+    onPlayerMsg(B.P.id, m); mpSend(m);
+  }
 }
 
 // ---- lobby-scherm ----
@@ -544,29 +803,30 @@ const MP_MODE_DESC = {
   chase: 'Kiwi zit je achterna en wordt steeds sneller. Hoe lang blijf je hem voor?',
 };
 function mpRender() {
-  const loc = !!MP.local, vsAi = loc && MP.aiLvl != null, host = MP.role === 'host', guest = MP.role === 'guest';
-  const room = loc || MP.inRoom, busy = !room && !!MP.role;
+  const loc = !!MP.local, vsAi = loc && MP.aiLvl != null, host = MP.role === 'host', guest = MP.role === 'guest', pub = !loc && MP.pub;
+  const room = loc || MP.inRoom, busy = !room && (!!MP.role || pub);
   const chase = vsAi && MP.sel.mode === 'chase';
-  $('mpTitle').textContent = chase ? 'Achtervolging' : vsAi ? 'Tegen Kiwi' : loc ? 'Duel' : room ? (host ? 'Jouw lobby' : `Lobby van ${MP.hostName || 'de host'}`) : 'Multiplayer';
+  $('mpTitle').textContent = chase ? 'Achtervolging' : vsAi ? 'Tegen Kiwi' : loc ? 'Duel' : pub ? 'Openbare lobby' : room ? (host ? 'Jouw lobby' : `Lobby van ${MP.hostName || 'de host'}`) : 'Multiplayer';
   $('mpHome').classList.toggle('hidden', room || busy);
   $('mpBusy').classList.toggle('hidden', !busy);
-  $('mpBusyTxt').textContent = guest ? (MP.link ? `Verbinden met de lobby van ${MP.hostName}…` : `Lobby van ${MP.hostName} zoeken…`) : 'Lobby openen…';
+  $('mpBusyTxt').textContent = pub ? (MP.link ? 'Verbinden met de openbare lobby…' : 'Openbare lobby binnengaan…')
+    : guest ? (MP.link ? `Verbinden met de lobby van ${MP.hostName}…` : `Lobby van ${MP.hostName} zoeken…`) : 'Lobby openen…';
   $('mpRoom').classList.toggle('hidden', !room);
-  $('btnMpCancel').classList.toggle('hidden', loc || !MP.role); // lokaal doet ← hetzelfde
-  $('btnMpCancel').textContent = room ? (host ? 'Lobby sluiten' : 'Lobby verlaten') : 'Annuleren';
+  $('btnMpCancel').classList.toggle('hidden', loc || !(MP.role || pub)); // lokaal doet ← hetzelfde
+  $('btnMpCancel').textContent = room ? (host && !pub ? 'Lobby sluiten' : 'Lobby verlaten') : 'Annuleren';
   $('mpMe').classList.toggle('hidden', loc && !vsAi);
   lobbyRender();
   if (!room) { $('btnMpStart').classList.add('hidden'); return; } // de startknop staat onderaan, buiten de lobby-kaart
   // spelers (bij Duel meteen met de besturing erbij)
   const list = loc ? (vsAi ? [{ name: myName(), col: '#e8322b', me: 1 }, { name: 'Kiwi', col: GCK.band }]
     : [{ name: 'Speler 1', col: '#e8322b', keys: '<kbd>SPATIE</kbd> of links/boven tikken' }, { name: 'Speler 2', col: '#2f7fe0', keys: '<kbd>↑</kbd> <kbd>ENTER</kbd> of rechts/onder tikken' }])
-    : [{ name: myName(), col: '#e8322b', me: 1, host }].concat([...MP.players.values()].filter(P => P.inRoster).map(P => ({ name: P.name, col: P.col, host: guest && P.host })));
+    : [{ name: myName(), col: '#e8322b', me: 1, host }].concat([...MP.players.values()].filter(P => P.inRoster).map(P => ({ name: P.name, col: P.col, host: guest && P.host, bot: P.bot })));
   const enough = loc || list.length >= 2;
   $('mpPlayers').classList.toggle('stack', loc && !vsAi);
-  $('mpPlayers').innerHTML = list.map(p => `<li class="${p.me ? 'me' : ''}"><i style="background:${p.col}"></i><b>${escHtml(p.name)}</b>${p.me && !loc ? ' <small>jij</small>' : ''}${p.host ? ' <small>host</small>' : ''}${p.keys ? `<span class="keys">${p.keys}</span>` : ''}</li>`).join('')
-    + (enough ? '' : '<li class="empty">Wachten op andere spelers…</li>');
+  $('mpPlayers').innerHTML = list.map(p => `<li class="${p.me ? 'me' : ''}"><i style="background:${p.col}"></i><b>${escHtml(p.name)}</b>${p.me && !loc ? ' <small>jij</small>' : ''}${p.host ? ' <small>host</small>' : ''}${p.bot ? ' <small>aap</small>' : ''}${p.keys ? `<span class="keys">${p.keys}</span>` : ''}</li>`).join('')
+    + (enough ? '' : `<li class="empty">${pub ? 'Wachten op nog een speler…' : 'Wachten op andere spelers… (of voeg apen toe)'}</li>`);
   $('mpCountTxt').textContent = loc ? '' : `${list.length}/${MP_MAX}`;
-  $('btnMpShare').classList.toggle('hidden', !(host && MP.lobby));
+  $('btnMpShare').classList.toggle('hidden', !((host && MP.lobby) || pub));
   // modus: achtervolging alleen tegen Kiwi; tegen Kiwi verder alleen race (geen keuze), endurance alleen met twee spelers
   if (MP.sel.mode === 'chase' && !vsAi) MP.sel.mode = 'race';
   if (MP.sel.mode === 'br' && loc) MP.sel.mode = 'race'; // battle royale alleen online (richten met de muis)
@@ -576,18 +836,31 @@ function mpRender() {
   $('mpModeChase').classList.toggle('hidden', !chase);
   $('mpModeRace').classList.toggle('hidden', vsAi);
   $('mpModeEnd').classList.toggle('hidden', vsAi);
-  $('mpModeDesc').textContent = MP_MODE_DESC[chase ? 'chase' : vsAi ? 'kiwi' : MP.sel.mode];
-  const canPick = host || loc;
-  $('mpModeWho').textContent = canPick ? '' : 'de host kiest';
-  for (const b of document.querySelectorAll('#mpModeRow [data-mode]')) { b.classList.toggle('sel', b.dataset.mode === MP.sel.mode); b.disabled = !canPick; }
-  $('mpLens').classList.toggle('hidden', MP.sel.mode !== 'race');
+  $('mpModeDesc').textContent = pub ? 'Stem op de spelmodus van de volgende ronde. Zonder stemmen kiest het spel er zelf een.' + (MP.myVote ? ' ' + MP_MODE_DESC[MP.myVote] : '')
+    : MP_MODE_DESC[chase ? 'chase' : vsAi ? 'kiwi' : MP.sel.mode];
+  const canPick = (host && !pub) || loc, tally = pub ? pubTally0() : null;
+  $('mpModeWho').textContent = pub ? 'iedereen stemt' : canPick ? '' : 'de host kiest';
+  for (const b of document.querySelectorAll('#mpModeRow [data-mode]')) {
+    const md = b.dataset.mode;
+    b.classList.toggle('sel', pub ? md === MP.myVote : md === MP.sel.mode); b.disabled = !canPick && !pub;
+    if (MP_MODE_NAME[md]) b.innerHTML = MP_MODE_NAME[md] + (pub && tally[md] ? ` <i class="vc">${tally[md]}</i>` : ''); // aantal stemmen
+  }
+  $('mpLens').classList.toggle('hidden', MP.sel.mode !== 'race' || pub);
   for (const b of document.querySelectorAll('[data-len]')) { b.classList.toggle('sel', +b.dataset.len === MP.sel.len); b.disabled = !canPick; }
   $('mpAiLvls').classList.toggle('hidden', !vsAi);
   for (const b of document.querySelectorAll('[data-ai]')) b.classList.toggle('sel', +b.dataset.ai === MP.aiLvl);
-  // start
+  // apen: alleen in een eigen online lobby; de host kiest
+  const bots = !loc && !pub;
+  $('mpBots').classList.toggle('hidden', !bots);
+  $('mpBotLvls').classList.toggle('hidden', !bots || !MP.bots.n);
+  for (const b of document.querySelectorAll('[data-bots]')) { b.classList.toggle('sel', +b.dataset.bots === MP.bots.n); b.disabled = !host; }
+  for (const b of document.querySelectorAll('[data-botlvl]')) { b.classList.toggle('sel', +b.dataset.botlvl === MP.bots.lvl); b.disabled = !host; }
+  $('mpBotNote').textContent = bots && MP.bots.n && MP.sel.mode === 'br' ? 'Apen doen niet mee met battle royale.' : '';
+  // start (openbare lobby: vanzelf)
   $('btnMpStart').classList.toggle('hidden', !canPick);
   $('btnMpStart').disabled = !enough;
   $('mpGuestWait').classList.toggle('hidden', canPick);
+  $('mpGuestWait').textContent = pub ? pubStatus() : 'Wachten tot de host start…';
 }
 function openMp() {
   localExit();
@@ -602,6 +875,7 @@ function openMp() {
   lobbyWatch(); mpIce(); // TURN-gegevens alvast ophalen, dan hoeft meedoen daar niet op te wachten
 }
 function mpSelect(mode, len) {
+  if (MP.pub && !MP.local) { if (mode) pubVote(mode); return; } // openbare lobby: stemmen
   if (MP.role !== 'host' && !MP.local) return;
   if (mode) MP.sel.mode = mode;
   if (len) MP.sel.len = len;
@@ -609,9 +883,12 @@ function mpSelect(mode, len) {
   mpRender();
 }
 function mpHostStart(cfg) {
-  if (MP.role !== 'host' || !openLinks().length) return;
+  if (MP.role !== 'host') return;
   if (cfg.mode === 'chase') cfg = { mode: 'race', len: cfg.len }; // achtervolging is alleen tegen Kiwi
-  const ids = [MP.myId].concat(openLinks().map(l => l.id).filter(id => MP.players.has(id)));
+  const bots = cfg.mode === 'br' ? [] : [...MP.players.values()].filter(P => P.bot && P.inRoster).map(P => P.id); // apen doen niet mee met battle royale
+  const ids = [MP.myId].concat(openLinks().map(l => l.id).filter(id => MP.players.has(id)), bots).slice(0, MP_MAX);
+  if (ids.length < 2) return;
+  MP.pubAt = 0;
   const c = { type: 'start', mode: cfg.mode, len: cfg.len, seed: 1 + ((Math.random() * 2147483000) | 0), ids };
   mpSend(c);
   mpStartMatch(c);
@@ -631,11 +908,12 @@ function mpStartMatch(c) {
   for (const P of MP.players.values()) Object.assign(P, { snaps: [], rt: null, ghost: null, ev: null, left: !ids.includes(P.id) || !P.inRoster, t: 0, dist: 0, apples: 0, falls: 0, lastMsg: performance.now() });
   for (const l of MP.links.values()) l.lastMsg = performance.now();
   if (MP.link) MP.link.lastMsg = performance.now();
-  MP.match = M; MP.sendAcc = 0;
+  MP.match = M; MP.sendAcc = 0; MP.myVote = '';
   ghostPin.v = null;
   game.paused = false; game.career = null; game.mp = M;
   resetWorld();
   if (mode === 'br') brStart(M); else brStop();
+  if (MP.role === 'host') botsStart(M); else MP.botRun = [];
   game.mode = 'mpcount';
   input.down = false;
   Music.duck();
@@ -662,6 +940,7 @@ function mpFinished() {
   const M = game.mp;
   if (!M || M.myEv || M.result) return;
   M.myEv = { t: M.t, d: run.dist };
+  if (M.bot) { MP.botQ.push({ type: 'ev', id: M.seed, t: M.t, d: run.dist, from: M.bot.id }); return; } // een aap van de host
   mpSend({ type: 'ev', id: M.seed, t: M.t, d: run.dist, from: MP.myId });
   confetti(G.x + 100, G.y - 150, 100); flashT = 0.3;
   if (!M.local && opps(M).some(P => !P.ev && !P.left)) showBanner('Finish!', 'Even wachten op de anderen…');
@@ -675,6 +954,7 @@ function mpDied() {
     return;
   }
   if (M.myEv) return;
+  if (M.bot) { M.myEv = { t: M.t, d: run.dist }; MP.botQ.push({ type: 'ev', id: M.seed, t: M.t, d: run.dist, from: M.bot.id }); return; }
   M.myEv = { t: M.t, d: run.dist, by: M.mode === 'br' ? brKiller(M) : null };
   mpSend({ type: 'ev', id: M.seed, t: M.t, d: run.dist, from: MP.myId, by: M.myEv.by });
   if (M.mode === 'br') brOut(MP.myId, M.myEv.by);
@@ -685,16 +965,17 @@ function mpDied() {
 // Is het potje klaar? Iedereen meet zijn eigen tijd vanaf zijn eigen GO; de uitslag volgt uit die tijden.
 function mpCheck() {
   const M = game.mp;
-  if (!M || M.local || M.result || game.mode !== 'playing') return;
-  const all = [{ me: 1, ev: M.myEv, left: false, t: M.t }].concat(opps(M).map(P => ({ ev: P.ev, left: P.left, t: P.ev ? Math.max(P.t, P.ev.t) : P.t })));
+  if (!M || M.local || M.bot || M.result || game.mode !== 'playing') return;
+  const all = [{ me: 1, ev: M.myEv, left: false, t: M.t }].concat(opps(M).map(P => ({ ev: P.ev, left: P.left, bot: P.bot, t: P.ev ? Math.max(P.t, P.ev.t) : P.t })));
   const busy = all.filter(x => !x.ev && !x.left);
   if (M.mode === 'race') {
     const evs = all.filter(x => x.ev).map(x => x.ev.t), first = evs.length ? Math.min(...evs) : null;
     const grace = all.length <= 2 ? 0 : RACE_GRACE;
     if (!busy.length || (first !== null && busy.every(x => x.t > first + grace))) mpEnd();
   } else {
+    // endurance: klaar als er nog één over is, of als alleen apen nog leven (goede apen houden het bijna eindeloos vol)
     const dead = all.filter(x => x.ev).map(x => x.ev.t), last = dead.length ? Math.max(...dead) : 0;
-    if (!busy.length || (busy.length === 1 && all.length > 1 && busy[0].t > last)) mpEnd();
+    if (!busy.length || (busy.length === 1 && all.length > 1 && busy[0].t > last) || busy.every(x => x.bot && x.t > last)) mpEnd();
   }
 }
 // eindstand: race = finishtijd (daarna afstand), endurance = wie het langst volhield
@@ -713,6 +994,8 @@ function mpEnd(reason, kind) {
   M.endT = M.t;
   if (game.mp === M) game.mode = 'mpend';
   mpSendState(); // laatste stand meteen versturen
+  // de host geeft op: zijn apen stoppen ook (anders wachten de anderen op ze)
+  if (kind === 'forfeit') for (const B of MP.botRun) if (!B.M.myEv && !B.P.left) { B.P.left = true; mpSend({ type: 'quit', id: M.seed, from: B.P.id }); }
   lobbyTrack();
   if (kind === 'conn') {
     M.result = 'conn'; M.reason = reason || 'De verbinding is verbroken.';
@@ -752,9 +1035,17 @@ function mpShowResult() {
 }
 function mpAgainRender() {
   const b = $('btnMpAgain');
-  if (LOCAL.on) { b.disabled = false; b.textContent = 'Rematch'; return; }
+  if (LOCAL.on) { $('mpResVote').classList.add('hidden'); b.disabled = false; b.textContent = 'Rematch'; return; }
+  const pv = $('mpResVote');
+  pv.classList.toggle('hidden', !MP.pub || LOCAL.on);
+  if (MP.pub && !LOCAL.on) {
+    const t = pubTally0();
+    for (const x of pv.querySelectorAll('[data-vote]')) { x.classList.toggle('sel', x.dataset.vote === MP.myVote); x.innerHTML = MP_MODE_NAME[x.dataset.vote] + (t[x.dataset.vote] ? ` <i class="vc">${t[x.dataset.vote]}</i>` : ''); }
+    b.disabled = true; b.textContent = pubStatus() || 'Wachten…';
+    return;
+  }
   if (!MP.inRoom) { b.disabled = true; b.textContent = 'Verbinding verbroken'; return; }
-  if (MP.role === 'host') { const ok = openLinks().length > 0; b.disabled = !ok; b.textContent = ok ? 'Nieuwe ronde' : 'Niemand meer in de lobby'; }
+  if (MP.role === 'host') { const ok = roomCount() > 1; b.disabled = !ok; b.textContent = ok ? 'Nieuwe ronde' : 'Niemand meer in de lobby'; }
   else { b.disabled = true; b.textContent = 'Wachten op de host…'; }
 }
 function mpAgain() {
@@ -841,7 +1132,7 @@ function mpFrame(realDt, gdt) {
   }
   // eigen stand versturen
   MP.sendAcc += realDt;
-  if (MP.sendAcc >= sendEvery(M)) { MP.sendAcc = 0; mpSendState(); }
+  if (MP.sendAcc >= sendEvery(M)) { MP.sendAcc = 0; mpSendState(); if (MP.botRun.length && !M.result) botsSendState(); }
   // wie te lang niets van zich laat horen, is weg
   if (!M.result) {
     const now = performance.now();
@@ -855,19 +1146,24 @@ function mpFrame(realDt, gdt) {
 function mpSendState() {
   const M = MP.match;
   if (!M || !G || !MP.inRoom) return;
+  mpSend(stateMsg(M, MP.myId));
+}
+// de stand van de Andy die nu is ingeladen (jij, of een aap van de host)
+function stateMsg(M, from) {
   const tr = G.trick;
-  mpSend({ type: 's', id: M.seed, from: MP.myId, t: +M.t.toFixed(3), x: Math.round(G.x), y: Math.round(G.y), vx: Math.round(G.vx), vy: Math.round(G.vy),
+  return { type: 's', id: M.seed, from, t: +M.t.toFixed(3), x: Math.round(G.x), y: Math.round(G.y), vx: Math.round(G.vx), vy: Math.round(G.vy),
     st: G.state, a: +(G.angle + (G.trickRot || 0)).toFixed(3), tr: tr ? tr.id : 0, tk: tr ? +Math.min(1, G.trickT / tr.dur).toFixed(3) : 0,
     hx: Math.round(G.hx), hy: Math.round(G.hy), dv: G.diving ? 1 : 0, sp: G.state === 'hang' ? Math.round(G.om * G.R) : 0, tu: G.turboT > 0 ? 1 : 0,
     vid: G.state === 'hang' && G.vine ? G.vine.id : -1, k: G.k, d: +run.dist.toFixed(1), ap: Math.max(0, Math.floor(run.earned)), f: M.falls,
-    ...(M.br ? { hp: M.br.hp, w: M.br.w, am: +M.br.aim.toFixed(2) } : {}) });
+    ...(M.br ? { hp: M.br.hp, w: M.br.w, am: +M.br.aim.toFixed(2) } : {}) };
 }
 const lerpAng = (a, b, f) => { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return a + d * f; };
 // Andere spelers worden iets in het verleden getekend, tussen twee ontvangen standen in: zo bewegen ze vloeiend
 function mpGhost(P, dt, M) {
   const S = P.snaps;
   if (!S.length) return;
-  const newest = S[S.length - 1], target = newest.t - (0.07 + 1.5 * sendEvery(M));
+  const late = P.relay || (MP.link && MP.link.relay) ? 0.18 : 0; // via de server komen standen gebundeld binnen
+  const newest = S[S.length - 1], target = newest.t - (0.07 + 1.5 * sendEvery(M) + late);
   if (P.rt === null || Math.abs(P.rt - target) > 0.6) P.rt = target;
   else P.rt += dt + (target - P.rt) * 0.08;
   while (S.length > 2 && S[1].t <= P.rt) S.shift();
@@ -935,8 +1231,10 @@ function mpOthers() {
   const M = game.mp;
   if (!M) return [];
   if (M.local) return [{ g: LOCAL.worlds[1 - M.idx].G, name: localName(1 - M.idx), pal: M.idx === 1 ? myLook() : oppPal(), tag: M.idx === 1 ? '#a8141c' : (LOCAL.ai ? '#2c6e18' : '#17498f'), local: true }];
-  return opps(M).filter(P => P.ghost && !(P.left && !P.ev)).map(P => ({ g: P.ghost, name: P.name, pal: palOf(P.col), tag: shade(P.col, -0.35) }));
+  return opps(M).filter(P => P.ghost && !(P.left && !P.ev)).map(P => ({ g: P.ghost, name: P.name, pal: P.bot ? botPal(P.col) : palOf(P.col), tag: shade(P.col, -0.35) }));
 }
+// apen zijn oranje orang-oetans (zoals Kiwi), met een eigen bandanakleur
+const botPal = col => Object.assign({}, palOf(col), { kiwi: true, fur: GCK.fur, furD: GCK.furD, furL: GCK.furL, skin: GCK.skin, skinD: GCK.skinD });
 function drawGhost() {
   const list = mpOthers(), many = list.length > 6;
   for (const o of list) {

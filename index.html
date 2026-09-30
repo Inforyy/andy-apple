@@ -196,6 +196,13 @@
           <div class="set-row hidden" id="mpAiLvls"><span class="set-lbl">Niveau</span>
             <div class="seg"><button data-ai="0">Makkelijk</button><button data-ai="1">Normaal</button><button data-ai="2">Moeilijk</button><button data-ai="3">Expert</button></div>
           </div>
+          <div class="set-row hidden" id="mpBots"><span class="set-lbl">Apen</span>
+            <div class="seg"><button data-bots="0">Geen</button><button data-bots="1">1</button><button data-bots="2">2</button><button data-bots="3">3</button><button data-bots="4">4</button><button data-bots="5">5</button></div>
+          </div>
+          <div class="set-row hidden" id="mpBotLvls"><span class="set-lbl">Niveau apen</span>
+            <div class="seg"><button data-botlvl="0">Makkelijk</button><button data-botlvl="1">Normaal</button><button data-botlvl="2">Moeilijk</button><button data-botlvl="3">Expert</button></div>
+          </div>
+          <p class="mp-desc" id="mpBotNote"></p>
         </div>
       </section>
       <p class="sub hidden" id="mpGuestWait">Wachten tot de host start…</p>
@@ -217,9 +224,11 @@
     <ol>
       <li>Kies <b>+ Nieuwe lobby</b>. Je lobby verschijnt in de lijst van andere spelers; met <b>Uitnodigen</b> stuur je ook een link.</li>
       <li>Anderen klikken in de lijst op <b>Meedoen</b> (of openen de link). Er passen <b>20 spelers</b> in een lobby.</li>
-      <li>De host kiest <b>Race</b> of <b>Endurance</b> en klikt op <b>Start</b>. Na afloop start de host met <b>Nieuwe ronde</b> het volgende potje.</li>
+      <li>De host kiest de spelmodus en klikt op <b>Start</b>. Na afloop start de host met <b>Nieuwe ronde</b> het volgende potje.</li>
+      <li>Te weinig spelers? De host kan bij <b>Apen</b> 1 tot 5 apen toevoegen en kiest hoe goed ze zijn.</li>
     </ol>
-    <div class="tip">Blijft het hangen op <b>Verbinden…</b>? Sommige netwerken blokkeren directe verbindingen. Zet beide apparaten op hetzelfde wifi-netwerk en probeer het opnieuw.</div>
+    <p>De <b>Openbare lobby</b> staat altijd open. Zodra er twee spelers zijn, start er vanzelf een ronde. Stem op de spelmodus; zonder stemmen kiest het spel er zelf een.</p>
+    <div class="tip">Lukt een directe verbinding niet (bijvoorbeeld op hetzelfde wifi-netwerk), dan gaat het verkeer vanzelf via de server. Dat kan een paar seconden duren.</div>
     <div class="tip">Laat het spel in beeld: wie tijdens een potje een paar seconden wegklikt, geeft op. Twee tabbladen in één venster werkt niet; gebruik twee aparte vensters.</div>
     <h3>Op één apparaat</h3>
     <p>Kies <b>Op één scherm</b>. <b style="color:#e8322b">Speler 1</b>: <kbd>SPATIE</kbd> of de linker/bovenste helft. <b style="color:#2f7fe0">Speler 2</b>: <kbd>↑</kbd> / <kbd>ENTER</kbd> of de rechter/onderste helft.</p>
@@ -240,6 +249,9 @@
     <p class="sub" id="mpResSub"></p>
     <div class="results" id="mpResTable"></div>
     <div id="mpResScore" class="sub"></div>
+    <div id="mpResVote" class="hidden"><p class="sub">Stem op de volgende ronde</p>
+      <div class="seg"><button data-vote="race">Race</button><button data-vote="endurance">Endurance</button><button data-vote="br">Battle royale</button></div>
+    </div>
     <div class="p-foot">
       <div class="row"><button class="btn" id="btnMpLobby">Lobby</button></div>
       <button class="btn big green" id="btnMpAgain">Rematch</button>

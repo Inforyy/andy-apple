@@ -186,7 +186,7 @@ function reward(x, y, txt, bonus, col) {
   Sfx.bigjump();
 }
 // de wereld van Kiwi (die wordt niet getekend): geen losse geluidjes voor dingen die je niet ziet
-function aiWorld() { return !!(game.mp && game.mp.local && LOCAL.ai && game.mp.idx === 1); }
+function aiWorld() { return !!botSim || !!(game.mp && game.mp.local && LOCAL.ai && game.mp.idx === 1); }
 // voluntary = de speler liet zelf los (niet weggegleden of een gebroken liaan)
 function release(voluntary = true) {
   if (G.state !== 'hang') return;
@@ -891,7 +891,8 @@ function autoSwing(dt) {
   }
 }
 function enterBiome(S) {
-  run.biomeN = S.n; run.biome = S.i; Music.biome = S.i;
+  run.biomeN = S.n; run.biome = S.i;
+  if (!botSim) Music.biome = S.i; // niet voor een aap van de host (mp-online.js)
   const b = BIOMES[S.i], mult = `Elke appel ×${fmtNum(applesPerPick(S.i, run.dist))}`;
   if (game.mp) { showBanner(b.name, mult); flashT = 0.35; confetti(G.x + 200, G.y - 200, 60); if (!aiWorld()) Sfx.biome(S.i); return; }
   run.cine = { t: 0, bi: S.i, sub: mult, lap: S.n >= BIOMES.length };

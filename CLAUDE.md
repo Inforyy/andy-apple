@@ -98,7 +98,10 @@ Top-level `let`/`const`/`function` in these classic scripts share the global lex
 - **Online multiplayer** supports lobbies of 2–20 players (`MP_MAX`) in a star network.
   - Each guest has one WebRTC link to the host, and the host relays everyone's state (`onLinkMsg`).
   - Everyone simulates their own Andy in the same seeded world; the others are drawn as extra gorillas.
-  - Supabase Realtime (broadcast + presence) is used only to list lobbies and for signalling.
+  - Supabase Realtime (broadcast + presence) lists lobbies and does the signalling.
+  - **Relay fallback**: if a WebRTC link isn't open after `RELAY_AFTER` (or ICE fails), the host switches that link to a per-link Realtime channel (`relayStart`/`guestRelay`, `andy-relay-<host>-<guest>`); `sendLink` then batches messages every `RELAY_MS`. Common when players share a wifi network (mDNS candidates, no NAT hairpinning). `CONFIG.turn` optionally adds a TURN server.
+  - **Public lobby** (`MP.pub`, id `pub`, channel `andy-lobby-pub` with presence): always listed first. The host is elected via presence (`pubLeader`: an existing host stays host, otherwise the earliest `ts`); when the host leaves, the others re-elect (`pubSync`). The host auto-starts a round `PUB_WAIT` after there are 2 players and picks the mode from votes (`pubRound`).
+  - **Bots** (`MP.bots`, own lobbies only, not in battle royale): the host simulates each bot in its own world (`WORLD_VARS` swap via `botIn`/`botOut`, like Kiwi) in `mpBotsStep` (called from `frameSolo`), driven by `aiThink(A)`, and sends their state as normal `'s'`/`'ev'` messages. While `botSim` is set, sounds (`Sfx.quiet`), banners and music changes are suppressed.
 - **Upgrades** are pure functions of level, read through `lvl(id)`, which returns 0 during multiplayer.
 - **Save system**: `localStorage['andyApples.save.v1']`.
   - Always go through `normalizeSave()` (it validates and clamps every field and migrates old saves) and `persist()` (which also marks the cloud save dirty).

@@ -563,3 +563,10 @@ html.short .modes-grid .mode-t{font-size:20px}
 .mode.chase{background:linear-gradient(160deg,#ff7a59,#d9362b);--sh:#8f1e17;--ic:#dc2626}
 
 #scare{position:fixed;inset:0;z-index:10000;background:#000}#scare canvas{width:100%;height:100%;display:block}
+/* multiplayer: de openbare lobby bovenaan de lijst, apen en stemmen */
+.lobbies li.pub{background:#fff6dc}
+#mpBotNote:empty{display:none}
+#mpResVote{margin:4px 0 8px}
+#mpResVote .sub{margin:0 0 6px}
+#mpModeRow .seg button,#mpResVote .seg button{padding-left:6px;padding-right:6px}
+.seg button .vc{font-style:normal;display:inline-block;min-width:18px;padding:0 5px;margin-left:3px;border-radius:9px;background:#c2410c;color:#fff;font-size:12px;line-height:18px}

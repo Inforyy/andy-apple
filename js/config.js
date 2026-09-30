@@ -14,10 +14,9 @@ const CONFIG = {
   siteUrl: 'https://stijnbarendse.nl/appel',
   // Waar de knop "App" in het hoofdmenu de Android-app (.apk) downloadt: de nieuwste versie op GitHub (main).
   // Leeg = geen knop. In de app zelf is de knop er nooit.
-  // TURN-server voor online multiplayer, nodig als spelers op hetzelfde (wifi-)netwerk zitten (zie README:
-  // "TURN-server voor spelers op hetzelfde netwerk"). Een adres dat de ICE-servers teruggeeft (bijv. de
-  // credentials-link van Metered), of een vaste lijst: [{ urls: 'turn:…', username: '…', credential: '…' }].
-  // Leeg = alleen STUN: dan lukt verbinden meestal alleen tussen verschillende netwerken.
+  // Optioneel: een eigen TURN-server voor online multiplayer (zie README: "Multiplayer via de server"). Niet nodig:
+  // lukt een directe verbinding niet, dan gaat het verkeer vanzelf via Supabase. Een adres dat de ICE-servers
+  // teruggeeft, of een vaste lijst: [{ urls: 'turn:…', username: '…', credential: '…' }]. Leeg = alleen STUN.
   turn: '',
   apkUrl: 'https://github.com/Stoin3/andy-apple/raw/main/android/AndyApples.apk',
 };

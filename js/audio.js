@@ -74,7 +74,7 @@ const Sfx = {
     this.isUnder = on;
     this.under.frequency.setTargetAtTime(on ? 650 : 20000, this.ac.currentTime, on ? 0.08 : 0.15);
   },
-  ok() { return save.sound && this.ac && this.bus; },
+  ok() { return save.sound && this.ac && this.bus && !this.quiet; }, // quiet: de host rekent een aap door (mp-online.js)
   // variatie voor het effect dat nu start: toonhoogte ±p en volume ±db (in dB). Na dit beeld weer neutraal.
   vary(p = 0.04, db = 2) {
     this.pv = 1 + (Math.random() * 2 - 1) * p;
