@@ -23,6 +23,7 @@ Een 2D-slingerspel in de browser. Andy de gorilla zwaait aan lianen door vijftie
 - **Online**: open de [link hierboven](https://stijnbarendse.nl/appel). Werkt het best in Chrome; in Firefox loopt het op sommige apparaten minder soepel.
 - **Lokaal**: open `index.html` in een browser. Houd het bestand bij de mappen `css/` en `js/`. Internet is alleen nodig voor online multiplayer, accounts en de ranglijst.
 - **Android-app**: [`android/AndyApples.apk`](android/AndyApples.apk) (Android 7.0+, schermvullend en liggend). Ook te downloaden via de knop **App** in het hoofdmenu van het spel (die haalt de nieuwste versie van `main` op GitHub; het adres staat in `apkUrl` in `js/config.js`). Installeren en zelf bouwen: zie [`android/README.md`](android/README.md).
+- **iOS-app** (iPhone en iPad, iOS 14+): `AndyApples.ipa` bij de release [**ios**](https://github.com/Stoin3/andy-apple/releases/tag/ios). Niet ondertekend: je ondertekent hem zelf met je eigen Apple ID (bijv. met Sideloadly of AltStore). Uitleg en zelf bouwen: zie [`ios/README.md`](ios/README.md).
 
 ## Besturing
 
@@ -170,7 +171,7 @@ Alle geluid wordt tijdens het spelen gemaakt met WebAudio (`js/audio.js`):
 - Je voortgang wordt automatisch in de browser bewaard.
 - Met een **account** wordt je voortgang ook online bewaard en kun je op een ander apparaat verder. Heb je op beide plekken voortgang, dan vraagt het spel welke je wilt houden.
 - Bij **Account** kies je ook een **gebruikersnaam** (uniek, 3–16 tekens: letters, cijfers en `_`). Die zie je op de ranglijst en in multiplayer. Zonder account krijg je in multiplayer een willekeurige naam, die je zelf kunt aanpassen.
-- De Android-app heeft een eigen voortgang, los van de browser. Log in met hetzelfde account om die gelijk te houden.
+- De Android- en iOS-app hebben een eigen voortgang, los van de browser. Log in met hetzelfde account om die gelijk te houden.
 
 ## Voor ontwikkelaars
 
@@ -193,6 +194,7 @@ Er is geen build-stap en geen npm. `index.html` bevat de schermen, `css/style.cs
 - **Testen**: `node tools/smoke.mjs` (Node 18+ en Chrome/Chromium). Klikt door de menu's, speelt alle modi en faalt bij elke JavaScript-fout.
 - **Prestaties meten**: `node tools/perf.mjs`. Meet per kwaliteitsniveau en wereld de framerate en rekentijd, en hoeveel geheugen de achtergrond gebruikt. Vergelijk vóór en na een wijziging op dezelfde computer.
 - **Android-app bouwen**: zie [`android/README.md`](android/README.md). De APK in de repo wordt niet vanzelf bijgewerkt als het spel verandert.
+- **iOS-app bouwen**: zie [`ios/README.md`](ios/README.md). De workflow `.github/workflows/ios.yml` bouwt de `.ipa` (niet ondertekend) na elke wijziging aan het spel op `main` en zet hem bij de release `ios`.
 - **Ander debug-wachtwoord**: reken de nieuwe waarde voor `DBG_HASH` in `js/view.js` uit met:
   ```sh
   node -e "let h=0x811c9dc5;for(const c of 'andy-debug:'+process.argv[1]){h^=c.charCodeAt(0);h=Math.imul(h,0x01000193)>>>0}console.log(h.toString(16).padStart(8,'0'))" NIEUW_WACHTWOORD

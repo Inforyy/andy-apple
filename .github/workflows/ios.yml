@@ -1,44 +1,30 @@
-name: iOS starter workflow
-
+# Bouwt de iOS-app (ios/build_ipa.py) op een Mac van GitHub, niet ondertekend: iedereen ondertekent hem zelf
+# (zie ios/README.md). De .ipa komt als bijlage bij de release "ios" (vaste downloadlink) en bij de workflow-run.
+name: iOS-app bouwen
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-
+    branches: [main]
+    paths: ['index.html', 'css/**', 'js/**', 'ios/**', 'android/icon.png', 'android/build_apk.py', '.github/workflows/ios.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: ios
 jobs:
-  build:
-    name: Build and Test default scheme using any available iPhone simulator
+  ipa:
     runs-on: macos-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set Default Scheme
-        run: |
-          scheme_list=$(xcodebuild -list -json | tr -d "\n")
-          default=$(echo $scheme_list | ruby -e "require 'json'; puts JSON.parse(STDIN.gets)['project']['targets'][0]")
-          echo $default | cat >default
-          echo Using default scheme: $default
-      - name: Build
+      - uses: actions/checkout@v4
+      - run: python3 ios/build_ipa.py --version "1.${{ github.run_number }}" --build "${{ github.run_number }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AndyApples-ipa
+          path: ios/AndyApples.ipa
+      - name: Release "ios" bijwerken
         env:
-          scheme: ${{ 'default' }}
-          platform: ${{ 'iOS Simulator' }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          # xcrun xctrace returns via stderr, not the expected stdout (see https://developer.apple.com/forums/thread/663959)
-          device=`xcrun xctrace list devices 2>&1 | grep -oE 'iPhone.*?[^\(]+' | head -1 | awk '{$1=$1;print}' | sed -e "s/ Simulator$//"`
-          if [ $scheme = default ]; then scheme=$(cat default); fi
-          if [ "`ls -A | grep -i \\.xcworkspace\$`" ]; then filetype_parameter="workspace" && file_to_build="`ls -A | grep -i \\.xcworkspace\$`"; else filetype_parameter="project" && file_to_build="`ls -A | grep -i \\.xcodeproj\$`"; fi
-          file_to_build=`echo $file_to_build | awk '{$1=$1;print}'`
-          xcodebuild build-for-testing -scheme "$scheme" -"$filetype_parameter" "$file_to_build" -destination "platform=$platform,name=$device"
-      - name: Test
-        env:
-          scheme: ${{ 'default' }}
-          platform: ${{ 'iOS Simulator' }}
-        run: |
-          # xcrun xctrace returns via stderr, not the expected stdout (see https://developer.apple.com/forums/thread/663959)
-          device=`xcrun xctrace list devices 2>&1 | grep -oE 'iPhone.*?[^\(]+' | head -1 | awk '{$1=$1;print}' | sed -e "s/ Simulator$//"`
-          if [ $scheme = default ]; then scheme=$(cat default); fi
-          if [ "`ls -A | grep -i \\.xcworkspace\$`" ]; then filetype_parameter="workspace" && file_to_build="`ls -A | grep -i \\.xcworkspace\$`"; else filetype_parameter="project" && file_to_build="`ls -A | grep -i \\.xcodeproj\$`"; fi
-          file_to_build=`echo $file_to_build | awk '{$1=$1;print}'`
-          xcodebuild test-without-building -scheme "$scheme" -"$filetype_parameter" "$file_to_build" -destination "platform=$platform,name=$device"
+          if ! gh release view ios >/dev/null 2>&1; then
+            gh release create ios --prerelease --title "iOS-app (nieuwste build)" \
+              --notes "Niet ondertekend: onderteken hem zelf, zie ios/README.md." --target "$GITHUB_SHA"
+          fi
+          gh release upload ios ios/AndyApples.ipa --clobber
