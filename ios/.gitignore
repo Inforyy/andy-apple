@@ -1,0 +1,5 @@
+# Bouwresultaat en handtekeningen horen niet in de repo
+*.ipa
+*.mobileprovision
+*.p12
+*.cer

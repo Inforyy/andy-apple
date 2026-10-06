@@ -1,0 +1,30 @@
+# Bouwt de iOS-app (ios/build_ipa.py) op een Mac van GitHub, niet ondertekend: iedereen ondertekent hem zelf
+# (zie ios/README.md). De .ipa komt als bijlage bij de release "ios" (vaste downloadlink) en bij de workflow-run.
+name: iOS-app bouwen
+on:
+  push:
+    branches: [main]
+    paths: ['index.html', 'css/**', 'js/**', 'ios/**', 'android/icon.png', 'android/build_apk.py', '.github/workflows/ios.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: ios
+jobs:
+  ipa:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 ios/build_ipa.py --version "1.${{ github.run_number }}" --build "${{ github.run_number }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AndyApples-ipa
+          path: ios/AndyApples.ipa
+      - name: Release "ios" bijwerken
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view ios >/dev/null 2>&1; then
+            gh release create ios --prerelease --title "iOS-app (nieuwste build)" \
+              --notes "Niet ondertekend: onderteken hem zelf, zie ios/README.md." --target "$GITHUB_SHA"
+          fi
+          gh release upload ios ios/AndyApples.ipa --clobber
